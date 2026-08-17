@@ -1,0 +1,35 @@
+# Baji worker — Fly.io
+#
+# Memory 2GB: Chromium ka har context ~80MB leta hai, aur 4 concurrent renders
+# ke saath spikes aati hain. 1GB par OOM kills milte hain.
+app = "oyebazar-worker"
+primary_region = "sin" # Singapore — Pakistan ke sab se qareeb Fly region
+
+[build]
+  dockerfile = "apps/worker/Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  RENDER_CONCURRENCY = "4"
+  PORT = "8080"
+
+[[vm]]
+  size = "performance-1x"
+  memory = "2gb"
+
+# Worker par HTTP traffic nahi aata — sirf health check.
+# auto_stop band: queue mein job aane par machine ka boot hona (~10s) reseller ko
+# intezar karwata hai, aur nightly pre-generation to chalte rehna chahiye.
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "20s"
+    method = "GET"
+    path = "/"

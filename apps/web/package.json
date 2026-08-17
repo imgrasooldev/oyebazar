@@ -1,0 +1,40 @@
+{
+  "name": "@oyebazar/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "dotenv -e ../../.env -- next dev --port 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:security": "vitest run __tests__/security"
+  },
+  "dependencies": {
+    "@oyebazar/core": "workspace:*",
+    "@fontsource/noto-nastaliq-urdu": "^5.1.0",
+    "@fontsource-variable/inter": "^5.1.1",
+    "@oyebazar/db": "workspace:*",
+    "@oyebazar/queue": "workspace:*",
+    "@oyebazar/shared": "workspace:*",
+    "@oyebazar/whatsapp": "workspace:*",
+    "next": "^15.1.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "autoprefixer": "^10.4.20",
+    "dotenv-cli": "^8.0.0",
+    "eslint": "^9.18.0",
+    "eslint-config-next": "^15.1.6",
+    "postcss": "^8.5.1",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

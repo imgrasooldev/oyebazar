@@ -1,0 +1,183 @@
+/**
+ * Order aur paisa ke ports.
+ *
+ * Ye alag file isliye hai ke `docs/CONVENTIONS.md` ke mutabiq FeeLedger aur order
+ * state machine ke PR sirf founder ke hain — file alag ho to review bhi alag rehta hai.
+ */
+import type { Page, Pkr } from '@oyebazar/shared'
+import type { OrderStatus } from '../domain/order-status'
+import type {
+  ConfirmedBy,
+  CustomerDetails,
+  InternalOrderView,
+  OrderLineView,
+  ResellerOrderView,
+} from '../domain/order'
+import type { CursorQuery } from './repositories'
+
+export interface PersistOrderInput {
+  readonly orderNo: string
+  readonly resellerId: string
+  readonly supplierId: string
+  readonly customer: CustomerDetails
+  readonly lines: readonly OrderLineView[]
+  readonly subtotal: Pkr
+  readonly deliveryFee: Pkr
+  readonly total: Pkr
+  readonly bajiFee: Pkr
+  readonly feeRateBps: number
+  readonly paymentMethod: 'COD' | 'PREPAID'
+  readonly idempotencyKey?: string | undefined
+}
+
+export interface OrderStatusChange {
+  readonly orderId: string
+  readonly from: OrderStatus
+  readonly to: OrderStatus
+  readonly at: Date
+  readonly actorType: 'reseller' | 'ops' | 'system' | 'customer'
+  readonly actorId?: string | undefined
+  readonly note?: string | undefined
+  readonly confirmedBy?: ConfirmedBy | undefined
+  /** REJECTED par wajah — reseller ko yehi dikhti hai */
+  readonly rejectionReason?: string | undefined
+}
+
+export interface PendingConfirmationOrder {
+  readonly id: string
+  readonly orderNo: string
+  readonly resellerId: string
+  readonly resellerName: string
+  readonly resellerPhone: string
+  readonly customerName: string
+  readonly total: Pkr
+  readonly createdAt: Date
+  readonly reminderSentAt: Date | null
+}
+
+/** Wholesaler ko dikhne wala order — us ka apna price, customer ka pata, aur kuch nahi. */
+export interface SupplierOrderView {
+  readonly id: string
+  readonly orderNo: string
+  readonly status: OrderStatus
+  readonly customerName: string
+  readonly customerPhone: string
+  readonly customerAddress: string
+  readonly area: string
+  readonly locationLat: number | null
+  readonly locationLng: number | null
+  readonly paymentMethod: 'COD' | 'PREPAID'
+  /** COD par courier isi raqam ko wasool kar ke wholesaler ko deta hai */
+  readonly total: Pkr
+  readonly createdAt: Date
+  readonly acceptedAt: Date | null
+  readonly items: readonly {
+    readonly titleUr: string
+    readonly titleEn: string
+    readonly qty: number
+    /** 🔴 wholesaler ka APNA price — reseller ka retail yahan kabhi nahi */
+    readonly supplierPrice: Pkr
+  }[]
+}
+
+export interface OrderRepository {
+  create(input: PersistOrderInput): Promise<InternalOrderView>
+
+  /** Wholesaler ke magic link ke liye — token hi us ki chabi hai. */
+  findBySupplierToken(token: string): Promise<SupplierOrderView | null>
+  setSupplierToken(orderId: string, token: string): Promise<void>
+  findById(orderId: string): Promise<InternalOrderView | null>
+  findByIdempotencyKey(resellerId: string, key: string): Promise<InternalOrderView | null>
+
+  /** Reseller-facing — 🔴 supplier ka koi field nahi. */
+  findForReseller(resellerId: string, orderNo: string): Promise<ResellerOrderView | null>
+  listForReseller(
+    resellerId: string,
+    query: CursorQuery & { status?: OrderStatus | undefined },
+  ): Promise<Page<ResellerOrderView>>
+
+  /**
+   * Status badalta hai + audit event likhta hai — dono ek transaction mein.
+   * Alag alag hone par ek din event gum ho jayega aur order ki tareekh adhoori reh jayegi.
+   */
+  applyStatusChange(change: OrderStatusChange): Promise<InternalOrderView>
+
+  /** Confirmation ka intezar kar rahe orders — reminder aur auto-cancel jobs ke liye. */
+  findPendingConfirmationBefore(cutoff: Date, limit: number): Promise<InternalOrderView[]>
+
+  /** Reminder job ke liye — reseller ka phone bhi saath, taake dobara query na karni pare. */
+  findAwaitingConfirmation(options: {
+    olderThan: Date
+    onlyWithoutReminder: boolean
+    limit: number
+  }): Promise<PendingConfirmationOrder[]>
+
+  markReminderSent(orderId: string, at: Date): Promise<void>
+
+  /** Ops console — filters ke saath. 🔴 Ye internal view deta hai (fee + supplier). */
+  listForOps(filters: {
+    status?: OrderStatus | undefined
+    supplierId?: string | undefined
+    limit: number
+    cursor?: string | undefined
+  }): Promise<Page<InternalOrderView>>
+}
+
+/**
+ * 🔴 FEE LEDGER — hamara revenue ka single source of truth.
+ *
+ * Rows IMMUTABLE hain: amount ban jane ke baad kabhi update nahi hota. Ghalti ho to
+ * reversing entry banti hai. RTO par row delete nahi hoti — WRITTEN_OFF hoti hai,
+ * warna hum apna nuqsan hi nahi naap sakenge.
+ */
+export interface SupplierFeeSummary {
+  readonly supplierId: string
+  readonly businessName: string
+  readonly orders: number
+  readonly amount: Pkr
+}
+
+export interface FeeCollectionStats {
+  readonly total: Pkr
+  readonly collected: Pkr
+  readonly writtenOff: Pkr
+  /** 🔴 #3 guardrail — target ≥85% */
+  readonly collectionPct: number
+}
+
+export interface FeeLedgerRepository {
+  create(input: { orderId: string; supplierId: string; amount: Pkr }): Promise<void>
+  markWrittenOff(orderId: string, reason: string): Promise<void>
+  findByOrderId(orderId: string): Promise<{ amount: Pkr; status: string } | null>
+
+  /** Mahine ke aakhir mein: kis supplier ki kitni fee PENDING hai. */
+  summarisePending(period: { from: Date; to: Date }): Promise<SupplierFeeSummary[]>
+
+  /**
+   * Ek supplier ki us mahine ki saari PENDING rows ko INVOICED kar deta hai.
+   * @returns kitni rows aur kitni raqam
+   */
+  markInvoiced(input: {
+    supplierId: string
+    invoiceId: string
+    invoicePeriod: string
+    from: Date
+    to: Date
+    at: Date
+  }): Promise<{ rows: number; amount: Pkr }>
+
+  markCollected(invoiceId: string, at: Date): Promise<{ rows: number; amount: Pkr }>
+
+  collectionStats(period: { from: Date; to: Date }): Promise<FeeCollectionStats>
+}
+
+/** Order routing ke liye supplier ki internal maloomat (fee rate, WhatsApp). */
+export interface SupplierInternalRepository {
+  findInternal(supplierId: string): Promise<{
+    id: string
+    businessName: string
+    phone: string
+    feeRateBps: number
+    status: 'PENDING' | 'VERIFIED' | 'SUSPENDED'
+  } | null>
+}

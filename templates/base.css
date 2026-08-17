@@ -1,0 +1,164 @@
+/*
+ * Status pack ka base — har template isay import karta hai.
+ *
+ * 🔴 Canvas 1080×1920 (WhatsApp status). Upar aur neeche "safe zones" hain jahan
+ *    WhatsApp apna UI (profile, reply box) chhapta hai — wahan content na jaye.
+ *
+ * 🔴 Urdu Nastaliq: line-height 2.2 se kam par haroof ek doosre par charh jate hain.
+ *    Font `font-display: block` — warna FOUT (bina font ka lamha) screenshot mein aa sakta hai.
+ */
+
+@font-face {
+  font-family: 'Noto Nastaliq Urdu';
+  src: url('fonts/noto-nastaliq-urdu-arabic-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Noto Nastaliq Urdu';
+  src: url('fonts/noto-nastaliq-urdu-arabic-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-display: block;
+}
+
+:root {
+  --canvas-w: 1080px;
+  --canvas-h: 1920px;
+  --safe-top: 180px;
+  --safe-bottom: 250px;
+
+  /* templates inhen override karte hain — naya template = sirf ye variables + accent */
+  --accent: #d42561;
+  --accent-soft: #fce7ef;
+  --ink: #1f2937;
+  --paper: #ffffff;
+  --badge-text: #ffffff;
+  --ribbon: '';
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: var(--canvas-w);
+  height: var(--canvas-h);
+  background: var(--paper);
+}
+
+.stage {
+  position: relative;
+  width: var(--canvas-w);
+  height: var(--canvas-h);
+  overflow: hidden;
+  background: var(--paper);
+  font-family: 'Noto Nastaliq Urdu', serif;
+  direction: rtl;
+  color: var(--ink);
+}
+
+/* Product ki tasveer poore canvas par — content us ke upar */
+.photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.35) 0%,
+    rgba(0, 0, 0, 0) 30%,
+    rgba(0, 0, 0, 0) 45%,
+    rgba(0, 0, 0, 0.78) 100%
+  );
+}
+
+.content {
+  position: absolute;
+  inset: var(--safe-top) 60px var(--safe-bottom) 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.badge {
+  align-self: flex-start;
+  background: var(--accent);
+  color: var(--badge-text);
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 2.2;
+  padding: 8px 36px 20px;
+  border-radius: 999px;
+}
+
+.bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  color: #ffffff;
+}
+
+.title {
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 2.1;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+}
+
+.price-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.price {
+  background: var(--accent);
+  color: var(--badge-text);
+  font-size: 78px;
+  font-weight: 700;
+  line-height: 1.9;
+  padding: 10px 44px 26px;
+  border-radius: 28px;
+  /* qeemat hamesha LTR — "Rs 3,000" Urdu ke beech ulta na ho */
+  direction: ltr;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.seller {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  border-top: 3px solid rgba(255, 255, 255, 0.35);
+  padding-top: 26px;
+}
+
+.seller-name {
+  font-size: 46px;
+  font-weight: 700;
+  line-height: 2.1;
+}
+
+.seller-phone {
+  direction: ltr;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 46px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.cta {
+  font-size: 40px;
+  line-height: 2.1;
+  opacity: 0.92;
+}

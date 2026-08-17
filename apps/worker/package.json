@@ -1,0 +1,37 @@
+{
+  "name": "@oyebazar/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "dotenv -e ../../.env -- tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "render:preview": "tsx src/cli/render-preview.ts",
+    "render:pending": "dotenv -e ../../.env -- tsx src/cli/render-pending.ts",
+    "shoot": "tsx src/cli/shoot-pages.ts",
+    "mobile:audit": "tsx src/cli/mobile-audit.ts",
+    "daily:dev": "dotenv -e ../../.env -- tsx src/cli/daily-dev.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@oyebazar/core": "workspace:*",
+    "@oyebazar/db": "workspace:*",
+    "@oyebazar/queue": "workspace:*",
+    "@oyebazar/shared": "workspace:*",
+    "@oyebazar/whatsapp": "workspace:*",
+    "@fontsource/noto-nastaliq-urdu": "^5.1.0",
+    "@supabase/supabase-js": "^2.47.10",
+    "bullmq": "^5.34.6",
+    "ioredis": "^5.4.2",
+    "playwright": "^1.49.1",
+    "sharp": "^0.33.5",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^8.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

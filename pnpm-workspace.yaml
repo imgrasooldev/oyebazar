@@ -1,0 +1,16 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+# pnpm 11: postinstall scripts sirf inhi packages ke liye chalte hain (supply-chain surface kam)
+allowBuilds:
+  # local dev ka Postgres — binaries extract karne ke liye script chahiye
+  '@embedded-postgres/windows-x64': true
+  '@embedded-postgres/linux-x64': true
+  '@embedded-postgres/darwin-arm64': true
+  '@prisma/client': true # Prisma client generate karta hai
+  '@prisma/engines': true # query engine binary
+  esbuild: true # tsx/vitest ki dependency
+  msgpackr-extract: true # BullMQ ka fast serializer
+  prisma: true
+  sharp: true # image processing (worker)
+  unrs-resolver: true # eslint resolver

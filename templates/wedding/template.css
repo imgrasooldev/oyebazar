@@ -1,0 +1,18 @@
+/* شادی — halka gulabi/sunehra, zyada khaali jagah. */
+:root {
+  --accent: #9d174d;
+  --badge-text: #fff1f2;
+}
+
+.title {
+  font-size: 58px;
+}
+
+.stage::after {
+  content: '';
+  position: absolute;
+  inset: 40px;
+  border: 3px solid rgba(253, 230, 138, 0.7);
+  border-radius: 8px;
+  pointer-events: none;
+}

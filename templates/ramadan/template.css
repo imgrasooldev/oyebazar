@@ -1,0 +1,14 @@
+/* رمضان — gehra sabz/neela, sanjeeda. */
+:root {
+  --accent: #065f46;
+  --badge-text: #ecfdf5;
+}
+
+.scrim {
+  background: linear-gradient(
+    to bottom,
+    rgba(6, 78, 59, 0.45) 0%,
+    rgba(0, 0, 0, 0) 35%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+}

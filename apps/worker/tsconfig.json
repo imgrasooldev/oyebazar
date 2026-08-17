@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "noEmit": true,
+    "types": ["node"],
+    // DOM isliye ke `page.evaluate()` ka callback browser ke andar chalta hai
+    // (document.fonts.ready) — wo code Node par nahi, Chromium par chalta hai.
+    "lib": ["ES2023", "DOM"]
+  },
+  "include": ["src/**/*.ts"]
+}

@@ -1,0 +1,14 @@
+/* عید — sunehri, thora sa tehwar wala. */
+:root {
+  --accent: #b45309;
+  --badge-text: #fffbeb;
+}
+
+.stage::after {
+  content: '';
+  position: absolute;
+  inset: 24px;
+  border: 6px double rgba(251, 191, 36, 0.85);
+  border-radius: 36px;
+  pointer-events: none;
+}

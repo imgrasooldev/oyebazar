@@ -1,0 +1,47 @@
+<!doctype html>
+<!--
+  Status pack ka shared layout.
+
+  🔴 Ye HTML browser mein khulta hai aur Playwright is ka screenshot leta hai.
+     Canvas nahi — kyunke Urdu Nastaliq ko complex text shaping chahiye (haroof ki shakal
+     context se badalti hai). Browser HarfBuzz use karta hai — wohi engine jo WhatsApp par hai.
+
+  Naya template banana = `templates/<key>/template.css` mein CSS variables badalna. Koi deploy nahi.
+  Placeholders (`{{...}}`) worker bharta hai — dekhen: apps/worker/src/render/template.ts
+-->
+<html lang="ur" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      {{baseCss}}
+    </style>
+    <style>
+      {{templateCss}}
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <img class="photo" src="{{photoUrl}}" alt="" />
+      <div class="scrim"></div>
+
+      <div class="content">
+        <div class="badge">{{badgeText}}</div>
+
+        <div class="bottom">
+          <div class="title">{{titleUr}}</div>
+
+          <div class="price-row">
+            <div class="price">{{priceText}}</div>
+          </div>
+
+          <div class="seller">
+            <div class="seller-name">{{resellerName}}</div>
+            <div class="seller-phone">{{resellerPhone}}</div>
+          </div>
+
+          <div class="cta">{{ctaText}}</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

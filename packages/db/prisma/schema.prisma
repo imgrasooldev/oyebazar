@@ -1,0 +1,537 @@
+// Baji — database schema
+//
+// Do database-level qawaid (docs/CONVENTIONS.md):
+//   1. Paisa hamesha Int (PKR). Float/Decimal kabhi nahi.
+//   2. Har OrderItem par price SNAPSHOTS lazmi — history badalni nahi chahiye.
+//
+// Naming: PascalCase models, camelCase fields.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") // Neon: pooler ke bajaye migrations direct connection se
+}
+
+// ============================================================ SUPPLIERS
+
+model Supplier {
+  id           String         @id @default(cuid())
+  slug         String         @unique // Bazaar URL: /bazaar/<slug>
+  businessName String
+  ownerName    String
+  phone        String         @unique // internal — kabhi public nahi
+  // Bazaar par ye number jaan boojh kar public hai (directory ki value yehi hai)
+  whatsappPublic String?
+  ntn          String? // ⚠ FBR — seller of record wohi hai
+  strn         String?
+  address      String
+  city         String
+  marketName   String? // "Bolton Market"
+  bioUr        String?
+  logoUrl      String?
+  bankAccount  String?
+  // 🔴 Bazaar par sirf listed + VERIFIED suppliers dikhte hain
+  listedOnBazaar Boolean      @default(false)
+  feeRateBps   Int            @default(500) // 500 = 5% · per-supplier negotiate ho sakta hai
+  status       SupplierStatus @default(PENDING)
+  notes        String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  products     Product[]
+  orders       Order[]
+  contentPacks ContentPack[]
+  feeLedger    FeeLedger[]
+
+  @@index([status, city])
+  @@index([listedOnBazaar, status])
+}
+
+enum SupplierStatus {
+  PENDING
+  VERIFIED
+  SUSPENDED
+}
+
+// ============================================================ CATALOGUE
+
+/// Categories ka darakht — do darjay: "Electronics" ke neeche "Fans", "Solar" waghera.
+/// Sirf DO darjay jaan boojh kar: teen darjay ke menu mein khareedar kho jata hai.
+model Category {
+  id        String  @id @default(cuid())
+  slug      String  @unique
+  nameUr    String
+  nameEn    String
+  /// Category ki apni tasveer — taake nayi category jis mein abhi maal nahi,
+  /// wo bhi khaali dabba na lage. Na ho to pehle product ki tasveer chalti hai.
+  imageUrl  String?
+  sortOrder Int     @default(0)
+
+  /// null = ye khud aik badi category hai
+  parentId String?
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+
+  products Product[]
+
+  @@index([parentId, sortOrder])
+  @@index([sortOrder])
+}
+
+model Product {
+  id              String        @id @default(cuid())
+  slug            String        @unique // public URL
+  supplierId      String
+  titleUr         String
+  titleEn         String
+  descriptionUr   String?
+  categoryId      String
+  // 🔴 supplierPrice reseller-facing kisi query mein select NA ho — packages/db/src/selectors.ts
+  supplierPrice   Int
+  bajiPrice       Int // reseller ise dekhti hai (supplierPrice + fee)
+  suggestedRetail Int
+  status          ProductStatus @default(DRAFT)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  supplier Supplier         @relation(fields: [supplierId], references: [id])
+  category Category         @relation(fields: [categoryId], references: [id])
+  variants ProductVariant[]
+  media    ProductMedia[]
+
+  @@index([status, categoryId])
+  @@index([supplierId, status])
+  @@index([status, createdAt])
+}
+
+enum ProductStatus {
+  DRAFT
+  LIVE
+  OUT_OF_STOCK
+  ARCHIVED
+}
+
+model ProductVariant {
+  id        String  @id @default(cuid())
+  productId String
+  size      String?
+  colour    String?
+  skuCode   String  @unique
+  stockQty  Int     @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model ProductMedia {
+  id             String    @id @default(cuid())
+  productId      String
+  variantId      String?
+  originalUrl    String
+  processedUrl   String?
+  type           MediaType @default(IMAGE)
+  sortOrder      Int       @default(0)
+  // Content Studio kis image par template lagata hai
+  isStatusSource Boolean   @default(false)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, sortOrder])
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+// ============================================================ RESELLERS
+
+model Reseller {
+  id            String         @id @default(cuid())
+  name          String
+  whatsappPhone String         @unique // E.164 without + (923001234567)
+  city          String
+  area          String?
+  payoutMethod  PayoutMethod?
+  payoutAccount String? // UI par hamesha masked
+  status        ResellerStatus @default(ACTIVE)
+  tier          Tier           @default(NEW)
+  codEnabled    Boolean        @default(true)
+  referredById  String?
+  lastActiveAt  DateTime?
+  createdAt     DateTime       @default(now())
+
+  pricing     ResellerPricing[]
+  orders      Order[]
+  statusPacks StatusPack[]
+  sessions    Session[]
+
+  @@index([status, city])
+  @@index([lastActiveAt])
+}
+
+enum ResellerStatus {
+  ACTIVE
+  LIMITED
+  SUSPENDED
+}
+
+enum PayoutMethod {
+  JAZZCASH
+  EASYPAISA
+}
+
+enum Tier {
+  NEW
+  BRONZE
+  SILVER
+  GOLD
+}
+
+model ResellerPricing {
+  id          String   @id @default(cuid())
+  resellerId  String
+  productId   String
+  retailPrice Int
+  updatedAt   DateTime @updatedAt
+
+  reseller Reseller @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+
+  @@unique([resellerId, productId])
+  @@index([productId])
+}
+
+// ============================================================ STATUS PACKS
+
+model StatusPack {
+  id           String    @id @default(cuid())
+  resellerId   String
+  productId    String
+  templateKey  String
+  priceUsed    Int
+  imageUrl     String? // null = abhi render ho raha hai
+  videoUrl     String?
+  generatedAt  DateTime?
+  downloadedAt DateTime?
+  sharedCount  Int       @default(0)
+  createdAt    DateTime  @default(now())
+
+  reseller Reseller @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+
+  // 🔴 CACHE KEY — wohi reseller + product + template + price = wohi image, dobara render nahi
+  @@unique([resellerId, productId, templateKey, priceUsed])
+  @@index([resellerId, createdAt])
+  @@index([imageUrl, createdAt])
+}
+
+// ============================================================ DAILY DROP
+
+/// "آج کا اسٹیٹس پیک" — har din ke 5 items.
+///
+/// Ye alag table isliye hai ke teen alag cheezein ek hi list par ittefaq karen:
+/// raat 3 baje ki pre-generation, subah 9 baje ka broadcast, aur app ka home screen.
+/// Warna reseller ko message kuch aur milta hai aur app mein kuch aur dikhta hai.
+model DailyDrop {
+  id        String     @id @default(cuid())
+  /// ek din ka ek hi drop
+  dropDate  DateTime   @unique @db.Date
+  status    DropStatus @default(DRAFT)
+  /// broadcast kab gaya (null = abhi nahi gaya)
+  sentAt    DateTime?
+  sentCount Int        @default(0)
+  createdAt DateTime   @default(now())
+
+  items DailyDropItem[]
+
+  @@index([status, dropDate])
+}
+
+enum DropStatus {
+  DRAFT
+  SCHEDULED
+  SENT
+}
+
+model DailyDropItem {
+  id        String @id @default(cuid())
+  dropId    String
+  productId String
+  sortOrder Int    @default(0)
+
+  drop DailyDrop @relation(fields: [dropId], references: [id], onDelete: Cascade)
+
+  @@unique([dropId, productId])
+  @@index([productId])
+}
+
+// ============================================================ ORDERS
+
+model Order {
+  id              String        @id @default(cuid())
+  orderNo         String        @unique // BJ-1043
+  resellerId      String
+  supplierId      String
+  customerName    String
+  customerPhone   String
+  customerAddress String
+  locationLat     Float? // 🔴 RTO ka sab se bara lever
+  locationLng     Float?
+  area            String
+  subtotal        Int
+  deliveryFee     Int
+  discount        Int           @default(0)
+  total           Int
+  bajiFee         Int // hamara revenue — snapshot prices se calculate
+  feeRateBps      Int
+  paymentMethod   PaymentMethod @default(COD)
+  status          OrderStatus   @default(PENDING_CONFIRM)
+  idempotencyKey  String?       @unique
+
+  confirmSentAt    DateTime?
+  /// 6 ghante baad reseller ko yaad dilaya gaya (ek hi baar — roz ka nag nahi)
+  reminderSentAt   DateTime?
+  confirmedAt      DateTime? // 🔴 null = supplier ko ja hi nahi sakta
+  // Phase 1 mein reseller khud confirm karti hai (wo customer se baat kar chuki hoti hai).
+  // Ye field isliye hai ke baad mein RTO ka moqabla ho sake: reseller-confirmed vs
+  // customer-confirmed. Number khud batayega ke confirmation bot ki zaroorat hai ya nahi.
+  confirmedBy      ConfirmedBy?
+  sentToSupplierAt DateTime?
+  acceptedAt       DateTime?
+  rejectedAt       DateTime?
+  rejectionReason  String?
+  /**
+   * Wholesaler ka darwaza — is link se wo bina login ke order dekh kar accept/reject
+   * karta hai. Token opaque aur ek order ke liye khaas hai.
+   *
+   * 🔴 Login is liye nahi ke Bolton Market ka thok wala naya account nahi banata,
+   *    magar WhatsApp ka link zaroor kholta hai. Token hi us ki chabi hai —
+   *    is liye wo lamba (32 bytes) aur sirf isi order par chalta hai.
+   */
+  supplierToken    String?   @unique
+  dispatchedAt     DateTime?
+  deliveredAt      DateTime?
+  rtoReason        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  reseller  Reseller     @relation(fields: [resellerId], references: [id])
+  supplier  Supplier     @relation(fields: [supplierId], references: [id])
+  items     OrderItem[]
+  events    OrderEvent[]
+  feeLedger FeeLedger?
+
+  @@index([status, createdAt])
+  @@index([resellerId, createdAt])
+  @@index([supplierId, createdAt])
+  @@index([confirmedAt, status])
+}
+
+enum PaymentMethod {
+  COD
+  PREPAID
+}
+
+enum ConfirmedBy {
+  RESELLER // Phase 1 — reseller customer se baat kar ke confirm karti hai
+  CUSTOMER // Phase 2 — WhatsApp bot par customer khud "HAAN" likhta hai
+  OPS // coordinator ne phone par confirm kiya
+}
+
+enum OrderStatus {
+  PENDING_CONFIRM
+  CONFIRMED
+  SENT_TO_SUPPLIER
+  /// Wholesaler ne qubool kiya — maal mojood hai aur wo bhej raha hai
+  ACCEPTED
+  /// Wholesaler ne mana kiya (maal khatam / ilaqa door) — order CANCELLED ho jata hai
+  REJECTED
+  DISPATCHED
+  DELIVERED
+  RTO
+  CANCELLED
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  variantId String?
+  qty       Int     @default(1)
+
+  // 🔴 SNAPSHOTS — prices badalti rehti hain, history nahi badalni chahiye
+  supplierPriceSnapshot Int
+  bajiPriceSnapshot     Int
+  retailPriceSnapshot   Int
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+/// Immutable audit log — order ki har harkat. Update kabhi nahi, sirf insert.
+model OrderEvent {
+  id         String       @id @default(cuid())
+  orderId    String
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  actorType  String // reseller | ops | system | customer
+  actorId    String?
+  note       String?
+  createdAt  DateTime     @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+}
+
+// ============================================================ FEE LEDGER (revenue)
+
+model FeeLedger {
+  id          String    @id @default(cuid())
+  orderId     String    @unique // har order par exactly ek row
+  supplierId  String
+  amount      Int
+  status      FeeStatus @default(PENDING)
+  invoiceId   String?
+  /// kis mahine ke invoice mein gayi — "2026-08"
+  invoicePeriod String?
+  invoicedAt  DateTime?
+  collectedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  order    Order    @relation(fields: [orderId], references: [id])
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+
+  @@index([supplierId, status])
+  @@index([status, createdAt])
+  @@index([invoiceId])
+}
+
+enum FeeStatus {
+  PENDING
+  INVOICED
+  COLLECTED
+  WRITTEN_OFF
+}
+
+// ============================================================ CONTENT PACKS (supplier revenue)
+
+model ContentPack {
+  id          String     @id @default(cuid())
+  supplierId  String
+  skuCount    Int
+  price       Int
+  status      PackStatus @default(ORDERED)
+  invoiceId   String?
+  deliveredAt DateTime?
+  createdAt   DateTime   @default(now())
+
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+
+  @@index([supplierId, status])
+}
+
+enum PackStatus {
+  ORDERED
+  SHOOTING
+  DESIGNING
+  DELIVERED
+}
+
+/// Atomic counters — order number (BJ-1043) isi se banta hai.
+/// Sequence ke bajaye model isliye ke ye portable hai aur test mein fake ho jata hai.
+model Counter {
+  id    String @id
+  value Int    @default(0)
+}
+
+// ============================================================ AUTH
+
+model OpsUser {
+  id        String    @id @default(cuid())
+  name      String
+  email     String    @unique
+  role      OpsRole   @default(COORDINATOR)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  sessions  Session[]
+}
+
+enum OpsRole {
+  COORDINATOR
+  MANAGER
+  FOUNDER
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique // 🔴 plain token kabhi store nahi hota
+  resellerId String?
+  opsUserId  String?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  userAgent  String?
+
+  reseller Reseller? @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+  opsUser  OpsUser?  @relation(fields: [opsUserId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([resellerId])
+}
+
+model OtpChallenge {
+  id         String    @id @default(cuid())
+  phone      String
+  codeHash   String
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([phone, createdAt])
+}
+
+// ============================================================ WHATSAPP
+
+model WhatsappMessage {
+  id          String    @id @default(cuid())
+  orderId     String?
+  resellerId  String?
+  toPhone     String
+  template    String?
+  payload     Json
+  direction   Direction
+  status      String // queued | sent | delivered | read | failed
+  waMessageId String?   @unique
+  errorCode   String?
+  createdAt   DateTime  @default(now())
+
+  @@index([toPhone, createdAt])
+  @@index([status, createdAt])
+}
+
+enum Direction {
+  IN
+  OUT
+}
+
+// ============================================================ ANALYTICS
+
+model Event {
+  id         String   @id @default(cuid())
+  actorType  String
+  actorId    String?
+  name       String
+  properties Json
+  createdAt  DateTime @default(now())
+
+  @@index([name, createdAt])
+  @@index([actorId, createdAt])
+}

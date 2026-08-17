@@ -1,0 +1,9 @@
+/* نیا مال — taza stock ka signal. */
+:root {
+  --accent: #7c3aed;
+  --badge-text: #ffffff;
+}
+
+.badge {
+  border: 4px solid rgba(255, 255, 255, 0.85);
+}

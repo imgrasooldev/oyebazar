@@ -1,0 +1,133 @@
+/**
+ * Request schemas — har API endpoint par input inhi se parse hota hai.
+ * Route handler kabhi raw `body` ko haath na lagaye.
+ */
+import { z } from 'zod'
+import { PAGINATION } from '../constants'
+import { TemplateKeySchema } from '../dto/status-pack'
+
+/** Pakistani mobile: 03XXXXXXXXX ya +923XXXXXXXXX — normalise ho kar E.164 (923XXXXXXXXX) banta hai. */
+export const PakistaniPhoneSchema = z
+  .string()
+  .trim()
+  .transform((raw) => raw.replace(/[\s-()]/g, ''))
+  .refine((v) => /^(?:\+?92|0)3\d{9}$/.test(v), {
+    message: 'Sahih WhatsApp number likhen (misal: 03001234567)',
+  })
+  .transform((v) => {
+    const digits = v.replace(/^\+/, '')
+    return digits.startsWith('92') ? digits : `92${digits.slice(1)}`
+  })
+
+export const CursorPaginationSchema = z.object({
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(PAGINATION.maxLimit).default(PAGINATION.defaultLimit),
+})
+
+// ---------- Auth ----------
+
+export const OtpRequestSchema = z.object({
+  phone: PakistaniPhoneSchema,
+})
+
+export const OtpVerifySchema = z.object({
+  phone: PakistaniPhoneSchema,
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, 'Code 6 hindson ka hota hai'),
+})
+
+// ---------- Catalogue ----------
+
+export const CatalogueQuerySchema = CursorPaginationSchema.extend({
+  category: z.string().optional(),
+  q: z.string().trim().min(1).max(60).optional(),
+  minPrice: z.coerce.number().int().nonnegative().optional(),
+  maxPrice: z.coerce.number().int().nonnegative().optional(),
+  inStockOnly: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((v) => v === 'true'),
+}).refine((v) => v.minPrice === undefined || v.maxPrice === undefined || v.minPrice <= v.maxPrice, {
+  message: 'minPrice, maxPrice se zyada nahi ho sakta',
+  path: ['minPrice'],
+})
+
+export const BazaarQuerySchema = CursorPaginationSchema.extend({
+  city: z.string().trim().max(40).optional(),
+  category: z.string().trim().max(40).optional(),
+  q: z.string().trim().min(1).max(60).optional(),
+})
+
+// ---------- Pricing ----------
+
+export const SetRetailPriceSchema = z.object({
+  retailPrice: z.number().int().positive().max(1_000_000),
+})
+
+// ---------- Status pack ----------
+
+export const GenerateStatusPackSchema = z.object({
+  productId: z.string().min(1),
+  templateKey: TemplateKeySchema,
+  /**
+   * Agar reseller ne price abhi slider par set kiya hai to yahan aata hai;
+   * warna us ka saved retail price (ya suggestedRetail) use hota hai.
+   */
+  retailPrice: z.number().int().positive().max(1_000_000).optional(),
+})
+
+// ---------- Orders ----------
+
+export const OrderLineInputSchema = z.object({
+  productId: z.string().min(1),
+  variantId: z.string().min(1).optional(),
+  qty: z.number().int().min(1).max(50),
+  /** wo price jo reseller ne customer se tay kiya */
+  retailPrice: z.number().int().positive().max(1_000_000),
+})
+
+export const CreateOrderSchema = z.object({
+  customer: z.object({
+    name: z.string().trim().min(2, 'Customer ka naam likhen').max(80),
+    phone: PakistaniPhoneSchema,
+    address: z.string().trim().min(10, 'Poora pata likhen — gali/mohalla ke saath').max(400),
+    area: z.string().trim().min(2, 'Ilaqa likhen').max(80),
+    // 🔴 RTO ka sab se bara lever — optional hai magar UI is par zor deti hai
+    locationLat: z.number().min(-90).max(90).optional(),
+    locationLng: z.number().min(-180).max(180).optional(),
+  }),
+  lines: z.array(OrderLineInputSchema).min(1, 'Kam se kam ek item chahiye').max(20),
+  deliveryFee: z.number().int().nonnegative().max(5_000).default(200),
+  paymentMethod: z.enum(['COD', 'PREPAID']).default('COD'),
+})
+
+export const CancelOrderSchema = z.object({
+  reason: z.string().trim().min(3, 'Wajah likhen').max(200),
+})
+
+export const OrderListQuerySchema = CursorPaginationSchema.extend({
+  status: z
+    .enum([
+      'PENDING_CONFIRM',
+      'CONFIRMED',
+      'SENT_TO_SUPPLIER',
+      'DISPATCHED',
+      'DELIVERED',
+      'RTO',
+      'CANCELLED',
+    ])
+    .optional(),
+})
+
+export type CreateOrderInput = z.infer<typeof CreateOrderSchema>
+export type CancelOrderInput = z.infer<typeof CancelOrderSchema>
+export type OrderListQuery = z.infer<typeof OrderListQuerySchema>
+
+export type OtpRequestInput = z.infer<typeof OtpRequestSchema>
+export type OtpVerifyInput = z.infer<typeof OtpVerifySchema>
+export type CatalogueQuery = z.infer<typeof CatalogueQuerySchema>
+export type BazaarQuery = z.infer<typeof BazaarQuerySchema>
+export type SetRetailPriceInput = z.infer<typeof SetRetailPriceSchema>
+export type GenerateStatusPackInput = z.infer<typeof GenerateStatusPackSchema>

@@ -1,0 +1,14 @@
+/* سیل — bara badge, garam rang. Discount wale din ke liye. */
+:root {
+  --accent: #dc2626;
+  --badge-text: #ffffff;
+}
+
+.badge {
+  font-size: 52px;
+  transform: rotate(-2deg);
+}
+
+.price {
+  box-shadow: 0 12px 40px rgba(220, 38, 38, 0.45);
+}

@@ -1,0 +1,196 @@
+/*
+ * 🔴 Fonts SELF-HOSTED hain, Google CDN se nahi.
+ *
+ * Teen wajah:
+ *  1. Sadia ke phone par Nastaliq mojood ho ya na ho — app har jagah ek jaisi dikhni chahiye.
+ *  2. Status pack ka render bhi BILKUL yehi font file use karta hai (apps/worker), is liye
+ *     app mein jo nazar aata hai wohi image mein bhi aata hai.
+ *  3. CDN dheema ya block ho to Urdu naskh mein gir jati hai — Nastaliq ka poora mizaj chala jata hai.
+ */
+@import '@fontsource/noto-nastaliq-urdu/arabic-400.css';
+@import '@fontsource/noto-nastaliq-urdu/arabic-700.css';
+@import '@fontsource-variable/inter';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-urdu: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif;
+    --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-paper text-ink antialiased;
+  }
+
+  /*
+   * Nastaliq ki do zaruratein jo aam font ki nahi hotin:
+   *  · line-height ~2 — warna upar wali line ke haroof neeche wali par charh jate hain
+   *  · thora bara size — Nastaliq ka x-height chhota hota hai, 14px par parhi nahi jati
+   */
+  [lang='ur'] {
+    font-family: var(--font-urdu);
+    line-height: 2.05;
+    font-size: 1.03rem;
+    letter-spacing: 0;
+  }
+
+  [lang='en'] {
+    font-family: var(--font-sans);
+    line-height: 1.6;
+  }
+
+  /*
+   * Numbers, qeematein aur phone hamesha Inter mein — Nastaliq ke hindse chhote aur
+   * ghair-wazeh lagte hain, aur "Rs 2,850" parhna sab se ahem cheez hai.
+   */
+  [dir='ltr'],
+  input[type='number'],
+  input[type='tel'],
+  .numeric {
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-paper;
+  }
+
+  ::selection {
+    @apply bg-brand-200 text-brand-900;
+  }
+}
+
+@layer components {
+  /* ---------------------------------------------------------------- buttons */
+
+  .btn {
+    @apply inline-flex min-h-tap items-center justify-center gap-2 rounded-pill px-6 py-3
+           text-[0.95rem] font-semibold transition duration-200 ease-soft
+           active:scale-[0.98];
+  }
+
+  .btn-primary {
+    @apply btn bg-brand-700 text-white shadow-soft hover:bg-brand-800 hover:shadow-lift
+           disabled:opacity-50 disabled:shadow-none;
+  }
+
+  .btn-secondary {
+    @apply btn bg-paper-raised text-ink shadow-soft ring-1 ring-black/[0.06]
+           hover:shadow-lift disabled:opacity-50;
+  }
+
+  .btn-ghost {
+    @apply btn px-4 py-2 text-ink-soft hover:bg-black/[0.04] hover:text-ink;
+  }
+
+  /* ---------------------------------------------------------------- surfaces */
+
+  .card {
+    @apply rounded-card bg-paper-raised shadow-soft;
+  }
+
+  /*
+   * Product tile — border nahi, parchhain. Hover par thora upar uthta hai aur
+   * tasveer halki si zoom hoti hai; isi se "zinda" mehsoos hota hai.
+   *
+   * ⚠ `group` yahan @apply nahi ho sakta (Tailwind ki hadd) — is liye markup mein
+   * `class="tile group"` likha jata hai, taake `.tile-media` ka group-hover chale.
+   */
+  .tile {
+    @apply overflow-hidden rounded-card bg-paper-raised shadow-soft
+           transition duration-300 ease-soft hover:-translate-y-1 hover:shadow-lift;
+  }
+
+  .tile-media {
+    @apply w-full object-cover transition duration-500 ease-soft group-hover:scale-[1.04];
+  }
+
+  /* ---------------------------------------------------------------- type */
+
+  .display {
+    @apply text-[1.7rem] font-bold leading-[1.9] sm:text-[2.1rem];
+  }
+
+  .section-head {
+    @apply mb-4 flex items-baseline justify-between gap-4;
+  }
+
+  .section-title {
+    @apply text-[1.15rem] font-bold text-ink;
+  }
+
+  .section-link {
+    @apply inline-flex min-h-tap items-center text-sm font-semibold text-brand-700
+           underline-offset-4 transition hover:underline;
+  }
+
+  .muted {
+    @apply text-ink-soft;
+  }
+
+  /* ---------------------------------------------------------------- pills */
+
+  /* min-h-tap — ungli se lagne wala size. 37px ka chip sasta phone par miss hota hai. */
+  .chip {
+    @apply inline-flex min-h-tap shrink-0 items-center gap-1.5 rounded-pill bg-paper-raised px-5
+           text-sm text-ink-soft shadow-soft ring-1 ring-black/[0.04]
+           transition duration-200 ease-soft hover:-translate-y-0.5 hover:text-brand-700 hover:shadow-lift;
+  }
+
+  /* Footer/nav ke text links — tap ke liye poori bulandi */
+  .link-tap {
+    @apply inline-flex min-h-tap items-center transition hover:text-white;
+  }
+
+  .chip-active {
+    @apply bg-brand-700 text-white ring-0 hover:text-white;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-pill px-2.5 py-0.5 text-[0.7rem] font-semibold;
+  }
+
+  .badge-verified {
+    @apply badge bg-accent-50 text-accent-700;
+  }
+
+  .badge-live {
+    @apply badge bg-brand-50 text-brand-700;
+  }
+
+  /* ---------------------------------------------------------------- inputs */
+
+  .search-input {
+    @apply h-12 w-full rounded-pill bg-paper-raised px-6 text-[0.95rem] text-ink
+           shadow-soft ring-1 ring-black/[0.06] outline-none transition
+           placeholder:text-ink-faint focus:ring-2 focus:ring-brand-500;
+  }
+
+  .field {
+    @apply w-full rounded-2xl bg-paper-raised px-4 py-3 text-ink shadow-soft
+           ring-1 ring-black/[0.06] outline-none transition focus:ring-2 focus:ring-brand-500;
+  }
+
+  /* ---------------------------------------------------------------- misc */
+
+  .rail {
+    @apply flex gap-3 overflow-x-auto pb-2;
+    scrollbar-width: none;
+  }
+
+  .rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Halki si sunehri lakeer — sections ko baantne ke liye border se behtar */
+  .hairline {
+    @apply h-px w-full bg-gradient-to-l from-transparent via-black/[0.07] to-transparent;
+  }
+}
