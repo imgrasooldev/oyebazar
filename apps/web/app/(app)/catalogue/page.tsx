@@ -5,7 +5,8 @@ import { DownloadIcon, SparkIcon } from '@/components/icons'
 import { toResellerProductListItemDTO } from '@/lib/api/mappers'
 import { requireReseller } from '@/lib/api/session'
 import { container } from '@/lib/container'
-import { translator } from '@/lib/i18n'
+import { SearchSuggest } from '@/components/search-suggest'
+import { pickName, pickTitle, translator } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
 
 export const metadata: Metadata = { title: 'Catalogue' }
@@ -19,14 +20,26 @@ export const dynamic = 'force-dynamic'
  *
  * Har card par munafa numaya — kyunke wohi us ka faisla hai: is par kitna bachega?
  */
-export default async function CataloguePage() {
+export default async function CataloguePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; category?: string }>
+}) {
   const { reseller } = await requireReseller()
-  const locale = await getLocale()
+  const [locale, query] = await Promise.all([getLocale(), searchParams])
   const t = translator(locale)
 
-  const [page, dailyPacks] = await Promise.all([
-    container.catalogue.list(reseller.id, { limit: 24 }),
+  const search = query.q?.trim() || undefined
+  const category = query.category || undefined
+
+  const [page, dailyPacks, categories] = await Promise.all([
+    container.catalogue.list(reseller.id, {
+      limit: 24,
+      ...(search ? { search } : {}),
+      ...(category ? { categorySlug: category } : {}),
+    }),
     container.dailyDrops.packsForReseller(reseller.id, DEFAULT_TEMPLATE_KEY),
+    container.repositories.categories.findAll(),
   ])
   const items = page.items.map(toResellerProductListItemDTO)
   const readyCount = dailyPacks.filter((pack) => pack.imageUrl).length
@@ -34,7 +47,7 @@ export default async function CataloguePage() {
   return (
     <div className="space-y-10">
       {/* --------------------------------------------------------- آج کا پیک */}
-      {dailyPacks.length > 0 && (
+      {dailyPacks.length > 0 && !search && !category && (
         <section className="overflow-hidden rounded-card bg-coal-900 text-white shadow-lift">
           <div className="flex flex-wrap items-center gap-3 px-6 pb-4 pt-6">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-brand-500/20 text-brand-300">
@@ -57,7 +70,7 @@ export default async function CataloguePage() {
                       // eslint-disable-next-line @next/next/no-img-element -- storage URLs
                       <img
                         src={pack.imageUrl ?? pack.coverImageUrl ?? ''}
-                        alt={pack.titleUr}
+                        alt={pickTitle(locale, pack)}
                         loading="lazy"
                         className="h-full w-full object-cover transition duration-500 ease-soft group-hover:scale-105"
                       />
@@ -69,7 +82,7 @@ export default async function CataloguePage() {
                       </span>
                     )}
                   </div>
-                  <p className="mt-2 truncate text-[0.82rem] text-white/90">{pack.titleUr}</p>
+                  <p className="mt-2 truncate text-[0.82rem] text-white/90">{pickTitle(locale, pack)}</p>
                   <p dir="ltr" className="numeric text-[0.82rem] font-bold text-brand-300">
                     {formatPkr(pack.myPrice)}
                   </p>
@@ -82,11 +95,45 @@ export default async function CataloguePage() {
 
       {/* --------------------------------------------------------- سارا مال */}
       <section>
-        <div className="mb-5 flex items-end justify-between gap-4">
-          <h1 className="text-[1.35rem] font-bold tracking-tight">{t('allStock')}</h1>
-          <span className="numeric text-sm text-ink-faint">
-            {items.length} {t('items')}
-          </span>
+        <div className="mb-5 space-y-4">
+          <div className="flex items-end justify-between gap-4">
+            <h1 className="text-[1.35rem] font-bold tracking-tight">
+              {search ? `"${search}"` : t('allStock')}
+            </h1>
+            <span className="numeric text-sm text-ink-faint">
+              {items.length} {t('items')}
+            </span>
+          </div>
+
+          {/* Search — tajweez wali patti, taake poora naam yaad na karna pare */}
+          <SearchSuggest
+            locale={locale}
+            source="catalogue"
+            action="/catalogue"
+            defaultValue={search ?? ''}
+            className="max-w-xl"
+          />
+
+          {/* Category ki qatar — chhoti screen par bagal mein sarakti hai */}
+          <div className="rail">
+            <Link
+              href="/catalogue"
+              className={!category ? 'chip chip-active' : 'chip'}
+              scroll={false}
+            >
+              {t('all')}
+            </Link>
+            {categories.map((item) => (
+              <Link
+                key={item.slug}
+                href={{ pathname: '/catalogue', query: { category: item.slug } }}
+                className={item.slug === category ? 'chip chip-active' : 'chip'}
+                scroll={false}
+              >
+                {pickName(locale, item)}
+              </Link>
+            ))}
+          </div>
         </div>
 
         {items.length === 0 ? (

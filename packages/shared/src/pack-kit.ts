@@ -98,8 +98,13 @@ export const PACK_PLATFORM_KEYS = Object.keys(PACK_PLATFORMS) as PackPlatformKey
 /** Kit mein yehi naap bante hain — chaaron platforms ki zarooraton ka ittehad. */
 export const KIT_FORMATS: PackFormatKey[] = ['story', 'square', 'portrait', 'wide']
 
+/** Caption kis likhawat mein — Urdu script ya Latin (Roman/English). */
+export type CaptionScript = 'ur' | 'roman'
+
 export interface CaptionInput {
   readonly titleUr: string
+  /** Roman/English zaban par yehi naam jata hai — Urdu script wahan ajnabi lagti hai */
+  readonly titleEn: string
   readonly priceText: string
   readonly resellerName: string
   readonly resellerPhone: string
@@ -115,36 +120,51 @@ export interface CaptionInput {
  *  · Facebook — log tafseel parhte hain aur comment mein poochhte hain, is liye lamba
  *
  * Number har jagah likha jata hai: reseller ka poora karobar isi ek line par chalta hai.
+ *
+ * 🔴 Caption us zaban mein banta hai jo reseller ne app mein chuni hai. Wajah: wo isay
+ * copy kar ke apne customers ko bhejti hai — jo Roman mein likhti hai, us ke customer
+ * bhi Roman parhte hain. Urdu script ka caption us ke liye bekar hai.
  */
-export function buildCaption(platform: PackPlatformKey, input: CaptionInput): string {
-  const { titleUr, priceText, resellerName, resellerPhone, city } = input
-  const order = `آرڈر کے لیے واٹس ایپ کریں: ${resellerPhone}`
+export function buildCaption(
+  platform: PackPlatformKey,
+  input: CaptionInput,
+  script: CaptionScript = 'ur',
+): string {
+  const roman = script === 'roman'
+  const { priceText, resellerName, resellerPhone, city } = input
+  const order = roman
+    ? `Order ke liye WhatsApp karen: ${resellerPhone}`
+    : `آرڈر کے لیے واٹس ایپ کریں: ${resellerPhone}`
+
+  const title = roman ? input.titleEn : input.titleUr
+  const priceLine = roman ? `Rate: ${priceText}` : `قیمت: ${priceText}`
+  const delivery = roman
+    ? city
+      ? `Delivery: ${city} aur poore Pakistan mein`
+      : 'Delivery poore Pakistan mein'
+    : city
+      ? `ڈیلیوری: ${city} اور پورے پاکستان میں`
+      : 'ڈیلیوری پورے پاکستان میں'
 
   switch (platform) {
     case 'whatsapp':
-      return [`${titleUr}`, `قیمت: ${priceText}`, '', order].join('\n')
+      return [title, priceLine, '', order].join('\n')
 
     case 'instagram':
-      return [
-        `${titleUr}`,
-        `قیمت: ${priceText}`,
-        '',
-        order,
-        city ? `ڈیلیوری: ${city} اور پورے پاکستان میں` : 'ڈیلیوری پورے پاکستان میں',
-        '',
-        hashtags(titleUr, city),
-      ].join('\n')
+      return [title, priceLine, '', order, delivery, '', hashtags(city)].join('\n')
 
     case 'tiktok':
-      return [`${titleUr} — ${priceText}`, order, '', hashtags(titleUr, city)].join('\n')
+      return [`${title} — ${priceText}`, order, '', hashtags(city)].join('\n')
 
     case 'facebook':
       return [
-        `${titleUr}`,
-        `قیمت: ${priceText}`,
+        title,
+        priceLine,
         '',
-        'کیش آن ڈیلیوری — مال دیکھ کر پیسے دیں۔',
-        city ? `${city} میں ڈیلیوری، اور پورے پاکستان میں بھی۔` : 'ڈیلیوری پورے پاکستان میں۔',
+        roman
+          ? 'Cash on delivery — maal dekh kar paise den.'
+          : 'کیش آن ڈیلیوری — مال دیکھ کر پیسے دیں۔',
+        delivery,
         '',
         order,
         `— ${resellerName}`,
@@ -159,10 +179,8 @@ export function buildCaption(platform: PackPlatformKey, input: CaptionInput): st
  * mein search karte hain, aur Urdu hashtag par trafik na hone ke barabar hai. Sheher ka
  * hashtag sab se kaam ka hai — kharidar apne shehr se lena chahta hai (delivery jaldi).
  */
-function hashtags(titleUr: string, city?: string): string {
+function hashtags(city?: string): string {
   const base = ['#Pakistan', '#OnlineShoppingPakistan', '#CashOnDelivery', '#Wholesale']
   const cityTag = city ? `#${city.replace(/\s+/g, '')}` : null
-  // titleUr ko hashtag nahi banate — Urdu hashtag par koi search nahi karta
-  void titleUr
   return [...(cityTag ? [cityTag] : []), ...base].join(' ')
 }

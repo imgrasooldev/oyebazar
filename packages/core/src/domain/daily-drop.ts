@@ -20,6 +20,8 @@ export interface BroadcastRecipient {
 export interface DailyPackItem {
   readonly productId: string
   readonly titleUr: string
+  /** Angrezi/Roman zaban ke liye — warna English par bhi Urdu naam dikhta hai */
+  readonly titleEn: string
   readonly coverImageUrl: string | null
   readonly bajiPrice: Pkr
   readonly myPrice: Pkr

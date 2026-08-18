@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { BRAND } from '@oyebazar/shared'
 import { LanguageToggle } from '@/components/language-toggle'
-import { SearchIcon } from '@/components/icons'
+import { SearchSuggest } from '@/components/search-suggest'
 import { translator, type Locale } from '@/lib/i18n'
 
 /**
@@ -56,25 +56,13 @@ export function SiteHeader({
               </span>
             </Link>
 
-            <form action="/bazaar" className="relative hidden flex-1 sm:block">
-              <span className="pointer-events-none absolute inset-y-0 start-5 flex items-center text-ink-faint">
-                <SearchIcon />
-              </span>
-              <input
-                type="search"
-                name="q"
-                defaultValue={query}
-                placeholder={t('searchPlaceholder')}
-                className="search-input ps-14"
-                aria-label={t('search')}
-              />
-              <button
-                type="submit"
-                className="absolute inset-y-1 end-1 rounded-pill bg-brand-700 px-6 text-sm font-semibold text-white transition hover:bg-brand-800"
-              >
-                {t('search')}
-              </button>
-            </form>
+            <SearchSuggest
+              locale={locale}
+              source="public"
+              action="/bazaar"
+              defaultValue={query ?? ''}
+              className="hidden flex-1 sm:block"
+            />
 
             <Link
               href={loggedIn ? '/catalogue' : '/login'}
@@ -84,25 +72,15 @@ export function SiteHeader({
             </Link>
           </div>
 
-          <form action="/bazaar" className="relative mt-3 sm:hidden">
-            <span className="pointer-events-none absolute inset-y-0 start-5 flex items-center text-ink-faint">
-              <SearchIcon />
-            </span>
-            <input
-              type="search"
-              name="q"
-              defaultValue={query}
-              placeholder={t('searchPlaceholder')}
-              className="search-input ps-14"
-              aria-label={t('search')}
-            />
-            <button
-              type="submit"
-              className="absolute inset-y-1 end-1 rounded-pill bg-brand-700 px-5 text-sm font-semibold text-white"
-            >
-              {t('search')}
-            </button>
-          </form>
+          {/* Mobile par search apni line mein — ek row mein wo itna chhota reh jata hai
+              ke likha hua nazar nahi aata */}
+          <SearchSuggest
+            locale={locale}
+            source="public"
+            action="/bazaar"
+            defaultValue={query ?? ''}
+            className="mt-3 sm:hidden"
+          />
         </div>
       </div>
     </header>

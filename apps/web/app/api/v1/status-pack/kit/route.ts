@@ -4,6 +4,7 @@ import { apiHandler, parseBody, parseQuery } from '@/lib/api/handler'
 import { toPackKitDTO } from '@/lib/api/mappers'
 import { requireReseller } from '@/lib/api/session'
 import { container } from '@/lib/container'
+import { getLocale } from '@/lib/i18n-server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -23,6 +24,11 @@ export async function POST(request: Request) {
     const { reseller } = await requireReseller()
     const body = await parseBody(request, GenerateStatusPackSchema)
 
+    // Caption usi likhawat mein jo reseller ne chuni hai — wo isay copy kar ke apne
+    // customers ko bhejti hai, aur Roman likhne wali ke customers Urdu script nahi parhte
+    const locale = await getLocale()
+    const script = locale === 'ur' ? 'ur' : 'roman'
+
     const result = await container.statusPacks.generateKit(
       {
         resellerId: reseller.id,
@@ -31,6 +37,7 @@ export async function POST(request: Request) {
         retailPrice: body.retailPrice !== undefined ? pkr(body.retailPrice) : undefined,
       },
       reseller,
+      script,
     )
 
     return toPackKitDTO(result, { productId: body.productId, templateKey: body.templateKey })
@@ -48,12 +55,17 @@ export async function GET(request: Request) {
   return apiHandler(async () => {
     const { reseller } = await requireReseller()
     const query = parseQuery(request, PollQuerySchema)
+    const locale = await getLocale()
 
-    const result = await container.statusPacks.getKitStatus(reseller, {
-      productId: query.productId,
-      templateKey: query.templateKey,
-      priceUsed: pkr(query.priceUsed),
-    })
+    const result = await container.statusPacks.getKitStatus(
+      reseller,
+      {
+        productId: query.productId,
+        templateKey: query.templateKey,
+        priceUsed: pkr(query.priceUsed),
+      },
+      locale === 'ur' ? 'ur' : 'roman',
+    )
 
     return result
       ? toPackKitDTO(result, { productId: query.productId, templateKey: query.templateKey })

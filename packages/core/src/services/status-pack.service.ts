@@ -17,6 +17,7 @@ import {
   PACK_PLATFORM_KEYS,
   buildCaption,
   formatPkr,
+  type CaptionScript,
   type PackFormatKey,
   type PackPlatformKey,
   type Pkr,
@@ -151,6 +152,8 @@ export class StatusPackService {
   async generateKit(
     cmd: Omit<GenerateStatusPackCommand, 'format'>,
     reseller: ResellerView,
+    /** Caption kis likhawat mein — reseller ki chuni hui zaban se aata hai */
+    script: CaptionScript = 'ur',
   ): Promise<StatusPackKitResult> {
     const product = await this.products.findForRender(cmd.productId)
     if (!product) throw new NotFoundError('Product', cmd.productId)
@@ -203,7 +206,7 @@ export class StatusPackService {
 
     return {
       assets,
-      captions: this.buildCaptions(product, priceUsed, reseller),
+      captions: this.buildCaptions(product, priceUsed, reseller, script),
       platforms: PACK_PLATFORM_KEYS.map((key) => ({
         key,
         formats: PACK_PLATFORMS[key].formats,
@@ -216,6 +219,7 @@ export class StatusPackService {
   async getKitStatus(
     reseller: ResellerView,
     key: { productId: string; templateKey: string; priceUsed: Pkr },
+    script: CaptionScript = 'ur',
   ): Promise<StatusPackKitResult | null> {
     const existing = await this.packs.findKit({ resellerId: reseller.id, ...key })
     if (existing.length === 0) return null
@@ -230,7 +234,7 @@ export class StatusPackService {
         const pack = byFormat.get(format)
         return pack ? [{ format, pack, status: pack.imageUrl ? ('READY' as const) : ('RENDERING' as const) }] : []
       }),
-      captions: this.buildCaptions(product, key.priceUsed, reseller),
+      captions: this.buildCaptions(product, key.priceUsed, reseller, script),
       platforms: PACK_PLATFORM_KEYS.map((platform) => ({
         key: platform,
         formats: PACK_PLATFORMS[platform].formats,
@@ -276,9 +280,11 @@ export class StatusPackService {
     product: RenderProductView,
     price: Pkr,
     reseller: ResellerView,
+    script: CaptionScript = 'ur',
   ): Record<PackPlatformKey, string> {
     const input = {
       titleUr: product.titleUr,
+      titleEn: product.titleEn,
       priceText: formatPkr(price),
       resellerName: reseller.name,
       resellerPhone: reseller.whatsappPhone,
@@ -286,7 +292,7 @@ export class StatusPackService {
     }
 
     return Object.fromEntries(
-      PACK_PLATFORM_KEYS.map((platform) => [platform, buildCaption(platform, input)]),
+      PACK_PLATFORM_KEYS.map((platform) => [platform, buildCaption(platform, input, script)]),
     ) as Record<PackPlatformKey, string>
   }
 

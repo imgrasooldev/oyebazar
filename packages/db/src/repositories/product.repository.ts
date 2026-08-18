@@ -233,7 +233,7 @@ export class PrismaProductRepository implements ProductRepository {
       status: 'LIVE',
       // 🔴 Bazaar par sirf wo suppliers jo listed + verified hain
       supplier: { listedOnBazaar: true, status: 'VERIFIED' },
-      ...(filters.categorySlug ? { category: { slug: filters.categorySlug } } : {}),
+      ...(filters.categorySlug ? { category: categoryFilter(filters.categorySlug) } : {}),
       ...(filters.search ? { OR: searchClause(filters.search) } : {}),
     }
   }
@@ -242,7 +242,7 @@ export class PrismaProductRepository implements ProductRepository {
     return {
       status: filters.inStockOnly ? 'LIVE' : { in: ['LIVE', 'OUT_OF_STOCK'] },
       supplier: { status: 'VERIFIED' },
-      ...(filters.categorySlug ? { category: { slug: filters.categorySlug } } : {}),
+      ...(filters.categorySlug ? { category: categoryFilter(filters.categorySlug) } : {}),
       ...(filters.search ? { OR: searchClause(filters.search) } : {}),
       ...(filters.minPrice !== undefined || filters.maxPrice !== undefined
         ? {
@@ -318,4 +318,15 @@ function toResellerView(row: ResellerRow): ResellerProductView {
       inStock: v.stockQty > 0,
     })),
   }
+}
+
+/**
+ * Category ka filter — apni category YA us ki bari category.
+ *
+ * 🔴 Maal hamesha SUB-category par lagta hai (lawn, abaya…), magar sidebar aur chips
+ * BARI category dikhate hain (kapra aur malbusat). Sirf `slug` par match karte to
+ * "کپڑا" par click karne se 0 nataij aate — aur user samajhta ke maal hai hi nahi.
+ */
+function categoryFilter(slug: string): Prisma.CategoryWhereInput {
+  return { OR: [{ slug }, { parent: { slug } }] }
 }

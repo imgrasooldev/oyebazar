@@ -8,6 +8,7 @@
     "start": "tsx src/index.ts",
     "render:preview": "tsx src/cli/render-preview.ts",
     "render:pending": "dotenv -e ../../.env -- tsx src/cli/render-pending.ts",
+    "render:watch": "dotenv -e ../../.env -- tsx src/cli/render-watch.ts",
     "shoot": "tsx src/cli/shoot-pages.ts",
     "mobile:audit": "tsx src/cli/mobile-audit.ts",
     "daily:dev": "dotenv -e ../../.env -- tsx src/cli/daily-dev.ts",

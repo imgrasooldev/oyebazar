@@ -121,6 +121,7 @@ export class DailyDropService {
         return {
           productId,
           titleUr: product.titleUr,
+          titleEn: product.titleEn,
           coverImageUrl: product.coverImageUrl,
           bajiPrice: product.bajiPrice,
           myPrice,
