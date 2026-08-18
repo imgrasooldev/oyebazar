@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#d42561',
+  themeColor: '#F2600C',
   width: 'device-width',
   initialScale: 1,
   // sasta Android + bara font: zoom band karna galti hoti hai

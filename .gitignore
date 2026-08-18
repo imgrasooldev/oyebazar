@@ -4,6 +4,7 @@ dist/
 # local Postgres ka data (tools/local-db.mjs)
 .local/
 .next/
+.next-local/
 out/
 .turbo/
 coverage/

@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Dev server aur build dono default '.next' mein likhte hain — ek saath chalen to
+  // chunks aadhe likhe jate hain aur dev "Cannot find module './157.js'" par mar jata hai.
+  // Local par verify karne ke liye `pnpm build:local` alag folder use karta hai.
+  distDir: process.env.NEXT_DIST_DIR ?? '.next',
   // Fly.io par Docker image chhoti rakhne ke liye
   output: 'standalone',
   // workspace packages TS source se aate hain (koi build step nahi)

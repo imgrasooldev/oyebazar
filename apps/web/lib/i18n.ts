@@ -214,6 +214,21 @@ const DICTIONARY = {
   otherOrders: { ur: 'باقی آرڈرز', en: 'Other orders' },
   noOrdersYet: { ur: 'ابھی کوئی آرڈر نہیں۔', en: 'No orders yet.' },
   seeCatalogue: { ur: 'کیٹلاگ دیکھیں', en: 'Browse catalogue' },
+
+  // 404 / error — mara hua link ya server ki kharabi
+  notFoundTitle: { ur: 'یہ صفحہ نہیں ملا', en: 'Page not found' },
+  notFoundBody: {
+    ur: 'ہو سکتا ہے لنک پرانا ہو یا وہ چیز اب بازار میں نہ ہو۔ نیچے سے بازار دیکھ لیں۔',
+    en: 'The link may be old, or that item is no longer listed. Browse the bazaar below.',
+  },
+  goToBazaar: { ur: 'بازار دیکھیں', en: 'Go to bazaar' },
+  goHome: { ur: 'صفحۂ اول', en: 'Home' },
+  errorTitle: { ur: 'کچھ گڑبڑ ہو گئی', en: 'Something went wrong' },
+  errorBody: {
+    ur: 'ہمارے سرور میں مسئلہ ہے، آپ کی غلطی نہیں۔ دوبارہ کوشش کریں۔',
+    en: 'A problem on our side, not yours. Please try again.',
+  },
+  tryAgain: { ur: 'دوبارہ کوشش کریں', en: 'Try again' },
   confirm: { ur: 'تصدیق کریں', en: 'Confirm' },
   confirmQuestion: {
     ur: 'کیا کسٹمر سے بات ہو گئی ہے اور اس نے آرڈر پکا کیا ہے؟',
