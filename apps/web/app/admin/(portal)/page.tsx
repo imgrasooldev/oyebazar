@@ -78,14 +78,24 @@ export default async function AdminDashboard() {
             label="Active resellers"
             value={stats.resellersActive}
           />
+          {/*
+            Do alag number, jaan boojh kar: kamai wohi hai jis ka maal pohanch chuka.
+            Raste ka order abhi kamai nahi — wo RTO bhi ho sakta hai.
+          */}
           <div className="card p-5">
             <p className="text-[0.72rem] uppercase tracking-wider text-ink-faint">
-              Fee pending this month
+              Fee earned this month
             </p>
             <p dir="ltr" className="numeric mt-2 text-[1.6rem] font-bold text-accent-700">
-              {formatPkr(stats.feePendingThisMonth)}
+              {formatPkr(stats.feeEarnedThisMonth)}
             </p>
-            <p className="mt-1 text-[0.78rem] text-ink-faint">Earned, not yet invoiced</p>
+            <p className="mt-1 text-[0.78rem] text-ink-faint">
+              Delivered orders only ·{' '}
+              <span dir="ltr" className="numeric">
+                {formatPkr(stats.feeInFlight)}
+              </span>{' '}
+              still in transit
+            </p>
           </div>
         </div>
       </section>

@@ -27,6 +27,8 @@ class FakeFeeLedger implements FeeLedgerRepository {
   ) {}
 
   async create() {}
+
+  async markEarned() {}
   async markWrittenOff() {}
   async findByOrderId() {
     return null

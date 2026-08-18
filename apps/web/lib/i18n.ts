@@ -400,6 +400,27 @@ const DICTIONARY = {
   runningOrders: { ur: 'چل رہے آرڈرز', en: 'In progress', rm: 'Chal rahe orders' },
   finishedOrders: { ur: 'مکمل شدہ', en: 'Completed', rm: 'Mukammal shuda' },
   noSupplierOrders: { ur: 'ابھی کوئی آرڈر نہیں آیا۔', en: 'No orders yet.', rm: 'Abhi koi order nahi aaya.' },
+  // ---- Wholesaler apna maal daalta hai ----
+  addProduct: { ur: 'نیا مال شامل کریں', rm: 'Naya maal shamil karen', en: 'Add product' },
+  productNameUr: { ur: 'مال کا نام (اردو)', rm: 'Maal ka naam (Urdu)', en: 'Product name (Urdu)' },
+  productNameEn: { ur: 'نام (English)', rm: 'Naam (English)', en: 'Name (English)' },
+  category: { ur: 'کیٹگری', rm: 'Category', en: 'Category' },
+  yourRate: { ur: 'آپ کا ریٹ', rm: 'Aap ka rate', en: 'Your rate' },
+  youGet: { ur: 'آپ کو ملیں گے', rm: 'Aap ko milenge', en: 'You get' },
+  ourFee: { ur: 'ہماری فیس', rm: 'Hamari fees', en: 'Our fee' },
+  resellerSees: { ur: 'ری سیلر کو دکھے گا', rm: 'Reseller ko dikhega', en: 'Reseller sees' },
+  photoUrlOptional: { ur: 'تصویر کا لنک (اختیاری)', rm: 'Tasveer ka link (marzi ka)', en: 'Photo link (optional)' },
+  detailsOptional: { ur: 'تفصیل (اختیاری)', rm: 'Tafseel (marzi ka)', en: 'Details (optional)' },
+  productAddedDraft: {
+    ur: 'مال شامل ہو گیا — ٹیم کی منظوری کے بعد ری سیلرز کو دکھے گا۔',
+    rm: 'Maal shamil ho gaya — team ki manzoori ke baad resellers ko dikhega.',
+    en: 'Added — it shows to resellers once the team approves it.',
+  },
+  productDraftNote: {
+    ur: 'نیا مال پہلے ٹیم دیکھتی ہے۔ منظوری کے بعد ری سیلرز کے کیٹلاگ میں آ جاتا ہے۔',
+    rm: 'Naya maal pehle team dekhti hai. Manzoori ke baad resellers ke catalogue mein aa jata hai.',
+    en: 'New stock is reviewed by the team first, then appears in the reseller catalogue.',
+  },
   myStock: { ur: 'میرا مال', en: 'My stock', rm: 'Mera maal' },
   noSupplierProducts: { ur: 'ابھی آپ کا کوئی مال درج نہیں۔', en: 'No products listed yet.', rm: 'Abhi aap ka koi maal darj nahi.' },
   stockBody: {

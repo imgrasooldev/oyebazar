@@ -178,6 +178,7 @@ function build(): Container {
     ),
     supplierCatalogue: new SupplierCatalogueService(
       repositories.supplierProducts,
+      repositories.suppliers,
       analytics,
       logger,
     ),

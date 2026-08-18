@@ -31,6 +31,14 @@ export class PrismaFeeLedgerRepository implements FeeLedgerRepository {
     })
   }
 
+  async markEarned(orderId: string, at: Date): Promise<void> {
+    // Sirf PENDING se EARNED — pehle se invoiced ya written-off row ko chherna nahi
+    await this.db.feeLedger.updateMany({
+      where: { orderId, status: 'PENDING' },
+      data: { status: 'EARNED', earnedAt: at },
+    })
+  }
+
   async markWrittenOff(orderId: string, reason: string): Promise<void> {
     const existing = await this.db.feeLedger.findUnique({
       where: { orderId },
@@ -67,7 +75,9 @@ export class PrismaFeeLedgerRepository implements FeeLedgerRepository {
   async summarisePending(period: { from: Date; to: Date }): Promise<SupplierFeeSummary[]> {
     const grouped = await this.db.feeLedger.groupBy({
       by: ['supplierId'],
-      where: { status: 'PENDING', createdAt: { gte: period.from, lt: period.to } },
+      // 🔴 EARNED, PENDING nahi: raste mein para hua order abhi kamai nahi hai. Mahina
+      // bhi earnedAt se ginte hain — order 28 ko lag sakta hai aur maal agle mahine pohanche.
+      where: { status: 'EARNED', earnedAt: { gte: period.from, lt: period.to } },
       _sum: { amount: true },
       _count: { _all: true },
     })
@@ -108,8 +118,8 @@ export class PrismaFeeLedgerRepository implements FeeLedgerRepository {
       const target = await tx.feeLedger.findMany({
         where: {
           supplierId: input.supplierId,
-          status: 'PENDING',
-          createdAt: { gte: input.from, lt: input.to },
+          status: 'EARNED',
+          earnedAt: { gte: input.from, lt: input.to },
         },
         select: { id: true, amount: true },
       })

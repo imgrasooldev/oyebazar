@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { formatPkr } from '@oyebazar/shared'
+import { SupplierAddProduct } from '@/components/supplier-add-product'
 import { SupplierStockToggle } from '@/components/supplier-stock-toggle'
 import { requireSupplier } from '@/lib/api/supplier-session'
 import { container } from '@/lib/container'
@@ -27,7 +28,11 @@ export default async function SupplierStockPage() {
   const locale = await getLocale()
   const t = translator(locale)
 
-  const products = await container.supplierCatalogue.listMyProducts(supplier.id)
+  const [products, categories, internal] = await Promise.all([
+    container.supplierCatalogue.listMyProducts(supplier.id),
+    container.repositories.categories.findAll(),
+    container.repositories.suppliers.findInternal(supplier.id),
+  ])
 
   return (
     <div className="space-y-6">
@@ -35,6 +40,14 @@ export default async function SupplierStockPage() {
         <h1 className="text-[1.35rem] font-bold tracking-tight">{t('myStock')}</h1>
         <p className="mt-1 text-[0.92rem] leading-relaxed text-ink-soft">{t('stockBody')}</p>
       </div>
+
+      {/* Apna maal daalne ka rasta sab se upar — yehi wo kaam hai jo naya wholesaler
+          pehle din karna chahta hai */}
+      <SupplierAddProduct
+        categories={categories}
+        feeRateBps={internal?.feeRateBps ?? 500}
+        locale={locale}
+      />
 
       {products.length === 0 && (
         <div className="card p-8 text-center text-ink-soft">{t('noSupplierProducts')}</div>

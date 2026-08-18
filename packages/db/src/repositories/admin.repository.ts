@@ -111,6 +111,7 @@ export class PrismaAdminRepository implements AdminRepository {
       productsDraft,
       resellersActive,
       feeSum,
+      feeInFlight,
     ] = await this.db.$transaction([
       this.db.order.count({ where: { status: 'PENDING_CONFIRM' } }),
       this.db.order.count({ where: { status: { in: ['SENT_TO_SUPPLIER', 'CONFIRMED'] } } }),
@@ -119,8 +120,14 @@ export class PrismaAdminRepository implements AdminRepository {
       this.db.supplier.count({ where: { status: 'PENDING' } }),
       this.db.product.count({ where: { status: 'DRAFT' } }),
       this.db.reseller.count({ where: { status: 'ACTIVE' } }),
+      // Is mahine ki asli kamai — maal pohanch chuka hai
       this.db.feeLedger.aggregate({
-        where: { status: 'PENDING', createdAt: { gte: startOfMonth } },
+        where: { status: { in: ['EARNED', 'INVOICED', 'COLLECTED'] }, earnedAt: { gte: startOfMonth } },
+        _sum: { amount: true },
+      }),
+      // Raste mein — abhi kamai nahi, magar ops ko dikhna chahiye ke kitna daanv par hai
+      this.db.feeLedger.aggregate({
+        where: { status: 'PENDING' },
         _sum: { amount: true },
       }),
     ])
@@ -133,7 +140,8 @@ export class PrismaAdminRepository implements AdminRepository {
       suppliersPending,
       productsDraft,
       resellersActive,
-      feePendingThisMonth: pkr(feeSum._sum.amount ?? 0),
+      feeEarnedThisMonth: pkr(feeSum._sum.amount ?? 0),
+      feeInFlight: pkr(feeInFlight._sum.amount ?? 0),
     }
   }
 

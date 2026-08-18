@@ -54,8 +54,10 @@ export interface AdminDashboardStats {
   /** DRAFT maal — ops ki manzoori ke baghair reseller ise dekh hi nahi sakti */
   readonly productsDraft: number
   readonly resellersActive: number
-  /** Is mahine ki kamai (sirf wo jo abhi tak wasool nahi hui) */
-  readonly feePendingThisMonth: Pkr
+  /** Is mahine ki asli kamai — sirf wo order jin ka maal pohanch chuka hai */
+  readonly feeEarnedThisMonth: Pkr
+  /** Raste mein pare orders ki fee — abhi kamai nahi, magar daanv par hai */
+  readonly feeInFlight: Pkr
 }
 
 export interface AdminSupplierRow {

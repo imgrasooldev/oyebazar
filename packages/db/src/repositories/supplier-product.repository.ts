@@ -8,7 +8,12 @@
  * mein likhi hai, kisi upar wale `if` par nahi chhori.
  */
 import type { PrismaClient } from '@prisma/client'
-import type { SupplierProductRepository, SupplierProductView } from '@oyebazar/core'
+import type {
+  NewSupplierProduct,
+  SupplierProductRepository,
+  SupplierProductView,
+} from '@oyebazar/core'
+import { NotFoundError } from '@oyebazar/shared'
 import { pkr } from '@oyebazar/shared'
 
 /** Ye order abhi chal rahe hain — inhen stock band karne se pehle dikhna chahiye. */
@@ -22,6 +27,75 @@ const OPEN_STATUSES = [
 
 export class PrismaSupplierProductRepository implements SupplierProductRepository {
   constructor(private readonly db: PrismaClient) {}
+
+  /**
+   * Naya maal — hamesha DRAFT aur bina stock ke.
+   *
+   * 🔴 `status: 'DRAFT'` yahan hard-code hai, caller se nahi aata: warna kal koi naya
+   * endpoint ghalti se LIVE bhej deta aur bina dekha hua maal seedha reseller ke
+   * catalogue mein aa jata.
+   */
+  async create(input: NewSupplierProduct): Promise<{ id: string }> {
+    // Maal sub-category par lagta hai; slug se dhoondte hain
+    const category = await this.db.category.findUnique({
+      where: { slug: input.categorySlug },
+      select: { id: true },
+    })
+    if (!category) throw new NotFoundError('Category', input.categorySlug)
+
+    return this.db.$transaction(async (tx) => {
+      const product = await tx.product.create({
+        data: {
+          slug: await this.uniqueSlug(tx, input.titleEn || input.titleUr),
+          supplierId: input.supplierId,
+          titleUr: input.titleUr,
+          titleEn: input.titleEn,
+          ...(input.descriptionUr ? { descriptionUr: input.descriptionUr } : {}),
+          categoryId: category.id,
+          supplierPrice: input.supplierPrice,
+          bajiPrice: input.bajiPrice,
+          suggestedRetail: input.suggestedRetail,
+          status: 'DRAFT',
+        },
+        select: { id: true },
+      })
+
+      if (input.imageUrl) {
+        await tx.productMedia.create({
+          data: {
+            productId: product.id,
+            originalUrl: input.imageUrl,
+            processedUrl: input.imageUrl,
+            // Status pack isi tasveer par banta hai
+            isStatusSource: true,
+            sortOrder: 0,
+          },
+        })
+      }
+
+      return product
+    })
+  }
+
+  /** Slug naam se; Urdu naam par kuch nahi bachta, to "item" + number. */
+  private async uniqueSlug(
+    tx: { product: { findUnique: PrismaClient['product']['findUnique'] } },
+    name: string,
+  ): Promise<string> {
+    const base =
+      name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 40) || 'item'
+
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      const slug = attempt === 0 ? base : `${base}-${attempt + 1}`
+      const taken = await tx.product.findUnique({ where: { slug }, select: { id: true } })
+      if (!taken) return slug
+    }
+    return `${base}-${Date.now()}`
+  }
 
   async listForSupplier(supplierId: string): Promise<SupplierProductView[]> {
     const rows = await this.db.product.findMany({

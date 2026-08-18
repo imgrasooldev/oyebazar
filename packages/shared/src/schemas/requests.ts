@@ -37,6 +37,24 @@ export const OtpRequestSchema = z.object({
  * pata. NTN marzi ka hai — bohat si dukanen registered nahi hotin, aur usay lazmi karne
  * ka matlab hai aadhi mandi ko darwaze par rok dena.
  */
+/**
+ * Wholesaler apna maal daalta hai.
+ *
+ * Sirf apna rate deta hai — hamara rate (aur reseller ko dikhne wala) server par banta
+ * hai. Agar ye client se aata to koi bhi apni marzi ka rate bhej kar hamari fee ura
+ * sakta tha.
+ */
+export const NewProductSchema = z
+  .object({
+    titleUr: z.string().trim().min(2, 'مال کا نام لکھیں').max(80),
+    titleEn: z.string().trim().min(2, 'English name').max(80),
+    descriptionUr: z.string().trim().max(300).optional(),
+    categorySlug: z.string().trim().min(2),
+    supplierPrice: z.number().int().positive('ریٹ لکھیں').max(1_000_000),
+    imageUrl: z.string().url().max(500).optional(),
+  })
+  .strict()
+
 export const SupplierApplicationSchema = z
   .object({
     businessName: z.string().trim().min(2, 'دکان کا نام لکھیں').max(80),

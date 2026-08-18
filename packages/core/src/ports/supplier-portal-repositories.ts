@@ -53,7 +53,29 @@ export interface SupplierProductView {
   readonly openOrders: number
 }
 
+export interface NewSupplierProduct {
+  readonly supplierId: string
+  readonly titleUr: string
+  readonly titleEn: string
+  readonly descriptionUr?: string | undefined
+  readonly categorySlug: string
+  /** Wholesaler ka apna rate — hamara rate is par fee lagā kar banta hai */
+  readonly supplierPrice: Pkr
+  readonly bajiPrice: Pkr
+  readonly suggestedRetail: Pkr
+  readonly imageUrl?: string | undefined
+}
+
 export interface SupplierProductRepository {
+  /**
+   * Naya maal — hamesha DRAFT.
+   *
+   * 🔴 Wholesaler khud apna maal LIVE nahi kar sakta. Us ka daala hua rate, tasveer aur
+   * naam ops dekhti hai; ek ghalat rate ya bina tasveer ka maal poore catalogue ki
+   * sakh khata hai (reseller usay apne status par lagati hai).
+   */
+  create(input: NewSupplierProduct): Promise<{ id: string }>
+
   listForSupplier(supplierId: string): Promise<SupplierProductView[]>
   /**
    * Stock on/off. Sirf LIVE ↔ OUT_OF_STOCK — DRAFT aur ARCHIVED ops ka faisla hai,

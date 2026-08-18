@@ -106,6 +106,11 @@ class FakeFeeLedger implements FeeLedgerRepository {
     this.rows.push({ orderId: input.orderId, amount: input.amount, status: 'PENDING' })
   }
 
+  async markEarned(orderId: string): Promise<void> {
+    const row = this.rows.find((r) => r.orderId === orderId)
+    if (row && row.status === 'PENDING') row.status = 'EARNED'
+  }
+
   async markWrittenOff(orderId: string): Promise<void> {
     const row = this.rows.find((r) => r.orderId === orderId)
     if (row) row.status = 'WRITTEN_OFF'
@@ -468,6 +473,40 @@ describe('wholesaler ka jawab', () => {
   it('ghalat token par kuch nahi milta', async () => {
     const { service } = await sentOrder()
     await expect(service.acceptBySupplier('koi-aur-token')).rejects.toThrow(/nahi mila/)
+  })
+})
+
+describe('kamai', () => {
+  /**
+   * 🔴 Ye test ek asli bug se paida hua.
+   *
+   * `feeOutcomeFor('DELIVERED')` domain mein hamesha 'EARNED' kehta tha aur us ka test
+   * bhi tha — magar usay koi call hi nahi karta tha. Natija: maal pohanchne par fee row
+   * PENDING hi padi rehti, aur invoice PENDING rows par banti thi. Yani raste mein para
+   * hua order bhi bill ho jata, aur RTO hone par hum wholesaler ko pehle hi bill kar
+   * chuke hote.
+   */
+  it('deliver hone par fee EARNED hoti hai — pehle PENDING padi reh jati thi', async () => {
+    const { service, fees } = buildService()
+    const order = await service.create({
+      resellerId: 'res_1',
+      customer: CUSTOMER,
+      lines: [{ productId: 'prod_1', qty: 1, retailPrice: pkr(2800) }],
+      deliveryFee: pkr(200),
+      paymentMethod: 'COD',
+    })
+
+    await service.confirmByOps(order.id, 'ops_1')
+    await service.sendToSupplier(order.id, 'ops_1')
+    await service.acceptBySupplier('test-supplier-token')
+    await service.markDispatched(order.id, 'ops_1')
+
+    // Abhi maal raste mein hai — ye kamai nahi hai
+    expect(fees.rows[0]?.status).toBe('PENDING')
+
+    await service.markDelivered(order.id, 'ops_1')
+
+    expect(fees.rows[0]?.status).toBe('EARNED')
   })
 })
 

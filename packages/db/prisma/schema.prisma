@@ -406,6 +406,8 @@ model FeeLedger {
   invoiceId   String?
   /// kis mahine ke invoice mein gayi — "2026-08"
   invoicePeriod String?
+  /// maal kab pohancha — isi tareekh se mahine ka hisab banta hai
+  earnedAt    DateTime?
   invoicedAt  DateTime?
   collectedAt DateTime?
   createdAt   DateTime  @default(now())
@@ -418,8 +420,18 @@ model FeeLedger {
   @@index([invoiceId])
 }
 
+/*
+ * Fee ka safar: PENDING (order chal raha hai) → EARNED (maal pohanch gaya) →
+ * INVOICED (bill bana) → COLLECTED (paisa aa gaya). RTO/mana par WRITTEN_OFF.
+ *
+ * 🔴 EARNED alag hona zaroori hai: hamari kamai tab banti hai jab maal customer tak
+ * pohanche. Bina is ke raste mein para hua order bhi "kamai" gina jata tha aur invoice
+ * mein chala jata — aur agar wo wapas aa jata to hum wholesaler ko pehle hi bill kar
+ * chuke hote.
+ */
 enum FeeStatus {
   PENDING
+  EARNED
   INVOICED
   COLLECTED
   WRITTEN_OFF

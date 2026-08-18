@@ -449,8 +449,26 @@ export class OrderService {
     return this.transition(orderId, 'DISPATCHED', { actorType: 'ops', actorId: opsUserId })
   }
 
+  /**
+   * Maal pohanch gaya — yahin hamari kamai banti hai.
+   *
+   * 🔴 Fee row pehle sirf PENDING padi rehti thi aur DELIVERED par kuch nahi hota tha,
+   * halanke domain (feeOutcomeFor) kehta hai ke DELIVERED = EARNED. Natija ye ke raste
+   * ka order bhi invoice mein chala jata, aur RTO hone par hum wholesaler ko pehle hi
+   * bill kar chuke hote.
+   */
   async markDelivered(orderId: string, actorId: string): Promise<InternalOrderView> {
-    return this.transition(orderId, 'DELIVERED', { actorType: 'ops', actorId })
+    const updated = await this.transition(orderId, 'DELIVERED', { actorType: 'ops', actorId })
+
+    await this.feeLedger.markEarned(orderId, this.clock.now())
+    await this.analytics.track({
+      name: 'fee_earned',
+      actorType: 'ops',
+      actorId,
+      properties: { orderNo: updated.orderNo, amount: updated.bajiFee },
+    })
+
+    return updated
   }
 
   /** RTO — fee WRITTEN_OFF hoti hai, row delete nahi hoti (nuqsan naapna zaroori hai). */

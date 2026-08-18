@@ -154,6 +154,12 @@ export interface FeeCollectionStats {
 
 export interface FeeLedgerRepository {
   create(input: { orderId: string; supplierId: string; amount: Pkr }): Promise<void>
+  /**
+   * Maal pohanch gaya — ab ye hamari kamai hai.
+   * 🔴 Invoice sirf EARNED rows par banti hai, PENDING par nahi: raste ka order abhi
+   * kamai nahi hai aur wapas bhi aa sakta hai.
+   */
+  markEarned(orderId: string, at: Date): Promise<void>
   markWrittenOff(orderId: string, reason: string): Promise<void>
   findByOrderId(orderId: string): Promise<{ amount: Pkr; status: string } | null>
 
