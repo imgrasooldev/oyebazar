@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { formatPkr } from '@oyebazar/shared'
+import { formatPkr, type PackKit, type PackKitAsset } from '@oyebazar/shared'
 import { CopyIcon, DownloadIcon, SparkIcon } from '@/components/icons'
 import { translator, type Locale } from '@/lib/i18n'
 
@@ -27,13 +27,6 @@ interface Props {
 
 type Phase = 'idle' | 'working' | 'ready' | 'error'
 
-interface PackState {
-  id: string
-  imageUrl: string | null
-  caption: string
-  status: 'READY' | 'RENDERING'
-}
-
 /**
  * ⭐ Content Studio ka UI.
  *
@@ -41,6 +34,13 @@ interface PackState {
  *  · 3 tap: ریٹ → ٹیمپلیٹ → بنائیں
  *  · ریٹ Baji price se kam nahi ho sakta (server bhi yehi rokta hai)
  *  · Render mein waqt lage to saaf batayen — jhoothi progress bar nahi
+ *
+ * Ek dafa banao, har jagah chalo: ek hi tap se poori KIT banti hai (chaar naap) aur har
+ * platform ka apna caption. Pehle sirf WhatsApp ka 9:16 banta tha, aur reseller wohi
+ * lamba pack Instagram feed par lagati thi jahan kinare kat jate the.
+ *
+ * Platform pehle, naap baad mein — reseller "1080×1350" nahi sochti, wo "انسٹاگرام"
+ * sochti hai. Naap sirf tafseel mein likha hai.
  */
 export function StatusPackStudio({
   productId,
@@ -54,18 +54,30 @@ export function StatusPackStudio({
   const [price, setPrice] = useState<number>(myRetailPrice ?? suggestedRetail)
   const [templateKey, setTemplateKey] = useState<string>(templates[0] ?? 'simple')
   const [phase, setPhase] = useState<Phase>('idle')
-  const [pack, setPack] = useState<PackState | null>(null)
+  const [kit, setKit] = useState<PackKit | null>(null)
+  const [platform, setPlatform] = useState<string>('whatsapp')
+  const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const maxPrice = useMemo(() => Math.max(suggestedRetail * 2, bajiPrice * 2), [suggestedRetail, bajiPrice])
+  const maxPrice = useMemo(
+    () => Math.max(suggestedRetail * 2, bajiPrice * 2),
+    [suggestedRetail, bajiPrice],
+  )
   const margin = price - bajiPrice
+
+  const current = kit?.platforms.find((entry) => entry.key === platform) ?? kit?.platforms[0]
+  const assets: PackKitAsset[] = current
+    ? current.formats
+        .map((format) => kit?.assets.find((asset) => asset.format === format))
+        .filter((asset): asset is PackKitAsset => Boolean(asset))
+    : []
 
   async function generate() {
     setPhase('working')
     setError(null)
-    setPack(null)
+    setKit(null)
 
-    const res = await fetch('/api/v1/status-pack', {
+    const res = await fetch('/api/v1/status-pack/kit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ productId, templateKey, retailPrice: price }),
@@ -78,18 +90,17 @@ export function StatusPackStudio({
       return
     }
 
-    const data = (await res.json()) as PackState
-    setPack(data)
+    const data = (await res.json()) as PackKit
+    setKit(data)
 
-    if (data.status === 'READY') {
-      setPhase('ready')
-      return
+    // Jo tayyar hai wo foran dikha dete hain — poore kit ka intezar nahi karwate
+    setPhase('ready')
+    if (data.assets.some((asset) => asset.status === 'RENDERING')) {
+      await pollUntilReady(data.priceUsed)
     }
-
-    // Cache miss — worker render kar raha hai. Har 800ms poll (p95 target <2s).
-    await pollUntilReady(price)
   }
 
+  /** Har 800ms — jaise jaise naap tayyar hote hain, wahin ke wahin nazar aane lagte hain. */
   async function pollUntilReady(priceUsed: number) {
     const deadline = Date.now() + 45_000
 
@@ -101,25 +112,31 @@ export function StatusPackStudio({
         templateKey,
         priceUsed: String(priceUsed),
       })
-      const res = await fetch(`/api/v1/status-pack?${params.toString()}`)
+      const res = await fetch(`/api/v1/status-pack/kit?${params.toString()}`)
       if (!res.ok) continue
 
-      const data = (await res.json()) as PackState | { status: 'NOT_FOUND' }
-      if (data.status === 'READY') {
-        setPack(data as PackState)
-        setPhase('ready')
-        return
-      }
+      const data = (await res.json()) as PackKit | { status: 'NOT_FOUND' }
+      if ('status' in data) continue
+
+      setKit(data)
+      if (data.assets.every((asset) => asset.status === 'READY')) return
     }
 
     // Jhoothi progress bar nahi — saaf batayen ke der ho gayi
     setError(t('packSlow'))
-    setPhase('error')
   }
 
   async function markDownloaded(packId: string) {
     // metric: north star = weekly active resellers jo ≥3 packs share karti hain
-    await fetch(`/api/v1/status-pack/${packId}/downloaded`, { method: 'POST' }).catch(() => undefined)
+    await fetch(`/api/v1/status-pack/${packId}/downloaded`, { method: 'POST' }).catch(
+      () => undefined,
+    )
+  }
+
+  function copyCaption(text: string) {
+    void navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   return (
@@ -131,7 +148,7 @@ export function StatusPackStudio({
         </span>
         <div>
           <h2 className="text-[1.1rem] font-bold">{t('studioTitle')}</h2>
-          <p className="text-[0.8rem] text-white/60">{t('studioSteps')}</p>
+          <p className="text-[0.8rem] leading-relaxed text-white/60">{t('kitSubtitle')}</p>
         </div>
       </div>
 
@@ -210,44 +227,90 @@ export function StatusPackStudio({
           disabled={phase === 'working'}
           className="btn-primary w-full !py-4 text-base"
         >
-          {phase === 'working' ? t('building') : t('studioTitle')}
+          {phase === 'working' ? t('building') : t('makeKit')}
         </button>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        {phase === 'working' && pack?.status === 'RENDERING' && (
+        {phase === 'working' && !kit && (
           <p className="rounded-2xl bg-brand-50 p-4 text-sm text-brand-800">{t('imageBuilding')}</p>
         )}
 
-        {pack?.imageUrl && (
-          <div className="space-y-4">
-            <div className="mx-auto w-full max-w-[16rem] overflow-hidden rounded-2xl shadow-lift">
-              {/* eslint-disable-next-line @next/next/no-img-element -- generated pack from storage */}
-              <img
-                src={pack.imageUrl}
-                alt={t('studioTitle')}
-                className="aspect-[9/16] w-full object-cover"
-              />
+        {kit && current && (
+          <div className="space-y-5">
+            {/* Platform pehle — reseller naap nahi, jagah sochti hai */}
+            <div className="rail">
+              {kit.platforms.map((entry) => (
+                <button
+                  key={entry.key}
+                  type="button"
+                  onClick={() => setPlatform(entry.key)}
+                  className={entry.key === platform ? 'chip chip-active' : 'chip'}
+                >
+                  {locale === 'ur' ? entry.labelUr : entry.labelEn}
+                </button>
+              ))}
             </div>
 
-            <a
-              href={pack.imageUrl}
-              download
-              onClick={() => void markDownloaded(pack.id)}
-              className="btn-primary w-full !py-4 text-base"
-            >
-              <DownloadIcon className="h-5 w-5" />
-              {t('download')}
-            </a>
+            <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              {assets.map((asset) => (
+                <li key={asset.format} className="space-y-2">
+                  <div className="overflow-hidden rounded-2xl bg-paper-sunken shadow-soft">
+                    {asset.imageUrl ? (
+                      /* eslint-disable-next-line @next/next/no-img-element -- generated pack from storage */
+                      <img
+                        src={asset.imageUrl}
+                        alt={locale === 'ur' ? asset.labelUr : asset.labelEn}
+                        className="w-full"
+                        style={{ aspectRatio: `${asset.width} / ${asset.height}` }}
+                      />
+                    ) : (
+                      <div
+                        className="flex items-center justify-center text-[0.75rem] text-ink-faint"
+                        style={{ aspectRatio: `${asset.width} / ${asset.height}` }}
+                      >
+                        {t('sizePreparing')}
+                      </div>
+                    )}
+                  </div>
 
-            <button
-              type="button"
-              onClick={() => void navigator.clipboard.writeText(pack.caption)}
-              className="btn-secondary w-full"
-            >
-              <CopyIcon className="h-4 w-4" />
-              {t('copyCaption')}
-            </button>
+                  <p className="text-[0.8rem] font-semibold leading-snug">
+                    {locale === 'ur' ? asset.labelUr : asset.labelEn}
+                  </p>
+                  <p dir="ltr" className="numeric text-[0.7rem] text-ink-faint">
+                    {asset.width}×{asset.height}
+                  </p>
+
+                  {asset.imageUrl && (
+                    <a
+                      href={asset.imageUrl}
+                      download={`oyebazar-${asset.format}.jpg`}
+                      onClick={() => void markDownloaded(asset.packId)}
+                      className="btn-secondary w-full !py-2 text-[0.8rem]"
+                    >
+                      <DownloadIcon className="h-4 w-4" />
+                      {t('download')}
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+
+            {/* Caption — tasveer se kam ahem nahi. Har platform ka apna. */}
+            <div className="rounded-2xl bg-paper-sunken p-4">
+              <p className="text-[0.78rem] font-semibold text-ink-soft">{t('captionLabel')}</p>
+              <p className="mt-2 whitespace-pre-line text-[0.88rem] leading-relaxed">
+                {current.caption}
+              </p>
+              <button
+                type="button"
+                onClick={() => copyCaption(current.caption)}
+                className="btn-secondary mt-4 w-full"
+              >
+                <CopyIcon className="h-4 w-4" />
+                {copied ? t('copied') : t('copyCaption')}
+              </button>
+            </div>
           </div>
         )}
       </div>

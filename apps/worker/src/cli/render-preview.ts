@@ -8,10 +8,13 @@
  * Chalayen:
  *   pnpm --filter @oyebazar/worker render:preview
  *   pnpm --filter @oyebazar/worker render:preview -- sale eid
+ *
+ * Poori kit (chaaron naap) dekhne ke liye:
+ *   KIT=1 pnpm --filter @oyebazar/worker render:preview -- simple
  */
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { pkr } from '@oyebazar/shared'
+import { KIT_FORMATS, PACK_FORMATS, pkr, type PackFormatKey } from '@oyebazar/shared'
 import { ConsoleLogger } from '../logger'
 import { RenderPool } from '../render/pool'
 import { StatusPackRenderer } from '../render/render-status-pack'
@@ -43,16 +46,28 @@ async function main(): Promise<void> {
   const timings: { template: string; ms: number; kb: number }[] = []
 
   try {
+    // KIT=1 par har template chaaron naap mein — ye dekhne ke liye ke chhote canvas par
+    // qeemat ya number kat to nahi raha
+    const formats: PackFormatKey[] = process.env.KIT === '1' ? KIT_FORMATS : ['story']
+
     for (const template of templates) {
-      const result = await renderer.render(template, SAMPLE)
-      const file = resolve(outDir, `${template}.${result.extension}`)
-      await writeFile(file, result.image)
-      timings.push({
-        template,
-        ms: result.durationMs,
-        kb: Math.round(result.bytes / 1024),
-      })
-      console.log(`✓ ${template.padEnd(12)} ${result.durationMs}ms  ${Math.round(result.bytes / 1024)}KB  → ${file}`)
+      for (const format of formats) {
+        const result = await renderer.render(template, SAMPLE, format)
+        const suffix = process.env.KIT === '1' ? `-${format}` : ''
+        const file = resolve(outDir, `${template}${suffix}.${result.extension}`)
+        await writeFile(file, result.image)
+
+        timings.push({
+          template: `${template}/${format}`,
+          ms: result.durationMs,
+          kb: Math.round(result.bytes / 1024),
+        })
+
+        const size = `${PACK_FORMATS[format].width}×${PACK_FORMATS[format].height}`
+        console.log(
+          `✓ ${template.padEnd(12)} ${format.padEnd(9)} ${size.padEnd(10)} ${result.durationMs}ms  ${Math.round(result.bytes / 1024)}KB`,
+        )
+      }
     }
   } finally {
     await pool.close()

@@ -224,6 +224,17 @@ const DICTIONARY = {
   yourName: { ur: 'آپ کا نام', en: 'Your name' },
   yourCity: { ur: 'شہر', en: 'City' },
   createAccount: { ur: 'اکاؤنٹ بنائیں', en: 'Create account' },
+
+  // ---- Kit (kai platforms) ----
+  kitSubtitle: {
+    ur: 'ایک بار بنائیں — واٹس ایپ، انسٹاگرام، فیس بک اور ٹک ٹاک، سب کے ناپ تیار',
+    en: 'Make it once — sized for WhatsApp, Instagram, Facebook and TikTok',
+  },
+  makeKit: { ur: 'پورا پیک بنائیں', en: 'Create the pack' },
+  captionLabel: { ur: 'کیپشن (کاپی کر کے پیسٹ کریں)', en: 'Caption (copy and paste)' },
+  copied: { ur: 'کاپی ہو گیا', en: 'Copied' },
+  sizePreparing: { ur: 'بن رہا ہے…', en: 'Preparing…' },
+  downloadAll: { ur: 'سب ڈاؤن لوڈ کریں', en: 'Download all' },
   newHereRegister: { ur: 'نئی ہیں؟ نمبر ڈالیں — اکاؤنٹ خود بن جائے گا۔', en: 'New here? Enter your number — the account is created for you.' },
 
   // 404 / error — mara hua link ya server ki kharabi

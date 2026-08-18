@@ -50,12 +50,16 @@ export interface ObjectStorage {
 
 // ---------------------------------------------------------------- rendering
 
+import type { PackFormatKey } from '@oyebazar/shared'
+
 export interface RenderStatusPackJob {
   readonly statusPackId: string
   readonly resellerId: string
   readonly productId: string
   readonly templateKey: string
   readonly priceUsed: number
+  /** Naap — purane job (queue mein pehle se pare hue) ke liye story maan liya jata hai. */
+  readonly format?: PackFormatKey
 }
 
 export interface RenderQueue {

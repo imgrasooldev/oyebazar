@@ -1,12 +1,13 @@
 /**
  * ⭐ Asal render — HTML → PNG.
  *
- * Ye function hamare poore product ka dil hai: 1080×1920 ki wo image jo Sadia ke
- * WhatsApp status par jati hai. Isi ka render time hamara #1 performance number hai.
+ * Ye function hamare poore product ka dil hai: wo image jo Sadia ke WhatsApp status,
+ * Instagram, Facebook ya TikTok par jati hai. Isi ka render time hamara #1 performance
+ * number hai. Naap `format` se aata hai — template ek hi rehta hai.
  */
 import sharp from 'sharp'
 import type { Logger } from '@oyebazar/core'
-import { STATUS_CANVAS } from '@oyebazar/shared'
+import { PACK_FORMATS, type PackFormatKey } from '@oyebazar/shared'
 import type { RenderPool } from './pool'
 import { buildStatusPackHtml, type TemplateData } from './template'
 
@@ -34,9 +35,14 @@ export class StatusPackRenderer {
     private readonly logger: Logger,
   ) {}
 
-  async render(templateKey: string, data: TemplateData): Promise<RenderResult> {
+  async render(
+    templateKey: string,
+    data: TemplateData,
+    formatKey: PackFormatKey = 'story',
+  ): Promise<RenderResult> {
     const startedAt = Date.now()
-    const html = await buildStatusPackHtml(templateKey, data)
+    const format = PACK_FORMATS[formatKey]
+    const html = await buildStatusPackHtml(templateKey, data, formatKey)
     // HTML banane ka waqt (photo download + font inline) alag se — warna pata hi nahi
     // chalta ke dheema render browser hai ya network
     const htmlMs = Date.now() - startedAt
@@ -44,6 +50,11 @@ export class StatusPackRenderer {
     const raw = await this.pool.withContext(async (context) => {
       const page = await context.newPage()
       try {
+        // 🔴 Viewport bhi naap ke sath badalna zaroori hai. Context ka viewport 1080 ka
+        // hai; chaure canvas (1200) par body viewport se bari ho jati hai aur RTL mein
+        // poora stage khisak kar kinare se kat jata hai — qeemat aur number dono gayab.
+        await page.setViewportSize({ width: format.width, height: format.height })
+
         // fonts/photo dono inline hain, isliye 'load' kaafi hai — network ka intezar nahi
         await page.setContent(html, { waitUntil: 'load' })
 
@@ -53,7 +64,7 @@ export class StatusPackRenderer {
         return await page.screenshot({
           type: 'jpeg',
           quality: 95, // yahan zyada rakhte hain; aakhri compression sharp karti hai
-          clip: { x: 0, y: 0, width: STATUS_CANVAS.width, height: STATUS_CANVAS.height },
+          clip: { x: 0, y: 0, width: format.width, height: format.height },
         })
       } finally {
         await page.close().catch(() => undefined)
@@ -69,6 +80,7 @@ export class StatusPackRenderer {
 
     this.logger.info('status_pack_rendered', {
       templateKey,
+      formatKey,
       bytes: image.byteLength,
       durationMs,
       htmlMs,

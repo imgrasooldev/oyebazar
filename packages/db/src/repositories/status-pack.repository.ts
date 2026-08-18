@@ -2,8 +2,10 @@
  * StatusPackRepository.
  *
  * 🔴 Cache DB ke unique constraint par khara hai:
- *    (resellerId, productId, templateKey, priceUsed)
- * Wohi price + wohi template = wohi image. Dobara render nahi hoga.
+ *    (resellerId, productId, templateKey, priceUsed, format)
+ * Wohi price + wohi template + wohi naap = wohi image. Dobara render nahi hoga.
+ * Format is mein shamil hai warna Instagram ka chokor pack WhatsApp ke lambe ko
+ * cache mein overwrite kar deta.
  */
 import type { PrismaClient } from '@prisma/client'
 import type {
@@ -12,7 +14,7 @@ import type {
   StatusPackRepository,
   StatusPackView,
 } from '@oyebazar/core'
-import { pkr, toPage, type Page } from '@oyebazar/shared'
+import { pkr, toPage, type Page, type PackFormatKey } from '@oyebazar/shared'
 
 const PACK_SELECT = {
   id: true,
@@ -20,6 +22,7 @@ const PACK_SELECT = {
   productId: true,
   templateKey: true,
   priceUsed: true,
+  format: true,
   imageUrl: true,
   generatedAt: true,
   downloadedAt: true,
@@ -31,13 +34,16 @@ type Row = {
   productId: string
   templateKey: string
   priceUsed: number
+  format: string
   imageUrl: string | null
   generatedAt: Date | null
   downloadedAt: Date | null
 }
 
 function toView(row: Row): StatusPackView {
-  return { ...row, priceUsed: pkr(row.priceUsed) }
+  // format DB mein string hai (naye naap bina migration ke add ho saken) — yahan wapas
+  // apni type par le aate hain, taake baqi code mein type safety rahe
+  return { ...row, priceUsed: pkr(row.priceUsed), format: row.format as PackFormatKey }
 }
 
 export class PrismaStatusPackRepository implements StatusPackRepository {
@@ -46,11 +52,12 @@ export class PrismaStatusPackRepository implements StatusPackRepository {
   async findByCacheKey(key: StatusPackCacheKey): Promise<StatusPackView | null> {
     const row = await this.db.statusPack.findUnique({
       where: {
-        resellerId_productId_templateKey_priceUsed: {
+        resellerId_productId_templateKey_priceUsed_format: {
           resellerId: key.resellerId,
           productId: key.productId,
           templateKey: key.templateKey,
           priceUsed: key.priceUsed,
+          format: key.format,
         },
       },
       select: PACK_SELECT,
@@ -65,11 +72,12 @@ export class PrismaStatusPackRepository implements StatusPackRepository {
   async create(input: StatusPackCacheKey & { imageUrl: string | null }): Promise<StatusPackView> {
     const row = await this.db.statusPack.upsert({
       where: {
-        resellerId_productId_templateKey_priceUsed: {
+        resellerId_productId_templateKey_priceUsed_format: {
           resellerId: input.resellerId,
           productId: input.productId,
           templateKey: input.templateKey,
           priceUsed: input.priceUsed,
+          format: input.format,
         },
       },
       create: {
@@ -77,12 +85,27 @@ export class PrismaStatusPackRepository implements StatusPackRepository {
         productId: input.productId,
         templateKey: input.templateKey,
         priceUsed: input.priceUsed,
+        format: input.format,
         imageUrl: input.imageUrl,
       },
       update: {},
       select: PACK_SELECT,
     })
     return toView(row)
+  }
+
+  /** Poori kit ek query mein — chaar naap ke liye chaar round-trip ka koi faida nahi. */
+  async findKit(key: Omit<StatusPackCacheKey, 'format'>): Promise<StatusPackView[]> {
+    const rows = await this.db.statusPack.findMany({
+      where: {
+        resellerId: key.resellerId,
+        productId: key.productId,
+        templateKey: key.templateKey,
+        priceUsed: key.priceUsed,
+      },
+      select: PACK_SELECT,
+    })
+    return rows.map(toView)
   }
 
   async markRendered(id: string, imageUrl: string, at: Date): Promise<StatusPackView> {

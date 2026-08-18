@@ -215,6 +215,8 @@ model StatusPack {
   productId    String
   templateKey  String
   priceUsed    Int
+  // story (9:16) | square (1:1) | portrait (4:5) | wide (1.91:1) — packages/shared/pack-kit.ts
+  format       String    @default("story")
   imageUrl     String? // null = abhi render ho raha hai
   videoUrl     String?
   generatedAt  DateTime?
@@ -224,8 +226,10 @@ model StatusPack {
 
   reseller Reseller @relation(fields: [resellerId], references: [id], onDelete: Cascade)
 
-  // 🔴 CACHE KEY — wohi reseller + product + template + price = wohi image, dobara render nahi
-  @@unique([resellerId, productId, templateKey, priceUsed])
+  // 🔴 CACHE KEY — wohi reseller + product + template + price + naap = wohi image, dobara
+  // render nahi. Format is mein shamil hai warna Instagram ka chokor pack WhatsApp ke
+  // lambe pack ko cache mein overwrite kar deta.
+  @@unique([resellerId, productId, templateKey, priceUsed, format])
   @@index([resellerId, createdAt])
   @@index([imageUrl, createdAt])
 }

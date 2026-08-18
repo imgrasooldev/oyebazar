@@ -10,7 +10,17 @@
  * Render khud yahan nahi hota — wo worker ka kaam hai (Playwright ko long-running
  * process aur ~1GB memory chahiye). Ye service sirf faisla karti hai.
  */
-import { NotFoundError, type Pkr, formatPkr } from '@oyebazar/shared'
+import {
+  KIT_FORMATS,
+  NotFoundError,
+  PACK_PLATFORMS,
+  PACK_PLATFORM_KEYS,
+  buildCaption,
+  formatPkr,
+  type PackFormatKey,
+  type PackPlatformKey,
+  type Pkr,
+} from '@oyebazar/shared'
 import type { RenderProductView, ResellerView, StatusPackView } from '../domain/views'
 import type {
   ProductRepository,
@@ -26,6 +36,29 @@ export interface GenerateStatusPackCommand {
   readonly templateKey: string
   /** slider se aaya hua price; na ho to saved/suggested use hoga */
   readonly retailPrice?: Pkr
+  /** Kaun sa naap — na batayen to WhatsApp status (9:16). */
+  readonly format?: PackFormatKey
+}
+
+/**
+ * Poori kit — ek product, chaar naap, aur har platform ka apna caption.
+ *
+ * `assets` mein har naap ki apni halat hoti hai: koi cache se foran mil jata hai, koi
+ * abhi ban raha hota hai. UI ko intezar poore kit ka nahi karna parta — jo tayyar hai
+ * wo foran download ho sakta hai.
+ */
+export interface StatusPackKitResult {
+  readonly assets: readonly {
+    readonly format: PackFormatKey
+    readonly pack: StatusPackView
+    readonly status: 'READY' | 'RENDERING'
+  }[]
+  readonly captions: Readonly<Record<PackPlatformKey, string>>
+  readonly platforms: readonly {
+    readonly key: PackPlatformKey
+    readonly formats: readonly PackFormatKey[]
+  }[]
+  readonly priceUsed: Pkr
 }
 
 export interface StatusPackResult {
@@ -64,6 +97,7 @@ export class StatusPackService {
       productId: cmd.productId,
       templateKey: cmd.templateKey,
       priceUsed,
+      format: cmd.format ?? 'story',
     }
 
     // 1. Cache — DB ka unique constraint hi cache key hai. Wohi price + wohi template = wohi image.
@@ -87,6 +121,7 @@ export class StatusPackService {
       productId: cmd.productId,
       templateKey: cmd.templateKey,
       priceUsed,
+      format: cacheKey.format,
     })
 
     await this.analytics.track({
@@ -103,12 +138,117 @@ export class StatusPackService {
     }
   }
 
+  /**
+   * ⭐ Poori kit — ek dafa maango, har platform ke liye tayyar.
+   *
+   * Chaaron naap ek saath: jo cache mein hai wo foran, baqi queue par. Ek naap ka
+   * render fail ho to baqi rukte nahi — reseller ko WhatsApp wala pack mil jata hai
+   * chahe Facebook wala abhi ban raha ho.
+   *
+   * Captions bhi yahin bante hain (shared/pack-kit.ts se), taake mobile app aane par
+   * wohi text bina dobara likhe mil jaye.
+   */
+  async generateKit(
+    cmd: Omit<GenerateStatusPackCommand, 'format'>,
+    reseller: ResellerView,
+  ): Promise<StatusPackKitResult> {
+    const product = await this.products.findForRender(cmd.productId)
+    if (!product) throw new NotFoundError('Product', cmd.productId)
+
+    const priceUsed = await this.pricingService.resolvePriceForPack(
+      cmd.resellerId,
+      cmd.productId,
+      cmd.retailPrice,
+    )
+
+    const base = {
+      resellerId: cmd.resellerId,
+      productId: cmd.productId,
+      templateKey: cmd.templateKey,
+      priceUsed,
+    }
+
+    // Ek hi query mein poori kit — chaar alag lookup network par chaar chakkar hote
+    const existing = await this.packs.findKit(base)
+    const byFormat = new Map(existing.map((pack) => [pack.format, pack]))
+
+    const assets = await Promise.all(
+      KIT_FORMATS.map(async (format) => {
+        const cached = byFormat.get(format)
+        if (cached?.imageUrl) return { format, pack: cached, status: 'READY' as const }
+
+        const pending = cached ?? (await this.packs.create({ ...base, format, imageUrl: null }))
+        await this.queue.enqueue({
+          statusPackId: pending.id,
+          resellerId: cmd.resellerId,
+          productId: cmd.productId,
+          templateKey: cmd.templateKey,
+          priceUsed,
+          format,
+        })
+        return { format, pack: pending, status: 'RENDERING' as const }
+      }),
+    )
+
+    await this.analytics.track({
+      name: 'status_pack_kit_requested',
+      actorType: 'reseller',
+      actorId: cmd.resellerId,
+      properties: {
+        productId: cmd.productId,
+        templateKey: cmd.templateKey,
+        ready: assets.filter((asset) => asset.status === 'READY').length,
+      },
+    })
+
+    return {
+      assets,
+      captions: this.buildCaptions(product, priceUsed, reseller),
+      platforms: PACK_PLATFORM_KEYS.map((key) => ({
+        key,
+        formats: PACK_PLATFORMS[key].formats,
+      })),
+      priceUsed,
+    }
+  }
+
+  /** Kit ki halat — UI polling ke liye. Naya render shuru nahi karta. */
+  async getKitStatus(
+    reseller: ResellerView,
+    key: { productId: string; templateKey: string; priceUsed: Pkr },
+  ): Promise<StatusPackKitResult | null> {
+    const existing = await this.packs.findKit({ resellerId: reseller.id, ...key })
+    if (existing.length === 0) return null
+
+    const product = await this.products.findForRender(key.productId)
+    if (!product) throw new NotFoundError('Product', key.productId)
+
+    const byFormat = new Map(existing.map((pack) => [pack.format, pack]))
+
+    return {
+      assets: KIT_FORMATS.flatMap((format) => {
+        const pack = byFormat.get(format)
+        return pack ? [{ format, pack, status: pack.imageUrl ? ('READY' as const) : ('RENDERING' as const) }] : []
+      }),
+      captions: this.buildCaptions(product, key.priceUsed, reseller),
+      platforms: PACK_PLATFORM_KEYS.map((platform) => ({
+        key: platform,
+        formats: PACK_PLATFORMS[platform].formats,
+      })),
+      priceUsed: key.priceUsed,
+    }
+  }
+
   /** UI polling — render hone tak har 800ms. */
   async getStatus(
     reseller: ResellerView,
-    key: { productId: string; templateKey: string; priceUsed: Pkr },
+    key: { productId: string; templateKey: string; priceUsed: Pkr; format?: PackFormatKey },
   ): Promise<StatusPackResult | null> {
-    const pack = await this.packs.findByCacheKey({ resellerId: reseller.id, ...key })
+    const pack = await this.packs.findByCacheKey({
+      resellerId: reseller.id,
+      ...key,
+      format: key.format ?? 'story',
+    })
     if (!pack) return null
 
     const product = await this.products.findForRender(key.productId)
@@ -129,6 +269,25 @@ export class StatusPackService {
       actorType: 'reseller',
       properties: { packId },
     })
+  }
+
+  /** Har platform ka apna caption — mizaj alag hai, is liye text bhi alag. */
+  private buildCaptions(
+    product: RenderProductView,
+    price: Pkr,
+    reseller: ResellerView,
+  ): Record<PackPlatformKey, string> {
+    const input = {
+      titleUr: product.titleUr,
+      priceText: formatPkr(price),
+      resellerName: reseller.name,
+      resellerPhone: reseller.whatsappPhone,
+      city: reseller.city,
+    }
+
+    return Object.fromEntries(
+      PACK_PLATFORM_KEYS.map((platform) => [platform, buildCaption(platform, input)]),
+    ) as Record<PackPlatformKey, string>
   }
 
   private buildCaption(product: RenderProductView, price: Pkr, reseller: ResellerView): string {

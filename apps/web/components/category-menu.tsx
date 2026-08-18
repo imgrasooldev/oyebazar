@@ -43,9 +43,10 @@ export function CategoryMenu({
           <li key={category.slug} className="group/cat static">
             <Link
               href={{ pathname: '/bazaar', query: { category: category.slug } }}
-              className="flex items-center justify-between gap-2 px-5 py-2 text-[0.95rem] text-ink-soft transition group-hover/cat:bg-brand-50 group-hover/cat:text-brand-800"
+              className="flex items-center gap-3 px-5 py-2 text-[0.95rem] text-ink-soft transition group-hover/cat:bg-brand-50 group-hover/cat:text-brand-800"
             >
-              <span className="truncate">{pickName(locale, category)}</span>
+              <Thumb url={category.coverImageUrl} />
+              <span className="flex-1 truncate">{pickName(locale, category)}</span>
               <ChevronIcon className="h-3.5 w-3.5 shrink-0 text-ink-faint transition group-hover/cat:text-brand-600 rtl:rotate-180" />
             </Link>
 
@@ -65,9 +66,10 @@ export function CategoryMenu({
                       <li key={child.slug}>
                         <Link
                           href={{ pathname: '/bazaar', query: { category: child.slug } }}
-                          className="flex items-baseline justify-between gap-2 rounded-lg px-3 py-2 text-sm text-ink-soft transition hover:bg-paper-sunken hover:text-brand-800"
+                          className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-ink-soft transition hover:bg-paper-sunken hover:text-brand-800"
                         >
-                          <span className="truncate">{pickName(locale, child)}</span>
+                          <Thumb url={child.coverImageUrl} size="sm" />
+                          <span className="flex-1 truncate">{pickName(locale, child)}</span>
                           <span className="numeric shrink-0 text-xs text-ink-faint">
                             {child.productCount}
                           </span>
@@ -97,5 +99,31 @@ export function CategoryMenu({
         {t('viewAllCategories')}
       </Link>
     </div>
+  )
+}
+
+/**
+ * Category ka chhota nishan.
+ *
+ * Nazar tasveer par pehle jati hai, lafz baad mein — khaas kar us user ke liye jo tez
+ * parhna nahi janti. Tasveer na ho to khali dabba, "?" ya toota hua icon nahi: khali
+ * jagah shor nahi machati.
+ *
+ * next/image nahi — ye URLs storage/CDN se aate hain aur yahan naap pehle se tay hai,
+ * to optimizer ka koi faida nahi (baqi app bhi yahi karti hai).
+ */
+function Thumb({ url, size = 'md' }: { url: string | null; size?: 'sm' | 'md' }) {
+  const box = size === 'sm' ? 'h-6 w-6' : 'h-8 w-8'
+
+  return (
+    <span
+      className={`${box} shrink-0 overflow-hidden rounded-lg bg-paper-sunken`}
+      aria-hidden
+    >
+      {url && (
+        // eslint-disable-next-line @next/next/no-img-element -- storage URLs; next/image Phase 2
+        <img src={url} alt="" loading="lazy" className="h-full w-full object-cover" />
+      )}
+    </span>
   )
 }

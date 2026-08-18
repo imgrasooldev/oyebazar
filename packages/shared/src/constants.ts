@@ -34,14 +34,11 @@ export type StatusPackTemplateKey = (typeof STATUS_PACK_TEMPLATES)[number]
 
 export const DEFAULT_TEMPLATE_KEY: StatusPackTemplateKey = 'simple'
 
-/** WhatsApp status canvas — WhatsApp ka apna aspect ratio. */
-export const STATUS_CANVAS = {
-  width: 1080,
-  height: 1920,
-  /** WhatsApp UI overlay — is area mein content na ho */
-  safeTop: 180,
-  safeBottom: 250,
-} as const
+/*
+ * STATUS_CANVAS ab yahan nahi — `pack-kit.ts` mein hai, PACK_FORMATS.story ke taur par.
+ * Wajah: ab ek se ziyada naap hain (story/square/portrait/wide) aur naap do jagah
+ * rakhne ka anjaam yehi hota hai ke ek jagah badlen aur doosri bhool jayen.
+ */
 
 /** Session — shared phone ki wajah se 7 din se zyada nahi. */
 export const SESSION_TTL_DAYS = 7

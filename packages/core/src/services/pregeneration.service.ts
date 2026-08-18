@@ -70,6 +70,9 @@ export class PregenerationService {
             productId,
             templateKey: options.templateKey,
             priceUsed: pkr(priceUsed),
+            // Raat ko sirf story (9:16) — yehi 9 baje broadcast mein jata hai. Baqi naap
+            // reseller ke maangne par bante hain, warna har raat chaar guna render.
+            format: 'story' as const,
           }
 
           const existing = await this.statusPacks.findByCacheKey(key)
@@ -85,6 +88,7 @@ export class PregenerationService {
             productId,
             templateKey: options.templateKey,
             priceUsed,
+            format: 'story',
           })
           queued += 1
         }

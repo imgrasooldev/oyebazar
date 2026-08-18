@@ -114,6 +114,8 @@ export class DailyDropService {
           productId,
           templateKey,
           priceUsed: myPrice,
+          // Rozana ka drop story (9:16) hai — wohi WhatsApp status par jata hai
+          format: 'story',
         })
 
         return {

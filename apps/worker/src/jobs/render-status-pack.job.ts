@@ -22,11 +22,16 @@ export async function handleRenderStatusPack(
 ): Promise<{ imageUrl: string; cached: boolean }> {
   const { repositories, renderer, storage, logger } = deps
 
+  // Purane job (jo migration se pehle queue mein pare the) par format nahi hota — wo sab
+  // WhatsApp status the, is liye 'story'
+  const format = job.format ?? 'story'
+
   const existing = await repositories.statusPacks.findByCacheKey({
     resellerId: job.resellerId,
     productId: job.productId,
     templateKey: job.templateKey,
     priceUsed: pkr(job.priceUsed),
+    format,
   })
 
   if (existing?.imageUrl) {
@@ -42,23 +47,29 @@ export async function handleRenderStatusPack(
   if (!product) throw new Error(`Product nahi mila: ${job.productId}`)
   if (!reseller) throw new Error(`Reseller nahi mili: ${job.resellerId}`)
 
-  const rendered = await renderer.render(job.templateKey, {
-    titleUr: product.titleUr,
-    categoryNameUr: product.categoryNameUr,
-    price: pkr(job.priceUsed),
-    resellerName: reseller.name,
-    resellerPhone: reseller.whatsappPhone,
-    photoUrl: product.coverImageUrl,
-  })
+  const rendered = await renderer.render(
+    job.templateKey,
+    {
+      titleUr: product.titleUr,
+      categoryNameUr: product.categoryNameUr,
+      price: pkr(job.priceUsed),
+      resellerName: reseller.name,
+      resellerPhone: reseller.whatsappPhone,
+      photoUrl: product.coverImageUrl,
+    },
+    format,
+  )
 
-  // key mein price bhi hai — wohi cache key jo DB constraint mein hai
-  const key = `packs/${job.resellerId}/${job.productId}-${job.templateKey}-${job.priceUsed}.${rendered.extension}`
+  // key mein price aur naap dono — wohi cache key jo DB constraint mein hai. Naap na ho
+  // to chokor pack lambe wali file ko storage par overwrite kar deta.
+  const key = `packs/${job.resellerId}/${job.productId}-${job.templateKey}-${job.priceUsed}-${format}.${rendered.extension}`
   const stored = await storage.upload(key, rendered.image, rendered.contentType)
 
   await repositories.statusPacks.markRendered(job.statusPackId, stored.url, new Date())
 
   logger.info('render_job_done', {
     statusPackId: job.statusPackId,
+    format,
     durationMs: rendered.durationMs,
     bytes: rendered.bytes,
   })

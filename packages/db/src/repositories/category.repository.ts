@@ -38,6 +38,7 @@ export class PrismaCategoryRepository implements CategoryRepository {
           orderBy: { sortOrder: 'asc' },
           select: {
             ...CATEGORY_SELECT,
+            imageUrl: true,
             _count: { select: { products: { where: publicProduct } } },
           },
         },
@@ -45,10 +46,13 @@ export class PrismaCategoryRepository implements CategoryRepository {
     })
 
     return rows.map(({ _count, children, imageUrl, ...category }) => {
-      const childNodes = children.map(({ _count: childCount, ...child }) => ({
-        ...child,
-        productCount: childCount.products,
-      }))
+      const childNodes = children.map(
+        ({ _count: childCount, imageUrl: childImage, ...child }) => ({
+          ...child,
+          productCount: childCount.products,
+          coverImageUrl: childImage,
+        }),
+      )
 
       return {
         ...category,

@@ -17,6 +17,7 @@ import { RenderPool } from '../render/pool'
 import { StatusPackRenderer } from '../render/render-status-pack'
 import { LocalDiskStorage } from '../storage/local'
 import { SupabaseStorage } from '../storage/supabase'
+import type { PackFormatKey } from '@oyebazar/shared'
 import { handleRenderStatusPack } from '../jobs/render-status-pack.job'
 
 const logger = new ConsoleLogger()
@@ -27,7 +28,15 @@ async function main(): Promise<void> {
 
   const pending = await prisma.statusPack.findMany({
     where: { imageUrl: null },
-    select: { id: true, resellerId: true, productId: true, templateKey: true, priceUsed: true },
+    select: {
+      id: true,
+      resellerId: true,
+      productId: true,
+      templateKey: true,
+      priceUsed: true,
+      // 🔴 Naap bhi — warna chaaron naap 'story' bana kar ek doosre ko overwrite kar dete
+      format: true,
+    },
     orderBy: { createdAt: 'asc' },
     take: limit,
   })
@@ -64,10 +73,11 @@ async function main(): Promise<void> {
           productId: pack.productId,
           templateKey: pack.templateKey,
           priceUsed: pack.priceUsed,
+          format: pack.format as PackFormatKey,
         },
         deps,
       )
-      console.log(`✓ ${pack.templateKey.padEnd(12)} ${result.imageUrl}`)
+      console.log(`✓ ${pack.templateKey.padEnd(12)} ${pack.format.padEnd(9)} ${result.imageUrl}`)
     }
   } finally {
     await pool.close()

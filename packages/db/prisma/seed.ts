@@ -7,6 +7,7 @@
  *
  * Chalayen: pnpm db:seed
  */
+import { categoryPhoto, productPhoto } from './photos'
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
@@ -230,10 +231,11 @@ function bajiPriceFrom(supplierPrice: number, feeRateBps: number): number {
   return supplierPrice + Math.round((supplierPrice * feeRateBps) / 10_000)
 }
 
-/** Dummy tasveer — asli shoot aane tak. Har slug ki apni, taake dobara wohi mile. */
-function photo(seed: string, width = 1080, height = 1440): string {
-  return `https://picsum.photos/seed/${seed}/${width}/${height}`
-}
+/*
+ * Tasveerein ab `photos.ts` se aati hain — category ke mutabiq asli product photos.
+ * Pehle picsum se be-tuki tasveerein aati thin (face wash par railway line), jis se
+ * status pack — jo hamara asal product hai — bekar dikhta tha.
+ */
 
 async function main() {
   console.log('Seeding…')
@@ -278,7 +280,7 @@ async function main() {
         slug: category.slug,
         nameUr: category.nameUr,
         nameEn: category.nameEn,
-        imageUrl: photo(`cat-${category.slug}`, 900, 600),
+        imageUrl: categoryPhoto(category.slug),
         sortOrder: categoryIndex,
       },
     })
@@ -291,7 +293,8 @@ async function main() {
             slug: child.slug,
             nameUr: child.nameUr,
             nameEn: child.nameEn,
-            imageUrl: photo(`cat-${child.slug}`, 900, 600),
+            // Sub-category ki tasveer bhi apni bari category se — maal wohi hai
+            imageUrl: categoryPhoto(category.slug, 900, 600),
             sortOrder: childIndex,
             parentId: created.id,
           },
@@ -335,8 +338,8 @@ async function main() {
       await prisma.productMedia.create({
         data: {
           productId: product.id,
-          originalUrl: photo(slug),
-          processedUrl: photo(slug),
+          originalUrl: productPhoto(category.slug, slug),
+          processedUrl: productPhoto(category.slug, slug),
           isStatusSource: true,
           sortOrder: 0,
         },

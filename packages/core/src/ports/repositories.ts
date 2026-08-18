@@ -9,7 +9,7 @@
  *  · kal Prisma badla ya read-replica/caching layer aayi to core ko haath nahi lagta
  *  · junior ko methods ke naam se pata chalta hai ke kaunsa data kis surface ke liye hai
  */
-import type { Page, Pkr } from '@oyebazar/shared'
+import type { Page, PackFormatKey, Pkr } from '@oyebazar/shared'
 import type {
   PricingProductView,
   PublicActivityItem,
@@ -73,7 +73,10 @@ export interface ProductRepository {
 export interface CategoryTreeNode extends CategoryView {
   readonly productCount: number
   readonly coverImageUrl: string | null
-  readonly children: readonly (CategoryView & { productCount: number })[]
+  readonly children: readonly (CategoryView & {
+    productCount: number
+    coverImageUrl: string | null
+  })[]
 }
 
 export interface CategoryRepository {
@@ -131,6 +134,8 @@ export interface StatusPackCacheKey {
   readonly productId: string
   readonly templateKey: string
   readonly priceUsed: Pkr
+  /** Kaun sa naap — kit ka har hissa apni row hai. */
+  readonly format: PackFormatKey
 }
 
 export interface StatusPackRepository {
@@ -141,6 +146,8 @@ export interface StatusPackRepository {
   markDownloaded(id: string, at: Date): Promise<void>
   incrementShared(id: string): Promise<void>
   findRecentByReseller(resellerId: string, query: CursorQuery): Promise<Page<StatusPackView>>
+  /** Poori kit ek hi query mein — chaar alag lookup nahi. */
+  findKit(key: Omit<StatusPackCacheKey, 'format'>): Promise<StatusPackView[]>
 }
 
 // ---------------------------------------------------------------- auth

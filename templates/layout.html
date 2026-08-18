@@ -15,12 +15,22 @@
     <style>
       {{baseCss}}
     </style>
+    <!-- Naap kit se aata hai (packages/shared/pack-kit.ts) — CSS mein hard-code nahi -->
+    <style>
+      :root {
+        --canvas-w: {{canvasWidth}}px;
+        --canvas-h: {{canvasHeight}}px;
+        --safe-top: {{safeTop}}px;
+        --safe-bottom: {{safeBottom}}px;
+        --scale: {{scale}};
+      }
+    </style>
     <style>
       {{templateCss}}
     </style>
   </head>
   <body>
-    <div class="stage">
+    <div class="stage format-{{formatKey}}">
       <img class="photo" src="{{photoUrl}}" alt="" />
       <div class="scrim"></div>
 

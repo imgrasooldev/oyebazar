@@ -10,7 +10,7 @@ import { readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { formatPkr, type Pkr } from '@oyebazar/shared'
+import { PACK_FORMATS, formatPkr, type PackFormatKey, type Pkr } from '@oyebazar/shared'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 
@@ -155,10 +155,17 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;')
 }
 
+/**
+ * @param formatKey kaun sa naap — story (9:16), square (1:1), portrait (4:5), wide (1.91:1).
+ *   Template wohi rehta hai; sirf canvas aur typography ka paimana badalta hai, warna har
+ *   naap ke liye alag template banana parta aur aath template chaar guna ho jate.
+ */
 export async function buildStatusPackHtml(
   templateKey: string,
   data: TemplateData,
+  formatKey: PackFormatKey = 'story',
 ): Promise<string> {
+  const format = PACK_FORMATS[formatKey]
   const [layout, baseCss, templateCss, photo] = await Promise.all([
     loadLayout(),
     loadBaseCss(),
@@ -167,6 +174,12 @@ export async function buildStatusPackHtml(
   ])
 
   const replacements: Record<string, string> = {
+    formatKey,
+    canvasWidth: String(format.width),
+    canvasHeight: String(format.height),
+    safeTop: String(format.safeTop),
+    safeBottom: String(format.safeBottom),
+    scale: String(format.scale),
     baseCss,
     templateCss,
     photoUrl: photo,

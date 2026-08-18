@@ -14,10 +14,14 @@ import type {
   ResellerOrderView,
   ResellerProductView,
   ResellerView,
+  StatusPackKitResult,
   StatusPackResult,
 } from '@oyebazar/core'
 import {
   ORDER_STATUS_UR,
+  PACK_FORMATS,
+  PACK_PLATFORMS,
+  PackKitDTO,
   PublicProductDTO,
   ResellerOrderDTO,
   PublicSupplierDetailDTO,
@@ -34,6 +38,7 @@ import {
   type ResellerOrder,
   type ResellerProductDetail,
   type ResellerProductListItem,
+  type PackKit,
   type ResellerProfile,
   type StatusPack,
 } from '@oyebazar/shared'
@@ -112,6 +117,35 @@ export function toStatusPackDTO(result: StatusPackResult): StatusPack {
     imageUrl: result.pack.imageUrl,
     caption: result.caption,
     generatedAt: result.pack.generatedAt?.toISOString() ?? null,
+  })
+}
+
+/** Kit — naap ki tafseel shared/pack-kit se aati hai, hard-code kahin nahi. */
+export function toPackKitDTO(result: StatusPackKitResult, key: {
+  productId: string
+  templateKey: string
+}): PackKit {
+  return PackKitDTO.parse({
+    productId: key.productId,
+    templateKey: key.templateKey,
+    priceUsed: result.priceUsed,
+    assets: result.assets.map((asset) => ({
+      format: asset.format,
+      width: PACK_FORMATS[asset.format].width,
+      height: PACK_FORMATS[asset.format].height,
+      labelUr: PACK_FORMATS[asset.format].labelUr,
+      labelEn: PACK_FORMATS[asset.format].labelEn,
+      status: asset.status,
+      imageUrl: asset.pack.imageUrl,
+      packId: asset.pack.id,
+    })),
+    platforms: result.platforms.map((platform) => ({
+      key: platform.key,
+      labelUr: PACK_PLATFORMS[platform.key].labelUr,
+      labelEn: PACK_PLATFORMS[platform.key].labelEn,
+      formats: platform.formats,
+      caption: result.captions[platform.key],
+    })),
   })
 }
 

@@ -8,7 +8,7 @@
  *
  * Yani price leak ko rokne ke liye discipline par bharosa nahi — type system par hai.
  */
-import type { Pkr } from '@oyebazar/shared'
+import type { PackFormatKey, Pkr } from '@oyebazar/shared'
 
 /** PUBLIC (Bazaar) — 🔴 koi price field nahi. Ye qanooni requirement hai. */
 export interface PublicProductView {
@@ -128,6 +128,7 @@ export interface StatusPackView {
   readonly productId: string
   readonly templateKey: string
   readonly priceUsed: Pkr
+  readonly format: PackFormatKey
   readonly imageUrl: string | null
   readonly generatedAt: Date | null
   readonly downloadedAt: Date | null
