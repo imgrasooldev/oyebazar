@@ -29,9 +29,9 @@
   --safe-bottom: 250px;
 
   /* templates inhen override karte hain — naya template = sirf ye variables + accent */
-  --accent: #d42561;
-  --accent-soft: #fce7ef;
-  --ink: #1f2937;
+  --accent: #F2600C;
+  --accent-soft: #FFE4D3;
+  --ink: #191A1D;
   --paper: #ffffff;
   --badge-text: #ffffff;
   --ribbon: '';

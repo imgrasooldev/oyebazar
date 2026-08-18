@@ -149,9 +149,11 @@ const DICTIONARY = {
   orders: { ur: 'آرڈرز', en: 'Orders' },
   catalogue: { ur: 'کیٹلاگ', en: 'Catalogue' },
   myOrders: { ur: 'میرے آرڈرز', en: 'My orders' },
+  earnedSoFar: { ur: 'اب تک کمایا', en: 'Earned so far' },
 
   // ---- Content Studio
   studioTitle: { ur: 'اسٹیٹس پیک بنائیں', en: 'Make a status pack' },
+  studioSteps: { ur: 'ریٹ → ڈیزائن → ڈاؤن لوڈ', en: 'Price → design → download' },
   design: { ur: 'ڈیزائن', en: 'Design' },
   yourProfit: { ur: 'آپ کا منافع', en: 'Your profit' },
   building: { ur: 'بن رہا ہے…', en: 'Creating…' },

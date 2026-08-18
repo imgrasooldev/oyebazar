@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { DEFAULT_TEMPLATE_KEY, formatPkr } from '@oyebazar/shared'
+import { DownloadIcon, SparkIcon } from '@/components/icons'
 import { toResellerProductListItemDTO } from '@/lib/api/mappers'
 import { requireReseller } from '@/lib/api/session'
 import { container } from '@/lib/container'
@@ -11,10 +12,12 @@ export const metadata: Metadata = { title: 'Catalogue' }
 export const dynamic = 'force-dynamic'
 
 /**
- * Reseller catalogue — login ke baad.
+ * Reseller catalogue.
  *
- * Upar "آج کا پیک" (wohi 5 items jo subah broadcast hue), neeche poora maal.
- * Har card par SEEDHA "اسٹیٹس پیک بنائیں" — yehi asal kaam hai.
+ * Sab se upar "آج کا پیک" — wohi 5 items jo subah 9 baje WhatsApp par gaye. Ye
+ * pehli cheez is liye hai ke Sadia yahan browse karne nahi, AAJ ki post banane aati hai.
+ *
+ * Har card par munafa numaya — kyunke wohi us ka faisla hai: is par kitna bachega?
  */
 export default async function CataloguePage() {
   const { reseller } = await requireReseller()
@@ -26,33 +29,48 @@ export default async function CataloguePage() {
     container.dailyDrops.packsForReseller(reseller.id, DEFAULT_TEMPLATE_KEY),
   ])
   const items = page.items.map(toResellerProductListItemDTO)
+  const readyCount = dailyPacks.filter((pack) => pack.imageUrl).length
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
+      {/* --------------------------------------------------------- آج کا پیک */}
       {dailyPacks.length > 0 && (
-        <section className="card border-brand-200 bg-brand-50 p-4">
-          <h2 className="text-lg font-bold">{t('todaysPack')}</h2>
-          <p className="mt-1 text-sm text-ink-soft">
-            {dailyPacks.filter((pack) => pack.imageUrl).length} {t('packsReady')}
-          </p>
+        <section className="overflow-hidden rounded-card bg-coal-900 text-white shadow-lift">
+          <div className="flex flex-wrap items-center gap-3 px-6 pb-4 pt-6">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-brand-500/20 text-brand-300">
+              <SparkIcon />
+            </span>
+            <div>
+              <h2 className="text-[1.15rem] font-bold">{t('todaysPack')}</h2>
+              <p className="text-[0.85rem] text-white/60">
+                <span className="numeric">{readyCount}</span> {t('packsReady')}
+              </p>
+            </div>
+          </div>
 
-          <ul className="rail mt-3">
+          <ul className="rail px-6 pb-6">
             {dailyPacks.map((pack) => (
-              <li key={pack.productId} className="w-32 shrink-0">
-                <Link href={`/catalogue/${pack.productId}`} className="block">
-                  {pack.imageUrl ?? pack.coverImageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- storage URLs
-                    <img
-                      src={pack.imageUrl ?? pack.coverImageUrl ?? ''}
-                      alt={pack.titleUr}
-                      loading="lazy"
-                      className="aspect-[9/16] w-full rounded-lg object-cover"
-                    />
-                  ) : (
-                    <div className="aspect-[9/16] w-full rounded-lg bg-paper-sunken" />
-                  )}
-                  <p className="mt-1 truncate text-xs">{pack.titleUr}</p>
-                  <p dir="ltr" className="text-xs font-semibold">
+              <li key={pack.productId} className="w-36 shrink-0 sm:w-40">
+                <Link href={`/catalogue/${pack.productId}`} className="group block">
+                  <div className="relative aspect-[9/16] overflow-hidden rounded-2xl bg-white/10 ring-1 ring-white/15">
+                    {(pack.imageUrl ?? pack.coverImageUrl) && (
+                      // eslint-disable-next-line @next/next/no-img-element -- storage URLs
+                      <img
+                        src={pack.imageUrl ?? pack.coverImageUrl ?? ''}
+                        alt={pack.titleUr}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition duration-500 ease-soft group-hover:scale-105"
+                      />
+                    )}
+                    {/* Tayyar pack par download ka nishan — ek nazar mein pata chale */}
+                    {pack.imageUrl && (
+                      <span className="absolute end-2 top-2 flex h-8 w-8 items-center justify-center rounded-pill bg-brand-500 text-white shadow-lift">
+                        <DownloadIcon className="h-4 w-4" />
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-2 truncate text-[0.82rem] text-white/90">{pack.titleUr}</p>
+                  <p dir="ltr" className="numeric text-[0.82rem] font-bold text-brand-300">
                     {formatPkr(pack.myPrice)}
                   </p>
                 </Link>
@@ -62,62 +80,86 @@ export default async function CataloguePage() {
         </section>
       )}
 
-      <div className="section-head">
-        <h1 className="section-title">{t('allStock')}</h1>
-        <span className="text-sm text-ink-faint">
-          {items.length} {t('items')}
-        </span>
-      </div>
+      {/* --------------------------------------------------------- سارا مال */}
+      <section>
+        <div className="mb-5 flex items-end justify-between gap-4">
+          <h1 className="text-[1.35rem] font-bold tracking-tight">{t('allStock')}</h1>
+          <span className="numeric text-sm text-ink-faint">
+            {items.length} {t('items')}
+          </span>
+        </div>
 
-      {items.length === 0 ? (
-        <p className="card p-6 text-ink-soft">{t('noItemsListed')}</p>
-      ) : (
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {items.map((item) => {
-            const title = locale === 'ur' ? item.titleUr : item.titleEn
-            return (
-              <li key={item.id} className="tile group">
-                <Link href={`/catalogue/${item.id}`} className="block">
-                  {item.coverImageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- storage URLs
-                    <img
-                      src={item.coverImageUrl}
-                      alt={title}
-                      loading="lazy"
-                      className="aspect-square w-full object-cover"
-                    />
-                  ) : (
-                    <div className="aspect-square w-full bg-paper-sunken" />
-                  )}
-                </Link>
+        {items.length === 0 ? (
+          <p className="card p-6 text-ink-soft">{t('noItemsListed')}</p>
+        ) : (
+          <ul className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+            {items.map((item) => {
+              const title = locale === 'ur' ? item.titleUr : item.titleEn
+              const myPrice = item.myRetailPrice ?? item.suggestedRetail
+              const profit = Math.max(myPrice - item.bajiPrice, 0)
 
-                <div className="space-y-1 p-3">
-                  <p className="line-clamp-2 text-sm font-semibold leading-relaxed">{title}</p>
-
-                  {/* Baji price = reseller ki lagat. Naam ke bajaye kaam likhte hain. */}
-                  <p className="text-sm text-ink-soft">
-                    {t('yourCost')}: <span dir="ltr">{formatPkr(item.bajiPrice)}</span>
-                  </p>
-                  <p className="text-xs text-ink-faint">
-                    {t('yourPrice')}:{' '}
-                    <span dir="ltr">{formatPkr(item.myRetailPrice ?? item.suggestedRetail)}</span>
-                    {item.myRetailPrice === null && ` (${t('suggested')})`}
-                  </p>
-
-                  {!item.inStock && <p className="text-xs text-red-600">{t('outOfStock')}</p>}
-
-                  <Link
-                    href={`/catalogue/${item.id}`}
-                    className="btn-primary mt-2 w-full !py-2 text-sm"
-                  >
-                    {t('makeStatusPack')}
+              return (
+                <li key={item.id} className="tile group flex flex-col">
+                  <Link href={`/catalogue/${item.id}`} className="block">
+                    <div className="relative aspect-[4/5] overflow-hidden bg-paper-sunken">
+                      {item.coverImageUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element -- storage URLs
+                        <img
+                          src={item.coverImageUrl}
+                          alt={title}
+                          loading="lazy"
+                          className="tile-media h-full"
+                        />
+                      )}
+                      {!item.inStock && (
+                        <span className="badge absolute start-2 top-2 bg-coal-900/85 text-white">
+                          {t('outOfStock')}
+                        </span>
+                      )}
+                    </div>
                   </Link>
-                </div>
-              </li>
-            )
-          })}
-        </ul>
-      )}
+
+                  <div className="flex flex-1 flex-col p-4">
+                    <p className="line-clamp-2 text-[0.92rem] font-semibold leading-relaxed">
+                      {title}
+                    </p>
+
+                    {/* Lagat aur apna ریٹ — faisla inhi do numbers par hota hai */}
+                    <div className="mt-3 space-y-1 text-[0.82rem]">
+                      <p className="flex items-baseline justify-between text-ink-faint">
+                        <span>{t('yourCost')}</span>
+                        <span dir="ltr" className="numeric">
+                          {formatPkr(item.bajiPrice)}
+                        </span>
+                      </p>
+                      <p className="flex items-baseline justify-between font-semibold">
+                        <span>{t('yourPrice')}</span>
+                        <span dir="ltr" className="numeric">
+                          {formatPkr(myPrice)}
+                        </span>
+                      </p>
+                    </div>
+
+                    <span className="mt-3 inline-flex w-fit items-center gap-1 rounded-pill bg-accent-50 px-3 py-1 text-[0.75rem] font-semibold text-accent-700">
+                      {t('yourProfit')}
+                      <span dir="ltr" className="numeric">
+                        {formatPkr(profit)}
+                      </span>
+                    </span>
+
+                    <Link
+                      href={`/catalogue/${item.id}`}
+                      className="btn-primary mt-4 w-full !py-2.5 !text-[0.88rem]"
+                    >
+                      {t('makeStatusPack')}
+                    </Link>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   )
 }

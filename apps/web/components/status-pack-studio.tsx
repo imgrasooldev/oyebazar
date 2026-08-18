@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { formatPkr } from '@oyebazar/shared'
+import { CopyIcon, DownloadIcon, SparkIcon } from '@/components/icons'
 import { translator, type Locale } from '@/lib/i18n'
 
 const TEMPLATE_NAMES: Record<string, { ur: string; en: string }> = {
@@ -122,103 +123,134 @@ export function StatusPackStudio({
   }
 
   return (
-    <section className="card space-y-5 p-4">
-      <h2 className="text-lg font-bold">{t('studioTitle')}</h2>
-
-      {/* 1 — ریٹ */}
-      <div>
-        <div className="flex items-baseline justify-between">
-          <label htmlFor="price" className="text-sm font-semibold">
-            {t('yourPrice')}
-          </label>
-          <span className="text-lg font-bold" dir="ltr">
-            {formatPkr(price)}
-          </span>
-        </div>
-
-        <input
-          id="price"
-          type="range"
-          min={bajiPrice}
-          max={maxPrice}
-          step={50}
-          value={price}
-          onChange={(e) => setPrice(Number(e.target.value))}
-          className="mt-3 w-full accent-brand-600"
-        />
-
-        <p className="mt-2 text-sm text-ink-soft">
-          {t('yourCost')} <span dir="ltr">{formatPkr(bajiPrice)}</span> · {t('yourProfit')}{' '}
-          <span dir="ltr" className={margin > 0 ? 'font-semibold text-accent-700' : 'text-ink-faint'}>
-            {formatPkr(margin)}
-          </span>
-        </p>
-      </div>
-
-      {/* 2 — ٹیمپلیٹ */}
-      <div>
-        <p className="text-sm font-semibold">{t('design')}</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {templates.map((key) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setTemplateKey(key)}
-              className={
-                key === templateKey
-                  ? 'rounded-2xl border-2 border-brand-600 bg-brand-50 px-4 py-2 text-sm font-semibold'
-                  : 'rounded-2xl ring-1 ring-black/10 px-4 py-2 text-sm'
-              }
-            >
-              {TEMPLATE_NAMES[key]?.[locale] ?? key}
-            </button>
-          ))}
+    <section className="card overflow-hidden">
+      {/* Sar — kaam ka naam, aur teen qadam ka ishara */}
+      <div className="flex items-center gap-3 bg-coal-900 px-6 py-5 text-white">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-brand-500/20 text-brand-300">
+          <SparkIcon />
+        </span>
+        <div>
+          <h2 className="text-[1.1rem] font-bold">{t('studioTitle')}</h2>
+          <p className="text-[0.8rem] text-white/60">{t('studioSteps')}</p>
         </div>
       </div>
 
-      {/* 3 — بنائیں */}
-      <button
-        type="button"
-        onClick={generate}
-        disabled={phase === 'working'}
-        className="btn-primary w-full"
-      >
-        {phase === 'working' ? t('building') : t('studioTitle')}
-      </button>
+      <div className="space-y-7 p-6">
+        {/* 1 — ریٹ */}
+        <div>
+          <div className="flex items-baseline justify-between gap-3">
+            <label htmlFor="price" className="text-sm font-semibold">
+              {t('yourPrice')}
+            </label>
+            <span className="numeric text-[1.6rem] font-bold leading-none" dir="ltr">
+              {formatPkr(price)}
+            </span>
+          </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
-
-      {phase === 'working' && pack?.status === 'RENDERING' && (
-        <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{t('imageBuilding')}</p>
-      )}
-
-      {pack?.imageUrl && (
-        <div className="space-y-3">
-          {/* eslint-disable-next-line @next/next/no-img-element -- generated pack from storage */}
-          <img
-            src={pack.imageUrl}
-            alt={t('studioTitle')}
-            className="mx-auto aspect-[9/16] w-full max-w-xs rounded-2xl border border-black/[0.06] object-cover"
+          <input
+            id="price"
+            type="range"
+            min={bajiPrice}
+            max={maxPrice}
+            step={50}
+            value={price}
+            onChange={(e) => setPrice(Number(e.target.value))}
+            className="mt-4 h-2 w-full cursor-pointer appearance-none rounded-pill bg-paper-sunken accent-brand-500"
           />
 
-          <a
-            href={pack.imageUrl}
-            download
-            onClick={() => void markDownloaded(pack.id)}
-            className="btn-primary w-full"
-          >
-            {t('download')}
-          </a>
-
-          <button
-            type="button"
-            onClick={() => void navigator.clipboard.writeText(pack.caption)}
-            className="btn-secondary w-full"
-          >
-            {t('copyCaption')}
-          </button>
+          {/* Lagat aur munafa — do alag dabbe, taake nazar foran munafe par jaye */}
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="rounded-2xl bg-paper-sunken px-4 py-3">
+              <p className="text-[0.72rem] text-ink-faint">{t('yourCost')}</p>
+              <p dir="ltr" className="numeric mt-1 font-bold">
+                {formatPkr(bajiPrice)}
+              </p>
+            </div>
+            <div
+              className={
+                margin > 0
+                  ? 'rounded-2xl bg-accent-50 px-4 py-3'
+                  : 'rounded-2xl bg-paper-sunken px-4 py-3'
+              }
+            >
+              <p className="text-[0.72rem] text-ink-faint">{t('yourProfit')}</p>
+              <p
+                dir="ltr"
+                className={
+                  margin > 0 ? 'numeric mt-1 font-bold text-accent-700' : 'numeric mt-1 font-bold'
+                }
+              >
+                {formatPkr(Math.max(margin, 0))}
+              </p>
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* 2 — ٹیمپلیٹ */}
+        <div>
+          <p className="text-sm font-semibold">{t('design')}</p>
+          <div className="rail mt-3">
+            {templates.map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setTemplateKey(key)}
+                className={key === templateKey ? 'chip chip-active' : 'chip'}
+              >
+                {TEMPLATE_NAMES[key]?.[locale] ?? key}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 3 — بنائیں */}
+        <button
+          type="button"
+          onClick={generate}
+          disabled={phase === 'working'}
+          className="btn-primary w-full !py-4 text-base"
+        >
+          {phase === 'working' ? t('building') : t('studioTitle')}
+        </button>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        {phase === 'working' && pack?.status === 'RENDERING' && (
+          <p className="rounded-2xl bg-brand-50 p-4 text-sm text-brand-800">{t('imageBuilding')}</p>
+        )}
+
+        {pack?.imageUrl && (
+          <div className="space-y-4">
+            <div className="mx-auto w-full max-w-[16rem] overflow-hidden rounded-2xl shadow-lift">
+              {/* eslint-disable-next-line @next/next/no-img-element -- generated pack from storage */}
+              <img
+                src={pack.imageUrl}
+                alt={t('studioTitle')}
+                className="aspect-[9/16] w-full object-cover"
+              />
+            </div>
+
+            <a
+              href={pack.imageUrl}
+              download
+              onClick={() => void markDownloaded(pack.id)}
+              className="btn-primary w-full !py-4 text-base"
+            >
+              <DownloadIcon className="h-5 w-5" />
+              {t('download')}
+            </a>
+
+            <button
+              type="button"
+              onClick={() => void navigator.clipboard.writeText(pack.caption)}
+              className="btn-secondary w-full"
+            >
+              <CopyIcon className="h-4 w-4" />
+              {t('copyCaption')}
+            </button>
+          </div>
+        )}
+      </div>
     </section>
   )
 }
