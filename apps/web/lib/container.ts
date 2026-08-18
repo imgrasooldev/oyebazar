@@ -171,6 +171,7 @@ function build(): Container {
       repositories.admin,
       feeInvoices,
       repositories.feeLedger,
+      repositories.opsUsers,
       clock,
       analytics,
       logger,

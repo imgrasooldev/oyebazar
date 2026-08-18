@@ -22,6 +22,8 @@ import type {
   AdminRepository,
   AdminResellerRow,
   AdminSupplierRow,
+  OpsTeamMember,
+  OpsUserRepository,
   OpsUserView,
 } from '../ports/admin-repositories'
 import type { FeeLedgerRepository } from '../ports/order-repositories'
@@ -43,6 +45,7 @@ export class AdminService {
     private readonly admin: AdminRepository,
     private readonly feeInvoices: FeeInvoiceService,
     private readonly feeLedger: FeeLedgerRepository,
+    private readonly opsUsers: OpsUserRepository,
     private readonly clock: Clock,
     private readonly analytics: Analytics,
     private readonly logger: Logger,
@@ -72,6 +75,75 @@ export class AdminService {
   async dashboard(actor: OpsUserView): Promise<AdminDashboardStats> {
     this.require(actor, 'COORDINATOR')
     return this.admin.dashboard(this.clock.now())
+  }
+
+  // ----------------------------------------------------------------------- team
+
+  /**
+   * Ops team.
+   *
+   * Dekhna MANAGER se upar — kaun andar aa sakta hai, ye har coordinator ke jaanne ki
+   * cheez nahi. Badalna sirf FOUNDER: role dena matlab paise aur bharose ka ikhtiyar
+   * dena hai.
+   */
+  async listTeam(actor: OpsUserView): Promise<OpsTeamMember[]> {
+    this.require(actor, 'MANAGER')
+    return this.opsUsers.listTeam()
+  }
+
+  async addTeamMember(
+    actor: OpsUserView,
+    input: { name: string; email: string; phoneE164: string; role: OpsUserView['role'] },
+  ): Promise<OpsTeamMember> {
+    this.require(actor, 'FOUNDER')
+
+    const existing = await this.opsUsers.findByPhone(input.phoneE164)
+    if (existing) {
+      throw new ValidationError('Ye number pehle se team mein hai')
+    }
+
+    const created = await this.opsUsers.create(input)
+    await this.record(actor, 'admin_team_member_added', {
+      opsUserId: created.id,
+      role: created.role,
+    })
+    return created
+  }
+
+  /**
+   * Role badalna.
+   *
+   * 🔴 Apna role khud nahi badla ja sakta. Wajah sirf usool nahi, amli hai: aakhri
+   * FOUNDER khud ko MANAGER kar de to fee rate aur invoice ka darwaza HAMESHA ke liye
+   * band ho jata hai — koi bacha hi nahi jo usay wapas kar sake.
+   */
+  async setTeamRole(
+    actor: OpsUserView,
+    opsUserId: string,
+    role: OpsUserView['role'],
+  ): Promise<void> {
+    this.require(actor, 'FOUNDER')
+
+    if (opsUserId === actor.id) {
+      throw new ValidationError('Apna role khud nahi badal sakte — kisi doosre founder se karwayen')
+    }
+
+    await this.opsUsers.setRole(opsUserId, role)
+    await this.record(actor, 'admin_team_role_changed', { opsUserId, role })
+  }
+
+  /** Band karte hi us ki saari sessions khatam (repository transaction mein). */
+  async setTeamActive(actor: OpsUserView, opsUserId: string, isActive: boolean): Promise<void> {
+    this.require(actor, 'FOUNDER')
+
+    if (opsUserId === actor.id && !isActive) {
+      // Khud ko band karne ka matlab hai apne hi portal se bahar — aur agar akhri
+      // founder hai to darwaza sab ke liye band
+      throw new ValidationError('Apne aap ko band nahi kar sakte')
+    }
+
+    await this.opsUsers.setActive(opsUserId, isActive)
+    await this.record(actor, 'admin_team_active_changed', { opsUserId, isActive })
   }
 
   // ---------------------------------------------------------------------- paisa

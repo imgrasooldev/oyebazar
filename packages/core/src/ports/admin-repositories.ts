@@ -16,11 +16,28 @@ export interface OpsUserView {
   readonly isActive: boolean
 }
 
+export interface OpsTeamMember extends OpsUserView {
+  readonly phone: string | null
+  readonly lastSeenAt: Date | null
+  readonly createdAt: Date
+}
+
 export interface OpsUserRepository {
   findById(id: string): Promise<OpsUserView | null>
   findByPhone(phoneE164: string): Promise<OpsUserView | null>
   list(): Promise<OpsUserView[]>
   touchLastSeen(id: string, at: Date): Promise<void>
+
+  /** Team ka safha — phone aur aakhri hazri bhi, taake pata ho kaun chal raha hai. */
+  listTeam(): Promise<OpsTeamMember[]>
+  create(input: {
+    name: string
+    email: string
+    phoneE164: string
+    role: OpsUserView['role']
+  }): Promise<OpsTeamMember>
+  setRole(id: string, role: OpsUserView['role']): Promise<void>
+  setActive(id: string, isActive: boolean): Promise<void>
 }
 
 /** Dashboard ke number — har ek wo cheez jis par kisi ko AAJ kuch karna hai. */

@@ -86,19 +86,20 @@ seedha API call kar sakta hai.
 ### Screens
 
 `/admin` dashboard · `/admin/orders` · `/admin/suppliers` · `/admin/products` ·
-`/admin/resellers` · `/admin/money`
+`/admin/resellers` · `/admin/money` · `/admin/team`
 
 ### Naya ops user kaise bane
 
-Abhi DB se (koi UI nahi):
+**`/admin/team`** se — sirf FOUNDER. Naam, email, WhatsApp number aur role daal den; login
+usi number se hoga (koi password nahi). Usi safhe par role badalna aur access band/chalu
+karna bhi hai, aur ek jadwal jo batati hai ke har role kya kar sakta hai.
 
-```sql
-INSERT INTO "OpsUser" (id, name, email, phone, role, "isActive", "createdAt")
-VALUES (gen_random_uuid()::text, 'Naam', 'email@oyebazar.com', '923001234567', 'MANAGER', true, now());
-```
+Kisi ke jane par **Disable** — us ki saari sessions usi waqt khatam ho jati hain, agle
+din tak khula hua browser nahi chalta.
 
-`phone` wohi number ho jis par WhatsApp hai — login usi se hota hai. Kisi ko hatana ho
-to `isActive = false` — login foran band, aur purani key badalne ki zaroorat nahi.
+🔴 Do cheezen jaan boojh kar roki gayi hain: **apna role khud badalna** aur **khud ko band
+karna**. Wajah amli hai — aakhri FOUNDER khud ko gira de to fee rate aur invoice ka
+darwaza hamesha ke liye band ho jata hai, aur koi bacha hi nahi jo usay wapas khole.
 
 ---
 

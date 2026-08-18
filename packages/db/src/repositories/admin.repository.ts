@@ -13,6 +13,7 @@ import type {
   AdminRepository,
   AdminResellerRow,
   AdminSupplierRow,
+  OpsTeamMember,
   OpsUserRepository,
   OpsUserView,
 } from '@oyebazar/core'
@@ -43,6 +44,48 @@ export class PrismaOpsUserRepository implements OpsUserRepository {
 
   async touchLastSeen(id: string, at: Date): Promise<void> {
     await this.db.opsUser.update({ where: { id }, data: { lastSeenAt: at } })
+  }
+
+  async listTeam(): Promise<OpsTeamMember[]> {
+    return this.db.opsUser.findMany({
+      select: { ...OPS_SELECT, phone: true, lastSeenAt: true, createdAt: true },
+      // Chalne wale pehle, phir naye — band kiye hue neeche
+      orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
+    })
+  }
+
+  async create(input: {
+    name: string
+    email: string
+    phoneE164: string
+    role: OpsUserView['role']
+  }): Promise<OpsTeamMember> {
+    return this.db.opsUser.create({
+      data: {
+        name: input.name,
+        email: input.email,
+        phone: input.phoneE164,
+        role: input.role,
+        isActive: true,
+      },
+      select: { ...OPS_SELECT, phone: true, lastSeenAt: true, createdAt: true },
+    })
+  }
+
+  async setRole(id: string, role: OpsUserView['role']): Promise<void> {
+    await this.db.opsUser.update({ where: { id }, data: { role } })
+  }
+
+  /**
+   * 🔴 Band karte hi us ki saari sessions bhi khatam — warna khula hua browser agle
+   * 24 ghante tak admin portal chalata rehta hai, aur band karne ka matlab hi yehi hai
+   * ke abhi se pohanch khatam.
+   */
+  async setActive(id: string, isActive: boolean): Promise<void> {
+    await this.db.$transaction(async (tx) => {
+      await tx.opsUser.update({ where: { id }, data: { isActive } })
+      if (!isActive) await tx.session.deleteMany({ where: { opsUserId: id } })
+    })
   }
 }
 

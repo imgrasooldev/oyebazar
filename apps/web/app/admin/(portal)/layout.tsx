@@ -17,13 +17,22 @@ export const dynamic = 'force-dynamic'
  * Role har screen par likha hai: ops ka banda jaanta ho ke us ke paas kitna ikhtiyar
  * hai, warna wo aisa button dhoondta rehta hai jo us ke liye hai hi nahi.
  */
+const RANK = { COORDINATOR: 1, MANAGER: 2, FOUNDER: 3 } as const
+
+/**
+ * `needs`: is tab ke liye kam se kam kaun sa darja chahiye.
+ *
+ * Tab chhupana hifazat nahi hai (rok service mein hai) — ye sirf ghalat ummeed se
+ * bachata hai. Coordinator ko "Team" dikhta tha aur click par safha crash karta tha.
+ */
 const TABS = [
-  { href: '/admin', label: 'Dashboard' },
-  { href: '/admin/orders', label: 'Orders' },
-  { href: '/admin/suppliers', label: 'Wholesalers' },
-  { href: '/admin/products', label: 'Products' },
-  { href: '/admin/resellers', label: 'Resellers' },
-  { href: '/admin/money', label: 'Money' },
+  { href: '/admin', label: 'Dashboard', needs: 'COORDINATOR' },
+  { href: '/admin/orders', label: 'Orders', needs: 'COORDINATOR' },
+  { href: '/admin/suppliers', label: 'Wholesalers', needs: 'COORDINATOR' },
+  { href: '/admin/products', label: 'Products', needs: 'COORDINATOR' },
+  { href: '/admin/resellers', label: 'Resellers', needs: 'COORDINATOR' },
+  { href: '/admin/money', label: 'Money', needs: 'COORDINATOR' },
+  { href: '/admin/team', label: 'Team', needs: 'MANAGER' },
 ] as const
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -51,7 +60,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
 
         <nav className="mx-auto flex max-w-shell gap-1 overflow-x-auto px-5 lg:px-8">
-          {TABS.map((tab) => (
+          {TABS.filter((tab) => RANK[session.user.role] >= RANK[tab.needs]).map((tab) => (
             <Link
               key={tab.href}
               href={tab.href}
