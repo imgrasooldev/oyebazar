@@ -14,6 +14,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    # 🔴 CI ko ASLI database ki zaroorat nahi.
+    # `prisma generate` sirf schema parhta hai, magar datasource ka env var
+    # mojood hona chahiye — is liye ye jhooti value. Koi test DB ko chhoota nahi:
+    # core ke tests fake repositories par chalte hain aur price-leak test
+    # source scan karta hai. Jis din integration tests aayenge, tab yahan
+    # `services: postgres` add hoga.
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      DIRECT_URL: postgresql://ci:ci@localhost:5432/ci
+
     steps:
       - uses: actions/checkout@v4
 
@@ -36,6 +46,9 @@ jobs:
 
       - name: Unit tests
         run: pnpm test
+
+      - name: Build
+        run: pnpm --filter @oyebazar/web build
 
       # 🔴 Ye job merge block karti hai. supplierPrice leak = build fail.
       - name: Security — price leak
