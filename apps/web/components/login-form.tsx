@@ -19,18 +19,24 @@ export function LoginForm({ locale }: { locale: Locale }) {
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
   const [error, setError] = useState<string | null>(null)
+  // Dev par server code wapas bhejta hai — safhe par dikhane ke liye (production mein null)
+  const [devCode, setDevCode] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
-  async function post(path: string, body: unknown): Promise<{ ok: boolean; message?: string }> {
+  async function post(
+    path: string,
+    body: unknown,
+  ): Promise<{ ok: boolean; message?: string; devCode?: string }> {
     const res = await fetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
-    if (res.ok) return { ok: true }
     const payload = (await res.json().catch(() => null)) as
-      | { error?: { message?: string } }
+      | { devCode?: string; error?: { message?: string } }
       | null
+
+    if (res.ok) return { ok: true, ...(payload?.devCode ? { devCode: payload.devCode } : {}) }
     return { ok: false, message: payload?.error?.message ?? t('somethingWrong') }
   }
 
@@ -39,8 +45,13 @@ export function LoginForm({ locale }: { locale: Locale }) {
     setError(null)
     startTransition(async () => {
       const result = await post('/api/v1/auth/otp/request', { phone })
-      if (result.ok) setStep('code')
-      else setError(result.message ?? null)
+      if (result.ok) {
+        setStep('code')
+        if (result.devCode) {
+          setDevCode(result.devCode)
+          setCode(result.devCode) // dev par pehle se bhara hua — seedha "andar aayen" daba den
+        }
+      } else setError(result.message ?? null)
     })
   }
 
@@ -79,6 +90,21 @@ export function LoginForm({ locale }: { locale: Locale }) {
     </form>
   ) : (
     <form onSubmit={verifyCode} className="space-y-4">
+
+      {devCode && (
+        /*
+          Sirf dev par: server ne code tab hi bheja hai jab provider console wala hai.
+          Production build mein ye kabhi nahi aata, is liye yahan koi extra shart nahi.
+        */
+        <div className="rounded-card bg-coal-900 px-4 py-3 text-center text-white">
+          <p className="text-[0.7rem] uppercase tracking-[0.14em] text-white/50">
+            ٹیسٹ کوڈ (صرف ڈیویلپمنٹ)
+          </p>
+          <p dir="ltr" className="numeric mt-1 text-2xl font-bold tracking-[0.35em] text-brand-300">
+            {devCode}
+          </p>
+        </div>
+      )}
       <p className="text-sm text-ink-soft">
         {t('codeSentTo')} <span dir="ltr">{phone}</span>
       </p>

@@ -14,11 +14,28 @@ import type {
   OutboundTextMessage,
 } from '@oyebazar/core'
 
-/** DEV — message kahin nahi jata, terminal par chhap jata hai (OTP wahin se parh lein). */
+/**
+ * DEV — message kahin nahi jata, terminal par chhap jata hai.
+ *
+ * Aakhri OTP yaad bhi rakhta hai taake login safha use upar dikha sake — warna har
+ * dafa test karne ke liye terminal khol kar log dhoondna parta hai. Ye yaaddasht sirf
+ * yahin hai: asli provider (Wati) mein aisa koi method hai hi nahi, is liye production
+ * mein ye code kahin se aa hi nahi sakta.
+ */
 export class ConsoleMessagingProvider implements MessagingProvider {
+  private readonly lastOtp = new Map<string, string>()
+
   constructor(private readonly logger: Logger) {}
 
+  /** Dev login safhe ke liye — number ke against aakhri bheja gaya code. */
+  lastOtpFor(phoneE164: string): string | undefined {
+    return this.lastOtp.get(phoneE164)
+  }
+
   async sendTemplate(message: OutboundTemplateMessage): Promise<{ providerMessageId: string }> {
+    const code = message.params?.['code']
+    if (code) this.lastOtp.set(message.to, code)
+
     this.logger.info('whatsapp_template_dev', {
       to: message.to,
       template: message.template,

@@ -1,5 +1,6 @@
 import { OtpRequestSchema } from '@oyebazar/shared'
 import { apiHandler, clientIp, parseBody } from '@/lib/api/handler'
+import { devOtpFor } from '@/lib/api/dev-otp'
 import { container } from '@/lib/container'
 
 export const runtime = 'nodejs'
@@ -14,6 +15,12 @@ export async function POST(request: Request) {
   return apiHandler(async () => {
     const { phone } = await parseBody(request, OtpRequestSchema)
     await container.supplierAuth.requestOtp(phone, clientIp(request))
-    return { ok: true, message: 'Code aap ke WhatsApp par bhej diya gaya hai' }
+
+    const devCode = devOtpFor(phone)
+    return {
+      ok: true,
+      message: 'Code aap ke WhatsApp par bhej diya gaya hai',
+      ...(devCode ? { devCode } : {}),
+    }
   })
 }
