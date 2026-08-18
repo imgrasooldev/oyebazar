@@ -173,3 +173,55 @@ reseller ka account bhi khol kar dekhta hai.
 Hifazat sirf naam par nahi hai — har session par likha hota hai ke wo **kis** ki hai
 (`resellerId` / `supplierId` / `opsUserId`). Reseller ka asli token admin cookie mein
 chipka dein to bhi andar nahi jaya ja sakta; jaancha gaya hai.
+
+---
+
+## 6. Secrets kahan hain
+
+🔴 Is document mein koi asli password ya key nahi hai, aur nahi honi chahiye. Yahan sirf
+ye likha hai ke kaunsi cheez kahan rakhi jati hai.
+
+| | |
+|---|---|
+| Local machine | `.env` (git se bahar — `.gitignore` mein hai) |
+| Naya developer | `.env.example` copy kar ke `.env` banaye |
+| Production (Fly.io) | `fly secrets set KEY=value` — kabhi repo mein nahi |
+
+Kya kya set hota hai:
+
+| Key | Kis liye |
+|---|---|
+| `DATABASE_URL` / `DIRECT_URL` | Postgres (Neon ya local) |
+| `APP_URL` | Magic link isi se banta hai — production par `https://oyebazar.com` |
+| `WHATSAPP_PROVIDER` | `console` (dev) ya `wati` (asli) |
+| `WATI_API_URL` / `WATI_API_KEY` | WhatsApp bhejne ke liye — OTP aur order ke paighaam |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` / `SUPABASE_BUCKET` | Status pack ki tasveerein |
+| `REDIS_URL` | Render queue (na ho to dev mein sirf log) |
+| `OPS_API_KEY` | Purane `/api/v1/ops/*` endpoints — naya admin portal is se nahi chalta |
+| `DEFAULT_FEE_RATE_BPS` | Nayi dukan ka default fee rate (500 = 5%) |
+| `RENDER_CONCURRENCY` | Worker ek waqt mein kitne pack banaye |
+
+`NODE_ENV` yahan **set na karen** — Next/Node khud karte hain. `.env` mein reh jaye to
+production build tootti hai aur session cookie `secure` nahi rehti.
+
+---
+
+## 7. Local par sab kuch chalane ke liye
+
+Teen cheezen, teen terminal:
+
+```bash
+pnpm db:local     # Postgres (embedded, port 5433)
+pnpm dev          # website — http://localhost:3000
+pnpm --filter @oyebazar/worker render:watch   # status pack banata hai
+```
+
+Pehli dafa:
+
+```bash
+pnpm install
+pnpm db:migrate:deploy
+pnpm db:seed
+```
+
+Seed ke baad upar wale (§4) saare test accounts kaam karne lag jate hain.
