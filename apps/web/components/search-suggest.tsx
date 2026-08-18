@@ -41,6 +41,7 @@ export function SearchSuggest({
   action,
   className = '',
   autoFocus = false,
+  placeholder,
 }: {
   locale: Locale
   source: Source
@@ -49,6 +50,8 @@ export function SearchSuggest({
   action: string
   className?: string
   autoFocus?: boolean
+  /** Na den to public wala jumla — catalogue par "apne maal mein talash karen" behtar hai */
+  placeholder?: string
 }) {
   const t = translator(locale)
   const router = useRouter()
@@ -141,7 +144,7 @@ export function SearchSuggest({
           onChange={(event) => setQuery(event.target.value)}
           onFocus={() => items.length > 0 && setOpen(true)}
           onKeyDown={onKeyDown}
-          placeholder={t('searchPlaceholder')}
+          placeholder={placeholder ?? t('searchPlaceholder')}
           aria-label={t('search')}
           aria-autocomplete="list"
           aria-controls={listId}

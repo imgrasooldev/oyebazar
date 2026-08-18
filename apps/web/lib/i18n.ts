@@ -197,6 +197,11 @@ const DICTIONARY = {
   orders: { ur: 'آرڈرز', en: 'Orders', rm: 'Orders' },
   catalogue: { ur: 'کیٹلاگ', en: 'Catalogue', rm: 'Catalogue' },
   // ---- Reseller dashboard ----
+  searchStockPlaceholder: {
+    ur: 'اپنے مال میں تلاش کریں…',
+    rm: 'Apne maal mein talash karen…',
+    en: 'Search your stock…',
+  },
   dashboardNav: { ur: 'ڈیش بورڈ', rm: 'Dashboard', en: 'Dashboard' },
   hello: { ur: 'السلام علیکم،', rm: 'Assalam-o-alaikum,', en: 'Hello,' },
   dashboardBody: {

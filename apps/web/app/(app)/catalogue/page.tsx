@@ -111,6 +111,7 @@ export default async function CataloguePage({
             source="catalogue"
             action="/catalogue"
             defaultValue={search ?? ''}
+            placeholder={t('searchStockPlaceholder')}
             className="max-w-xl"
           />
 
@@ -139,7 +140,7 @@ export default async function CataloguePage({
         {items.length === 0 ? (
           <p className="card p-6 text-ink-soft">{t('noItemsListed')}</p>
         ) : (
-          <ul className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
             {items.map((item) => {
               const title = locale === 'ur' ? item.titleUr : item.titleEn
               const myPrice = item.myRetailPrice ?? item.suggestedRetail
@@ -148,7 +149,7 @@ export default async function CataloguePage({
               return (
                 <li key={item.id} className="tile group flex flex-col">
                   <Link href={`/catalogue/${item.id}`} className="block">
-                    <div className="relative aspect-[4/5] overflow-hidden bg-paper-sunken">
+                    <div className="relative aspect-square overflow-hidden bg-paper-sunken">
                       {item.coverImageUrl && (
                         // eslint-disable-next-line @next/next/no-img-element -- storage URLs
                         <img
@@ -166,40 +167,46 @@ export default async function CataloguePage({
                     </div>
                   </Link>
 
-                  <div className="flex flex-1 flex-col p-4">
-                    <p className="line-clamp-2 text-[0.92rem] font-semibold leading-relaxed">
+                  {/*
+                    Card ab kasa hua hai: pehle har card poore screen ka bara hissa kha
+                    jata tha aur ek nazar mein chaar hi maal dikhte the. Reseller yahan
+                    scroll kar ke chunti hai — zyada maal ek saath dikhna hi kaam ka hai.
+
+                    Lagat halke rang mein, rate gehra, aur munafa usi qatar mein sabz —
+                    teen alag lines teen guna jagah leti thin, jabke faisla ek number par
+                    hota hai.
+                  */}
+                  <div className="flex flex-1 flex-col p-3">
+                    <p className="line-clamp-2 text-[0.85rem] font-semibold leading-snug">
                       {title}
                     </p>
 
-                    {/* Lagat aur apna ریٹ — faisla inhi do numbers par hota hai */}
-                    <div className="mt-3 space-y-1 text-[0.82rem]">
-                      <p className="flex items-baseline justify-between text-ink-faint">
-                        <span>{t('yourCost')}</span>
+                    <div className="mt-2 flex items-baseline justify-between gap-2 text-[0.78rem]">
+                      <span className="text-ink-faint line-clamp-1">
+                        {t('yourCost')}{' '}
                         <span dir="ltr" className="numeric">
                           {formatPkr(item.bajiPrice)}
                         </span>
-                      </p>
-                      <p className="flex items-baseline justify-between font-semibold">
-                        <span>{t('yourPrice')}</span>
-                        <span dir="ltr" className="numeric">
-                          {formatPkr(myPrice)}
-                        </span>
-                      </p>
+                      </span>
+                      <span dir="ltr" className="numeric font-bold">
+                        {formatPkr(myPrice)}
+                      </span>
                     </div>
 
-                    <span className="mt-3 inline-flex w-fit items-center gap-1 rounded-pill bg-accent-50 px-3 py-1 text-[0.75rem] font-semibold text-accent-700">
-                      {t('yourProfit')}
-                      <span dir="ltr" className="numeric">
-                        {formatPkr(profit)}
+                    <div className="mt-auto flex items-center justify-between gap-2 pt-2.5">
+                      <span className="rounded-pill bg-accent-50 px-2.5 py-1 text-[0.72rem] font-semibold text-accent-700">
+                        <span dir="ltr" className="numeric">
+                          +{formatPkr(profit)}
+                        </span>
                       </span>
-                    </span>
 
-                    <Link
-                      href={`/catalogue/${item.id}`}
-                      className="btn-primary mt-4 w-full !py-2.5 !text-[0.88rem]"
-                    >
-                      {t('makeStatusPack')}
-                    </Link>
+                      <Link
+                        href={`/catalogue/${item.id}`}
+                        className="btn-primary !px-3 !py-1.5 !text-[0.75rem]"
+                      >
+                        {t('makeStatusPack')}
+                      </Link>
+                    </div>
                   </div>
                 </li>
               )
