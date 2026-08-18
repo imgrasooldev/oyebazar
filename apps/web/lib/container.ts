@@ -83,6 +83,10 @@ function build(): Container {
 
   const pricing = new PricingService(repositories.products, repositories.resellerPricing, analytics)
 
+  // AdminService bhi isay istemal karti hai, is liye object literal se bahar —
+  // literal ke andar se apni hi property reference nahi ho sakti
+  const feeInvoices = new FeeInvoiceService(repositories.feeLedger, clock, analytics, logger)
+
   return {
     repositories,
     clock,
@@ -104,7 +108,7 @@ function build(): Container {
       clock,
       analytics,
     ),
-    feeInvoices: new FeeInvoiceService(repositories.feeLedger, clock, analytics, logger),
+    feeInvoices,
     dailyDrops: new DailyDropService(
       repositories.dailyDrops,
       repositories.products,
@@ -160,7 +164,14 @@ function build(): Container {
       analytics,
       logger,
     ),
-    admin: new AdminService(repositories.admin, clock, analytics, logger),
+    admin: new AdminService(
+      repositories.admin,
+      feeInvoices,
+      repositories.feeLedger,
+      clock,
+      analytics,
+      logger,
+    ),
     supplierCatalogue: new SupplierCatalogueService(
       repositories.supplierProducts,
       analytics,

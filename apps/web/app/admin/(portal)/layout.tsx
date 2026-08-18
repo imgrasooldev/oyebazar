@@ -23,6 +23,7 @@ const TABS = [
   { href: '/admin/suppliers', label: 'Wholesalers' },
   { href: '/admin/products', label: 'Products' },
   { href: '/admin/resellers', label: 'Resellers' },
+  { href: '/admin/money', label: 'Money' },
 ] as const
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

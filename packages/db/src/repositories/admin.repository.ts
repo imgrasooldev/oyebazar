@@ -8,6 +8,7 @@
 import type { PrismaClient } from '@prisma/client'
 import type {
   AdminDashboardStats,
+  AdminInvoiceRow,
   AdminProductRow,
   AdminRepository,
   AdminResellerRow,
@@ -91,6 +92,41 @@ export class PrismaAdminRepository implements AdminRepository {
       resellersActive,
       feePendingThisMonth: pkr(feeSum._sum.amount ?? 0),
     }
+  }
+
+  /**
+   * Invoice ki list.
+   *
+   * FeeLedger mein har order ki apni row hai; invoice un rows ka jama hai. Is liye
+   * yahan groupBy hota hai — alag "Invoice" table jaan boojh kar nahi banaya gaya,
+   * kyunke asal sach ledger hai aur invoice sirf us ka khulasa.
+   */
+  async listInvoices(limit: number): Promise<AdminInvoiceRow[]> {
+    const groups = await this.db.feeLedger.groupBy({
+      by: ['invoiceId', 'invoicePeriod', 'supplierId', 'status'],
+      where: { invoiceId: { not: null } },
+      _sum: { amount: true },
+      _count: { _all: true },
+      _max: { invoicedAt: true },
+      orderBy: { _max: { invoicedAt: 'desc' } },
+      take: limit,
+    })
+
+    const suppliers = await this.db.supplier.findMany({
+      where: { id: { in: groups.map((group) => group.supplierId) } },
+      select: { id: true, businessName: true },
+    })
+    const names = new Map(suppliers.map((supplier) => [supplier.id, supplier.businessName]))
+
+    return groups.map((group) => ({
+      invoiceId: group.invoiceId ?? '',
+      period: group.invoicePeriod ?? '',
+      supplierName: names.get(group.supplierId) ?? '—',
+      orders: group._count._all,
+      amount: pkr(group._sum.amount ?? 0),
+      status: group.status,
+      invoicedAt: group._max.invoicedAt,
+    }))
   }
 
   // ------------------------------------------------------------------ suppliers

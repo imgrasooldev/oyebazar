@@ -17,13 +17,16 @@
 import { ForbiddenError, ValidationError, type Pkr } from '@oyebazar/shared'
 import type {
   AdminDashboardStats,
+  AdminInvoiceRow,
   AdminProductRow,
   AdminRepository,
   AdminResellerRow,
   AdminSupplierRow,
   OpsUserView,
 } from '../ports/admin-repositories'
+import type { FeeLedgerRepository } from '../ports/order-repositories'
 import type { Analytics, Clock, Logger } from '../ports/infrastructure'
+import type { FeeInvoiceService } from './fee-invoice.service'
 
 /** Bara number pehle — FOUNDER sab kuch kar sakta hai. */
 const RANK: Record<OpsUserView['role'], number> = {
@@ -38,6 +41,8 @@ const MAX_FEE_BPS = 2_000
 export class AdminService {
   constructor(
     private readonly admin: AdminRepository,
+    private readonly feeInvoices: FeeInvoiceService,
+    private readonly feeLedger: FeeLedgerRepository,
     private readonly clock: Clock,
     private readonly analytics: Analytics,
     private readonly logger: Logger,
@@ -67,6 +72,59 @@ export class AdminService {
   async dashboard(actor: OpsUserView): Promise<AdminDashboardStats> {
     this.require(actor, 'COORDINATOR')
     return this.admin.dashboard(this.clock.now())
+  }
+
+  // ---------------------------------------------------------------------- paisa
+
+  /**
+   * Paise ka poora manzar: is mahine ki wasooli, agli invoice mein kya jayega, aur
+   * ab tak ke invoice.
+   *
+   * Dekhna COORDINATOR ko bhi milta hai — number chhupane se koi hifazat nahi hoti,
+   * aur ops ko rozana pata hona chahiye ke kis supplier se paisa aana hai. Badalne
+   * (invoice banana, collected karna) ke ikhtiyar alag hain.
+   */
+  async money(actor: OpsUserView): Promise<{
+    health: Awaited<ReturnType<FeeInvoiceService['collectionHealth']>>
+    period: string
+    pending: { supplierId: string; businessName: string; orders: number; amount: Pkr }[]
+    invoices: AdminInvoiceRow[]
+  }> {
+    this.require(actor, 'COORDINATOR')
+
+    const { period, from, to } = this.feeInvoices.previousMonthPeriod()
+
+    const [health, pending, invoices] = await Promise.all([
+      this.feeInvoices.collectionHealth(),
+      // Agli invoice mein kya jayega — pichhle mahine ki wo rows jo abhi PENDING hain
+      this.feeLedger.summarisePending({ from, to }),
+      this.admin.listInvoices(50),
+    ])
+
+    return { health, period, pending, invoices }
+  }
+
+  /**
+   * 🔴 Sirf FOUNDER — invoice banate hi ledger ki rows PENDING se INVOICED ho jati
+   * hain, aur wo wapas nahi hoti. Ghalat mahine par chalane ka matlab hai aadhe
+   * mahine ki fee bill ho gayi.
+   */
+  async generateInvoices(actor: OpsUserView) {
+    this.require(actor, 'FOUNDER')
+    const invoices = await this.feeInvoices.generateMonthlyInvoices()
+    await this.record(actor, 'admin_invoices_generated', {
+      count: invoices.length,
+      total: invoices.reduce((sum, invoice) => sum + invoice.amount, 0),
+    })
+    return invoices
+  }
+
+  /** Paisa aa gaya. MANAGER kar sakta hai — ye rozana ka kaam hai, faisla nahi. */
+  async markInvoiceCollected(actor: OpsUserView, invoiceId: string) {
+    this.require(actor, 'MANAGER')
+    const result = await this.feeInvoices.markCollected(invoiceId)
+    await this.record(actor, 'admin_invoice_collected', { invoiceId, ...result })
+    return result
   }
 
   // ------------------------------------------------------------------ suppliers

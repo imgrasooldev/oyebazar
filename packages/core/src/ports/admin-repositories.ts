@@ -80,7 +80,21 @@ export interface AdminResellerRow {
   readonly createdAt: Date
 }
 
+export interface AdminInvoiceRow {
+  readonly invoiceId: string
+  readonly period: string
+  readonly supplierName: string
+  readonly orders: number
+  readonly amount: Pkr
+  /** Ek invoice ki saari rows ek hi haal mein hoti hain — INVOICED ya COLLECTED */
+  readonly status: string
+  readonly invoicedAt: Date | null
+}
+
 export interface AdminRepository {
+  /** Bane hue invoice — naye pehle. Ledger rows invoiceId par jama kar ke. */
+  listInvoices(limit: number): Promise<AdminInvoiceRow[]>
+
   dashboard(now: Date): Promise<AdminDashboardStats>
 
   listSuppliers(filter: { status?: string; limit: number }): Promise<AdminSupplierRow[]>
