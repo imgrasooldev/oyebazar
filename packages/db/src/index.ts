@@ -14,6 +14,7 @@ import {
   PrismaOpsUserRepository,
 } from './repositories/admin.repository'
 import { PrismaResellerRepository } from './repositories/reseller.repository'
+import { PrismaResellerStatsRepository } from './repositories/reseller-stats.repository'
 import { PrismaResellerPricingRepository } from './repositories/reseller-pricing.repository'
 import { PrismaStatusPackRepository } from './repositories/status-pack.repository'
 import { PrismaSessionRepository } from './repositories/session.repository'
@@ -35,6 +36,7 @@ export interface Repositories {
   admin: PrismaAdminRepository
   opsUsers: PrismaOpsUserRepository
   resellers: PrismaResellerRepository
+  resellerStats: PrismaResellerStatsRepository
   resellerPricing: PrismaResellerPricingRepository
   statusPacks: PrismaStatusPackRepository
   sessions: PrismaSessionRepository
@@ -56,6 +58,7 @@ export function createRepositories(client: PrismaClient = prisma): Repositories 
     admin: new PrismaAdminRepository(client),
     opsUsers: new PrismaOpsUserRepository(client),
     resellers: new PrismaResellerRepository(client),
+    resellerStats: new PrismaResellerStatsRepository(client),
     resellerPricing: new PrismaResellerPricingRepository(client),
     statusPacks: new PrismaStatusPackRepository(client),
     sessions: new PrismaSessionRepository(client),
@@ -77,6 +80,7 @@ export * from './repositories/supplier.repository'
 export * from './repositories/supplier-product.repository'
 export * from './repositories/admin.repository'
 export * from './repositories/reseller.repository'
+export * from './repositories/reseller-stats.repository'
 export * from './repositories/reseller-pricing.repository'
 export * from './repositories/status-pack.repository'
 export * from './repositories/session.repository'

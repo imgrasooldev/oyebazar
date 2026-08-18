@@ -196,6 +196,40 @@ const DICTIONARY = {
   makeStatusPack: { ur: 'اسٹیٹس پیک بنائیں', en: 'Make status pack', rm: 'Status pack banayen' },
   orders: { ur: 'آرڈرز', en: 'Orders', rm: 'Orders' },
   catalogue: { ur: 'کیٹلاگ', en: 'Catalogue', rm: 'Catalogue' },
+  // ---- Reseller dashboard ----
+  dashboardNav: { ur: 'ڈیش بورڈ', rm: 'Dashboard', en: 'Dashboard' },
+  hello: { ur: 'السلام علیکم،', rm: 'Assalam-o-alaikum,', en: 'Hello,' },
+  dashboardBody: {
+    ur: 'آج کا کام ایک نظر میں — پہلے وہ جو رکا ہوا ہے۔',
+    rm: 'Aaj ka kaam ek nazar mein — pehle wo jo ruka hua hai.',
+    en: 'Today at a glance — what is waiting on you first.',
+  },
+  earnedThisMonth: { ur: 'اس مہینے کمایا', rm: 'Is mahine kamaya', en: 'Earned this month' },
+  earnedTotal: { ur: 'کل کمائی:', rm: 'Kul kamai:', en: 'All time:' },
+  ordersRunning: { ur: 'چل رہے آرڈرز', rm: 'Chal rahe orders', en: 'Orders running' },
+  ordersRunningHint: {
+    ur: 'ابھی راستے میں یا ہول سیلر کے پاس',
+    rm: 'Abhi raste mein ya wholesaler ke paas',
+    en: 'On the way or with the wholesaler',
+  },
+  ordersDelivered: { ur: 'پہنچ گئے', rm: 'Pohanch gaye', en: 'Delivered' },
+  packsMade: { ur: 'بنائے گئے پیک', rm: 'Banaye gaye pack', en: 'Packs made' },
+  packsDownloaded: { ur: 'ڈاؤن لوڈ ہوئے', rm: 'download hue', en: 'downloaded' },
+  shortcutCatalogue: {
+    ur: 'مال دیکھیں اور اسٹیٹس پیک بنائیں',
+    rm: 'Maal dekhen aur status pack banayen',
+    en: 'Browse stock and make status packs',
+  },
+  shortcutOrders: {
+    ur: 'اپنے آرڈرز اور کمائی',
+    rm: 'Apne orders aur kamai',
+    en: 'Your orders and earnings',
+  },
+  shortcutBazaar: {
+    ur: 'ہول سیلرز کی ڈائریکٹری',
+    rm: 'Wholesalers ki directory',
+    en: 'The wholesaler directory',
+  },
   myOrders: { ur: 'میرے آرڈرز', en: 'My orders', rm: 'Mere orders' },
   earnedSoFar: { ur: 'اب تک کمایا', en: 'Earned so far', rm: 'Ab tak kamaya' },
   // ---- Content Studio

@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function LoginPage() {
   const [actor, locale] = await Promise.all([getResellerOrNull(), getLocale()])
-  if (actor) redirect('/catalogue')
+  if (actor) redirect('/dashboard')
 
   const t = translator(locale)
 

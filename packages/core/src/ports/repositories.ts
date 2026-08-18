@@ -138,6 +138,28 @@ export interface StatusPackCacheKey {
   readonly format: PackFormatKey
 }
 
+/**
+ * Reseller ka apna dashboard.
+ *
+ * 🔴 Yahan sirf US KE apne number hain — koi supplier, koi doosri reseller nahi.
+ * Har method ka pehla argument resellerId hai aur wo query ke `where` mein jata hai.
+ */
+export interface ResellerStatsView {
+  /** Us ki tasdeeq ka intezar — jab tak ye baqi hai, order kahin nahi ja raha */
+  readonly ordersAwaitingConfirmation: number
+  readonly ordersRunning: number
+  readonly ordersDelivered: number
+  /** Sirf DELIVERED par kamai — jo abhi raste mein hai wo abhi paisa nahi hai */
+  readonly earnedTotal: Pkr
+  readonly earnedThisMonth: Pkr
+  readonly packsMade: number
+  readonly packsDownloaded: number
+}
+
+export interface ResellerStatsRepository {
+  summary(resellerId: string, now: Date): Promise<ResellerStatsView>
+}
+
 export interface StatusPackRepository {
   /** 🔴 Cache lookup — DB ka unique constraint hi cache key hai. */
   findByCacheKey(key: StatusPackCacheKey): Promise<StatusPackView | null>

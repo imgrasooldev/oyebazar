@@ -71,7 +71,7 @@ export function LoginForm({ locale }: { locale: Locale }) {
     startTransition(async () => {
       const result = await post('/api/v1/auth/otp/verify', { phone, code })
       if (result.ok) {
-        router.replace('/catalogue')
+        router.replace('/dashboard')
         return
       }
 
@@ -89,7 +89,7 @@ export function LoginForm({ locale }: { locale: Locale }) {
     setError(null)
     startTransition(async () => {
       const result = await post('/api/v1/auth/register', { phone, code, name, city })
-      if (result.ok) router.replace('/catalogue')
+      if (result.ok) router.replace('/dashboard')
       else setError(result.message ?? null)
     })
   }
