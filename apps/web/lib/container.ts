@@ -5,6 +5,7 @@
  * Isi wajah se test mein poori service graph fake ports ke saath khari ho jati hai.
  */
 import {
+  AdminService,
   AuthService,
   BazaarService,
   CatalogueService,
@@ -12,6 +13,7 @@ import {
   FeeInvoiceService,
   OrderService,
   PricingService,
+  OpsAuthService,
   StatusPackService,
   SupplierAuthService,
   SupplierCatalogueService,
@@ -47,6 +49,9 @@ export interface Container {
   readonly auth: AuthService
   /** Wholesaler portal — reseller wali auth se alag, qawaid alag hain. */
   readonly supplierAuth: SupplierAuthService
+  /** Admin portal — ops ka apna login aur website ki management. */
+  readonly opsAuth: OpsAuthService
+  readonly admin: AdminService
   readonly supplierCatalogue: SupplierCatalogueService
   readonly orders: OrderService
   readonly dailyDrops: DailyDropService
@@ -144,6 +149,18 @@ function build(): Container {
       analytics,
       logger,
     ),
+    opsAuth: new OpsAuthService(
+      repositories.otpChallenges,
+      repositories.sessions,
+      repositories.opsUsers,
+      messaging,
+      tokens,
+      clock,
+      rateLimiter,
+      analytics,
+      logger,
+    ),
+    admin: new AdminService(repositories.admin, clock, analytics, logger),
     supplierCatalogue: new SupplierCatalogueService(
       repositories.supplierProducts,
       analytics,

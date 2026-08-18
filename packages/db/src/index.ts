@@ -9,6 +9,10 @@ import { prisma } from './client'
 import { PrismaProductRepository } from './repositories/product.repository'
 import { PrismaSupplierRepository } from './repositories/supplier.repository'
 import { PrismaSupplierProductRepository } from './repositories/supplier-product.repository'
+import {
+  PrismaAdminRepository,
+  PrismaOpsUserRepository,
+} from './repositories/admin.repository'
 import { PrismaResellerRepository } from './repositories/reseller.repository'
 import { PrismaResellerPricingRepository } from './repositories/reseller-pricing.repository'
 import { PrismaStatusPackRepository } from './repositories/status-pack.repository'
@@ -28,6 +32,8 @@ export interface Repositories {
   products: PrismaProductRepository
   suppliers: PrismaSupplierRepository
   supplierProducts: PrismaSupplierProductRepository
+  admin: PrismaAdminRepository
+  opsUsers: PrismaOpsUserRepository
   resellers: PrismaResellerRepository
   resellerPricing: PrismaResellerPricingRepository
   statusPacks: PrismaStatusPackRepository
@@ -47,6 +53,8 @@ export function createRepositories(client: PrismaClient = prisma): Repositories 
     products: new PrismaProductRepository(client),
     suppliers: new PrismaSupplierRepository(client),
     supplierProducts: new PrismaSupplierProductRepository(client),
+    admin: new PrismaAdminRepository(client),
+    opsUsers: new PrismaOpsUserRepository(client),
     resellers: new PrismaResellerRepository(client),
     resellerPricing: new PrismaResellerPricingRepository(client),
     statusPacks: new PrismaStatusPackRepository(client),
@@ -67,6 +75,7 @@ export * from './selectors'
 export * from './repositories/product.repository'
 export * from './repositories/supplier.repository'
 export * from './repositories/supplier-product.repository'
+export * from './repositories/admin.repository'
 export * from './repositories/reseller.repository'
 export * from './repositories/reseller-pricing.repository'
 export * from './repositories/status-pack.repository'

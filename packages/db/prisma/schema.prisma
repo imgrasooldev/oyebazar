@@ -462,8 +462,12 @@ model OpsUser {
   id        String    @id @default(cuid())
   name      String
   email     String    @unique
+  // 🔴 Login WhatsApp OTP se hota hai — poore system mein koi password nahi hai,
+  // aur ops ke liye alag tareeqa banane ka matlab ek aur cheez ka toot-na.
+  phone     String?   @unique
   role      OpsRole   @default(COORDINATOR)
   isActive  Boolean   @default(true)
+  lastSeenAt DateTime?
   createdAt DateTime  @default(now())
   sessions  Session[]
 }
