@@ -197,6 +197,9 @@ const DICTIONARY = {
   orders: { ur: 'آرڈرز', en: 'Orders', rm: 'Orders' },
   catalogue: { ur: 'کیٹلاگ', en: 'Catalogue', rm: 'Catalogue' },
   // ---- Reseller dashboard ----
+  // Card par chhota lafz — poora jumla ("Status pack banayen") 214px ke card mein
+  // do line le leta hai aur toota hua lagta hai. Product ke safhe par poora jumla hai.
+  makePackShort: { ur: 'پیک بنائیں', rm: 'Pack banayen', en: 'Status pack' },
   searchStockPlaceholder: {
     ur: 'اپنے مال میں تلاش کریں…',
     rm: 'Apne maal mein talash karen…',

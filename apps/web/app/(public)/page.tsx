@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { CategoryMenu } from '@/components/category-menu'
 import { CategoryStrip } from '@/components/category-strip'
 import { NextDropCountdown } from '@/components/next-drop-countdown'
+import { SupplierLogo } from '@/components/supplier-logo'
 import {
   BoxesIcon,
   ChatIcon,
@@ -233,7 +234,7 @@ export default async function HomePage() {
               linkLabel={t('viewAll')}
             />
 
-            <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {tree.slice(0, 6).map((category) => (
                 <li key={category.slug}>
                   <Link
@@ -315,13 +316,18 @@ export default async function HomePage() {
             linkLabel={t('viewAll')}
           />
 
-          <ul className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
-            {productCards.slice(0, 8).map((product) => {
+          {/*
+            Card kase hue hain: pehle 4:5 ki tasveer aur chaar column the, jis se chaar
+            maal poori screen kha jate the. Ye directory hai — dekhne wala scroll kar ke
+            chunta hai, is liye ek nazar mein zyada maal dikhna hi kaam ka hai.
+          */}
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
+            {productCards.slice(0, 12).map((product) => {
               const title = locale === 'ur' ? product.titleUr : product.titleEn
               return (
                 <li key={product.slug} className="tile group">
                   <Link href={`/bazaar/${product.supplierSlug}`} className="block">
-                    <div className="relative aspect-[4/5] overflow-hidden bg-paper-sunken">
+                    <div className="relative aspect-square overflow-hidden bg-paper-sunken">
                       {product.coverImageUrl && (
                         // eslint-disable-next-line @next/next/no-img-element -- storage URLs
                         <img
@@ -333,18 +339,18 @@ export default async function HomePage() {
                       )}
 
                       {/* Hover par CTA upar aata hai — card "clickable" mehsoos hota hai */}
-                      <div className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-brand-900/90 to-transparent p-4 text-center text-sm font-semibold text-white transition duration-300 ease-soft group-hover:translate-y-0">
+                      <div className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-brand-900/90 to-transparent p-2.5 text-center text-[0.8rem] font-semibold text-white transition duration-300 ease-soft group-hover:translate-y-0">
                         {t('askRate')}
                       </div>
                     </div>
 
-                    <div className="p-4">
-                      <p className="line-clamp-2 text-[0.95rem] font-semibold leading-relaxed">
+                    <div className="p-3">
+                      <p className="line-clamp-2 text-[0.85rem] font-semibold leading-snug">
                         {title}
                       </p>
-                      <p className="mt-1.5 flex items-center gap-1 truncate text-xs text-ink-faint">
+                      <p className="mt-1 flex items-center gap-1 truncate text-[0.72rem] text-ink-faint">
                         <PinIcon className="h-3 w-3 shrink-0" />
-                        {product.supplierCity} · {product.supplierName}
+                        {product.supplierCity}
                       </p>
                     </div>
                   </Link>
@@ -362,20 +368,28 @@ export default async function HomePage() {
             linkLabel={t('viewAll')}
           />
 
-          <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {/*
+            🔴 `min-w-0` grid item par lazmi hai. Andar `truncate` hai, jo whitespace-nowrap
+            lagata hai — us se column ka min-content poore naam jitna chaura ho jata hai
+            aur 360px par card safhe se bahar nikal jata hai (mobile audit ne 28px pakra).
+          */}
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {supplierCards.map((supplier) => (
-              <li key={supplier.slug}>
-                <Link href={`/bazaar/${supplier.slug}`} className="tile group block p-6">
+              <li key={supplier.slug} className="min-w-0">
+                <Link href={`/bazaar/${supplier.slug}`} className="tile group block p-4">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h3 className="truncate text-[1.15rem] font-bold">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <SupplierLogo name={supplier.businessName} logoUrl={supplier.logoUrl} />
+                      <div className="min-w-0">
+                      <h3 className="truncate text-[1.02rem] font-bold">
                         {supplier.businessName}
                       </h3>
-                      <p className="mt-1.5 flex items-center gap-1 text-sm text-ink-faint">
+                      <p className="mt-1 flex items-center gap-1 text-[0.8rem] text-ink-faint">
                         <PinIcon className="h-3.5 w-3.5" />
                         {supplier.city}
                         {supplier.marketName ? ` · ${supplier.marketName}` : ''}
                       </p>
+                      </div>
                     </div>
                     <span className="badge-verified shrink-0">
                       <CheckBadgeIcon className="h-3.5 w-3.5" />
@@ -383,13 +397,13 @@ export default async function HomePage() {
                     </span>
                   </div>
 
-                  <div className="hairline my-5" />
+                  <div className="hairline my-3" />
 
                   <div className="flex flex-wrap gap-1.5">
                     {supplier.categories.slice(0, 4).map((category) => (
                       <span
                         key={category.nameEn}
-                        className="rounded-pill bg-paper-sunken px-3 py-1 text-xs text-ink-soft"
+                        className="rounded-pill bg-paper-sunken px-2.5 py-0.5 text-[0.72rem] text-ink-soft"
                       >
                         {pickName(locale, category)}
                       </span>

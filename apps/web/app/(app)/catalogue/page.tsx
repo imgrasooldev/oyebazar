@@ -193,8 +193,14 @@ export default async function CataloguePage({
                       </span>
                     </div>
 
-                    <div className="mt-auto flex items-center justify-between gap-2 pt-2.5">
-                      <span className="rounded-pill bg-accent-50 px-2.5 py-1 text-[0.72rem] font-semibold text-accent-700">
+                    {/*
+                      Munafa aur button ek hi qatar mein thay — 214px ke card mein dono
+                      samate nahi the aur button ke lafz toot jate the. Ab munafa apni
+                      line mein (chhota, sabz) aur button poori chaurai par: ek nazar
+                      mein saaf, aur ungli ke liye bara nishana.
+                    */}
+                    <div className="mt-auto pt-2.5">
+                      <span className="inline-flex rounded-pill bg-accent-50 px-2.5 py-1 text-[0.72rem] font-semibold text-accent-700">
                         <span dir="ltr" className="numeric">
                           +{formatPkr(profit)}
                         </span>
@@ -202,9 +208,9 @@ export default async function CataloguePage({
 
                       <Link
                         href={`/catalogue/${item.id}`}
-                        className="btn-primary !px-3 !py-1.5 !text-[0.75rem]"
+                        className="btn-primary mt-2 w-full !px-2 !py-1.5 !text-[0.78rem]"
                       >
-                        {t('makeStatusPack')}
+                        {t('makePackShort')}
                       </Link>
                     </div>
                   </div>

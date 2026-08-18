@@ -4,6 +4,7 @@ import { BazaarQuerySchema } from '@oyebazar/shared'
 import { CategoryStrip } from '@/components/category-strip'
 import { toPublicSupplierListDTO } from '@/lib/api/mappers'
 import { container } from '@/lib/container'
+import { SupplierLogo } from '@/components/supplier-logo'
 import { pickName, translator } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
 
@@ -104,18 +105,25 @@ export default async function BazaarPage({
           ) : (
             <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {suppliers.map((supplier) => (
-                <li key={supplier.slug}>
+                // min-w-0: andar truncate hai, warna column poore naam jitna chaura ho jata hai
+                <li key={supplier.slug} className="min-w-0">
                   <Link href={`/bazaar/${supplier.slug}`} className="tile group block p-4">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <h2 className="font-bold">{supplier.businessName}</h2>
-                      <span className="rounded bg-accent-50 px-2 py-0.5 text-xs font-semibold text-accent-700">
-                        {t('verified')}
-                      </span>
+                    <div className="flex items-start gap-3">
+                      <SupplierLogo name={supplier.businessName} logoUrl={supplier.logoUrl} />
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <h2 className="truncate font-bold">{supplier.businessName}</h2>
+                          <span className="shrink-0 rounded bg-accent-50 px-2 py-0.5 text-xs font-semibold text-accent-700">
+                            {t('verified')}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm text-ink-soft">
+                          {supplier.city}
+                          {supplier.marketName ? ` · ${supplier.marketName}` : ''}
+                        </p>
+                      </div>
                     </div>
-                    <p className="mt-1 text-sm text-ink-soft">
-                      {supplier.city}
-                      {supplier.marketName ? ` · ${supplier.marketName}` : ''}
-                    </p>
                     {supplier.categories.length > 0 && (
                       <p className="mt-2 line-clamp-1 text-sm text-ink-soft">
                         {supplier.categories

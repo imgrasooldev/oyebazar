@@ -28,8 +28,13 @@ export function SiteHeader({
   return (
     <header className="sticky top-0 z-30">
       <div className="bg-coal-900 text-white/90">
-        <div className="mx-auto flex max-w-shell items-center justify-between gap-4 px-5 py-1 text-[0.75rem] lg:px-8">
-          <p className="truncate">{t('brandTagline')}</p>
+        <div className="mx-auto flex max-w-shell items-center justify-between gap-3 px-5 py-1 text-[0.75rem] lg:px-8">
+          {/*
+            min-w-0 lazmi hai: truncate tab hi chalta hai jab flex item ko sikurne ki
+            ijazat ho. Ye na ho to teen zabanon ka switcher patti ko 360px se bahar
+            dhakel deta hai (mobile audit ne 28px overflow pakra tha).
+          */}
+          <p className="min-w-0 truncate">{t('brandTagline')}</p>
           <div className="flex shrink-0 items-center gap-3">
             <span className="hidden sm:inline">{t('noOrderButton')}</span>
             <span className="hidden text-white/30 sm:inline">•</span>

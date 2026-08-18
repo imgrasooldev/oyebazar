@@ -59,15 +59,39 @@ async function main(): Promise<void> {
       const doc = document.documentElement
       const overflow = doc.scrollWidth - doc.clientWidth
 
-      // kaun sa element chaurai se bahar nikal raha hai
+      /*
+       * Kaun sa element chaurai se bahar nikal raha hai.
+       *
+       * 🔴 Dono taraf dekhna zaroori hai. Pehle sirf `rect.right` dekha jata tha, magar
+       * hamari site RTL hai — wahan content BAEN taraf bahar jata hai (left manfi hota
+       * hai). Is blind spot ki wajah se audit "28px overflow" to batata tha magar element
+       * ki list KHALI aati thi, aur wajah dhoondne mein waqt gaya.
+       *
+       * Sirf wo element ginte hain jo khud clip nahi karte — rail jaisi cheezon ke andar
+       * ka content jaan boojh kar chaura hota hai aur wo safhe ko nahi torta.
+       */
       const wide: string[] = []
       for (const el of Array.from(document.querySelectorAll('body *'))) {
         const rect = el.getBoundingClientRect()
-        if (rect.width > 0 && rect.right > doc.clientWidth + 2) {
-          const node = el as HTMLElement
-          const label = `${node.tagName.toLowerCase()}.${(node.className || '').toString().split(' ').slice(0, 3).join('.')}`
-          if (!wide.includes(label)) wide.push(label)
+        if (rect.width === 0) continue
+
+        const outside = rect.right > doc.clientWidth + 2 || rect.left < -2
+        if (!outside) continue
+
+        // Kisi scroll hone wale dabbe ke andar hai? To ye safhe ka masla nahi
+        let inScroller = false
+        for (let parent = el.parentElement; parent; parent = parent.parentElement) {
+          const overflowX = getComputedStyle(parent).overflowX
+          if (overflowX === 'auto' || overflowX === 'scroll' || overflowX === 'hidden') {
+            inScroller = true
+            break
+          }
         }
+        if (inScroller) continue
+
+        const node = el as HTMLElement
+        const label = `${node.tagName.toLowerCase()}.${(node.className || '').toString().split(' ').slice(0, 3).join('.')}`
+        if (!wide.includes(label)) wide.push(label)
         if (wide.length >= 5) break
       }
 

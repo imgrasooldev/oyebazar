@@ -210,6 +210,12 @@ const CATALOGUE = [
   },
 ] as const
 
+/*
+ * Naam wohi jo dukan wale ne khud likha — kuch Urdu mein, kuch angrezi mein.
+ * Ye asal soorat-e-haal hai: Bolton Market ki purani dukanen apna naam Urdu mein
+ * likhwati hain, jabke Sialkot/Karachi ke naye exporters angrezi mein. App kisi ek
+ * zaban par majboor nahi karti — businessName ek hi khaana hai.
+ */
 const SUPPLIERS = [
   { slug: 'al-madina-fabrics', businessName: 'المدینہ فیبرکس', ownerName: 'Kashif Ali', city: 'Karachi', marketName: 'Bolton Market' },
   { slug: 'noor-textiles', businessName: 'نور ٹیکسٹائل', ownerName: 'Adnan Sheikh', city: 'Karachi', marketName: 'Bolton Market' },
@@ -218,6 +224,11 @@ const SUPPLIERS = [
   { slug: 'faisal-fabrics', businessName: 'فیصل فیبرکس', ownerName: 'Imran Butt', city: 'Faisalabad', marketName: 'Rail Bazaar' },
   { slug: 'rehman-traders', businessName: 'رحمان ٹریڈرز', ownerName: 'Abdul Rehman', city: 'Karachi', marketName: 'Jodia Bazaar' },
   { slug: 'khan-electronics', businessName: 'خان الیکٹرانکس', ownerName: 'Wajid Khan', city: 'Rawalpindi', marketName: 'Raja Bazaar' },
+  { slug: 'sialkot-sports-co', businessName: 'Sialkot Sports Co.', ownerName: 'Bilal Nadeem', city: 'Sialkot', marketName: 'Small Industrial Estate' },
+  { slug: 'metro-home-supplies', businessName: 'Metro Home Supplies', ownerName: 'Hamza Tariq', city: 'Lahore', marketName: 'Hall Road' },
+  { slug: 'crescent-cosmetics', businessName: 'Crescent Cosmetics', ownerName: 'Ayesha Siddiqui', city: 'Karachi', marketName: 'Empress Market' },
+  { slug: 'multan-dry-fruits', businessName: 'Multan Dry Fruits & Spices', ownerName: 'Zahid Hussain', city: 'Multan', marketName: 'Hussain Agahi' },
+  { slug: 'peshawar-crockery', businessName: 'Peshawar Crockery House', ownerName: 'Noor Zaman', city: 'Peshawar', marketName: 'Qissa Khwani' },
 ]
 
 const RESELLERS = [
