@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { BRAND } from '@oyebazar/shared'
-import { dirOf } from '@/lib/i18n'
+import { dirOf, htmlLang, isUrduScript } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
 import './globals.css'
 
@@ -33,8 +33,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = await getLocale()
 
   return (
-    <html lang={locale} dir={dirOf(locale)}>
-      <body className={locale === 'ur' ? 'font-urdu' : 'font-sans'}>{children}</body>
+    <html lang={htmlLang(locale)} dir={dirOf(locale)}>
+      {/* Nastaliq sirf Urdu script par — Roman Urdu Latin haroof mein hai */}
+      <body className={isUrduScript(locale) ? 'font-urdu' : 'font-sans'}>{children}</body>
     </html>
   )
 }

@@ -1,12 +1,12 @@
 import type { Metadata } from 'next'
-import { ORDER_STATUS_EN, ORDER_STATUS_UR, formatPkr } from '@oyebazar/shared'
+import { formatPkr } from '@oyebazar/shared'
 import type { SupplierOrderView } from '@oyebazar/core'
 import { SupplierOrderActions } from '@/components/supplier-order-actions'
 import { PinIcon } from '@/components/icons'
 import { requireSupplier } from '@/lib/api/supplier-session'
 import { container } from '@/lib/container'
 import { orderStatusStyle } from '@/lib/order-status-style'
-import { translator, type Locale } from '@/lib/i18n'
+import { orderStatusLabel, translator, type Locale } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
 
 export const metadata: Metadata = {
@@ -100,7 +100,7 @@ function Section({
 
 function OrderCard({ order, locale }: { order: SupplierOrderView; locale: Locale }) {
   const t = translator(locale)
-  const label = locale === 'ur' ? ORDER_STATUS_UR[order.status] : ORDER_STATUS_EN[order.status]
+  const label = orderStatusLabel(locale, order.status)
 
   // Wholesaler ki apni raqam — order ka `total` (customer ka retail) us ka number nahi hai
   const myTotal = order.items.reduce((sum, item) => sum + item.supplierPrice * item.qty, 0)

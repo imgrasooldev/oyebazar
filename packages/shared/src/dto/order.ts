@@ -22,7 +22,7 @@ export const OrderStatusSchema = z.enum([
 
 export const ConfirmedBySchema = z.enum(['RESELLER', 'CUSTOMER', 'OPS'])
 
-/** UI mein status kabhi kachcha enum na dikhe — dono zubanon mein labels. */
+/** UI mein status kabhi kachcha enum na dikhe — teenon zubanon mein labels. */
 export const ORDER_STATUS_UR: Record<z.infer<typeof OrderStatusSchema>, string> = {
   PENDING_CONFIRM: 'تصدیق باقی ہے',
   CONFIRMED: 'تصدیق ہو گئی',
@@ -33,6 +33,18 @@ export const ORDER_STATUS_UR: Record<z.infer<typeof OrderStatusSchema>, string> 
   DELIVERED: 'پہنچ گیا',
   RTO: 'واپس آ گیا',
   CANCELLED: 'منسوخ',
+}
+
+export const ORDER_STATUS_RM: Record<z.infer<typeof OrderStatusSchema>, string> = {
+  PENDING_CONFIRM: 'Tasdeeq baqi hai',
+  CONFIRMED: 'Tasdeeq ho gayi',
+  SENT_TO_SUPPLIER: 'Wholesaler ke paas',
+  ACCEPTED: 'Wholesaler ne qubool kiya',
+  REJECTED: 'Wholesaler ne maazrat ki',
+  DISPATCHED: 'Raste mein',
+  DELIVERED: 'Pohanch gaya',
+  RTO: 'Wapas aa gaya',
+  CANCELLED: 'Mansookh',
 }
 
 export const ORDER_STATUS_EN: Record<z.infer<typeof OrderStatusSchema>, string> = {

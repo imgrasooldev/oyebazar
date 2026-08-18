@@ -5,15 +5,15 @@ import { formatPkr, type PackKit, type PackKitAsset } from '@oyebazar/shared'
 import { CopyIcon, DownloadIcon, SparkIcon } from '@/components/icons'
 import { translator, type Locale } from '@/lib/i18n'
 
-const TEMPLATE_NAMES: Record<string, { ur: string; en: string }> = {
-  simple: { ur: 'سادہ', en: 'Simple' },
-  sale: { ur: 'سیل', en: 'Sale' },
-  eid: { ur: 'عید', en: 'Eid' },
-  ramadan: { ur: 'رمضان', en: 'Ramadan' },
-  'new-arrival': { ur: 'نیا مال', en: 'New arrival' },
-  wedding: { ur: 'شادی', en: 'Wedding' },
-  winter: { ur: 'سردی', en: 'Winter' },
-  summer: { ur: 'گرمی', en: 'Summer' },
+const TEMPLATE_NAMES: Record<string, Record<Locale, string>> = {
+  simple: { ur: 'سادہ', rm: 'Sada', en: 'Simple' },
+  sale: { ur: 'سیل', rm: 'Sale', en: 'Sale' },
+  eid: { ur: 'عید', rm: 'Eid', en: 'Eid' },
+  ramadan: { ur: 'رمضان', rm: 'Ramzan', en: 'Ramadan' },
+  'new-arrival': { ur: 'نیا مال', rm: 'Naya maal', en: 'New arrival' },
+  wedding: { ur: 'شادی', rm: 'Shadi', en: 'Wedding' },
+  winter: { ur: 'سردی', rm: 'Sardi', en: 'Winter' },
+  summer: { ur: 'گرمی', rm: 'Garmi', en: 'Summer' },
 }
 
 interface Props {
