@@ -11,6 +11,7 @@
     "render:watch": "dotenv -e ../../.env -- tsx src/cli/render-watch.ts",
     "shoot": "tsx src/cli/shoot-pages.ts",
     "mobile:audit": "tsx src/cli/mobile-audit.ts",
+    "docs:pdf": "tsx src/cli/docs-pdf.ts",
     "daily:dev": "dotenv -e ../../.env -- tsx src/cli/daily-dev.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests"

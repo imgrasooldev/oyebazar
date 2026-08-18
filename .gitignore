@@ -32,3 +32,6 @@ packages/db/generated/
 # design/QA artefacts — repo mein nahi jate
 apps/worker/shots/
 apps/worker/preview-out/
+
+# PDF banate waqt ka preview — sirf dekhne ke liye, repo mein nahi
+docs/*-preview.png

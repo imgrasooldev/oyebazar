@@ -13,6 +13,13 @@ wo do documents lazmi hain.
 Kaun kahan se andar aata hai (reseller, wholesaler, admin), test accounts aur dev par
 OTP kahan milta hai — sab [docs/ACCESS.md](docs/ACCESS.md) mein hai.
 
+Team ko bhejne ke liye [docs/ACCESS.pdf](docs/ACCESS.pdf) bhi mojood hai. Markdown
+badlen to PDF dobara bana lein:
+
+```bash
+pnpm --filter @oyebazar/worker docs:pdf
+```
+
 ## Chalane ka tareeqa
 
 Kuch install karne ki zaroorat nahi — na Docker, na Postgres. Do terminal chahiyen.
