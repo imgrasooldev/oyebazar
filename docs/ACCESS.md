@@ -68,17 +68,28 @@ reseller ka retail rate kabhi nahi dikhta (sirf wholesaler ki apni raqam).
 
 Session chhoti hai kyunke is portal se poora karobar chalta hai.
 
-### Teen darjay
+### Chaar darjay
 
-| Role | Kya kar sakta hai |
-|---|---|
-| `COORDINATOR` | Sab dekhna, order aage barhana (wholesaler ko bhejna, dispatched/delivered/RTO) |
-| `MANAGER` | Us ke ilawa: dukan verify/band, maal LIVE/archive, reseller band, invoice "paid" |
-| `FOUNDER` | Us ke ilawa: **fee rate badalna** aur **invoice banana** |
+Barhte hue — upar wale ke paas neeche walon ka sab kuch hota hai.
 
-Fee rate aur invoice FOUNDER tak mehdood hain kyunke dono seedha paise ka faisla hain:
-ek ghalat click se supplier hamesha ke liye 0% par chala jata hai, aur invoice banate
-hi ledger ki rows `PENDING` se `INVOICED` ho jati hain aur wapas nahi hoti.
+| Role | Kis ke liye | Kya kar sakta hai |
+|---|---|---|
+| `REVIEWER` | Auditor, investor, naya banda | **Sab kuch dekhna** — order, maal, resellers, paisa. Badalna kuch nahi. |
+| `COORDINATOR` | Rozana chalane wala | Us ke ilawa: order aage barhana (wholesaler ko bhejna, dispatched/delivered/RTO) |
+| `MANAGER` | Team lead | Us ke ilawa: dukan verify/list/band, maal LIVE/archive, reseller band, invoice "paid" |
+| `SUPER_ADMIN` | Malik | Us ke ilawa: **fee rate**, **invoice banana**, aur **team** (naye user, role, access) |
+
+Fee rate aur invoice SUPER_ADMIN tak mehdood hain kyunke dono seedha kamai ka faisla
+hain: ek ghalat click se supplier hamesha ke liye 0% par chala jata hai, aur invoice
+banate hi ledger ki rows `PENDING` se `INVOICED` ho jati hain aur wapas nahi hoti.
+
+Naya user by default **REVIEWER** banta hai — sab se kam ikhtiyar. Barhana aasan hai;
+"pehle sab kuch de do, baad mein kam kar denge" kabhi yaad nahi rehta.
+
+🔴 Roles aur har ikhtiyar ek hi file mein likhe hain:
+`packages/core/src/domain/ops-permissions.ts`. Service wahin se rokti hai aur Team ka
+safha wahin se jadwal banata hai — do jagah likhne ka anjaam yehi hota hai ke UI kuch
+aur kehti hai aur server kuch aur karta hai.
 
 🔴 Ye rok **service mein** hai, UI par nahi — button chhupana kaafi nahi hota, koi bhi
 seedha API call kar sakta hai.
@@ -90,7 +101,7 @@ seedha API call kar sakta hai.
 
 ### Naya ops user kaise bane
 
-**`/admin/team`** se — sirf FOUNDER. Naam, email, WhatsApp number aur role daal den; login
+**`/admin/team`** se — sirf SUPER_ADMIN. Naam, email, WhatsApp number aur role daal den; login
 usi number se hoga (koi password nahi). Usi safhe par role badalna aur access band/chalu
 karna bhi hai, aur ek jadwal jo batati hai ke har role kya kar sakta hai.
 
@@ -98,7 +109,7 @@ Kisi ke jane par **Disable** — us ki saari sessions usi waqt khatam ho jati ha
 din tak khula hua browser nahi chalta.
 
 🔴 Do cheezen jaan boojh kar roki gayi hain: **apna role khud badalna** aur **khud ko band
-karna**. Wajah amli hai — aakhri FOUNDER khud ko gira de to fee rate aur invoice ka
+karna**. Wajah amli hai — aakhri SUPER_ADMIN khud ko gira de to fee rate aur invoice ka
 darwaza hamesha ke liye band ho jata hai, aur koi bacha hi nahi jo usay wapas khole.
 
 ---
@@ -111,8 +122,9 @@ Ye sirf local seed ke hain. Production par ye numbers mojood nahi.
 
 | Naam | Number | Role |
 |---|---|---|
-| Ghulam Rasool | `03004445566` | FOUNDER |
+| Ghulam Rasool | `03004445566` | SUPER_ADMIN |
 | Ops Coordinator | `03004445577` | COORDINATOR |
+| Auditor Sahib | `03005556677` | REVIEWER |
 
 ### Reseller
 

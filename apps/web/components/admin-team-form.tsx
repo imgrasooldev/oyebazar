@@ -1,14 +1,15 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { OPS_ROLES, OPS_ROLE_PURPOSE } from '@oyebazar/core'
 import { useState, useTransition } from 'react'
 
 /**
  * Naya ops user.
  *
- * Role ka default COORDINATOR hai — sab se kam ikhtiyar. Naya banda pehle rozana ka
- * kaam kare, aur zaroorat pare to role barha diya jaye; ulta karna (pehle sab kuch
- * dena, phir kam karna) us waqt yaad hi nahi rehta.
+ * Role ka default REVIEWER hai — sirf dekhna. Naya banda pehle dekhe, aur zaroorat
+ * pare to role barha diya jaye; ulta karna (pehle sab kuch dena, phir kam karna) us
+ * waqt yaad hi nahi rehta.
  */
 export function AdminTeamForm() {
   const router = useRouter()
@@ -31,7 +32,7 @@ export function AdminTeamForm() {
           name: String(data.get('name') ?? ''),
           email: String(data.get('email') ?? ''),
           phone: String(data.get('phone') ?? ''),
-          role: String(data.get('role') ?? 'COORDINATOR'),
+          role: String(data.get('role') ?? 'REVIEWER'),
         }),
       })
 
@@ -85,10 +86,13 @@ export function AdminTeamForm() {
 
         <label className="block">
           <span className="text-sm font-semibold">Role</span>
-          <select name="role" defaultValue="COORDINATOR" className="field mt-2">
-            <option value="COORDINATOR">Coordinator — day-to-day orders</option>
-            <option value="MANAGER">Manager — verify, approve, suspend</option>
-            <option value="FOUNDER">Founder — fee rates, invoices, team</option>
+          {/* Default sab se KAM ikhtiyar — barhana aasan hai, wapas lena yaad nahi rehta */}
+          <select name="role" defaultValue="REVIEWER" className="field mt-2">
+            {OPS_ROLES.map((role) => (
+              <option key={role} value={role}>
+                {role.replace('_', ' ')} — {OPS_ROLE_PURPOSE[role]}
+              </option>
+            ))}
           </select>
         </label>
       </div>

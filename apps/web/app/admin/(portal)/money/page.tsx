@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { formatPkr } from '@oyebazar/shared'
+import { canDo } from '@oyebazar/core'
 import { AdminRowAction } from '@/components/admin-row-action'
 import { AdminPostAction } from '@/components/admin-post-action'
 import { requireOpsUser } from '@/lib/api/admin-session'
@@ -28,7 +29,7 @@ export default async function AdminMoneyPage() {
   const money = await container.admin.money(user)
 
   const pendingTotal = money.pending.reduce((sum, row) => sum + row.amount, 0)
-  const canGenerate = user.role === 'FOUNDER'
+  const canGenerate = canDo(user.role, 'generateInvoices')
 
   return (
     <div className="space-y-8">
@@ -91,7 +92,7 @@ export default async function AdminMoneyPage() {
               confirmText={`Invoice ${money.period} for ${money.pending.length} wholesalers (${formatPkr(pendingTotal)})? Ledger rows move to INVOICED and cannot go back.`}
             />
           ) : (
-            <span className="text-[0.78rem] text-ink-faint">Only the founder can invoice</span>
+            <span className="text-[0.78rem] text-ink-faint">Only a super admin can invoice</span>
           )}
         </div>
 

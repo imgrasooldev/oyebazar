@@ -1,4 +1,11 @@
 import type { Metadata } from 'next'
+import {
+  OPS_PERMISSIONS,
+  OPS_ROLES,
+  OPS_ROLE_PURPOSE,
+  OPS_ROLE_RANK,
+  canDo,
+} from '@oyebazar/core'
 import { AdminRowAction } from '@/components/admin-row-action'
 import { AdminTeamForm } from '@/components/admin-team-form'
 import { requireOpsUser } from '@/lib/api/admin-session'
@@ -21,44 +28,31 @@ export const dynamic = 'force-dynamic'
  * ("MANAGER") se kisi ko andaza nahi hota ke wo kitna ikhtiyar de raha hai — aur ye
  * wo faisla hai jo galat hone par paise tak jata hai.
  */
-const PERMISSIONS = [
-  {
-    label: 'See everything (orders, stock, resellers, money)',
-    roles: ['COORDINATOR', 'MANAGER', 'FOUNDER'],
-  },
-  {
-    label: 'Move orders forward (send, dispatch, deliver, RTO)',
-    roles: ['COORDINATOR', 'MANAGER', 'FOUNDER'],
-  },
-  { label: 'Verify / suspend wholesalers', roles: ['MANAGER', 'FOUNDER'] },
-  { label: 'Make products live, archive them', roles: ['MANAGER', 'FOUNDER'] },
-  { label: 'Suspend resellers', roles: ['MANAGER', 'FOUNDER'] },
-  { label: 'Mark invoices paid', roles: ['MANAGER', 'FOUNDER'] },
-  { label: 'Change a wholesaler’s fee rate', roles: ['FOUNDER'] },
-  { label: 'Generate invoices', roles: ['FOUNDER'] },
-  { label: 'Add team members, change roles', roles: ['FOUNDER'] },
-] as const
-
-const ROLES = ['COORDINATOR', 'MANAGER', 'FOUNDER'] as const
+/*
+ * 🔴 Jadwal core se banti hai (domain/ops-permissions.ts) — yahan dobara likhi hoti to
+ * kisi din qawaid badalte aur safha purani baat kehta rehta.
+ */
+const PERMISSIONS = Object.values(OPS_PERMISSIONS)
+const ROLES = OPS_ROLES
 
 export default async function AdminTeamPage() {
   const { user } = await requireOpsUser()
 
   // URL type kar ke aane wale ko crash nahi, saaf jawab — rok service mein hai,
   // ye sirf us rok ka shaista chehra hai
-  if (user.role === 'COORDINATOR') {
+  if (!canDo(user.role, 'manageTeam')) {
     return (
       <div className="card p-8 text-center">
         <h1 className="text-[1.2rem] font-bold">Team</h1>
         <p className="mt-2 text-sm text-ink-soft">
-          Only managers and founders can see the team list.
+          Only a super admin can see and change the team.
         </p>
       </div>
     )
   }
 
   const team = await container.admin.listTeam(user)
-  const canManage = user.role === 'FOUNDER'
+  const canManage = canDo(user.role, 'manageTeam')
 
   return (
     <div className="space-y-8">
@@ -66,7 +60,6 @@ export default async function AdminTeamPage() {
         <h1 className="text-[1.4rem] font-bold tracking-tight">Team</h1>
         <p className="mt-1 text-sm text-ink-soft">
           Everyone signs in with the WhatsApp number listed here — there are no passwords.
-          {!canManage && ' Only the founder can add people or change roles.'}
         </p>
       </div>
 
@@ -101,7 +94,7 @@ export default async function AdminTeamPage() {
 
                 <span
                   className={`badge ${
-                    member.role === 'FOUNDER'
+                    member.role === 'SUPER_ADMIN'
                       ? 'bg-brand-50 text-brand-800'
                       : member.role === 'MANAGER'
                         ? 'bg-accent-50 text-accent-700'
@@ -128,8 +121,8 @@ export default async function AdminTeamPage() {
                         body={{ role }}
                         label={`Make ${role.toLowerCase()}`}
                         confirmText={
-                          role === 'FOUNDER'
-                            ? `Make ${member.name} a founder? They will be able to change fee rates and generate invoices.`
+                          role === 'SUPER_ADMIN'
+                            ? `Make ${member.name} a super admin? They will be able to change fee rates, generate invoices and manage this team.`
                             : undefined
                         }
                       />
@@ -167,7 +160,10 @@ export default async function AdminTeamPage() {
                 <th className="px-4 py-3 text-start font-semibold">Permission</th>
                 {ROLES.map((role) => (
                   <th key={role} className="px-4 py-3 text-center font-semibold">
-                    {role}
+                    <span className="block">{role.replace('_', ' ')}</span>
+                    <span className="mt-1 block text-[0.68rem] font-normal normal-case text-ink-faint">
+                      {OPS_ROLE_PURPOSE[role]}
+                    </span>
                   </th>
                 ))}
               </tr>
@@ -178,7 +174,7 @@ export default async function AdminTeamPage() {
                   <td className="px-4 py-2.5">{permission.label}</td>
                   {ROLES.map((role) => (
                     <td key={role} className="px-4 py-2.5 text-center">
-                      {(permission.roles as readonly string[]).includes(role) ? (
+                      {OPS_ROLE_RANK[role] >= OPS_ROLE_RANK[permission.needs] ? (
                         <span className="text-accent-700">✓</span>
                       ) : (
                         <span className="text-ink-faint">·</span>

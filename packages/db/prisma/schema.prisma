@@ -465,17 +465,22 @@ model OpsUser {
   // 🔴 Login WhatsApp OTP se hota hai — poore system mein koi password nahi hai,
   // aur ops ke liye alag tareeqa banane ka matlab ek aur cheez ka toot-na.
   phone     String?   @unique
-  role      OpsRole   @default(COORDINATOR)
+  role      OpsRole   @default(REVIEWER)
   isActive  Boolean   @default(true)
   lastSeenAt DateTime?
   createdAt DateTime  @default(now())
   sessions  Session[]
 }
 
+/*
+ * Ops ke darjay — barhte hue. Har role ka ikhtiyar ek hi jagah likha hai:
+ * packages/core/src/domain/ops-permissions.ts
+ */
 enum OpsRole {
+  REVIEWER
   COORDINATOR
   MANAGER
-  FOUNDER
+  SUPER_ADMIN
 }
 
 model Session {

@@ -5,14 +5,12 @@
  * hai; rokna service ka kaam hai — warna koi bhi seedha API call kar ke wohi kaam kar
  * lega jo button chhupa kar "rok" diya gaya tha.
  *
- * Teen darjay:
- *  · COORDINATOR — rozana ka kaam: order aage barhana, maal ki halat dekhna
- *  · MANAGER     — us ke ilawa: supplier verify/band, maal approve, reseller band
- *  · FOUNDER     — us ke ilawa: fee rate badalna (yani paisa), ops team dekhna
+ * Chaar darjay: REVIEWER (sirf dekhna) → COORDINATOR (order aage barhana) → MANAGER
+ * (verify, approve, suspend) → SUPER_ADMIN (paisa aur team).
  *
- * Fee rate FOUNDER tak mehdood is liye hai ke wohi hamari kamai ka number hai: ek
- * ghalat click se ek supplier hamesha ke liye 0% par chala jata hai aur kisi ko pata
- * bhi nahi chalta.
+ * Fee rate aur invoice SUPER_ADMIN tak mehdood hain kyunke dono seedha kamai ka faisla
+ * hain: ek ghalat click se supplier hamesha ke liye 0% par chala jata hai, aur invoice
+ * banate hi ledger ki rows wapas nahi hoti.
  */
 import { ForbiddenError, ValidationError, type Pkr } from '@oyebazar/shared'
 import type {
@@ -27,15 +25,14 @@ import type {
   OpsUserView,
 } from '../ports/admin-repositories'
 import type { FeeLedgerRepository } from '../ports/order-repositories'
+import { canDo, type OpsPermission } from '../domain/ops-permissions'
 import type { Analytics, Clock, Logger } from '../ports/infrastructure'
 import type { FeeInvoiceService } from './fee-invoice.service'
 
-/** Bara number pehle — FOUNDER sab kuch kar sakta hai. */
-const RANK: Record<OpsUserView['role'], number> = {
-  COORDINATOR: 1,
-  MANAGER: 2,
-  FOUNDER: 3,
-}
+/*
+ * Roles aur ikhtiyar ab domain/ops-permissions.ts mein hain — wahi wahid sach hai,
+ * jahan se ye service bhi rokti hai aur Team ka safha bhi jadwal banata hai.
+ */
 
 /** Fee rate ki hadd — 0% bhi ho sakta hai (khaas deal), magar 20% se upar ghalti hi hogi. */
 const MAX_FEE_BPS = 2_000
@@ -51,10 +48,20 @@ export class AdminService {
     private readonly logger: Logger,
   ) {}
 
-  private require(actor: OpsUserView, needed: OpsUserView['role']): void {
-    if (RANK[actor.role] < RANK[needed]) {
+  /**
+   * 🔴 Har badalne wale kaam se pehle yehi chalta hai — aur ye ikhtiyar ka NAAM leta
+   * hai, role ka nahi. Is se naya kaam add karte waqt ye sochna parta hai ke "iska
+   * ikhtiyar kya hai", bajaye is ke ke kisi role ka number yaad rakha jaye.
+   */
+  private assertCan(actor: OpsUserView, permission: OpsPermission): void {
+    if (!canDo(actor.role, permission)) {
       throw new ForbiddenError('Is kaam ki ijazat nahi hai')
     }
+  }
+
+  /** Route se bhi jaanchna ho (jaise order ke buttons) — wahi ek jagah ka faisla. */
+  assertPermission(actor: OpsUserView, permission: OpsPermission): void {
+    this.assertCan(actor, permission)
   }
 
   /** Har admin harkat ka nishan — kis ne kya kiya, ye baad mein pata chalna chahiye. */
@@ -73,7 +80,7 @@ export class AdminService {
   }
 
   async dashboard(actor: OpsUserView): Promise<AdminDashboardStats> {
-    this.require(actor, 'COORDINATOR')
+    this.assertCan(actor, 'view')
     return this.admin.dashboard(this.clock.now())
   }
 
@@ -87,7 +94,7 @@ export class AdminService {
    * dena hai.
    */
   async listTeam(actor: OpsUserView): Promise<OpsTeamMember[]> {
-    this.require(actor, 'MANAGER')
+    this.assertCan(actor, 'manageTeam')
     return this.opsUsers.listTeam()
   }
 
@@ -95,7 +102,7 @@ export class AdminService {
     actor: OpsUserView,
     input: { name: string; email: string; phoneE164: string; role: OpsUserView['role'] },
   ): Promise<OpsTeamMember> {
-    this.require(actor, 'FOUNDER')
+    this.assertCan(actor, 'manageTeam')
 
     const existing = await this.opsUsers.findByPhone(input.phoneE164)
     if (existing) {
@@ -122,7 +129,7 @@ export class AdminService {
     opsUserId: string,
     role: OpsUserView['role'],
   ): Promise<void> {
-    this.require(actor, 'FOUNDER')
+    this.assertCan(actor, 'manageTeam')
 
     if (opsUserId === actor.id) {
       throw new ValidationError('Apna role khud nahi badal sakte — kisi doosre founder se karwayen')
@@ -134,7 +141,7 @@ export class AdminService {
 
   /** Band karte hi us ki saari sessions khatam (repository transaction mein). */
   async setTeamActive(actor: OpsUserView, opsUserId: string, isActive: boolean): Promise<void> {
-    this.require(actor, 'FOUNDER')
+    this.assertCan(actor, 'manageTeam')
 
     if (opsUserId === actor.id && !isActive) {
       // Khud ko band karne ka matlab hai apne hi portal se bahar — aur agar akhri
@@ -162,7 +169,7 @@ export class AdminService {
     pending: { supplierId: string; businessName: string; orders: number; amount: Pkr }[]
     invoices: AdminInvoiceRow[]
   }> {
-    this.require(actor, 'COORDINATOR')
+    this.assertCan(actor, 'view')
 
     const { period, from, to } = this.feeInvoices.previousMonthPeriod()
 
@@ -182,7 +189,7 @@ export class AdminService {
    * mahine ki fee bill ho gayi.
    */
   async generateInvoices(actor: OpsUserView) {
-    this.require(actor, 'FOUNDER')
+    this.assertCan(actor, 'generateInvoices')
     const invoices = await this.feeInvoices.generateMonthlyInvoices()
     await this.record(actor, 'admin_invoices_generated', {
       count: invoices.length,
@@ -193,7 +200,7 @@ export class AdminService {
 
   /** Paisa aa gaya. MANAGER kar sakta hai — ye rozana ka kaam hai, faisla nahi. */
   async markInvoiceCollected(actor: OpsUserView, invoiceId: string) {
-    this.require(actor, 'MANAGER')
+    this.assertCan(actor, 'markInvoicePaid')
     const result = await this.feeInvoices.markCollected(invoiceId)
     await this.record(actor, 'admin_invoice_collected', { invoiceId, ...result })
     return result
@@ -205,7 +212,7 @@ export class AdminService {
     actor: OpsUserView,
     filter: { status?: string; limit?: number } = {},
   ): Promise<AdminSupplierRow[]> {
-    this.require(actor, 'COORDINATOR')
+    this.assertCan(actor, 'view')
     return this.admin.listSuppliers({ ...filter, limit: filter.limit ?? 100 })
   }
 
@@ -221,7 +228,7 @@ export class AdminService {
     supplierId: string,
     status: 'PENDING' | 'VERIFIED' | 'SUSPENDED',
   ): Promise<void> {
-    this.require(actor, 'MANAGER')
+    this.assertCan(actor, 'manageSuppliers')
     await this.admin.setSupplierStatus(supplierId, status)
     await this.record(actor, 'admin_supplier_status_changed', { supplierId, status })
   }
@@ -231,7 +238,7 @@ export class AdminService {
     supplierId: string,
     listed: boolean,
   ): Promise<void> {
-    this.require(actor, 'MANAGER')
+    this.assertCan(actor, 'manageSuppliers')
     await this.admin.setSupplierListed(supplierId, listed)
     await this.record(actor, 'admin_supplier_listing_changed', { supplierId, listed })
   }
@@ -242,7 +249,7 @@ export class AdminService {
     supplierId: string,
     feeRateBps: number,
   ): Promise<void> {
-    this.require(actor, 'FOUNDER')
+    this.assertCan(actor, 'setFeeRate')
 
     if (!Number.isInteger(feeRateBps) || feeRateBps < 0 || feeRateBps > MAX_FEE_BPS) {
       throw new ValidationError('Fee rate 0 se 20% ke darmiyan honi chahiye')
@@ -258,7 +265,7 @@ export class AdminService {
     actor: OpsUserView,
     filter: { status?: string; limit?: number } = {},
   ): Promise<AdminProductRow[]> {
-    this.require(actor, 'COORDINATOR')
+    this.assertCan(actor, 'view')
     return this.admin.listProducts({ ...filter, limit: filter.limit ?? 100 })
   }
 
@@ -273,7 +280,7 @@ export class AdminService {
     productId: string,
     status: 'DRAFT' | 'LIVE' | 'ARCHIVED',
   ): Promise<void> {
-    this.require(actor, 'MANAGER')
+    this.assertCan(actor, 'manageProducts')
     await this.admin.setProductStatus(productId, status)
     await this.record(actor, 'admin_product_status_changed', { productId, status })
   }
@@ -284,7 +291,7 @@ export class AdminService {
     actor: OpsUserView,
     filter: { status?: string; limit?: number } = {},
   ): Promise<AdminResellerRow[]> {
-    this.require(actor, 'COORDINATOR')
+    this.assertCan(actor, 'view')
     return this.admin.listResellers({ ...filter, limit: filter.limit ?? 100 })
   }
 
@@ -293,7 +300,7 @@ export class AdminService {
     resellerId: string,
     status: 'ACTIVE' | 'LIMITED' | 'SUSPENDED',
   ): Promise<void> {
-    this.require(actor, 'MANAGER')
+    this.assertCan(actor, 'manageResellers')
     await this.admin.setResellerStatus(resellerId, status)
     await this.record(actor, 'admin_reseller_status_changed', { resellerId, status })
   }

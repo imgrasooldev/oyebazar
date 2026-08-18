@@ -7,12 +7,13 @@
  * milte hain.
  */
 import type { Pkr } from '@oyebazar/shared'
+import type { OpsRole } from '../domain/ops-permissions'
 
 export interface OpsUserView {
   readonly id: string
   readonly name: string
   readonly email: string
-  readonly role: 'COORDINATOR' | 'MANAGER' | 'FOUNDER'
+  readonly role: OpsRole
   readonly isActive: boolean
 }
 
@@ -34,9 +35,9 @@ export interface OpsUserRepository {
     name: string
     email: string
     phoneE164: string
-    role: OpsUserView['role']
+    role: OpsRole
   }): Promise<OpsTeamMember>
-  setRole(id: string, role: OpsUserView['role']): Promise<void>
+  setRole(id: string, role: OpsRole): Promise<void>
   setActive(id: string, isActive: boolean): Promise<void>
 }
 

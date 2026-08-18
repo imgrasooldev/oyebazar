@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { BRAND } from '@oyebazar/shared'
+import { OPS_ROLE_RANK } from '@oyebazar/core'
 import { AdminLogoutButton } from '@/components/admin-logout-button'
 import { getOpsUserOrNull } from '@/lib/api/admin-session'
 
@@ -17,8 +18,6 @@ export const dynamic = 'force-dynamic'
  * Role har screen par likha hai: ops ka banda jaanta ho ke us ke paas kitna ikhtiyar
  * hai, warna wo aisa button dhoondta rehta hai jo us ke liye hai hi nahi.
  */
-const RANK = { COORDINATOR: 1, MANAGER: 2, FOUNDER: 3 } as const
-
 /**
  * `needs`: is tab ke liye kam se kam kaun sa darja chahiye.
  *
@@ -32,7 +31,7 @@ const TABS = [
   { href: '/admin/products', label: 'Products', needs: 'COORDINATOR' },
   { href: '/admin/resellers', label: 'Resellers', needs: 'COORDINATOR' },
   { href: '/admin/money', label: 'Money', needs: 'COORDINATOR' },
-  { href: '/admin/team', label: 'Team', needs: 'MANAGER' },
+  { href: '/admin/team', label: 'Team', needs: 'SUPER_ADMIN' },
 ] as const
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -60,7 +59,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
 
         <nav className="mx-auto flex max-w-shell gap-1 overflow-x-auto px-5 lg:px-8">
-          {TABS.filter((tab) => RANK[session.user.role] >= RANK[tab.needs]).map((tab) => (
+          {TABS.filter((tab) => OPS_ROLE_RANK[session.user.role] >= OPS_ROLE_RANK[tab.needs]).map((tab) => (
             <Link
               key={tab.href}
               href={tab.href}

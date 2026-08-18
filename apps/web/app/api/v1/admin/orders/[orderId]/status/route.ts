@@ -25,6 +25,12 @@ const BodySchema = z.object({
 export async function PATCH(request: Request, ctx: { params: Promise<{ orderId: string }> }) {
   return apiHandler(async () => {
     const { user } = await requireOpsUser()
+
+    // 🔴 REVIEWER sirf dekhta hai. Pehle yahan koi rok NAHI thi — us waqt har ops user
+    // COORDINATOR ya upar tha, is liye masla nazar nahi aaya; REVIEWER aate hi read-only
+    // banda order wholesaler ko bhej sakta tha.
+    container.admin.assertPermission(user, 'moveOrders')
+
     const { orderId } = await ctx.params
     const body = await parseBody(request, BodySchema)
 
