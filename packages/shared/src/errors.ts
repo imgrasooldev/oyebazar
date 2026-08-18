@@ -8,6 +8,7 @@
 export type AppErrorCode =
   | 'VALIDATION_FAILED'
   | 'UNAUTHENTICATED'
+  | 'NOT_REGISTERED'
   | 'FORBIDDEN'
   | 'NOT_FOUND'
   | 'CONFLICT'
@@ -42,6 +43,19 @@ export class ValidationError extends AppError {
 export class UnauthenticatedError extends AppError {
   constructor(message = 'Pehle login karen') {
     super('UNAUTHENTICATED', message)
+  }
+}
+
+/**
+ * Number theek hai, code bhi theek — magar is number ka account abhi hai hi nahi.
+ *
+ * Alag error is liye ke ye ghalti nahi hoti: login safha isi code par register ka form
+ * khol deta hai. UNAUTHENTICATED bhejte to user ko "kuch galat hai" jaisa lagta, halanke
+ * usay sirf naam aur sheher batana hai.
+ */
+export class NotRegisteredError extends AppError {
+  constructor(message = 'Ye number abhi register nahi hai') {
+    super('NOT_REGISTERED', message)
   }
 }
 

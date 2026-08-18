@@ -8,6 +8,7 @@
  * Rate limits OTP flood aur SMS/WhatsApp cost dono ko rokte hain.
  */
 import {
+  NotRegisteredError,
   OTP,
   RateLimitedError,
   SESSION_TTL_MS,
@@ -92,12 +93,15 @@ export class AuthService {
     return { sentAt: now }
   }
 
-  async verifyOtp(
-    phoneE164: string,
-    code: string,
-    meta: { userAgent?: string },
-  ): Promise<LoginResult> {
-    const now = this.clock.now()
+  /**
+   * Code jaanchta hai magar KHATAM NAHI karta — challenge ki id wapas deta hai.
+   *
+   * 🔴 Jaanchna aur khatam karna alag hain, aur ye jaan boojh kar hai: naya number login
+   * ki koshish karta hai to code sahih hota hai magar account mojood nahi. Agar hum wahin
+   * code khatam kar dete to agle qadam (register) ke paas kuch bachta hi nahi aur har nayi
+   * reseller ko "code expire ho gaya" milta — jabke us ne abhi abhi wohi code daala hai.
+   */
+  private async assertOtpValid(phoneE164: string, code: string, now: Date): Promise<string> {
     const challenge = await this.otpRepo.findLatestActive(phoneE164, now)
     if (!challenge) {
       throw new ValidationError('Code expire ho gaya. Naya code manga lein')
@@ -112,17 +116,15 @@ export class AuthService {
       throw new ValidationError('Code ghalat hai')
     }
 
-    await this.otpRepo.consume(challenge.id, now)
+    return challenge.id
+  }
 
-    const reseller = await this.resellers.findByPhone(phoneE164)
-    if (!reseller) {
-      // Phase 1: onboarding ops team karti hai — self-signup abhi nahi
-      throw new UnauthenticatedError('Ye number abhi register nahi hai. Baji team se rabta karen')
-    }
-    if (reseller.status === 'SUSPENDED') {
-      throw new UnauthenticatedError('Ye account band hai. Baji team se rabta karen')
-    }
-
+  /** Session banati hai — login aur register dono ka aakhri qadam. */
+  private async startSession(
+    reseller: ResellerView,
+    now: Date,
+    meta: { userAgent?: string },
+  ): Promise<LoginResult> {
     const token = this.tokens.randomToken(32)
     const expiresAt = new Date(now.getTime() + SESSION_TTL_MS)
     await this.sessions.create({
@@ -133,9 +135,79 @@ export class AuthService {
     })
 
     await this.resellers.touchLastActive(reseller.id, now)
-    await this.analytics.track({ name: 'login', actorType: 'reseller', actorId: reseller.id })
-
     return { sessionToken: token, expiresAt, reseller }
+  }
+
+  /**
+   * Nayi reseller — number OTP se tasdeeq hota hai aur usi qadam mein account ban jata hai.
+   *
+   * 🔴 Code yahan bhi consume hota hai, is liye register ka apna alag rasta hai, "pehle
+   * verify phir register" nahi: warna code ek dafa verify par khatam ho jata aur register
+   * ke waqt uske paas kuch na hota.
+   *
+   * Number pehle se mojood ho to naya account nahi banta — usi ki session khul jati hai.
+   * Do wajah: (1) whatsappPhone unique hai, (2) shared phone par doosri bahen ka account
+   * ghalti se banane se behtar hai ke wohi khul jaye.
+   */
+  async register(
+    phoneE164: string,
+    code: string,
+    profile: { name: string; city: string; area?: string },
+    meta: { userAgent?: string },
+  ): Promise<LoginResult> {
+    const now = this.clock.now()
+    const challengeId = await this.assertOtpValid(phoneE164, code, now)
+    await this.otpRepo.consume(challengeId, now)
+
+    const existing = await this.resellers.findByPhone(phoneE164)
+    if (existing) {
+      if (existing.status === 'SUSPENDED') {
+        throw new UnauthenticatedError('Ye account band hai. OyeBazar team se rabta karen')
+      }
+      await this.analytics.track({ name: 'login', actorType: 'reseller', actorId: existing.id })
+      return this.startSession(existing, now, meta)
+    }
+
+    const reseller = await this.resellers.create({
+      name: profile.name,
+      whatsappPhone: phoneE164,
+      city: profile.city,
+      ...(profile.area ? { area: profile.area } : {}),
+    })
+
+    await this.analytics.track({
+      name: 'reseller_registered',
+      actorType: 'reseller',
+      actorId: reseller.id,
+      properties: { city: profile.city },
+    })
+    this.logger.info('reseller_registered', { resellerId: reseller.id, city: profile.city })
+
+    return this.startSession(reseller, now, meta)
+  }
+
+  async verifyOtp(
+    phoneE164: string,
+    code: string,
+    meta: { userAgent?: string },
+  ): Promise<LoginResult> {
+    const now = this.clock.now()
+    const challengeId = await this.assertOtpValid(phoneE164, code, now)
+
+    const reseller = await this.resellers.findByPhone(phoneE164)
+    if (!reseller) {
+      // 🔴 Ye ghalti nahi, nayi user hai — safha isi code par register ka form kholta hai.
+      // Code yahan KHATAM nahi kiya: agla qadam (register) usi code se mukammal hota hai.
+      throw new NotRegisteredError()
+    }
+
+    await this.otpRepo.consume(challengeId, now)
+    if (reseller.status === 'SUSPENDED') {
+      throw new UnauthenticatedError('Ye account band hai. OyeBazar team se rabta karen')
+    }
+
+    await this.analytics.track({ name: 'login', actorType: 'reseller', actorId: reseller.id })
+    return this.startSession(reseller, now, meta)
   }
 
   /** Har request par: cookie → hash → session → reseller. */

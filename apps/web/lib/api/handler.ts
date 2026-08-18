@@ -14,6 +14,8 @@ import { container } from '../container'
 const STATUS_BY_CODE: Record<AppErrorCode, number> = {
   VALIDATION_FAILED: 400,
   UNAUTHENTICATED: 401,
+  // Account mojood hi nahi — client is par register ka form kholta hai
+  NOT_REGISTERED: 404,
   FORBIDDEN: 403,
   NOT_FOUND: 404,
   CONFLICT: 409,

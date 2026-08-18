@@ -27,6 +27,7 @@ export default async function LoginPage() {
       <div className="card mt-6 p-5">
         <h1 className="text-xl font-bold">{t('login')}</h1>
         <p className="mt-1 text-sm text-ink-soft">{t('loginBody')}</p>
+        <p className="mt-2 text-[0.85rem] font-semibold text-accent-700">{t('newHereRegister')}</p>
         <div className="mt-4">
           <LoginForm locale={locale} />
         </div>

@@ -16,10 +16,16 @@ import { chromium } from 'playwright'
 const BASE = process.env.SHOOT_BASE_URL ?? 'http://localhost:3000'
 const OUT = resolve(process.cwd(), 'shots')
 
-const WHO = process.argv[2] === 'supplier' ? 'supplier' : 'reseller'
+type Who = 'reseller' | 'supplier' | 'signup'
+
+const WHO: Who =
+  process.argv[2] === 'supplier' ? 'supplier' : process.argv[2] === 'signup' ? 'signup' : 'reseller'
+
 const PATHS = {
   reseller: { login: '/login', phone: '03009876543' },
   supplier: { login: '/supplier/login', phone: '03001200040' },
+  // Har chalane par naya number — warna doosri dafa ye register nahi, login ban jata hai
+  signup: { login: '/login', phone: `0333${String(Date.now()).slice(-7)}` },
 } as const
 
 async function main() {
@@ -47,6 +53,18 @@ async function main() {
 
   // Code sahi hai ya nahi — asli imtihan yehi hai: usi se andar jaen
   await page.getByRole('button', { name: /اندر آئیں|Continue/ }).click()
+
+  // Naya number: server NOT_REGISTERED kehta hai aur safha naam/sheher poochhta hai
+  if (WHO === 'signup') {
+    const nameBox = page.locator('input[autocomplete="name"]')
+    await nameBox.waitFor({ state: 'visible', timeout: 15_000 })
+    console.log('naya number   : register ka form khul gaya')
+
+    await nameBox.fill('صائمہ')
+    await page.locator('input[autocomplete="address-level2"]').fill('راولپنڈی')
+    await page.screenshot({ path: resolve(OUT, 'signup-form.png'), fullPage: true })
+    await page.getByRole('button', { name: /اکاؤنٹ بنائیں|Create account/ }).click()
+  }
   try {
     await page.waitForURL((url) => !url.pathname.endsWith('login'), { timeout: 15_000 })
     console.log(`login ke baad pohanche      : ${new URL(page.url()).pathname}`)

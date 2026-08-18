@@ -30,6 +30,20 @@ export const OtpRequestSchema = z.object({
   phone: PakistaniPhoneSchema,
 })
 
+export const RegisterSchema = z
+  .object({
+    phone: PakistaniPhoneSchema,
+    code: z
+      .string()
+      .trim()
+      .regex(/^\d{6}$/, 'Code 6 hindson ka hota hai'),
+    // Sirf do khaane. Har extra khana ek aur wajah hai chhor jane ki —
+    // area aur payout tab poochhte hain jab zaroorat parti hai.
+    name: z.string().trim().min(2, 'Apna naam likhen').max(40),
+    city: z.string().trim().min(2, 'Sheher likhen').max(40),
+  })
+  .strict()
+
 export const OtpVerifySchema = z.object({
   phone: PakistaniPhoneSchema,
   code: z

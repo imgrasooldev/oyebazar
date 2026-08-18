@@ -215,6 +215,17 @@ const DICTIONARY = {
   noOrdersYet: { ur: 'ابھی کوئی آرڈر نہیں۔', en: 'No orders yet.' },
   seeCatalogue: { ur: 'کیٹلاگ دیکھیں', en: 'Browse catalogue' },
 
+  // ---- Nayi reseller ka account ----
+  registerTitle: { ur: 'اپنا اکاؤنٹ بنائیں', en: 'Create your account' },
+  registerBody: {
+    ur: 'یہ نمبر ابھی رجسٹرڈ نہیں۔ بس نام اور شہر بتا دیں — اکاؤنٹ فوراً بن جائے گا۔',
+    en: "This number isn't registered yet. Just your name and city — the account is ready right away.",
+  },
+  yourName: { ur: 'آپ کا نام', en: 'Your name' },
+  yourCity: { ur: 'شہر', en: 'City' },
+  createAccount: { ur: 'اکاؤنٹ بنائیں', en: 'Create account' },
+  newHereRegister: { ur: 'نئی ہیں؟ نمبر ڈالیں — اکاؤنٹ خود بن جائے گا۔', en: 'New here? Enter your number — the account is created for you.' },
+
   // 404 / error — mara hua link ya server ki kharabi
   notFoundTitle: { ur: 'یہ صفحہ نہیں ملا', en: 'Page not found' },
   notFoundBody: {

@@ -4,13 +4,17 @@ import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { translator, type Locale } from '@/lib/i18n'
 
-type Step = 'phone' | 'code'
+type Step = 'phone' | 'code' | 'register'
 
 /**
  * OTP login — do qadam, dono par ek hi bara input.
  *
  * Sadia ke liye design: bara font, numeric keypad (inputMode), koi password nahi,
  * aur ghalti par saaf Urdu message (technical code nahi).
+ *
+ * Register bhi yahin hai, alag safha nahi. Nayi user ko pehle se pata nahi hota ke wo
+ * "nayi" hai — wo bas apna number daalti hai. Server NOT_REGISTERED kehta hai to hum
+ * usi jagah naam aur sheher poochh lete hain. Us ke liye ye ghalti nahi, agla sawal hai.
  */
 export function LoginForm({ locale }: { locale: Locale }) {
   const t = translator(locale)
@@ -18,6 +22,8 @@ export function LoginForm({ locale }: { locale: Locale }) {
   const [step, setStep] = useState<Step>('phone')
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
+  const [name, setName] = useState('')
+  const [city, setCity] = useState('')
   const [error, setError] = useState<string | null>(null)
   // Dev par server code wapas bhejta hai — safhe par dikhane ke liye (production mein null)
   const [devCode, setDevCode] = useState<string | null>(null)
@@ -26,18 +32,22 @@ export function LoginForm({ locale }: { locale: Locale }) {
   async function post(
     path: string,
     body: unknown,
-  ): Promise<{ ok: boolean; message?: string; devCode?: string }> {
+  ): Promise<{ ok: boolean; message?: string; code?: string; devCode?: string }> {
     const res = await fetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
     const payload = (await res.json().catch(() => null)) as
-      | { devCode?: string; error?: { message?: string } }
+      | { devCode?: string; error?: { code?: string; message?: string } }
       | null
 
     if (res.ok) return { ok: true, ...(payload?.devCode ? { devCode: payload.devCode } : {}) }
-    return { ok: false, message: payload?.error?.message ?? t('somethingWrong') }
+    return {
+      ok: false,
+      message: payload?.error?.message ?? t('somethingWrong'),
+      ...(payload?.error?.code ? { code: payload.error.code } : {}),
+    }
   }
 
   function requestCode(event: React.FormEvent) {
@@ -60,9 +70,75 @@ export function LoginForm({ locale }: { locale: Locale }) {
     setError(null)
     startTransition(async () => {
       const result = await post('/api/v1/auth/otp/verify', { phone, code })
+      if (result.ok) {
+        router.replace('/catalogue')
+        return
+      }
+
+      // Ghalti nahi — ye number pehli bar aaya hai. Naam aur sheher poochh kar bana dete hain.
+      if (result.code === 'NOT_REGISTERED') {
+        setStep('register')
+        return
+      }
+      setError(result.message ?? null)
+    })
+  }
+
+  function register(event: React.FormEvent) {
+    event.preventDefault()
+    setError(null)
+    startTransition(async () => {
+      const result = await post('/api/v1/auth/register', { phone, code, name, city })
       if (result.ok) router.replace('/catalogue')
       else setError(result.message ?? null)
     })
+  }
+
+  if (step === 'register') {
+    return (
+      <form onSubmit={register} className="space-y-4">
+        <div className="rounded-card bg-accent-50 px-4 py-3">
+          <p className="font-bold text-accent-700">{t('registerTitle')}</p>
+          <p className="mt-1 text-[0.88rem] leading-relaxed text-accent-700/85">
+            {t('registerBody')}
+          </p>
+        </div>
+
+        <label className="block">
+          <span className="text-sm font-semibold">{t('yourName')}</span>
+          <input
+            required
+            autoComplete="name"
+            maxLength={40}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            className="field mt-2 text-lg"
+          />
+        </label>
+
+        <label className="block">
+          <span className="text-sm font-semibold">{t('yourCity')}</span>
+          <input
+            required
+            autoComplete="address-level2"
+            maxLength={40}
+            value={city}
+            onChange={(event) => setCity(event.target.value)}
+            className="field mt-2 text-lg"
+          />
+        </label>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={pending || name.trim().length < 2 || city.trim().length < 2}
+          className="btn-primary w-full"
+        >
+          {pending ? t('checking') : t('createAccount')}
+        </button>
+      </form>
+    )
   }
 
   return step === 'phone' ? (
