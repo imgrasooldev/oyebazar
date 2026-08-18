@@ -61,7 +61,7 @@ export class OrderService {
     private readonly clock: Clock,
     private readonly analytics: Analytics,
     private readonly logger: Logger,
-    /** Magic link isi par banta hai: `${appUrl}/supplier/<token>` */
+    /** Magic link isi par banta hai: `${appUrl}/supplier/o/<token>` */
     private readonly appUrl: string,
   ) {}
 
@@ -263,7 +263,7 @@ export class OrderService {
           params: {
             orderNo: order.orderNo,
             items: String(order.items.length),
-            link: `${this.appUrl}/supplier/${token}`,
+            link: `${this.appUrl}/supplier/o/${token}`,
           },
         })
         .catch((error: unknown) => {
@@ -281,6 +281,18 @@ export class OrderService {
   // ------------------------------------------------------- wholesaler ka jawab
 
   /** Magic link se order dikhana — token hi chabi hai, koi login nahi. */
+  /** Portal ki list — wholesaler ke apne order, naye pehle. */
+  async listForSupplier(
+    supplierId: string,
+    query: { limit: number; cursor?: string; status?: OrderStatus },
+  ): Promise<Page<SupplierOrderView>> {
+    return this.orders.listForSupplier(supplierId, {
+      limit: query.limit,
+      ...(query.cursor ? { cursor: query.cursor } : {}),
+      ...(query.status ? { status: query.status } : {}),
+    })
+  }
+
   async getForSupplierToken(token: string): Promise<SupplierOrderView> {
     const order = await this.orders.findBySupplierToken(token)
     if (!order) throw new NotFoundError('Order')
@@ -293,12 +305,23 @@ export class OrderService {
    * Yahi wo lamha hai jo reseller ko sukoon deta hai. Is se pehle wo customer ko
    * kuch pakka nahi keh sakti; is ke baad wo keh sakti hai "bhej diya gaya hai".
    */
+  /** Magic link se — wholesaler ne login nahi kiya, sirf WhatsApp ka link khola. */
   async acceptBySupplier(token: string): Promise<InternalOrderView> {
     const view = await this.orders.findBySupplierToken(token)
     if (!view) throw new NotFoundError('Order')
+    return this.applyAccept(view.id, 'link')
+  }
 
-    const order = await this.orders.findById(view.id)
-    if (!order) throw new NotFoundError('Order', view.id)
+  /** Portal se — logged-in wholesaler. Order us ka na ho to milta hi nahi. */
+  async acceptForSupplier(supplierId: string, orderNo: string): Promise<InternalOrderView> {
+    const view = await this.orders.findForSupplier(supplierId, orderNo)
+    if (!view) throw new NotFoundError('Order', orderNo)
+    return this.applyAccept(view.id, 'portal')
+  }
+
+  private async applyAccept(orderId: string, via: 'link' | 'portal'): Promise<InternalOrderView> {
+    const order = await this.orders.findById(orderId)
+    if (!order) throw new NotFoundError('Order', orderId)
 
     // Dobara dabana ghalti nahi — sirf kuch nahi hota
     if (order.status === 'ACCEPTED') return order
@@ -312,13 +335,13 @@ export class OrderService {
       at: this.clock.now(),
       actorType: 'ops',
       actorId: `supplier:${order.supplierId}`,
-      note: 'Wholesaler ne link se qubool kiya',
+      note: via === 'link' ? 'Wholesaler ne link se qubool kiya' : 'Wholesaler ne portal se qubool kiya',
     })
 
     await this.analytics.track({
       name: 'order_accepted_by_supplier',
       actorType: 'ops',
-      properties: { orderNo: order.orderNo, supplierId: order.supplierId },
+      properties: { orderNo: order.orderNo, supplierId: order.supplierId, via },
     })
 
     // Reseller ko foran khabar — wo customer ka intezar khatam kar sakti hai
@@ -337,13 +360,30 @@ export class OrderService {
    * chal jaye — teesre din customer ke phone se pata chalne se hazaar guna behtar hai.
    */
   async rejectBySupplier(token: string, reason: string): Promise<InternalOrderView> {
-    if (!reason.trim()) throw new ValidationError('Wajah likhna zaroori hai')
-
     const view = await this.orders.findBySupplierToken(token)
     if (!view) throw new NotFoundError('Order')
+    return this.applyReject(view.id, reason)
+  }
 
-    const order = await this.orders.findById(view.id)
-    if (!order) throw new NotFoundError('Order', view.id)
+  async rejectForSupplier(
+    supplierId: string,
+    orderNo: string,
+    reason: string,
+  ): Promise<InternalOrderView> {
+    const view = await this.orders.findForSupplier(supplierId, orderNo)
+    if (!view) throw new NotFoundError('Order', orderNo)
+    return this.applyReject(view.id, reason)
+  }
+
+  /**
+   * Mana karna sirf status nahi badalta: fee likh di jati hai (write-off) aur reseller
+   * ko foran khabar jati hai — wo customer ko doosra option de sake.
+   */
+  private async applyReject(orderId: string, reason: string): Promise<InternalOrderView> {
+    if (!reason.trim()) throw new ValidationError('Wajah likhna zaroori hai')
+
+    const order = await this.orders.findById(orderId)
+    if (!order) throw new NotFoundError('Order', orderId)
     if (order.status === 'REJECTED' || order.status === 'CANCELLED') return order
 
     const now = this.clock.now()

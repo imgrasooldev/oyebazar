@@ -229,6 +229,36 @@ const DICTIONARY = {
     en: 'A problem on our side, not yours. Please try again.',
   },
   tryAgain: { ur: 'دوبارہ کوشش کریں', en: 'Try again' },
+
+  // ---- Wholesaler portal ----
+  wholesalerPortal: { ur: 'ہول سیلر پورٹل', en: 'Wholesaler portal' },
+  wholesalerLoginBody: {
+    ur: 'اپنا وہی واٹس ایپ نمبر لکھیں جو دکان کے ساتھ رجسٹرڈ ہے۔',
+    en: 'Enter the WhatsApp number registered with your shop.',
+  },
+  newOrders: { ur: 'نئے آرڈرز', en: 'New orders' },
+  newOrdersBody: {
+    ur: 'یہ آرڈرز آپ کے جواب کے منتظر ہیں۔ قبول کریں تو ریسیلر کو فوراً پتا چل جاتا ہے۔',
+    en: 'These orders are waiting on you. Accepting tells the reseller straight away.',
+  },
+  runningOrders: { ur: 'چل رہے آرڈرز', en: 'In progress' },
+  finishedOrders: { ur: 'مکمل شدہ', en: 'Completed' },
+  noSupplierOrders: { ur: 'ابھی کوئی آرڈر نہیں آیا۔', en: 'No orders yet.' },
+  myStock: { ur: 'میرا مال', en: 'My stock' },
+  noSupplierProducts: { ur: 'ابھی آپ کا کوئی مال درج نہیں۔', en: 'No products listed yet.' },
+  stockBody: {
+    ur: 'مال ختم ہو تو یہیں سے بند کر دیں — بند کرتے ہی نیا آرڈر آنا رک جاتا ہے۔',
+    en: 'Out of stock? Switch it off here — new orders stop immediately.',
+  },
+  inStock: { ur: 'دستیاب ہے', en: 'In stock' },
+  notLiveYet: { ur: 'ابھی لائیو نہیں', en: 'Not live yet' },
+  openOrdersOnThis: { ur: 'اس پر چل رہے آرڈرز', en: 'Open orders on this' },
+  youWillGet: { ur: 'آپ کو ملیں گے', en: 'You get' },
+  orderAccept: { ur: 'قبول کریں', en: 'Accept' },
+  orderReject: { ur: 'معذرت، نہیں ہو سکے گا', en: "Can't fulfil" },
+  rejectReasonAsk: { ur: 'وجہ لکھیں (ریسیلر کو یہی جائے گی)', en: 'Reason (the reseller sees this)' },
+  supplierOrdersNav: { ur: 'آرڈرز', en: 'Orders' },
+  supplierStockNav: { ur: 'مال', en: 'Stock' },
   confirm: { ur: 'تصدیق کریں', en: 'Confirm' },
   confirmQuestion: {
     ur: 'کیا کسٹمر سے بات ہو گئی ہے اور اس نے آرڈر پکا کیا ہے؟',

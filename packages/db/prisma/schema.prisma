@@ -44,6 +44,7 @@ model Supplier {
 
   products     Product[]
   orders       Order[]
+  sessions     Session[]
   contentPacks ContentPack[]
   feeLedger    FeeLedger[]
 
@@ -474,6 +475,7 @@ model Session {
   tokenHash  String   @unique // 🔴 plain token kabhi store nahi hota
   resellerId String?
   opsUserId  String?
+  supplierId String?
   expiresAt  DateTime
   createdAt  DateTime @default(now())
   lastSeenAt DateTime @default(now())
@@ -481,9 +483,11 @@ model Session {
 
   reseller Reseller? @relation(fields: [resellerId], references: [id], onDelete: Cascade)
   opsUser  OpsUser?  @relation(fields: [opsUserId], references: [id], onDelete: Cascade)
+  supplier Supplier? @relation(fields: [supplierId], references: [id], onDelete: Cascade)
 
   @@index([expiresAt])
   @@index([resellerId])
+  @@index([supplierId])
 }
 
 model OtpChallenge {

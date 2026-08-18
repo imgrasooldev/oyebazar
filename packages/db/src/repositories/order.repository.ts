@@ -46,6 +46,34 @@ const INTERNAL_SELECT = {
 } satisfies Prisma.OrderSelect
 
 /** 🔴 supplierId, supplierPriceSnapshot, bajiFee — in mein se kuch bhi yahan nahi. */
+/**
+ * 🔴 Wholesaler ko dikhne wale khaane. `retailPriceSnapshot` aur `bajiPriceSnapshot`
+ * yahan JAAN BOOJH KAR nahi hain — us ko sirf apni raqam dikhni chahiye. Agar us ko
+ * reseller ka retail nazar aa gaya to us ke paas hamein bypass karne ki wajah ban jati hai.
+ */
+const SUPPLIER_SELECT = {
+  id: true,
+  orderNo: true,
+  status: true,
+  customerName: true,
+  customerPhone: true,
+  customerAddress: true,
+  area: true,
+  locationLat: true,
+  locationLng: true,
+  paymentMethod: true,
+  total: true,
+  createdAt: true,
+  acceptedAt: true,
+  items: {
+    select: {
+      qty: true,
+      supplierPriceSnapshot: true,
+      productId: true,
+    },
+  },
+} as const
+
 const RESELLER_SELECT = {
   id: true,
   orderNo: true,
@@ -153,38 +181,60 @@ export class PrismaOrderRepository implements OrderRepository {
   async findBySupplierToken(token: string): Promise<SupplierOrderView | null> {
     const row = await this.db.order.findUnique({
       where: { supplierToken: token },
-      select: {
-        id: true,
-        orderNo: true,
-        status: true,
-        customerName: true,
-        customerPhone: true,
-        customerAddress: true,
-        area: true,
-        locationLat: true,
-        locationLng: true,
-        paymentMethod: true,
-        total: true,
-        createdAt: true,
-        acceptedAt: true,
-        items: {
-          select: {
-            qty: true,
-            supplierPriceSnapshot: true,
-            productId: true,
-          },
-        },
-      },
+      select: SUPPLIER_SELECT,
+    })
+    if (!row) return null
+    return this.toSupplierView(row, await this.loadTitles([row]))
+  }
+
+  /**
+   * 🔴 supplierId `where` ke andar hai, baad ke filter mein nahi — doosre wholesaler ka
+   * order query se nikalta hi nahi.
+   */
+  async listForSupplier(
+    supplierId: string,
+    query: CursorQuery & { status?: OrderStatus | undefined },
+  ): Promise<Page<SupplierOrderView>> {
+    const rows = await this.db.order.findMany({
+      where: { supplierId, ...(query.status ? { status: query.status } : {}) },
+      select: SUPPLIER_SELECT,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: query.limit + 1,
+      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
     })
 
+    // Titles ek hi query mein — warna har order par ek aur query (N+1)
+    const titles = await this.loadTitles(rows)
+    const views = rows.map((row) => this.toSupplierView(row, titles))
+    return toPage(views, query.limit, (o) => o.id)
+  }
+
+  async findForSupplier(supplierId: string, orderNo: string): Promise<SupplierOrderView | null> {
+    const row = await this.db.order.findFirst({
+      where: { orderNo, supplierId },
+      select: SUPPLIER_SELECT,
+    })
     if (!row) return null
+    return this.toSupplierView(row, await this.loadTitles([row]))
+  }
+
+  private async loadTitles(
+    rows: readonly Prisma.OrderGetPayload<{ select: typeof SUPPLIER_SELECT }>[],
+  ): Promise<Map<string, { titleUr: string; titleEn: string }>> {
+    const ids = [...new Set(rows.flatMap((row) => row.items.map((item) => item.productId)))]
+    if (ids.length === 0) return new Map()
 
     const products = await this.db.product.findMany({
-      where: { id: { in: row.items.map((item) => item.productId) } },
+      where: { id: { in: ids } },
       select: { id: true, titleUr: true, titleEn: true },
     })
-    const titles = new Map(products.map((p) => [p.id, p]))
+    return new Map(products.map((p) => [p.id, { titleUr: p.titleUr, titleEn: p.titleEn }]))
+  }
 
+  private toSupplierView(
+    row: Prisma.OrderGetPayload<{ select: typeof SUPPLIER_SELECT }>,
+    titles: Map<string, { titleUr: string; titleEn: string }>,
+  ): SupplierOrderView {
     return {
       id: row.id,
       orderNo: row.orderNo,

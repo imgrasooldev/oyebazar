@@ -85,6 +85,13 @@ export interface OrderRepository {
 
   /** Wholesaler ke magic link ke liye — token hi us ki chabi hai. */
   findBySupplierToken(token: string): Promise<SupplierOrderView | null>
+
+  /** Portal — wholesaler ke apne order. supplierId query ke andar hai, filter mein nahi. */
+  listForSupplier(
+    supplierId: string,
+    query: CursorQuery & { status?: OrderStatus | undefined },
+  ): Promise<Page<SupplierOrderView>>
+  findForSupplier(supplierId: string, orderNo: string): Promise<SupplierOrderView | null>
   setSupplierToken(orderId: string, token: string): Promise<void>
   findById(orderId: string): Promise<InternalOrderView | null>
   findByIdempotencyKey(resellerId: string, key: string): Promise<InternalOrderView | null>

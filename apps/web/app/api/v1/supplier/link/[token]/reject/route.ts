@@ -1,15 +1,17 @@
-import { apiHandler, clientIp } from '@/lib/api/handler'
-import { container } from '@/lib/container'
+import { z } from 'zod'
 import { RateLimitedError } from '@oyebazar/shared'
+import { apiHandler, clientIp, parseBody } from '@/lib/api/handler'
+import { container } from '@/lib/container'
 
 export const runtime = 'nodejs'
 
+const BodySchema = z.object({ reason: z.string().trim().min(3).max(160) })
+
 /**
- * POST /api/v1/supplier/orders/:token/accept
+ * POST /api/v1/supplier/link/:token/reject
  *
- * Koi login nahi — token hi chabi hai. Do hifazatein:
- *  · token 32 bytes ka hai (guess karna namumkin) aur sirf ek order par chalta hai
- *  · IP par rate limit — koi token brute-force na kar sake
+ * Wajah lazmi hai — wohi reseller ko dikhti hai, aur wohi batati hai ke kaunsa
+ * wholesaler bar bar mana karta hai (ops us se baat kar sake).
  */
 export async function POST(request: Request, ctx: { params: Promise<{ token: string }> }) {
   return apiHandler(async () => {
@@ -21,7 +23,9 @@ export async function POST(request: Request, ctx: { params: Promise<{ token: str
     if (!limit.allowed) throw new RateLimitedError(undefined, limit.retryAfterMs)
 
     const { token } = await ctx.params
-    const order = await container.orders.acceptBySupplier(token)
+    const { reason } = await parseBody(request, BodySchema)
+
+    const order = await container.orders.rejectBySupplier(token, reason)
     return { orderNo: order.orderNo, status: order.status }
   })
 }

@@ -64,7 +64,7 @@ export default async function HomePage() {
     <>
       <CategoryStrip categories={categories} locale={locale} />
 
-      <div className="mx-auto max-w-shell space-y-16 px-5 pb-4 pt-2">
+      <div className="mx-auto max-w-shell space-y-12 px-5 pb-4 pt-2">
         {/* -------------------------------------------------- categories + hero row */}
         <div className="grid gap-5 lg:grid-cols-[260px_1fr]">
           {/* Mega-menu — desktop par. Mobile par upar chips ki patti hai. */}
@@ -89,15 +89,15 @@ export default async function HomePage() {
             className="pointer-events-none absolute -bottom-40 start-1/4 h-[26rem] w-[26rem] rounded-full bg-brand-500/30 blur-3xl"
           />
 
-          <div className="relative grid items-center gap-8 p-8 sm:p-12 lg:grid-cols-[1.15fr_1fr]">
+          <div className="relative grid items-center gap-7 p-7 sm:p-9 lg:grid-cols-[1.15fr_1fr]">
             <div>
               <span className="badge bg-white/10 text-brand-300">{t('directoryFree')}</span>
-              <h1 className="display mt-5 max-w-xl">{t('heroTitle')}</h1>
-              <p className="mt-4 max-w-lg text-[1rem] leading-loose text-white/70">
+              <h1 className="display mt-4 max-w-xl">{t('heroTitle')}</h1>
+              <p className="mt-3 max-w-lg text-[1rem] leading-relaxed text-white/70">
                 {t('heroBody')}
               </p>
 
-              <div className="mt-8 flex flex-wrap gap-3">
+              <div className="mt-6 flex flex-wrap gap-3">
                 <Link
                   href="/login"
                   className="btn bg-white px-8 text-brand-800 shadow-lift hover:bg-accent-50"
@@ -109,7 +109,7 @@ export default async function HomePage() {
                 </Link>
               </div>
 
-              <dl className="mt-10 flex flex-wrap gap-x-10 gap-y-4">
+              <dl className="mt-7 flex flex-wrap gap-x-10 gap-y-4">
                 <Stat value={stats.suppliers} label={t('statWholesalers')} />
                 <Stat value={stats.products} label={t('statItems')} />
                 <Stat value={stats.cities} label={t('statCities')} />
@@ -124,7 +124,7 @@ export default async function HomePage() {
               {heroImages.map((url, index) => (
                 <div
                   key={url}
-                  className="aspect-[9/16] w-40 shrink-0 overflow-hidden rounded-2xl shadow-lift ring-1 ring-white/15 transition duration-500 ease-soft hover:z-10 hover:!rotate-0 hover:scale-105"
+                  className="aspect-[9/16] w-32 shrink-0 overflow-hidden rounded-2xl shadow-lift ring-1 ring-white/15 transition duration-500 ease-soft hover:z-10 hover:!rotate-0 hover:scale-105"
                   style={{
                     // beech wala seedha, dono kinare wale thora jhuke hue — haath mein pakre
                     // hue phone jaisa. Overlap negative margin se, absolute positioning se nahi

@@ -11,7 +11,12 @@ import { pickName, translator, type Locale } from '@/lib/i18n'
  * kuch nahi hoga. CSS hover foran chalta hai, chahe bundle abhi load bhi na hua ho.
  *
  * Mobile par flyout nahi hota — wahan chips ki patti hai (CategoryStrip).
+ *
+ * Sirf pehli VISIBLE_COUNT categories dikhti hain: poori list is list ko itna lamba kar
+ * deti thi ke hero ke saath mil kar pehla poora screen sirf navigation ban jata tha aur
+ * asli maal neeche chhup jata. Baqi "sab dekhen" ke peechay hain.
  */
+const VISIBLE_COUNT = 8
 export function CategoryMenu({
   tree,
   locale,
@@ -34,11 +39,11 @@ export function CategoryMenu({
       </p>
 
       <ul className="pb-2">
-        {tree.map((category) => (
+        {tree.slice(0, VISIBLE_COUNT).map((category) => (
           <li key={category.slug} className="group/cat static">
             <Link
               href={{ pathname: '/bazaar', query: { category: category.slug } }}
-              className="flex items-center justify-between gap-2 px-5 py-2.5 text-[0.95rem] text-ink-soft transition group-hover/cat:bg-brand-50 group-hover/cat:text-brand-800"
+              className="flex items-center justify-between gap-2 px-5 py-2 text-[0.95rem] text-ink-soft transition group-hover/cat:bg-brand-50 group-hover/cat:text-brand-800"
             >
               <span className="truncate">{pickName(locale, category)}</span>
               <ChevronIcon className="h-3.5 w-3.5 shrink-0 text-ink-faint transition group-hover/cat:text-brand-600 rtl:rotate-180" />

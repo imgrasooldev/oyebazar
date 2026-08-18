@@ -115,7 +115,7 @@ export default async function SupplierOrderPage({
         </p>
       ) : (
         <div className="mt-5">
-          <SupplierOrderActions token={token} />
+          <SupplierOrderActions endpoint={`/api/v1/supplier/link/${token}`} />
         </div>
       )}
     </div>

@@ -114,8 +114,18 @@
 
   /* ---------------------------------------------------------------- type */
 
+  /*
+   * Bara heading. Leading angrezi ke liye kasi hui hai — pehle 1.9 thi, jis se hero
+   * itna lamba ho jata tha ke pehle screen par sirf banner nazar aata tha.
+   * Urdu ki apni leading neeche khuli rakhi hai: Nastaliq neeche ki taraf latakta hai,
+   * kas dein to nuqte aur "ے" katne lagte hain.
+   */
   .display {
-    @apply text-[1.7rem] font-bold leading-[1.9] sm:text-[2.1rem];
+    @apply text-[1.7rem] font-bold leading-[1.35] sm:text-[2rem];
+  }
+
+  [lang='ur'] .display {
+    @apply leading-[1.75];
   }
 
   .section-head {

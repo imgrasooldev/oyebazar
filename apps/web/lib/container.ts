@@ -13,6 +13,8 @@ import {
   OrderService,
   PricingService,
   StatusPackService,
+  SupplierAuthService,
+  SupplierCatalogueService,
   type Analytics,
   type Clock,
   type Logger,
@@ -43,6 +45,9 @@ export interface Container {
   readonly pricing: PricingService
   readonly statusPacks: StatusPackService
   readonly auth: AuthService
+  /** Wholesaler portal — reseller wali auth se alag, qawaid alag hain. */
+  readonly supplierAuth: SupplierAuthService
+  readonly supplierCatalogue: SupplierCatalogueService
   readonly orders: OrderService
   readonly dailyDrops: DailyDropService
   readonly feeInvoices: FeeInvoiceService
@@ -125,6 +130,22 @@ function build(): Container {
       tokens,
       clock,
       rateLimiter,
+      analytics,
+      logger,
+    ),
+    supplierAuth: new SupplierAuthService(
+      repositories.otpChallenges,
+      repositories.sessions,
+      repositories.suppliers,
+      messaging,
+      tokens,
+      clock,
+      rateLimiter,
+      analytics,
+      logger,
+    ),
+    supplierCatalogue: new SupplierCatalogueService(
+      repositories.supplierProducts,
       analytics,
       logger,
     ),

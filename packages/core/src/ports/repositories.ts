@@ -149,6 +149,7 @@ export interface SessionRecord {
   readonly id: string
   readonly resellerId: string | null
   readonly opsUserId: string | null
+  readonly supplierId: string | null
   readonly expiresAt: Date
 }
 
@@ -158,6 +159,7 @@ export interface SessionRepository {
     tokenHash: string
     resellerId?: string
     opsUserId?: string
+    supplierId?: string
     expiresAt: Date
     userAgent?: string
   }): Promise<SessionRecord>
@@ -166,6 +168,8 @@ export interface SessionRepository {
   delete(id: string): Promise<void>
   /** logout par us reseller ki SAARI sessions khatam (har device se) — shared phone rule. */
   deleteAllForReseller(resellerId: string): Promise<void>
+  /** Wholesaler ka logout bhi har device se — dukan par phone kai haathon mein hota hai. */
+  deleteAllForSupplier(supplierId: string): Promise<void>
   deleteExpired(now: Date): Promise<number>
 }
 

@@ -7,6 +7,8 @@
 import type { Prisma, PrismaClient } from '@prisma/client'
 import type {
   PublicSupplierView,
+  SupplierAccountRepository,
+  SupplierAccountView,
   SupplierFilters,
   SupplierInternalRepository,
   SupplierRepository,
@@ -26,8 +28,28 @@ type SupplierRow = {
   _count: { products: number }
 }
 
-export class PrismaSupplierRepository implements SupplierRepository, SupplierInternalRepository {
+const ACCOUNT_SELECT = {
+  id: true,
+  businessName: true,
+  ownerName: true,
+  city: true,
+  marketName: true,
+  status: true,
+} as const
+
+export class PrismaSupplierRepository
+  implements SupplierRepository, SupplierInternalRepository, SupplierAccountRepository
+{
   constructor(private readonly db: PrismaClient) {}
+
+  /** Portal ka login/session — phone ya id se dukan ka khata. */
+  async findAccountById(supplierId: string): Promise<SupplierAccountView | null> {
+    return this.db.supplier.findUnique({ where: { id: supplierId }, select: ACCOUNT_SELECT })
+  }
+
+  async findAccountByPhone(phoneE164: string): Promise<SupplierAccountView | null> {
+    return this.db.supplier.findUnique({ where: { phone: phoneE164 }, select: ACCOUNT_SELECT })
+  }
 
   /**
    * 🔴 INTERNAL — fee rate aur supplier ka phone yahan hai.

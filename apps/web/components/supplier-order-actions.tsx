@@ -16,8 +16,13 @@ const REJECT_REASONS = [
  * "Qubool" ek tap. "Mana" do tap — wajah poochhi jati hai, kyunke wohi wajah
  * reseller ko dikhti hai (aur wohi hamein batati hai ke kaunsa supplier bar bar
  * mana karta hai).
+ *
+ * `endpoint` do jagah se aata hai — magic link (`/api/v1/supplier/link/<token>`) aur
+ * portal (`/api/v1/supplier/orders/<orderNo>`). Component wohi rehta hai: mana karne
+ * ka tajurba dono jagah ek jaisa hona chahiye, warna ek jagah sudharenge aur doosri
+ * bhool jayenge.
  */
-export function SupplierOrderActions({ token }: { token: string }) {
+export function SupplierOrderActions({ endpoint }: { endpoint: string }) {
   const router = useRouter()
   const [mode, setMode] = useState<'idle' | 'rejecting'>('idle')
   const [reason, setReason] = useState('')
@@ -28,7 +33,7 @@ export function SupplierOrderActions({ token }: { token: string }) {
     setPending(true)
     setError(null)
 
-    const res = await fetch(`/api/v1/supplier/orders/${token}/${path}`, {
+    const res = await fetch(`${endpoint}/${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: body ? JSON.stringify(body) : undefined,

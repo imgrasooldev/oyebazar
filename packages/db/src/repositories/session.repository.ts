@@ -5,6 +5,7 @@ const SESSION_SELECT = {
   id: true,
   resellerId: true,
   opsUserId: true,
+  supplierId: true,
   expiresAt: true,
 } as const
 
@@ -15,6 +16,7 @@ export class PrismaSessionRepository implements SessionRepository {
     tokenHash: string
     resellerId?: string
     opsUserId?: string
+    supplierId?: string
     expiresAt: Date
     userAgent?: string
   }): Promise<SessionRecord> {
@@ -24,6 +26,7 @@ export class PrismaSessionRepository implements SessionRepository {
         expiresAt: input.expiresAt,
         ...(input.resellerId ? { resellerId: input.resellerId } : {}),
         ...(input.opsUserId ? { opsUserId: input.opsUserId } : {}),
+        ...(input.supplierId ? { supplierId: input.supplierId } : {}),
         ...(input.userAgent ? { userAgent: input.userAgent } : {}),
       },
       select: SESSION_SELECT,
@@ -45,6 +48,11 @@ export class PrismaSessionRepository implements SessionRepository {
   /** 🔴 Shared phone rule — logout har device se hota hai. */
   async deleteAllForReseller(resellerId: string): Promise<void> {
     await this.db.session.deleteMany({ where: { resellerId } })
+  }
+
+  /** Wholesaler ka logout bhi har device se — dukan ka phone kai haathon mein hota hai. */
+  async deleteAllForSupplier(supplierId: string): Promise<void> {
+    await this.db.session.deleteMany({ where: { supplierId } })
   }
 
   async deleteExpired(now: Date): Promise<number> {
