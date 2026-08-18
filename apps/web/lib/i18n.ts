@@ -348,6 +348,18 @@ const DICTIONARY = {
   },
   tryAgain: { ur: 'دوبارہ کوشش کریں', en: 'Try again', rm: 'Dobara koshish karen' },
   // ---- Wholesaler portal ----
+  forWholesalers: { ur: 'ہول سیلرز کے لیے', rm: 'Wholesalers ke liye', en: 'For wholesalers' },
+  wholesalerLogin: { ur: 'ہول سیلر لاگ اِن', rm: 'Wholesaler log in', en: 'Wholesaler login' },
+  wholesalerListFree: {
+    ur: 'مفت لسٹنگ — کوئی کمیشن نہیں',
+    rm: 'Muft listing — koi commission nahi',
+    en: 'Free listing — no commission',
+  },
+  wholesalerManageOrders: {
+    ur: 'اپنے آرڈرز اور مال یہیں سے سنبھالیں',
+    rm: 'Apne orders aur maal yahin se sanbhalen',
+    en: 'Manage your orders and stock here',
+  },
   wholesalerPortal: { ur: 'ہول سیلر پورٹل', en: 'Wholesaler portal', rm: 'Wholesaler portal' },
   wholesalerLoginBody: {
     ur: 'اپنا وہی واٹس ایپ نمبر لکھیں جو دکان کے ساتھ رجسٹرڈ ہے۔',

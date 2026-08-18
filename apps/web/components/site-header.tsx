@@ -36,7 +36,13 @@ export function SiteHeader({
           */}
           <p className="min-w-0 truncate">{t('brandTagline')}</p>
           <div className="flex shrink-0 items-center gap-3">
-            <span className="hidden sm:inline">{t('noOrderButton')}</span>
+            {/*
+              Wholesaler ka darwaza. Footer mein bhi hai, magar footer tak har koi nahi
+              pohanchta — aur dukan wale ke liye ye ek hi cheez hai jo usay yahan chahiye.
+            */}
+            <Link href="/supplier/login" className="hidden link-tap sm:inline">
+              {t('wholesalerLogin')}
+            </Link>
             <span className="hidden text-white/30 sm:inline">•</span>
             <span className="hidden sm:inline">{t('directoryFree')}</span>
             <LanguageToggle locale={locale} />

@@ -11,7 +11,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
 
   return (
     <footer className="mt-16 bg-coal-900 text-white/70">
-      <div className="mx-auto grid max-w-shell gap-10 px-5 py-12 sm:grid-cols-3">
+      <div className="mx-auto grid max-w-shell gap-10 px-5 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <p className="text-xl font-bold text-white">
             {locale === 'ur' ? BRAND.nameUr : BRAND.name}
@@ -69,6 +69,26 @@ export function SiteFooter({ locale }: { locale: Locale }) {
             </li>
             <li className="flex min-h-tap items-center">{locale === 'ur' ? 'روزانہ ۵ تیار اسٹیٹس پیک' : '5 ready status packs daily'}</li>
             <li className="flex min-h-tap items-center">{locale === 'ur' ? 'اپنا ریٹ، اپنا نمبر' : 'Your price, your number'}</li>
+          </ul>
+        </div>
+
+        {/*
+          Wholesaler ka apna raasta. Pehle portal mojood tha magar poori site par us ka
+          koi link nahi tha — dukan wale ko URL khud type karna parta, jo koi nahi karta.
+          WhatsApp ka magic link sirf ek order kholta hai; poora portal yahan se milta hai.
+        */}
+        <div>
+          <p className="text-[0.7rem] font-bold uppercase tracking-[0.16em] text-brand-300">
+            {t('forWholesalers')}
+          </p>
+          <ul className="mt-4 space-y-2 text-sm">
+            <li>
+              <Link href="/supplier/login" className="link-tap font-semibold text-white">
+                {t('wholesalerLogin')}
+              </Link>
+            </li>
+            <li className="flex min-h-tap items-center">{t('wholesalerListFree')}</li>
+            <li className="flex min-h-tap items-center">{t('wholesalerManageOrders')}</li>
           </ul>
         </div>
       </div>
