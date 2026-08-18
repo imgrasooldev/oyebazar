@@ -5,6 +5,10 @@ Kaun kahan se andar aata hai, aur kis ke paas kitna ikhtiyar hai.
 Production par domain `oyebazar.com` hai; neeche ke raaste wahan bhi wohi hain
 (`http://localhost:3000` ki jagah `https://oyebazar.com`).
 
+> **"Credentials kahan hain?"** — kahin nahi, aur ye jaan boojh kar hai. Kisi ka bhi
+> login us ke **WhatsApp number** se hota hai; wohi us ki pehchan hai. Super admin ka
+> "credential" = wo number jo `OpsUser` mein `SUPER_ADMIN` ke taur par darj hai.
+
 **Poore system mein koi password nahi hai.** Har login WhatsApp OTP se hota hai: number
 daalen, 6 hindson ka code aata hai, andar. Wajah [ARCHITECTURE.md](./ARCHITECTURE.md)
 mein hai — phone kho jaye ya kisi aur ke haath lag jaye to session foran khatam ki ja
@@ -98,6 +102,27 @@ seedha API call kar sakta hai.
 
 `/admin` dashboard · `/admin/orders` · `/admin/suppliers` · `/admin/products` ·
 `/admin/resellers` · `/admin/money` · `/admin/team`
+
+### 🔴 Pehla super admin — nayi (production) database par
+
+Nayi DB par koi ops user hota hi nahi: `/admin/login` par koi andar nahi ja sakta, aur
+Team ka safha bhi kaam nahi aata kyunke wo pehle se mojood SUPER_ADMIN maangta hai.
+Pehla darwaza CLI se khulta hai:
+
+```bash
+pnpm db:ops-user -- --name "Ghulam Rasool" --email me@oyebazar.com --phone 03004445566
+```
+
+Fly.io par:
+
+```bash
+fly ssh console -C "pnpm db:ops-user -- --name 'Naam' --email a@oyebazar.com --phone 03001234567"
+```
+
+Role na den to `SUPER_ADMIN` banta hai. Number pehle se mojood ho to CLI kuch nahi
+badalti — sirf batati hai (chup chaap kisi ka access badalna sab se bura anjaam hai).
+
+Is ke baad ki saari team **`/admin/team`** se banti hai.
 
 ### Naya ops user kaise bane
 

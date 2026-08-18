@@ -20,6 +20,7 @@
     "db:migrate": "pnpm --filter @oyebazar/db migrate",
     "db:migrate:deploy": "pnpm --filter @oyebazar/db migrate:deploy",
     "db:seed": "pnpm --filter @oyebazar/db seed",
+    "db:ops-user": "pnpm --filter @oyebazar/db ops-user",
     "db:studio": "pnpm --filter @oyebazar/db studio",
     "format": "prettier --write \"**/*.{ts,tsx,md,json,css}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,md,json,css}\""
