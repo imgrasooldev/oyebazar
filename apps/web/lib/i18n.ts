@@ -348,6 +348,31 @@ const DICTIONARY = {
   },
   tryAgain: { ur: 'دوبارہ کوشش کریں', en: 'Try again', rm: 'Dobara koshish karen' },
   // ---- Wholesaler portal ----
+  // ---- Dukan list karwane ki darkhwast ----
+  applyTitle: { ur: 'اپنی دکان لسٹ کروائیں', rm: 'Apni dukan list karwayen', en: 'List your shop' },
+  applyBody: {
+    ur: 'فارم بھر دیں۔ ہماری ٹیم دیکھ کر آپ سے رابطہ کرے گی اور باقی تفصیل مکمل کرے گی۔ لسٹنگ مفت ہے۔',
+    rm: 'Form bhar den. Hamari team dekh kar aap se rabta karegi aur baqi tafseel mukammal karegi. Listing muft hai.',
+    en: 'Fill the form. Our team reviews it, contacts you and completes the rest. Listing is free.',
+  },
+  shopName: { ur: 'دکان کا نام', rm: 'Dukan ka naam', en: 'Shop name' },
+  ownerName: { ur: 'مالک کا نام', rm: 'Malik ka naam', en: 'Owner name' },
+  marketNameOptional: { ur: 'مارکیٹ (اختیاری)', rm: 'Market (marzi ka)', en: 'Market (optional)' },
+  shopAddress: { ur: 'دکان کا پتہ', rm: 'Dukan ka pata', en: 'Shop address' },
+  ntnOptional: { ur: 'NTN (اختیاری)', rm: 'NTN (marzi ka)', en: 'NTN (optional)' },
+  applySubmit: { ur: 'درخواست بھیجیں', rm: 'Darkhwast bhejen', en: 'Send application' },
+  applyNote: {
+    ur: 'درخواست بھیجنے سے دکان لائیو نہیں ہوتی — ٹیم پہلے تصدیق کرتی ہے۔',
+    rm: 'Darkhwast bhejne se dukan live nahi hoti — team pehle tasdeeq karti hai.',
+    en: 'Sending this does not publish your shop — the team verifies it first.',
+  },
+  applyDoneTitle: { ur: 'درخواست مل گئی', rm: 'Darkhwast mil gayi', en: 'Application received' },
+  applyDoneBody: {
+    ur: 'ہماری ٹیم آپ کے نمبر پر رابطہ کرے گی۔ تصدیق کے بعد آپ کی دکان بازار میں آ جائے گی۔',
+    rm: 'Hamari team aap ke number par rabta karegi. Tasdeeq ke baad aap ki dukan bazaar mein aa jayegi.',
+    en: 'Our team will contact you on that number. Once verified, your shop appears in the bazaar.',
+  },
+  alreadyListed: { ur: 'پہلے سے لسٹڈ ہیں؟', rm: 'Pehle se listed hain?', en: 'Already listed?' },
   forWholesalers: { ur: 'ہول سیلرز کے لیے', rm: 'Wholesalers ke liye', en: 'For wholesalers' },
   wholesalerLogin: { ur: 'ہول سیلر لاگ اِن', rm: 'Wholesaler log in', en: 'Wholesaler login' },
   wholesalerListFree: {

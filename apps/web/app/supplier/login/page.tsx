@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { BRAND } from '@oyebazar/shared'
@@ -35,6 +36,14 @@ export default async function SupplierLoginPage() {
           <SupplierLoginForm locale={locale} />
         </div>
       </div>
+
+      {/* Jo abhi listed nahi — un ke liye raasta yahin hona chahiye, warna wo wapas chale jate hain */}
+      <p className="mt-6 text-center text-sm text-ink-soft">
+        {t('applyBody').split('.')[0]}.{' '}
+        <Link href="/supplier/join" className="link-tap font-semibold text-brand-700">
+          {t('applyTitle')}
+        </Link>
+      </p>
     </div>
   )
 }

@@ -20,10 +20,25 @@ export interface SupplierAccountView {
   readonly status: 'PENDING' | 'VERIFIED' | 'SUSPENDED'
 }
 
+export interface SupplierApplication {
+  readonly businessName: string
+  readonly ownerName: string
+  readonly phoneE164: string
+  readonly city: string
+  readonly marketName?: string | undefined
+  readonly address: string
+  readonly ntn?: string | undefined
+}
+
 export interface SupplierAccountRepository {
   findAccountById(supplierId: string): Promise<SupplierAccountView | null>
   /** Login ke liye — phone Supplier par unique hai. */
   findAccountByPhone(phoneE164: string): Promise<SupplierAccountView | null>
+  /**
+   * Nayi dukan ki darkhwast — hamesha PENDING aur bazaar se bahar banti hai.
+   * Chalu karna ops ka faisla hai (AdminService), aur wo faisla yahan nahi ho sakta.
+   */
+  createApplication(input: SupplierApplication): Promise<{ id: string }>
 }
 
 export interface SupplierProductView {

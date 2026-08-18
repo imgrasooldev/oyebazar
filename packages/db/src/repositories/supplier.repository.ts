@@ -9,6 +9,7 @@ import type {
   PublicSupplierView,
   SupplierAccountRepository,
   SupplierAccountView,
+  SupplierApplication,
   SupplierFilters,
   SupplierInternalRepository,
   SupplierRepository,
@@ -49,6 +50,51 @@ export class PrismaSupplierRepository
 
   async findAccountByPhone(phoneE164: string): Promise<SupplierAccountView | null> {
     return this.db.supplier.findUnique({ where: { phone: phoneE164 }, select: ACCOUNT_SELECT })
+  }
+
+  /**
+   * 🔴 Hamesha PENDING aur `listedOnBazaar: false` — ye default yahan hard-code hai,
+   * caller se nahi aata. Warna kabhi koi naya endpoint ghalti se `status` bhej deta
+   * aur bina jaanchi dukan seedha bazaar par aa jati.
+   */
+  async createApplication(input: SupplierApplication): Promise<{ id: string }> {
+    return this.db.supplier.create({
+      data: {
+        slug: await this.uniqueSlug(input.businessName),
+        businessName: input.businessName,
+        ownerName: input.ownerName,
+        phone: input.phoneE164,
+        city: input.city,
+        address: input.address,
+        ...(input.marketName ? { marketName: input.marketName } : {}),
+        ...(input.ntn ? { ntn: input.ntn } : {}),
+        status: 'PENDING',
+        listedOnBazaar: false,
+      },
+      select: { id: true },
+    })
+  }
+
+  /**
+   * Slug naam se banta hai; Urdu naam par kuch nahi bachta, is liye us soorat mein
+   * "shop" + number. Ops chahe to baad mein behtar slug laga sakti hai.
+   */
+  private async uniqueSlug(businessName: string): Promise<string> {
+    const base =
+      businessName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 40) || 'shop'
+
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      const slug = attempt === 0 ? base : `${base}-${attempt + 1}`
+      const taken = await this.db.supplier.findUnique({ where: { slug }, select: { id: true } })
+      if (!taken) return slug
+    }
+
+    // 50 dukanon ka ek hi naam — mumkin nahi, magar chup chaap fail hone se behtar hai
+    return `${base}-${Date.now()}`
   }
 
   /**

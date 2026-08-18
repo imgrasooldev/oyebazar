@@ -16,6 +16,7 @@ import {
   OpsAuthService,
   StatusPackService,
   SupplierAuthService,
+  SupplierOnboardingService,
   SupplierCatalogueService,
   type Analytics,
   type Clock,
@@ -53,6 +54,8 @@ export interface Container {
   readonly opsAuth: OpsAuthService
   readonly admin: AdminService
   readonly supplierCatalogue: SupplierCatalogueService
+  /** Nayi dukan ki darkhwast — public form se aati hai, chalu ops karti hai. */
+  readonly supplierOnboarding: SupplierOnboardingService
   readonly orders: OrderService
   readonly dailyDrops: DailyDropService
   readonly feeInvoices: FeeInvoiceService
@@ -174,6 +177,13 @@ function build(): Container {
     ),
     supplierCatalogue: new SupplierCatalogueService(
       repositories.supplierProducts,
+      analytics,
+      logger,
+    ),
+    supplierOnboarding: new SupplierOnboardingService(
+      repositories.suppliers,
+      messaging,
+      rateLimiter,
       analytics,
       logger,
     ),

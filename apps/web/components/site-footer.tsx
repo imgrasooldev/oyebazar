@@ -83,7 +83,12 @@ export function SiteFooter({ locale }: { locale: Locale }) {
           </p>
           <ul className="mt-4 space-y-2 text-sm">
             <li>
-              <Link href="/supplier/login" className="link-tap font-semibold text-white">
+              <Link href="/supplier/join" className="link-tap font-semibold text-white">
+                {t('applyTitle')}
+              </Link>
+            </li>
+            <li>
+              <Link href="/supplier/login" className="link-tap">
                 {t('wholesalerLogin')}
               </Link>
             </li>

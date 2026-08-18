@@ -30,6 +30,25 @@ export const OtpRequestSchema = z.object({
   phone: PakistaniPhoneSchema,
 })
 
+/**
+ * Nayi dukan ki darkhwast.
+ *
+ * Sirf wo cheezen jo ops ko FAISLA karne ke liye chahiyen: naam, malik, number, sheher,
+ * pata. NTN marzi ka hai — bohat si dukanen registered nahi hotin, aur usay lazmi karne
+ * ka matlab hai aadhi mandi ko darwaze par rok dena.
+ */
+export const SupplierApplicationSchema = z
+  .object({
+    businessName: z.string().trim().min(2, 'دکان کا نام لکھیں').max(80),
+    ownerName: z.string().trim().min(2, 'مالک کا نام لکھیں').max(60),
+    phone: PakistaniPhoneSchema,
+    city: z.string().trim().min(2, 'شہر لکھیں').max(40),
+    marketName: z.string().trim().max(60).optional(),
+    address: z.string().trim().min(5, 'پتہ لکھیں').max(200),
+    ntn: z.string().trim().max(20).optional(),
+  })
+  .strict()
+
 export const RegisterSchema = z
   .object({
     phone: PakistaniPhoneSchema,
