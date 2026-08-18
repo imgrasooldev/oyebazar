@@ -7,6 +7,12 @@ WhatsApp status par bechne wali resellers ke liye content + coordination platfor
 Pehle `docs/ARCHITECTURE.md` aur `docs/CONVENTIONS.md` parhen. Naye developer ke liye
 wo do documents lazmi hain.
 
+
+## Logins aur URLs
+
+Kaun kahan se andar aata hai (reseller, wholesaler, admin), test accounts aur dev par
+OTP kahan milta hai — sab [docs/ACCESS.md](docs/ACCESS.md) mein hai.
+
 ## Chalane ka tareeqa
 
 Kuch install karne ki zaroorat nahi — na Docker, na Postgres. Do terminal chahiyen.
