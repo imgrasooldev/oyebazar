@@ -51,6 +51,18 @@ export const OPS_PERMISSIONS = {
     needs: 'MANAGER',
     label: 'Make products live, archive them',
   },
+  /*
+   * Rate ki manzoori MANAGER par hai, SUPER_ADMIN par nahi — jaan boojh kar.
+   *
+   * Ye fee rate nahi hai (wo SUPER_ADMIN par hai aur wahin rehna chahiye). Ye ek maal
+   * ka rate hai, aur aisi darkhwasten rozana aati hain: kapre ka bhao badla, dollar
+   * charha. SUPER_ADMIN par rakhte to qatar lagi rehti aur dukan wala hafton intezar
+   * karta — aur akhir mein koi na koi shortcut nikal leta.
+   */
+  approvePriceChange: {
+    needs: 'MANAGER',
+    label: 'Approve a wholesaler’s price change on a live product',
+  },
   manageResellers: {
     needs: 'MANAGER',
     label: 'Suspend and reinstate resellers',

@@ -8,6 +8,7 @@ import type { PrismaClient } from '@prisma/client'
 import { prisma } from './client'
 import { PrismaProductRepository } from './repositories/product.repository'
 import { PrismaSupplierRepository } from './repositories/supplier.repository'
+import { PrismaPriceChangeRepository } from './repositories/price-change.repository'
 import { PrismaSupplierProductRepository } from './repositories/supplier-product.repository'
 import {
   PrismaAdminRepository,
@@ -34,6 +35,7 @@ export interface Repositories {
   products: PrismaProductRepository
   suppliers: PrismaSupplierRepository
   supplierProducts: PrismaSupplierProductRepository
+  priceChanges: PrismaPriceChangeRepository
   admin: PrismaAdminRepository
   opsUsers: PrismaOpsUserRepository
   resellers: PrismaResellerRepository
@@ -57,6 +59,7 @@ export function createRepositories(client: PrismaClient = prisma): Repositories 
     products: new PrismaProductRepository(client),
     suppliers: new PrismaSupplierRepository(client),
     supplierProducts: new PrismaSupplierProductRepository(client),
+    priceChanges: new PrismaPriceChangeRepository(client),
     admin: new PrismaAdminRepository(client),
     opsUsers: new PrismaOpsUserRepository(client),
     resellers: new PrismaResellerRepository(client),

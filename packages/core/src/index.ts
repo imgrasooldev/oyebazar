@@ -7,6 +7,7 @@ export * from './domain/daily-drop'
 // Ports (repository + infrastructure interfaces)
 export * from './ports'
 export * from './ports/order-repositories'
+export * from './ports/price-change-repositories'
 export * from './ports/daily-drop-repositories'
 
 // Services (application layer)
@@ -20,6 +21,7 @@ export * from './services/ops-auth.service'
 export * from './domain/ops-permissions'
 export * from './services/admin.service'
 export * from './services/supplier-catalogue.service'
+export * from './services/price-change.service'
 export * from './services/supplier-onboarding.service'
 export * from './services/order.service'
 export * from './services/daily-drop.service'

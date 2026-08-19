@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { formatPkr } from '@oyebazar/shared'
+import { AdminPriceDecision } from '@/components/admin-price-decision'
 import { AdminRowAction } from '@/components/admin-row-action'
 import { requireOpsUser } from '@/lib/api/admin-session'
 import { container } from '@/lib/container'
@@ -20,7 +21,10 @@ export const dynamic = 'force-dynamic'
  */
 export default async function AdminProductsPage() {
   const { user } = await requireOpsUser()
-  const products = await container.admin.listProducts(user)
+  const [products, priceRequests] = await Promise.all([
+    container.admin.listProducts(user),
+    container.priceChanges.listPending(),
+  ])
 
   const drafts = products.filter((product) => product.status === 'DRAFT')
   const rest = products.filter((product) => product.status !== 'DRAFT')
@@ -33,6 +37,94 @@ export default async function AdminProductsPage() {
           Draft stock is invisible to resellers. Check the margins before making it live.
         </p>
       </div>
+
+      {/*
+        🔴 Rate ki darkhwastein sab se upar — draft se bhi upar.
+        Draft maal abhi kisi ke kaam ka nahi; rate ki khuli darkhwast us maal par hai jo
+        ABHI bik raha hai. Har din ki dair mein dukan wala purane rate par maal deta hai.
+      */}
+      {priceRequests.length > 0 && (
+        <section>
+          <h2 className="mb-3 rounded-card bg-accent-50 px-4 py-3 font-bold text-accent-800">
+            Price changes to approve ({priceRequests.length})
+          </h2>
+
+          <ul className="space-y-3">
+            {priceRequests.map((row) => {
+              const up = row.requestedSupplierPrice > row.currentSupplierPrice
+              return (
+                <li key={row.id} className="card space-y-3 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-bold">{row.productTitleEn}</p>
+                      <p className="text-sm text-ink-soft">{row.supplierName}</p>
+                    </div>
+                    <span
+                      className={
+                        up
+                          ? 'badge bg-red-50 text-red-700'
+                          : 'badge bg-emerald-50 text-emerald-700'
+                      }
+                    >
+                      {up ? 'Price up' : 'Price down'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 rounded-card bg-paper-sunken p-3 text-center sm:grid-cols-4">
+                    <div>
+                      <p className="text-[0.7rem] text-ink-faint">Wholesaler now</p>
+                      <p dir="ltr" className="numeric font-bold">
+                        {formatPkr(row.currentSupplierPrice)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[0.7rem] text-ink-faint">Wholesaler wants</p>
+                      <p dir="ltr" className="numeric font-bold">
+                        {formatPkr(row.requestedSupplierPrice)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[0.7rem] text-ink-faint">Resellers see now</p>
+                      <p dir="ltr" className="numeric font-bold">
+                        {formatPkr(row.currentBajiPrice)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[0.7rem] text-ink-faint">Would become</p>
+                      <p dir="ltr" className="numeric font-bold text-accent-700">
+                        {formatPkr(row.proposedBajiPrice)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/*
+                    🔴 Ye line hi is poore safhe ki wajah hai.
+                    Itni resellers ne is maal par apna rate save kar rakha hai jo naye
+                    cost se NEECHE hai — un ka status pack pehle se WhatsApp par laga
+                    hua hai aur wo apni lagat se kam par bech rahi hongi.
+                  */}
+                  {row.resellersUnderWater > 0 ? (
+                    <p className="rounded-card bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+                      {row.resellersUnderWater} of {row.resellersWithSavedPrice} resellers priced
+                      below the new cost — approving raises their saved price too.
+                    </p>
+                  ) : (
+                    <p className="text-sm text-ink-soft">
+                      {row.resellersWithSavedPrice} reseller
+                      {row.resellersWithSavedPrice === 1 ? '' : 's'} priced this — none below the
+                      new cost.
+                    </p>
+                  )}
+
+                  {row.reason && <p className="text-sm text-ink-soft">“{row.reason}”</p>}
+
+                  <AdminPriceDecision requestId={row.id} underWater={row.resellersUnderWater} />
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
 
       {drafts.length > 0 && (
         <section>

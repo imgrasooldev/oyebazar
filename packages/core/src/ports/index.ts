@@ -1,5 +1,6 @@
 export * from './repositories'
 export * from './infrastructure'
 export * from './supplier-portal-repositories'
+export * from './price-change-repositories'
 export * from './admin-repositories'
 export * from './inventory-repositories'

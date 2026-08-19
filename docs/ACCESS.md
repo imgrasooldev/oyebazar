@@ -31,6 +31,10 @@ apni tasdeeq ke baghair wholesaler tak jata hi nahi.
 Andar kya hai: dashboard (kamai, ruke hue order), catalogue + Content Studio (status
 pack), orders, bazaar.
 
+Maal par ek se zyada tasveerein hon to Content Studio mein "کون سی تصویر؟" wali patti
+aati hai — har tasveer ka apna pack banta hai aur apna cache rakhta hai. Ek hi tasveer
+ho to ye patti nahi aati (3-tap ka usool).
+
 ---
 
 ## 2. Wholesaler (dukan wale)
@@ -46,7 +50,53 @@ Login **sirf VERIFIED dukan** kar sakti hai. Darkhwast bhejne se dukan live nahi
 wo `PENDING` banti hai aur ops team admin portal se manzoori deti hai ya rabta kar ke
 baqi tafseel mukammal karti hai.
 
-Andar kya hai: aaye hue order (qubool/mana), aur apna maal — stock on/off.
+Andar kya hai: aaye hue order (qubool/mana), aur apna maal — stock on/off, aur har maal
+ki tasveerein aur video.
+
+### Rate badalna — do alag raaste
+
+| Maal ki halat | Kaun badal sakta hai |
+|---|---|
+| `DRAFT` (abhi manzoor nahi hua) | **wholesaler khud** — naam, rate, category, ginti, sab |
+| `LIVE` | **sirf ops ki manzoori se** — wholesaler darkhwast bhejta hai |
+
+🔴 LIVE par ye rok kaarobari hai, technical nahi. Reseller apna retail rate save kar
+chuki hoti hai aur us ka status pack pehle se WhatsApp par laga hua hota hai. Rate barhte
+hi `bajiPrice` barhta hai — aur ab wo pack us rate ka elaan kar raha hota hai jo us ki
+apni lagat se KAM hai. Usay pata tab chalta hai jab customer haan keh chuka hota hai aur
+order fail hota hai. Itla ye nuqsan nahi rokti, sirf khabar deti hai.
+
+Manzoori dete waqt ops ko `/admin/products` par saaf dikhta hai ke **kitni resellers ka
+saved rate naye cost se neeche hai** — wohi log jin ka pehle se laga hua pack loss par
+bik raha hoga. Manzoori usi lamhe un ka rate bhi theek kar deti hai (naye `suggestedRetail`
+par), warna un ka agla status pack apni lagat se kam ka rate chhap kar chala jata.
+
+Ikhtiyar: **MANAGER** (`approvePriceChange`). Fee *rate* alag cheez hai aur wo
+SUPER_ADMIN par hi rehta hai.
+
+⚠ Jin resellers ka rate badla gaya, unhen WhatsApp par khabar bhejna abhi baqi hai — wo
+worker ke paced job ka kaam hai (GOLDEN RULE #10: ek web request se sau paighaam nahi
+ja sakte).
+
+### Tasveerein aur video
+
+Naya maal daalte waqt seedha phone se chuni jati hain, aur baad mein `/supplier/stock`
+par har maal ke neeche "تصویریں" khol kar aur lagai ya hatai ja sakti hain.
+
+| | |
+|---|---|
+| Qismein | JPG · PNG · WEBP · MP4 · MOV · WEBM |
+| Hadd | tasveer 8 MB · video 50 MB · ek maal par 8 cheezein |
+| Sarwarq | koi ek TASVEER — reseller ke Content Studio mein yehi pehle se chuni aati hai |
+
+🔴 File ki qism us ke pehle bytes se pehchani jati hai, browser ke bataye hue
+`Content-Type` se nahi. Dev mein upload `apps/web/public/_dev-media` mein girti hai
+jahan se Next usay HAMARE apne origin se serve karta hai — wahan ek "image/jpeg" jo asal
+mein HTML hai, us safhe par script chala kar reseller ki session cookie tak pohanch
+sakti thi. Test: `packages/storage/src/sniff.test.ts`.
+
+🔴 Video par status pack nahi banta (Playwright HTML screenshot se render hota hai).
+Video sirf gallery mein chalta hai.
 
 ### Magic link — bina login
 

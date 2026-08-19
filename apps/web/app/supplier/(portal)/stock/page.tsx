@@ -1,5 +1,8 @@
 import type { Metadata } from 'next'
 import { formatPkr } from '@oyebazar/shared'
+import { SupplierEditProduct } from '@/components/supplier-edit-product'
+import { SupplierPriceRequest } from '@/components/supplier-price-request'
+import { SupplierProductMedia } from '@/components/supplier-product-media'
 import { SupplierAddProduct } from '@/components/supplier-add-product'
 import { SupplierStockQuantity } from '@/components/supplier-stock-quantity'
 import { SupplierStockToggle } from '@/components/supplier-stock-toggle'
@@ -29,11 +32,17 @@ export default async function SupplierStockPage() {
   const locale = await getLocale()
   const t = translator(locale)
 
-  const [products, categories, internal] = await Promise.all([
+  const [products, categories, internal, pendingPriceRequests] = await Promise.all([
     container.supplierCatalogue.listMyProducts(supplier.id),
-    container.repositories.categories.findAll(),
+    // 🔴 findTree, findAll nahi — maal SUB-category par lagta hai aur findAll sirf
+    // bari categories deta hai
+    container.repositories.categories.findTree(),
     container.repositories.suppliers.findInternal(supplier.id),
+    container.priceChanges.listMyPending(supplier.id),
   ])
+
+  // Jis maal par pehle se darkhwast khuli hai us par dobara form kholne ka faida nahi
+  const pendingByProduct = new Map(pendingPriceRequests.map((row) => [row.productId, row]))
 
   return (
     <div className="space-y-6">
@@ -56,7 +65,8 @@ export default async function SupplierStockPage() {
 
       <ul className="space-y-3">
         {products.map((product) => (
-          <li key={product.id} className="card flex items-center gap-4 p-4">
+          <li key={product.id} className="card space-y-4 p-4">
+            <div className="flex items-center gap-4">
             <div className="h-16 w-16 shrink-0 overflow-hidden rounded-card bg-paper-sunken">
               {product.imageUrl && (
                 // eslint-disable-next-line @next/next/no-img-element -- storage URLs; next/image Phase 2
@@ -108,6 +118,54 @@ export default async function SupplierStockPage() {
                 labels={{ inStock: t('inStock'), outOfStock: t('outOfStock') }}
               />
             )}
+            </div>
+
+            {/* 🔴 Tafseel badalna SIRF DRAFT par. Live maal par naam ya rate badalne ka
+                matlab hai ke reseller ka pehle se laga hua status pack jhoot bol raha ho
+                — wo alag flow hai (itla + us ke saved rate ka hisab), ye nahi. */}
+            {product.status === 'DRAFT' && (
+              <div className="space-y-2 border-t border-line pt-3">
+                <SupplierEditProduct
+                  product={{
+                    id: product.id,
+                    titleUr: product.titleUr,
+                    titleEn: product.titleEn,
+                    descriptionUr: product.descriptionUr,
+                    categorySlug: product.categorySlug,
+                    supplierPrice: product.supplierPrice,
+                    stockQty: product.stockQty,
+                  }}
+                  categories={categories}
+                  feeRateBps={internal?.feeRateBps ?? 500}
+                  locale={locale}
+                />
+                <p className="text-[0.78rem] leading-relaxed text-ink-faint">
+                  {t('draftEditNote')}
+                </p>
+              </div>
+            )}
+
+            {/* 🔴 LIVE maal ka rate dukan wala KHUD nahi badal sakta — sirf maang sakta
+                hai. Wajah component ke andar likhi hai (aur safhe par bhi dikhti hai). */}
+            {product.status !== 'DRAFT' && (
+              <div className="border-t border-line pt-3">
+                <SupplierPriceRequest
+                  productId={product.id}
+                  currentPrice={product.supplierPrice}
+                  feeRateBps={internal?.feeRateBps ?? 500}
+                  pending={pendingByProduct.get(product.id) ?? null}
+                  locale={locale}
+                />
+              </div>
+            )}
+
+            {/* Tasveerein maal ke saath hi — alag safhe par bhejne se dukan wala
+                wahan jata hi nahi, aur maal bina tasveer ke para reh jata hai */}
+            <SupplierProductMedia
+              productId={product.id}
+              media={[...product.media]}
+              locale={locale}
+            />
           </li>
         ))}
       </ul>
