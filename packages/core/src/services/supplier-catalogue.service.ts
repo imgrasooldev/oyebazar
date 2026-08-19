@@ -10,6 +10,7 @@
  * chuka (LIVE ya OUT_OF_STOCK). DRAFT/ARCHIVED ops ka faisla hai.
  */
 import {
+  MAX_MEDIA_PER_PRODUCT,
   NotFoundError,
   ValidationError,
   applyBasisPoints,
@@ -18,12 +19,29 @@ import {
   type Pkr,
 } from '@oyebazar/shared'
 import type {
+  ProductMediaInput,
   SupplierProductRepository,
   SupplierProductView,
 } from '../ports/supplier-portal-repositories'
 import type { SupplierInternalRepository } from '../ports/order-repositories'
 import type { InventoryRepository } from '../ports/inventory-repositories'
 import type { Analytics, Logger } from '../ports/infrastructure'
+
+/**
+ * Wholesaler ke rate se hamara rate aur tajweez kardah retail.
+ *
+ * 🔴 Ye function alag is liye hai ke DO jagah chahiye tha: naya maal banate waqt aur
+ * DRAFT edit karte waqt. Do jagah nakal karte to kal fee ka formula ek jagah badalta
+ * aur doosri jagah purana reh jata — aur farq kisi ko mahino pata na chalta, kyunke
+ * dono soorton mein number "theek lagta" hai.
+ */
+function derivePrices(supplierPrice: Pkr, feeRateBps: number): { bajiPrice: Pkr; suggestedRetail: Pkr } {
+  // Hamari fee: 1000 par 5% = 50 → reseller ko 1050
+  const bajiPrice = addPkr(supplierPrice, pkr(applyBasisPoints(supplierPrice, feeRateBps)))
+
+  // Tajweez kardah retail — reseller isay badal sakti hai, ye sirf shuruat hai
+  return { bajiPrice, suggestedRetail: pkr(Math.round((bajiPrice * 1.35) / 50) * 50) }
+}
 
 export class SupplierCatalogueService {
   constructor(
@@ -32,6 +50,13 @@ export class SupplierCatalogueService {
     private readonly inventory: InventoryRepository,
     private readonly analytics: Analytics,
     private readonly logger: Logger,
+    /**
+     * Hamari apni storage ka public prefix — media URL isi se shuru hone chahiyen.
+     *
+     * 🔴 Ye service ko is liye diya jata hai ke rok DOMAIN mein rahe, route par nahi.
+     * Kal koi doosra endpoint bhi product banaye to ye shart us par bhi lagegi.
+     */
+    private readonly mediaBaseUrl: string,
   ) {}
 
   /**
@@ -54,7 +79,7 @@ export class SupplierCatalogueService {
       categorySlug: string
       supplierPrice: Pkr
       stockQty: number
-      imageUrl?: string
+      media?: readonly ProductMediaInput[]
     },
   ): Promise<{ id: string; bajiPrice: Pkr; suggestedRetail: Pkr }> {
     const supplier = await this.suppliers.findInternal(supplierId)
@@ -64,14 +89,9 @@ export class SupplierCatalogueService {
       throw new ValidationError('Rate likhna zaroori hai')
     }
 
-    // Hamari fee: 1000 par 5% = 50 → reseller ko 1050
-    const bajiPrice = addPkr(
-      input.supplierPrice,
-      pkr(applyBasisPoints(input.supplierPrice, supplier.feeRateBps)),
-    )
+    const media = this.assertOwnMedia(input.media ?? [])
 
-    // Tajweez kardah retail — reseller isay badal sakti hai, ye sirf shuruat hai
-    const suggestedRetail = pkr(Math.round((bajiPrice * 1.35) / 50) * 50)
+    const { bajiPrice, suggestedRetail } = derivePrices(input.supplierPrice, supplier.feeRateBps)
 
     const created = await this.products.create({
       supplierId,
@@ -83,20 +103,27 @@ export class SupplierCatalogueService {
       bajiPrice,
       suggestedRetail,
       stockQty: input.stockQty,
-      ...(input.imageUrl ? { imageUrl: input.imageUrl } : {}),
+      media,
     })
 
     await this.analytics.track({
       name: 'supplier_product_added',
       actorType: 'ops',
       actorId: `supplier:${supplierId}`,
-      properties: { productId: created.id, supplierPrice: input.supplierPrice, bajiPrice },
+      properties: {
+        productId: created.id,
+        supplierPrice: input.supplierPrice,
+        bajiPrice,
+        images: media.filter((item) => item.type === 'IMAGE').length,
+        videos: media.filter((item) => item.type === 'VIDEO').length,
+      },
     })
     this.logger.info('supplier_product_added', {
       supplierId,
       productId: created.id,
       supplierPrice: input.supplierPrice,
       bajiPrice,
+      media: media.length,
     })
 
     return { id: created.id, bajiPrice, suggestedRetail }
@@ -145,5 +172,168 @@ export class SupplierCatalogueService {
       properties: { productId },
     })
     this.logger.info('supplier_stock_changed', { supplierId, productId, status })
+  }
+
+  /**
+   * DRAFT maal ki poori tafseel badalna — naam, tafseel, category, rate, ginti.
+   *
+   * 🔴 Sirf DRAFT, aur rok repository ki query mein hai. LIVE maal is raste se nahi
+   * badalta: us par reseller apna retail rate save kar chuki hoti hai aur us ke status
+   * pack ban chuke hote hain. Rate barhane ka matlab hai ke us ka pehle se WhatsApp par
+   * laga hua pack ab us ki apni lagat se neeche ka rate dikha raha hai — aur usay khabar
+   * tak nahi. Wo alag flow hai (itla + us ke saved rate ka hisab), ye nahi.
+   *
+   * Rate ka hisab yahan dobara hota hai, client se nahi aata — wohi wajah jo naya maal
+   * banate waqt hai.
+   */
+  async updateDraft(
+    supplierId: string,
+    productId: string,
+    input: {
+      titleUr: string
+      titleEn: string
+      descriptionUr?: string
+      categorySlug: string
+      supplierPrice: Pkr
+      stockQty: number
+    },
+  ): Promise<{ bajiPrice: Pkr; suggestedRetail: Pkr }> {
+    const supplier = await this.suppliers.findInternal(supplierId)
+    if (!supplier) throw new NotFoundError('Supplier', supplierId)
+
+    if (input.supplierPrice <= 0) throw new ValidationError('Rate likhna zaroori hai')
+    if (!Number.isInteger(input.stockQty) || input.stockQty < 1 || input.stockQty > 100_000) {
+      throw new ValidationError('Ginti theek nahi')
+    }
+
+    const { bajiPrice, suggestedRetail } = derivePrices(input.supplierPrice, supplier.feeRateBps)
+
+    const changed = await this.products.updateDraft(supplierId, productId, {
+      titleUr: input.titleUr,
+      titleEn: input.titleEn,
+      ...(input.descriptionUr ? { descriptionUr: input.descriptionUr } : {}),
+      categorySlug: input.categorySlug,
+      supplierPrice: input.supplierPrice,
+      bajiPrice,
+      suggestedRetail,
+      stockQty: input.stockQty,
+    })
+
+    // Maal is dukan ka nahi, ya ab DRAFT nahi raha — dono ka wohi jawab, warna doosri
+    // dukan ke product ids taare ja sakte hain
+    if (!changed) throw new NotFoundError('Product', productId)
+
+    await this.analytics.track({
+      name: 'supplier_draft_updated',
+      actorType: 'ops',
+      actorId: `supplier:${supplierId}`,
+      properties: { productId, supplierPrice: input.supplierPrice, bajiPrice },
+    })
+    this.logger.info('supplier_draft_updated', { supplierId, productId })
+
+    return { bajiPrice, suggestedRetail }
+  }
+
+  /**
+   * Mojooda maal par nayi tasveerein/video.
+   *
+   * 🔴 Product banate waqt hi media daal dena kaafi nahi tha: jis dukan wale ki tasveer
+   * dhundhli aa gayi ya jis ne jaldi mein sirf ek daali, us ke paas theek karne ka koi
+   * raasta hi nahi tha — usay poora maal dobara banana parta, aur purane product par
+   * chalte hue order us ke saath nahi jate.
+   */
+  async addMedia(
+    supplierId: string,
+    productId: string,
+    media: readonly ProductMediaInput[],
+  ): Promise<void> {
+    const checked = this.assertOwnMedia(media)
+    // Nayi media kabhi khud status source nahi banti — wo alag, saaf faisla hai
+    const added = await this.products.addMedia(
+      supplierId,
+      productId,
+      checked.map((item) => ({ ...item, isStatusSource: false })),
+    )
+    if (!added) throw new NotFoundError('Product', productId)
+
+    await this.analytics.track({
+      name: 'supplier_media_added',
+      actorType: 'ops',
+      actorId: `supplier:${supplierId}`,
+      properties: { productId, count: checked.length },
+    })
+    this.logger.info('supplier_media_added', { supplierId, productId, count: checked.length })
+  }
+
+  async removeMedia(supplierId: string, productId: string, mediaId: string): Promise<void> {
+    const removed = await this.products.removeMedia(supplierId, productId, mediaId)
+    if (!removed) throw new NotFoundError('Tasveer', mediaId)
+
+    await this.analytics.track({
+      name: 'supplier_media_removed',
+      actorType: 'ops',
+      actorId: `supplier:${supplierId}`,
+      properties: { productId, mediaId },
+    })
+  }
+
+  /** Kaunsi tasveer cover banegi — catalogue par yehi dikhti hai. */
+  async setStatusSource(supplierId: string, productId: string, mediaId: string): Promise<void> {
+    const changed = await this.products.setStatusSource(supplierId, productId, mediaId)
+    // Video par status pack nahi banta — repository usay dhoondti hi nahi, is liye
+    // yahan wohi "nahi mili" wala jawab aata hai
+    if (!changed) throw new NotFoundError('Tasveer', mediaId)
+
+    await this.analytics.track({
+      name: 'supplier_media_cover_set',
+      actorType: 'ops',
+      actorId: `supplier:${supplierId}`,
+      properties: { productId, mediaId },
+    })
+  }
+
+  async reorderMedia(
+    supplierId: string,
+    productId: string,
+    mediaIds: readonly string[],
+  ): Promise<void> {
+    const changed = await this.products.reorderMedia(supplierId, productId, mediaIds)
+    if (!changed) throw new NotFoundError('Product', productId)
+  }
+
+  /**
+   * 🔴 Media ki jaanch — teen sharten, teenon ki apni wajah hai.
+   *
+   * 1. URL hamari apni storage ka ho. Client `/api/v1/supplier/media` se upload kar ke
+   *    URL wapas laata hai; wahan qism aur naap dono jaanche jate hain. Agar yahan bahar
+   *    ka link qubool kar lete to poori upload wali jaanch bekaar ho jati — koi bhi
+   *    seedha JSON bhej kar catalogue mein kisi aur ki site ki tasveer laga deta.
+   * 2. Ginti par hadd — warna ek product par sau tasveerein aa kar catalogue ka safha
+   *    Sadia ke 3G par khol hi nahi paata.
+   * 3. Status wali tasveer THEEK EK ho, aur wo video na ho. Reseller ke Content Studio
+   *    mein yehi pehle se chuni hui aati hai; do "default" ka matlab koi default nahi.
+   */
+  private assertOwnMedia(media: readonly ProductMediaInput[]): ProductMediaInput[] {
+    if (media.length > MAX_MEDIA_PER_PRODUCT) {
+      throw new ValidationError(
+        `Ek maal par zyada se zyada ${MAX_MEDIA_PER_PRODUCT} tasveerein ya video lag sakti hain`,
+      )
+    }
+
+    for (const item of media) {
+      if (!item.url.startsWith(this.mediaBaseUrl)) {
+        throw new ValidationError('Tasveer pehle upload karen — bahar ka link nahi chalta')
+      }
+      if (item.type === 'VIDEO' && item.isStatusSource) {
+        throw new ValidationError('Status pack video par nahi banta — koi tasveer chunen')
+      }
+    }
+
+    const images = media.filter((item) => item.type === 'IMAGE')
+    if (images.length === 0) return [...media]
+
+    // Ek hi status source: jo chuni gayi ho wo, warna pehli tasveer
+    const chosen = images.find((item) => item.isStatusSource) ?? images[0]
+    return media.map((item) => ({ ...item, isStatusSource: item === chosen }))
   }
 }

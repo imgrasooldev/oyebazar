@@ -3,6 +3,7 @@
  * Route handler kabhi raw `body` ko haath na lagaye.
  */
 import { z } from 'zod'
+import { MAX_MEDIA_PER_PRODUCT } from '../media'
 import { PAGINATION } from '../constants'
 import { TemplateKeySchema } from '../dto/status-pack'
 
@@ -53,7 +54,43 @@ export const NewProductSchema = z
     supplierPrice: z.number().int().positive('ریٹ لکھیں').max(1_000_000),
     // Bina stock ke maal order nahi ho sakta — is liye ye khaana lazmi hai
     stockQty: z.number().int().min(1, 'کتنا مال ہے؟').max(100_000),
-    imageUrl: z.string().url().max(500).optional(),
+    /**
+     * Tasveerein aur video — pehle `/api/v1/supplier/media` par upload ho chuki hoti hain.
+     *
+     * 🔴 URL yahan sirf shakl ke lehaz se jaancha jata hai. Ye HAMARI storage ka hai ya
+     * nahi, wo faisla service karti hai (SupplierCatalogueService) — kyunke storage ka
+     * base URL environment se aata hai aur schema ko environment ka pata nahi hota.
+     */
+    media: z
+      .array(
+        z
+          .object({
+            url: z.string().url().max(500),
+            type: z.enum(['IMAGE', 'VIDEO']),
+            isStatusSource: z.boolean().default(false),
+          })
+          .strict(),
+      )
+      .max(MAX_MEDIA_PER_PRODUCT)
+      .optional(),
+  })
+  .strict()
+
+/**
+ * DRAFT maal ki nayi tafseel.
+ *
+ * Shakl `NewProductSchema` jaisi hai magar `media` ke baghair — tasveerein apne alag
+ * endpoint se lagti aur hatti hain, aur unhen is form ke saath baandhne ka matlab hota
+ * ke naam theek karne ke liye bhi saari tasveerein dobara bhejni paren.
+ */
+export const EditDraftProductSchema = z
+  .object({
+    titleUr: z.string().trim().min(2, 'مال کا نام لکھیں').max(80),
+    titleEn: z.string().trim().min(2, 'English name').max(80),
+    descriptionUr: z.string().trim().max(300).optional(),
+    categorySlug: z.string().trim().min(2),
+    supplierPrice: z.number().int().positive('ریٹ لکھیں').max(1_000_000),
+    stockQty: z.number().int().min(1, 'کتنا مال ہے؟').max(100_000),
   })
   .strict()
 
@@ -123,6 +160,8 @@ export const SetRetailPriceSchema = z.object({
 
 export const GenerateStatusPackSchema = z.object({
   productId: z.string().min(1),
+  /** Kaunsi tasveer — na den to product ki cover. */
+  mediaId: z.string().min(1).max(40).optional(),
   templateKey: TemplateKeySchema,
   /**
    * Agar reseller ne price abhi slider par set kiya hai to yahan aata hai;
@@ -184,3 +223,4 @@ export type CatalogueQuery = z.infer<typeof CatalogueQuerySchema>
 export type BazaarQuery = z.infer<typeof BazaarQuerySchema>
 export type SetRetailPriceInput = z.infer<typeof SetRetailPriceSchema>
 export type GenerateStatusPackInput = z.infer<typeof GenerateStatusPackSchema>
+export type EditDraftProductInput = z.infer<typeof EditDraftProductSchema>

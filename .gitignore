@@ -8,6 +8,7 @@ dist/
 out/
 .turbo/
 coverage/
+*.tsbuildinfo
 
 .env
 .env.local
@@ -28,6 +29,10 @@ __screenshots__/diff/
 
 # generated Prisma client
 packages/db/generated/
+
+# dev storage — wholesaler ki upload ki hui tasveerein aur render kiye hue pack.
+# Production mein ye Supabase par jate hain; local par Next inhen serve karta hai.
+apps/web/public/_dev-media/
 
 # design/QA artefacts — repo mein nahi jate
 apps/worker/shots/

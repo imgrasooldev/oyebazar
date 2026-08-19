@@ -3,13 +3,11 @@
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { formatPkr } from '@oyebazar/shared'
+import { CategorySelect, type CategoryGroup } from '@/components/category-select'
+import { MediaUploader, type UploadedMedia } from '@/components/media-uploader'
 import { translator, type Locale } from '@/lib/i18n'
 
-interface Category {
-  slug: string
-  nameUr: string
-  nameEn: string
-}
+
 
 /**
  * Wholesaler apna maal daalta hai.
@@ -26,7 +24,7 @@ export function SupplierAddProduct({
   feeRateBps,
   locale,
 }: {
-  categories: Category[]
+  categories: CategoryGroup[]
   feeRateBps: number
   locale: Locale
 }) {
@@ -35,6 +33,7 @@ export function SupplierAddProduct({
 
   const [open, setOpen] = useState(false)
   const [price, setPrice] = useState(0)
+  const [media, setMedia] = useState<UploadedMedia[]>([])
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -60,7 +59,7 @@ export function SupplierAddProduct({
           supplierPrice: Number(data.get('supplierPrice') ?? 0),
           stockQty: Number(data.get('stockQty') ?? 0),
           ...(data.get('descriptionUr') ? { descriptionUr: String(data.get('descriptionUr')) } : {}),
-          ...(data.get('imageUrl') ? { imageUrl: String(data.get('imageUrl')) } : {}),
+          ...(media.length > 0 ? { media } : {}),
         }),
       })
 
@@ -74,6 +73,7 @@ export function SupplierAddProduct({
 
       form.reset()
       setPrice(0)
+      setMedia([])
       setOpen(false)
       setDone(t('productAddedDraft'))
       router.refresh()
@@ -106,13 +106,7 @@ export function SupplierAddProduct({
 
         <label className="block">
           <span className="text-sm font-semibold">{t('category')}</span>
-          <select name="categorySlug" required className="field mt-2">
-            {categories.map((category) => (
-              <option key={category.slug} value={category.slug}>
-                {locale === 'ur' ? category.nameUr : category.nameEn}
-              </option>
-            ))}
-          </select>
+          <CategorySelect name="categorySlug" groups={categories} locale={locale} required />
         </label>
 
         <label className="block">
@@ -167,10 +161,7 @@ export function SupplierAddProduct({
         />
       </label>
 
-      <label className="block">
-        <span className="text-sm font-semibold">{t('photoUrlOptional')}</span>
-        <input name="imageUrl" type="url" dir="ltr" className="field mt-2" />
-      </label>
+      <MediaUploader media={media} onChange={setMedia} locale={locale} disabled={pending} />
 
       <label className="block">
         <span className="text-sm font-semibold">{t('detailsOptional')}</span>

@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       categorySlug: body.categorySlug,
       supplierPrice: pkr(body.supplierPrice),
       stockQty: body.stockQty,
-      ...(body.imageUrl ? { imageUrl: body.imageUrl } : {}),
+      ...(body.media ? { media: body.media } : {}),
     })
 
     // Wholesaler ko poora hisab wapas — "aap ko itna milega, reseller ko itna dikhega"
