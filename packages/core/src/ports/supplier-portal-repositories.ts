@@ -51,6 +51,13 @@ export interface ProductMediaInput {
   readonly url: string
   readonly type: MediaKind
   readonly isStatusSource: boolean
+  /**
+   * Kis rang/size ki tasveer — na ho to poore maal ki.
+   *
+   * Ye optional hai aur rehna chahiye: bohot sa maal aisa hai jis par rang/size hote
+   * hi nahi (ek design, ek qism). Un par variant ka sawal poochhna fazool qadam hai.
+   */
+  readonly variantId?: string | null | undefined
 }
 
 export interface SupplierProductMediaView extends ProductMediaInput {

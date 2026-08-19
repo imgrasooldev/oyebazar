@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { BRAND, isFresh, whatsappLink } from '@oyebazar/shared'
+import { CheckBadgeIcon, PinIcon, WhatsAppIcon } from '@/components/icons'
+import { SupplierLogo } from '@/components/supplier-logo'
 import { toPublicProductDTO, toPublicSupplierDetailDTO } from '@/lib/api/mappers'
 import { container } from '@/lib/container'
 import { pickName, timeAgo, translator } from '@/lib/i18n'
@@ -53,67 +55,104 @@ export default async function SupplierPage({ params }: Props) {
         <span className="text-ink">{detail.businessName}</span>
       </nav>
 
-      <section className="card p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold">{detail.businessName}</h1>
-              <span className="rounded bg-accent-50 px-2 py-0.5 text-xs font-semibold text-accent-700">
-                {t('verified')}
-              </span>
-            </div>
-            <p className="mt-1 text-ink-soft">
-              {detail.city}
-              {detail.marketName ? ` · ${detail.marketName}` : ''}
-            </p>
-            {detail.bioUr && <p className="mt-3 max-w-xl text-ink">{detail.bioUr}</p>}
-            <p className="mt-3 text-sm text-ink-soft">
-              {detail.productCount} {t('items')} ·{' '}
-              {detail.categories.map((category) => pickName(locale, category)).join(' · ')}
-            </p>
+      {/*
+        Dukan ka sarwarq.
+        Pehle yahan sirf matn ki qatarein thin — naam, sheher, ginti, tareekh — sab ek
+        hi wazan par, aur dukan ka koi chehra nahi. Ab do hisse hain: baen pehchan
+        (logo, naam, tasdeeq, ilaqa) aur daen wo do cheezein jin par faisla hota hai —
+        WhatsApp ka rasta, aur ye ke dukan zinda hai ya nahi.
+      */}
+      <section className="card overflow-hidden">
+        <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+          <div className="flex min-w-0 items-start gap-4">
+            <SupplierLogo name={detail.businessName} logoUrl={detail.logoUrl} size="lg" />
 
-            {/*
-              Taazgi ka pata — number se zyada ye batata hai ke dukan chal rahi hai ya nahi.
-              WhatsApp par rate poochhne se pehle bandi yehi dekhti hai.
-            */}
-            <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-              {detail.lastListedAt ? (
-                <span
-                  className={
-                    isFresh(detail.lastListedAt, now)
-                      ? 'font-semibold text-accent-700'
-                      : 'text-ink-faint'
-                  }
-                >
-                  {isFresh(detail.lastListedAt, now) ? t('newStock') : t('lastListed')}{' '}
-                  {timeAgo(locale, detail.lastListedAt, now)}
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-[1.6rem] font-bold leading-tight tracking-tight">
+                  {detail.businessName}
+                </h1>
+                <span className="badge-verified">
+                  <CheckBadgeIcon className="h-3.5 w-3.5" />
+                  {t('verified')}
                 </span>
-              ) : (
-                <span className="text-ink-faint">{t('noListingYet')}</span>
+              </div>
+
+              <p className="mt-1.5 flex items-center gap-1.5 text-[0.95rem] text-ink-soft">
+                <PinIcon className="h-4 w-4 shrink-0 text-ink-faint" />
+                {detail.city}
+                {detail.marketName ? ` · ${detail.marketName}` : ''}
+              </p>
+
+              {detail.bioUr && (
+                <p className="mt-3 max-w-xl leading-relaxed text-ink">{detail.bioUr}</p>
               )}
-              <span aria-hidden="true" className="text-ink-faint">
-                ·
-              </span>
-              <span className="text-ink-faint">
-                {t('onBazaarSince')} {detail.memberSince.getFullYear()}
-              </span>
-            </p>
+
+              {/* Categories ab chips — lambi "·" wali qatar parhi nahi jati thi */}
+              {detail.categories.length > 0 && (
+                <ul className="mt-3 flex flex-wrap gap-1.5">
+                  {detail.categories.map((category) => (
+                    <li
+                      key={category.nameEn}
+                      className="rounded-pill bg-paper-sunken px-3 py-1 text-[0.78rem] text-ink-soft"
+                    >
+                      {pickName(locale, category)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
 
-          {/* 🔴 Wahid call to action — order button NAHI, seedha WhatsApp */}
-          {detail.whatsappPublic && (
-            <a
-              href={whatsappLink(detail.whatsappPublic)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-primary"
-            >
-              {t('askRateWhatsapp')}
-            </a>
-          )}
+          <div className="flex flex-col gap-3 lg:w-64">
+            {/*
+              Taazgi — number se zyada ye batata hai ke dukan chal rahi hai ya nahi, aur
+              WhatsApp par rate poochhne se pehle bandi yehi dekhti hai. Is liye ye CTA
+              ke SAATH hai, kahin neeche matn mein nahi.
+            */}
+            <div className="rounded-card bg-paper-sunken px-4 py-3">
+              <p className="numeric text-[1.15rem] font-bold leading-none">
+                {detail.productCount}{' '}
+                <span className="text-[0.85rem] font-semibold text-ink-soft">{t('items')}</span>
+              </p>
+              <p className="mt-2 text-[0.82rem]">
+                {detail.lastListedAt ? (
+                  <span
+                    className={
+                      isFresh(detail.lastListedAt, now)
+                        ? 'font-semibold text-accent-700'
+                        : 'text-ink-faint'
+                    }
+                  >
+                    {isFresh(detail.lastListedAt, now) ? t('newStock') : t('lastListed')}{' '}
+                    {timeAgo(locale, detail.lastListedAt, now)}
+                  </span>
+                ) : (
+                  <span className="text-ink-faint">{t('noListingYet')}</span>
+                )}
+              </p>
+              <p className="mt-1 text-[0.78rem] text-ink-faint">
+                {t('onBazaarSince')} {detail.memberSince.getFullYear()}
+              </p>
+            </div>
+
+            {/* 🔴 Wahid call to action — order button NAHI, seedha WhatsApp */}
+            {detail.whatsappPublic && (
+              <a
+                href={whatsappLink(detail.whatsappPublic)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary w-full justify-center gap-2"
+              >
+                <WhatsAppIcon className="h-5 w-5" />
+                {t('askRateWhatsapp')}
+              </a>
+            )}
+          </div>
         </div>
 
-        <p className="mt-4 rounded-lg bg-paper-sunken p-3 text-xs text-ink-soft">
+        {/* 🔴 Qanooni jumla — patti ki shakl mein, card ke andar dabba nahi */}
+        <p className="border-t border-paper-sunken bg-paper-sunken/60 px-5 py-3 text-[0.8rem] text-ink-soft sm:px-6">
           {locale === 'ur'
             ? `${BRAND.nameUr} یہاں سے آرڈر نہیں لیتا اور کوئی فیس نہیں لیتا — سودا براہِ راست ہول سیلر سے ہوتا ہے۔`
             : `${BRAND.name} takes no orders and charges no fee here — you deal with the wholesaler directly.`}
@@ -135,7 +174,7 @@ export default async function SupplierPage({ params }: Props) {
             {products.map((product) => {
               const title = locale === 'ur' ? product.titleUr : product.titleEn
               return (
-                <li key={product.slug} className="tile group">
+                <li key={product.slug} className="tile group transition hover:shadow-lift">
                   {product.coverImageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element -- storage URLs
                     <img
@@ -147,13 +186,28 @@ export default async function SupplierPage({ params }: Props) {
                   ) : (
                     <div className="aspect-square w-full bg-paper-sunken" />
                   )}
-                  <div className="p-2">
-                    <p className="line-clamp-2 text-sm leading-relaxed">{title}</p>
-                    <p className="mt-1 text-xs text-ink-faint">
-                      {pickName(locale, product.category)} · {timeAgo(locale, product.listedAt, now)}
+                  <div className="p-2.5">
+                    <p className="line-clamp-2 text-sm leading-snug">{title}</p>
+                    <p className="mt-1.5 text-[0.72rem] text-ink-faint">
+                      {pickName(locale, product.category)}
                     </p>
+
+                    {/*
+                      Naya maal sabz mein, purana khamosh — Bazaar par asal sawal yehi
+                      hai ke dukan mein cheezein aa rahi hain ya nahi.
+                    */}
+                    <p
+                      className={`mt-0.5 text-[0.72rem] ${
+                        isFresh(product.listedAt, now) ? 'font-semibold text-accent-700' : 'text-ink-faint'
+                      }`}
+                    >
+                      {timeAgo(locale, product.listedAt, now)}
+                    </p>
+
                     {/* 🔴 قیمت یہاں کبھی نہیں — صرف لاگ اِن کے بعد */}
-                    <p className="mt-1 text-xs font-semibold text-brand-700">{t('askRate')}</p>
+                    <p className="mt-2 border-t border-paper-sunken pt-2 text-[0.72rem] font-semibold text-brand-700">
+                      {t('askRate')}
+                    </p>
                   </div>
                 </li>
               )
