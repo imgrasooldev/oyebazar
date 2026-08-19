@@ -6,7 +6,7 @@ import { toResellerProductListItemDTO } from '@/lib/api/mappers'
 import { requireReseller } from '@/lib/api/session'
 import { container } from '@/lib/container'
 import { SearchSuggest } from '@/components/search-suggest'
-import { pickName, pickTitle, translator } from '@/lib/i18n'
+import { pickName, pickTitle, timeAgo, translator } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
 
 export const metadata: Metadata = { title: 'Catalogue' }
@@ -28,6 +28,8 @@ export default async function CataloguePage({
   const { reseller } = await requireReseller()
   const [locale, query] = await Promise.all([getLocale(), searchParams])
   const t = translator(locale)
+  // Ek hi "abhi" poori list ke liye
+  const now = new Date()
 
   const search = query.q?.trim() || undefined
   const category = query.category || undefined
@@ -179,6 +181,14 @@ export default async function CataloguePage({
                   <div className="flex flex-1 flex-col p-3">
                     <p className="line-clamp-2 text-[0.85rem] font-semibold leading-snug">
                       {title}
+                    </p>
+                    {/*
+                      Sirf waqt — "naya" ka tamgha yahan nahi lagaya. Catalogue naye maal
+                      se shuru hota hai, to pehle safhe par har card par tamgha lag jata
+                      aur tamghe ka matlab hi khatam ho jata. Chhota sa waqt kaafi hai.
+                    */}
+                    <p className="mt-1 text-[0.7rem] text-ink-faint">
+                      {timeAgo(locale, item.listedAt, now)}
                     </p>
 
                     <div className="mt-2 flex items-baseline justify-between gap-2 text-[0.78rem]">

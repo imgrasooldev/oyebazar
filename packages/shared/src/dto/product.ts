@@ -31,6 +31,7 @@ export const ProductVariantDTO = z
     size: z.string().nullable(),
     colour: z.string().nullable(),
     inStock: z.boolean(),
+    listedAt: z.coerce.date(),
   })
   .strict()
 
@@ -48,6 +49,8 @@ export const PublicProductDTO = z
     supplierName: z.string(),
     supplierSlug: z.string(),
     supplierCity: z.string(),
+    /** kab list hua — "2 din pehle" */
+    listedAt: z.coerce.date(),
   })
   .strict()
 
@@ -66,6 +69,7 @@ export const ResellerProductListItemDTO = z
     /** us ka apna set kiya hua retail price (agar set kiya ho) */
     myRetailPrice: PkrSchema.nullable(),
     inStock: z.boolean(),
+    listedAt: z.coerce.date(),
   })
   .strict()
 

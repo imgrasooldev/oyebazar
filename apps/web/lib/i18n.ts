@@ -1,4 +1,6 @@
 import {
+  relativeTime,
+  type RelativeUnit,
   ORDER_STATUS_EN,
   ORDER_STATUS_RM,
   ORDER_STATUS_UR,
@@ -405,6 +407,10 @@ const DICTIONARY = {
   productNameUr: { ur: 'مال کا نام (اردو)', rm: 'Maal ka naam (Urdu)', en: 'Product name (Urdu)' },
   productNameEn: { ur: 'نام (English)', rm: 'Naam (English)', en: 'Name (English)' },
   category: { ur: 'کیٹگری', rm: 'Category', en: 'Category' },
+  inStockQty: { ur: 'موجود:', rm: 'Mojood:', en: 'In stock:' },
+  save: { ur: 'محفوظ کریں', rm: 'Save karen', en: 'Save' },
+  piecesLeft: { ur: 'پیس باقی', rm: 'piece baqi', en: 'left' },
+  stockQty: { ur: 'کتنا مال موجود ہے', rm: 'Kitna maal mojood hai', en: 'How many in stock' },
   yourRate: { ur: 'آپ کا ریٹ', rm: 'Aap ka rate', en: 'Your rate' },
   youGet: { ur: 'آپ کو ملیں گے', rm: 'Aap ko milenge', en: 'You get' },
   ourFee: { ur: 'ہماری فیس', rm: 'Hamari fees', en: 'Our fee' },
@@ -432,6 +438,8 @@ const DICTIONARY = {
   notLiveYet: { ur: 'ابھی لائیو نہیں', en: 'Not live yet', rm: 'Abhi live nahi' },
   openOrdersOnThis: { ur: 'اس پر چل رہے آرڈرز', en: 'Open orders on this', rm: 'Is par chal rahe orders' },
   youWillGet: { ur: 'آپ کو ملیں گے', en: 'You get', rm: 'Aap ko milenge' },
+  markPacked: { ur: 'مال تیار ہے', rm: 'Maal tayyar hai', en: 'Packed' },
+  markDispatched: { ur: 'بھیج دیا', rm: 'Bhej diya', en: 'Dispatched' },
   orderAccept: { ur: 'قبول کریں', en: 'Accept', rm: 'Qubool karen' },
   orderReject: { ur: 'معذرت، نہیں ہو سکے گا', en: "Can't fulfil", rm: 'Maazrat, nahi ho sakega' },
   rejectReasonAsk: { ur: 'وجہ لکھیں (ریسیلر کو یہی جائے گی)', en: 'Reason (the reseller sees this)', rm: 'Wajah likhen (reseller ko yehi jayegi)' },
@@ -459,6 +467,15 @@ const DICTIONARY = {
   minutesAgo: { ur: 'منٹ پہلے', en: 'min ago', rm: 'minute pehle' },
   hoursAgo: { ur: 'گھنٹے پہلے', en: 'h ago', rm: 'ghante pehle' },
   daysAgo: { ur: 'دن پہلے', en: 'd ago', rm: 'din pehle' },
+  weeksAgo: { ur: 'ہفتے پہلے', en: 'w ago', rm: 'hafte pehle' },
+  monthsAgo: { ur: 'مہینے پہلے', en: 'mo ago', rm: 'mahine pehle' },
+  yearsAgo: { ur: 'سال پہلے', en: 'y ago', rm: 'saal pehle' },
+  // ---- wholesaler card ki tafseel
+  newStock: { ur: 'نیا مال', en: 'New stock', rm: 'Naya maal' },
+  lastListed: { ur: 'آخری لسٹنگ', en: 'Last listed', rm: 'Aakhri listing' },
+  noListingYet: { ur: 'ابھی کوئی مال نہیں', en: 'No stock yet', rm: 'Abhi koi maal nahi' },
+  onBazaarSince: { ur: 'بازار پر', en: 'On Bazaar', rm: 'Bazaar par' },
+  categoriesCount: { ur: 'کیٹگریز', en: 'categories', rm: 'categories' },
   whyUs: { ur: 'یہاں کیا مختلف ہے', en: 'What’s different here', rm: 'Yahan kya alag hai' },
   // ---- value props (Alahdeen jaisi patti, magar hamare apne waade)
   propNoCartTitle: { ur: 'کوئی کارٹ نہیں', en: 'No cart', rm: 'Koi cart nahi' },
@@ -552,16 +569,26 @@ export function orderStatusLabel(locale: Locale, status: OrderStatusValue): stri
   return ORDER_STATUS_EN[status]
 }
 
-/** "۱۲ منٹ پہلے" / "12 min ago" — live patti ke liye. */
-export function timeAgo(locale: Locale, date: Date, now = new Date()): string {
+/**
+ * "۱۲ منٹ پہلے" / "12 min ago" / "3 din pehle".
+ *
+ * Ginti `relativeTime` karta hai (shared, be-zaban), yahan sirf alfaz lagte hain.
+ * Hafte se upar bhi jata hai — directory par "45 din pehle" se "6 hafte pehle" jaldi
+ * samajh aata hai, aur purani dukan ka purana hona chhupana nahi chahiye.
+ */
+const UNIT_KEY = {
+  minute: 'minutesAgo',
+  hour: 'hoursAgo',
+  day: 'daysAgo',
+  week: 'weeksAgo',
+  month: 'monthsAgo',
+  year: 'yearsAgo',
+} as const satisfies Record<Exclude<RelativeUnit, 'now'>, MessageKey>
+
+export function timeAgo(locale: Locale, date: Date | string, now = new Date()): string {
   const t = translator(locale)
-  const minutes = Math.max(0, Math.floor((now.getTime() - date.getTime()) / 60_000))
+  const { unit, value } = relativeTime(date, now)
 
-  if (minutes < 1) return t('justNow')
-  if (minutes < 60) return `${minutes} ${t('minutesAgo')}`
-
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} ${t('hoursAgo')}`
-
-  return `${Math.floor(hours / 24)} ${t('daysAgo')}`
+  if (unit === 'now') return t('justNow')
+  return `${value} ${t(UNIT_KEY[unit])}`
 }

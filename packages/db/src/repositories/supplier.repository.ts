@@ -17,17 +17,13 @@ import type {
 import { toPage, type Page } from '@oyebazar/shared'
 import { PUBLIC_SUPPLIER_SELECT } from '../selectors'
 
-type SupplierRow = {
-  slug: string
-  businessName: string
-  city: string
-  marketName: string | null
-  bioUr: string | null
-  whatsappPublic: string | null
-  address: string | null
-  logoUrl: string | null
-  _count: { products: number }
-}
+/**
+ * Select se hi nikala hua — haath se likhi hui naql nahi.
+ *
+ * Pehle ye alag list thi aur selector mein khaana barhate hi yahan lagana bhool jate the;
+ * ab select badle to type khud badalta hai.
+ */
+type SupplierRow = Prisma.SupplierGetPayload<{ select: typeof PUBLIC_SUPPLIER_SELECT }>
 
 const ACCOUNT_SELECT = {
   id: true,
@@ -176,6 +172,8 @@ export class PrismaSupplierRepository
       logoUrl: row.logoUrl,
       categories,
       productCount: row._count.products,
+      memberSince: row.createdAt,
+      lastListedAt: row.products[0]?.createdAt ?? null,
     }
   }
 }

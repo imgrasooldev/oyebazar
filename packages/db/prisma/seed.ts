@@ -248,6 +248,19 @@ function bajiPriceFrom(supplierPrice: number, feeRateBps: number): number {
  * status pack — jo hamara asal product hai — bekar dikhta tha.
  */
 
+/**
+ * Seed ka maal ek hi lamhe mein banta hai — is liye har card par "abhi abhi" likha aata
+ * tha aur "kitna purana hai" wali saari UI bekaar lagti thi.
+ *
+ * Ye har product ko pichhle ~70 din mein bikher deta hai (thora naya, kaafi purana) taake
+ * demo asli directory jaisi lage. Random nahi — index se banta hai, taake do baar seed
+ * karne par wohi natija aaye.
+ */
+function listedAt(index: number): Date {
+  const hours = [3, 9, 27, 50, 96, 170, 340, 700, 1_100, 1_680][index % 10]!
+  return new Date(Date.now() - hours * 60 * 60 * 1000)
+}
+
 async function main() {
   console.log('Seeding…')
 
@@ -334,6 +347,7 @@ async function main() {
           bajiPrice,
           suggestedRetail: Math.round((bajiPrice * 1.35) / 50) * 50,
           status: 'LIVE',
+          createdAt: listedAt(productIndex),
         },
       })
 

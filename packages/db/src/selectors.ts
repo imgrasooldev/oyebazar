@@ -26,6 +26,7 @@ export const PUBLIC_PRODUCT_SELECT = {
     take: 1,
   },
   supplier: { select: { businessName: true, slug: true, city: true } },
+  createdAt: true,
   // supplierPrice / bajiPrice / suggestedRetail: JAAN BOOJH KAR NAHI
 } satisfies Prisma.ProductSelect
 
@@ -41,6 +42,7 @@ export const RESELLER_PRODUCT_SELECT = {
   category: { select: { slug: true, nameUr: true, nameEn: true } },
   variants: { select: { id: true, size: true, colour: true, stockQty: true } },
   media: { select: { processedUrl: true, originalUrl: true, sortOrder: true }, orderBy: { sortOrder: 'asc' } },
+  createdAt: true,
   // supplierPrice: NAHI. supplierId: NAHI. supplier: NAHI.
 } satisfies Prisma.ProductSelect
 
@@ -81,6 +83,14 @@ export const PUBLIC_SUPPLIER_SELECT = {
   whatsappPublic: true,
   address: true,
   logoUrl: true,
+  createdAt: true,
   // ntn / strn / phone / bankAccount / feeRateBps: kabhi public nahi
   _count: { select: { products: { where: { status: 'LIVE' } } } },
+  // Aakhri live listing — "2 din pehle naya maal" isi se banta hai
+  products: {
+    where: { status: 'LIVE' as const },
+    select: { createdAt: true },
+    orderBy: { createdAt: 'desc' as const },
+    take: 1,
+  },
 } satisfies Prisma.SupplierSelect

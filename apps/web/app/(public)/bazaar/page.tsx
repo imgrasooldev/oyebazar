@@ -5,7 +5,8 @@ import { CategoryStrip } from '@/components/category-strip'
 import { toPublicSupplierListDTO } from '@/lib/api/mappers'
 import { container } from '@/lib/container'
 import { SupplierLogo } from '@/components/supplier-logo'
-import { pickName, translator } from '@/lib/i18n'
+import { isFresh } from '@oyebazar/shared'
+import { pickName, timeAgo, translator } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
 
 export const metadata: Metadata = {
@@ -48,6 +49,8 @@ export default async function BazaarPage({
 
   const t = translator(locale)
   const suppliers = page.items.map(toPublicSupplierListDTO)
+  // Ek hi "abhi" poore safhe ke liye — warna list ke aakhri card ka waqt pehle se alag hota
+  const now = new Date()
 
   return (
     <>
@@ -131,9 +134,35 @@ export default async function BazaarPage({
                           .join(' · ')}
                       </p>
                     )}
-                    <p className="mt-2 text-xs text-ink-faint">
-                      {supplier.productCount} {t('items')}
-                    </p>
+
+                    {/*
+                      Neeche ki patti — dukan zinda hai ya nahi, ek nazar mein.
+                      Sirf ginti kaafi nahi thi: 40 item wali dukan jis ne 8 mahine se
+                      kuch naya nahi laga, 4 item wali taaza dukan se buri hai.
+                    */}
+                    <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-paper-sunken pt-2 text-xs text-ink-faint">
+                      <span className="font-semibold text-ink-soft">
+                        {supplier.productCount} {t('items')}
+                      </span>
+                      <span aria-hidden="true">·</span>
+                      {supplier.lastListedAt ? (
+                        <span
+                          className={
+                            isFresh(supplier.lastListedAt, now)
+                              ? 'font-semibold text-accent-700'
+                              : undefined
+                          }
+                        >
+                          {isFresh(supplier.lastListedAt, now) ? t('newStock') : t('lastListed')}{' '}
+                          {timeAgo(locale, supplier.lastListedAt, now)}
+                        </span>
+                      ) : (
+                        <span>{t('noListingYet')}</span>
+                      )}
+                      <span className="ms-auto whitespace-nowrap">
+                        {t('onBazaarSince')} {supplier.memberSince.getFullYear()}
+                      </span>
+                    </div>
                   </Link>
                 </li>
               ))}

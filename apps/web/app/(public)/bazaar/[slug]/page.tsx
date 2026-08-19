@@ -1,10 +1,10 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { BRAND, whatsappLink } from '@oyebazar/shared'
+import { BRAND, isFresh, whatsappLink } from '@oyebazar/shared'
 import { toPublicProductDTO, toPublicSupplierDetailDTO } from '@/lib/api/mappers'
 import { container } from '@/lib/container'
-import { pickName, translator } from '@/lib/i18n'
+import { pickName, timeAgo, translator } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
 
 export const dynamic = 'force-dynamic'
@@ -39,13 +39,14 @@ export default async function SupplierPage({ params }: Props) {
   if (!supplier) notFound()
 
   const detail = toPublicSupplierDetailDTO(supplier)
+  const now = new Date()
   const productPage = await container.bazaar.listSupplierProducts(slug, { limit: 24 })
   const products = productPage.items.map(toPublicProductDTO)
 
   return (
     <div className="mx-auto max-w-shell space-y-6 px-4 py-6">
       <nav className="text-sm text-ink-faint">
-        <Link href="/bazaar" className="hover:text-brand-700">
+        <Link href="/bazaar" className="link-tap hover:text-brand-700">
           {t('bazaar')}
         </Link>
         <span className="mx-2">›</span>
@@ -69,6 +70,33 @@ export default async function SupplierPage({ params }: Props) {
             <p className="mt-3 text-sm text-ink-soft">
               {detail.productCount} {t('items')} ·{' '}
               {detail.categories.map((category) => pickName(locale, category)).join(' · ')}
+            </p>
+
+            {/*
+              Taazgi ka pata — number se zyada ye batata hai ke dukan chal rahi hai ya nahi.
+              WhatsApp par rate poochhne se pehle bandi yehi dekhti hai.
+            */}
+            <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+              {detail.lastListedAt ? (
+                <span
+                  className={
+                    isFresh(detail.lastListedAt, now)
+                      ? 'font-semibold text-accent-700'
+                      : 'text-ink-faint'
+                  }
+                >
+                  {isFresh(detail.lastListedAt, now) ? t('newStock') : t('lastListed')}{' '}
+                  {timeAgo(locale, detail.lastListedAt, now)}
+                </span>
+              ) : (
+                <span className="text-ink-faint">{t('noListingYet')}</span>
+              )}
+              <span aria-hidden="true" className="text-ink-faint">
+                ·
+              </span>
+              <span className="text-ink-faint">
+                {t('onBazaarSince')} {detail.memberSince.getFullYear()}
+              </span>
             </p>
           </div>
 
@@ -121,7 +149,9 @@ export default async function SupplierPage({ params }: Props) {
                   )}
                   <div className="p-2">
                     <p className="line-clamp-2 text-sm leading-relaxed">{title}</p>
-                    <p className="mt-1 text-xs text-ink-faint">{pickName(locale, product.category)}</p>
+                    <p className="mt-1 text-xs text-ink-faint">
+                      {pickName(locale, product.category)} · {timeAgo(locale, product.listedAt, now)}
+                    </p>
                     {/* 🔴 قیمت یہاں کبھی نہیں — صرف لاگ اِن کے بعد */}
                     <p className="mt-1 text-xs font-semibold text-brand-700">{t('askRate')}</p>
                   </div>

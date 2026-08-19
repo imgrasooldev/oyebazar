@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { isFresh } from '@oyebazar/shared'
 import { CategoryMenu } from '@/components/category-menu'
 import { CategoryStrip } from '@/components/category-strip'
 import { NextDropCountdown } from '@/components/next-drop-countdown'
@@ -410,10 +411,26 @@ export default async function HomePage() {
                     ))}
                   </div>
 
-                  <p className="numeric mt-4 flex items-center gap-1 text-sm font-semibold text-brand-700">
-                    {supplier.productCount} {t('items')}
-                    <ChevronIcon className="h-3.5 w-3.5 transition group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" />
-                  </p>
+                  <div className="mt-4 flex items-end justify-between gap-2">
+                    <p className="numeric flex items-center gap-1 text-sm font-semibold text-brand-700">
+                      {supplier.productCount} {t('items')}
+                      <ChevronIcon className="h-3.5 w-3.5 transition group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" />
+                    </p>
+
+                    {/* Taazgi — "40 item" ka matlab tabhi hai jab maal naya bhi ho */}
+                    {supplier.lastListedAt && (
+                      <span
+                        className={`text-[0.72rem] ${
+                          isFresh(supplier.lastListedAt, now)
+                            ? 'font-semibold text-accent-700'
+                            : 'text-ink-faint'
+                        }`}
+                      >
+                        {isFresh(supplier.lastListedAt, now) ? t('newStock') : t('lastListed')}{' '}
+                        {timeAgo(locale, supplier.lastListedAt, now)}
+                      </span>
+                    )}
+                  </div>
                 </Link>
               </li>
             ))}

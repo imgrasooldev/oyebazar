@@ -271,6 +271,7 @@ type PublicRow = {
   category: { slug: string; nameUr: string; nameEn: string }
   media: MediaRow[]
   supplier: { businessName: string; slug: string; city: string }
+  createdAt: Date
 }
 
 function toPublicView(row: PublicRow): PublicProductView {
@@ -283,6 +284,7 @@ function toPublicView(row: PublicRow): PublicProductView {
     supplierName: row.supplier.businessName,
     supplierSlug: row.supplier.slug,
     supplierCity: row.supplier.city,
+    listedAt: row.createdAt,
   }
 }
 
@@ -297,6 +299,7 @@ type ResellerRow = {
   category: { slug: string; nameUr: string; nameEn: string }
   variants: { id: string; size: string | null; colour: string | null; stockQty: number }[]
   media: { processedUrl: string | null; originalUrl: string; sortOrder: number }[]
+  createdAt: Date
 }
 
 function toResellerView(row: ResellerRow): ResellerProductView {
@@ -317,6 +320,7 @@ function toResellerView(row: ResellerRow): ResellerProductView {
       colour: v.colour,
       inStock: v.stockQty > 0,
     })),
+    listedAt: row.createdAt,
   }
 }
 

@@ -20,6 +20,8 @@ export interface PublicProductView {
   readonly supplierName: string
   readonly supplierSlug: string
   readonly supplierCity: string
+  /** Kab list hua — "2 din pehle" isi se banta hai */
+  readonly listedAt: Date
 }
 
 /** RESELLER (login ke baad) — Baji price dikhta hai, supplier ka kuch nahi. */
@@ -35,6 +37,7 @@ export interface ResellerProductView {
   readonly inStock: boolean
   readonly media: readonly ProductMediaView[]
   readonly variants: readonly ProductVariantView[]
+  readonly listedAt: Date
 }
 
 /**
@@ -108,6 +111,10 @@ export interface PublicSupplierView {
   /** Dono zubanon mein — UI locale ke hisaab se chunti hai */
   readonly categories: readonly { nameUr: string; nameEn: string }[]
   readonly productCount: number
+  /** Kab se OyeBazar par hai — purani dukan par bharosa zyada hota hai */
+  readonly memberSince: Date
+  /** Aakhri baar naya maal kab laga — null agar abhi tak kuch live nahi */
+  readonly lastListedAt: Date | null
 }
 
 export interface ResellerView {

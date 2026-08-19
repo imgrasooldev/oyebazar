@@ -19,6 +19,9 @@ export const PublicSupplierListItemDTO = z
     categories: z.array(z.object({ nameUr: z.string(), nameEn: z.string() }).strict()),
     logoUrl: z.string().nullable(),
     productCount: z.number().int().nonnegative(),
+    /** ISO string — DTO JSON par bhi chalta hai, Date object sirf server par */
+    memberSince: z.coerce.date(),
+    lastListedAt: z.coerce.date().nullable(),
   })
   .strict()
 

@@ -56,6 +56,8 @@ export function toPublicSupplierListDTO(view: PublicSupplierView): PublicSupplie
     categories: view.categories,
     logoUrl: view.logoUrl,
     productCount: view.productCount,
+    memberSince: view.memberSince,
+    lastListedAt: view.lastListedAt,
   })
 }
 
@@ -68,6 +70,8 @@ export function toPublicSupplierDetailDTO(view: PublicSupplierView): PublicSuppl
     categories: view.categories,
     logoUrl: view.logoUrl,
     productCount: view.productCount,
+    memberSince: view.memberSince,
+    lastListedAt: view.lastListedAt,
     bioUr: view.bioUr,
     whatsappPublic: view.whatsappPublic,
     address: view.address,
@@ -86,6 +90,7 @@ export function toResellerProductListItemDTO(item: CatalogueItem): ResellerProdu
     suggestedRetail: product.suggestedRetail,
     myRetailPrice,
     inStock: product.inStock,
+    listedAt: product.listedAt,
   })
 }
 
@@ -102,6 +107,7 @@ export function toResellerProductDetailDTO(item: CatalogueItem): ResellerProduct
     suggestedRetail: product.suggestedRetail,
     myRetailPrice,
     inStock: product.inStock,
+    listedAt: product.listedAt,
     media: product.media,
     variants: product.variants,
   })
