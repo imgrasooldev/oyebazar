@@ -29,12 +29,25 @@ export interface CursorQuery {
 
 // ---------------------------------------------------------------- catalogue
 
+/**
+ * Tarteeb ke chaar rukh.
+ *
+ * `newest` default hai aur rahega: reseller ka asal sawal "naya kya aaya" hai — wo
+ * har roz wohi list dekhti hai aur us mein sirf naya maal dhoondhti hai.
+ *
+ * 🔴 Har tarteeb ke saath ek sabit doosri shart lazmi hai (id), warna do maal ka rate
+ * ek hi ho to un ki tarteeb har query par badalti hai — aur cursor wali pagination us
+ * par ek hi maal do bar dikha deti hai ya bilkul chhod deti hai.
+ */
+export type CatalogueSort = 'newest' | 'priceLow' | 'priceHigh' | 'profitHigh'
+
 export interface CatalogueFilters extends CursorQuery {
   readonly categorySlug?: string | undefined
   readonly search?: string | undefined
   readonly minPrice?: Pkr | undefined
   readonly maxPrice?: Pkr | undefined
   readonly inStockOnly?: boolean | undefined
+  readonly sort?: CatalogueSort | undefined
 }
 
 export interface ProductRepository {

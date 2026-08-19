@@ -6,6 +6,8 @@ import { toResellerProductListItemDTO } from '@/lib/api/mappers'
 import { requireReseller } from '@/lib/api/session'
 import { container } from '@/lib/container'
 import { CatalogueFilters } from '@/components/catalogue-filters'
+import { CatalogueToolbar } from '@/components/catalogue-toolbar'
+import { ScrollRail } from '@/components/scroll-rail'
 import { SearchSuggest } from '@/components/search-suggest'
 import { pickName, pickTitle, timeAgo, translator } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
@@ -30,6 +32,8 @@ export default async function CataloguePage({
     minPrice?: string
     maxPrice?: string
     inStockOnly?: string
+    sort?: string
+    view?: string
   }>
 }) {
   const { reseller } = await requireReseller()
@@ -56,9 +60,20 @@ export default async function CataloguePage({
   const maxPrice = toPositive(query.maxPrice)
   const inStockOnly = query.inStockOnly === 'true'
 
+  // Anjaan qadar par default — URL koi bhi haath se likh sakta hai
+  const sort = (['priceLow', 'priceHigh', 'profitHigh'] as const).find(
+    (option) => option === query.sort,
+  )
+  const listView = query.view === 'list'
+
   const [page, dailyPacks, categories] = await Promise.all([
     container.catalogue.list(reseller.id, {
-      limit: 24,
+      /*
+       * 48 — pehle 24 the aur reseller ko roz "aur dikhao" ka intezar karna parta tha.
+       * Ye safha tasveeron ka hai magar wo sab `lazy` hain: neeche wali tasveerein
+       * tabhi utarti hain jab wahan tak scroll ho.
+       */
+      limit: 48,
       ...(search ? { search } : {}),
       ...(category ? { categorySlug: category } : {}),
       ...(minPrice !== undefined ? { minPrice: pkr(minPrice) } : {}),
@@ -67,6 +82,7 @@ export default async function CataloguePage({
         ? { maxPrice: pkr(maxPrice) }
         : {}),
       ...(inStockOnly ? { inStockOnly: true } : {}),
+      ...(sort ? { sort } : {}),
     }),
     container.dailyDrops.packsForReseller(reseller.id, DEFAULT_TEMPLATE_KEY),
     container.repositories.categories.findAll(),
@@ -145,8 +161,8 @@ export default async function CataloguePage({
             className="max-w-xl"
           />
 
-          {/* Category ki qatar — chhoti screen par bagal mein sarakti hai */}
-          <div className="rail">
+          {/* Category ki qatar — dono taraf sarakti hai, aur kinare par ishara deti hai */}
+          <ScrollRail labels={{ prev: t('stPrev'), next: t('stNext') }}>
             <Link
               href="/catalogue"
               className={!category ? 'chip chip-active' : 'chip'}
@@ -164,8 +180,21 @@ export default async function CataloguePage({
                 {pickName(locale, item)}
               </Link>
             ))}
-          </div>
+          </ScrollRail>
         </div>
+
+        <CatalogueToolbar
+          count={items.length}
+          labels={{
+            results: t('filterResults'),
+            sortNewest: t('sortNewest'),
+            sortPriceLow: t('sortPriceLow'),
+            sortPriceHigh: t('sortPriceHigh'),
+            sortProfit: t('sortProfit'),
+            viewGrid: t('viewGrid'),
+            viewList: t('viewList'),
+          }}
+        />
 
         {/* Rate ki hadd aur "sirf mojood maal" — server ye pehle se jaanta tha */}
         <CatalogueFilters
@@ -182,11 +211,92 @@ export default async function CataloguePage({
         {items.length === 0 ? (
           <p className="card p-6 text-ink-soft">{t('noItemsListed')}</p>
         ) : (
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+          /*
+            Do shaklen, ek hi data.
+            Grid mein zyada maal ek nazar mein aata hai — jab reseller "kuch dekhna" chahti
+            hai. Qatar wali shakl tab kaam ki hai jab wo moqabla kar rahi ho: lagat, rate
+            aur munafa teenon ek hi line par, aankh ko neeche utarna nahi parta.
+          */
+          <ul
+            className={
+              listView
+                ? 'space-y-2'
+                : 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6'
+            }
+          >
             {items.map((item) => {
               const title = locale === 'ur' ? item.titleUr : item.titleEn
               const myPrice = item.myRetailPrice ?? item.suggestedRetail
               const profit = Math.max(myPrice - item.bajiPrice, 0)
+
+              /*
+                Qatar wali shakl — ek maal, ek poori line.
+                Yahan tasveer chhoti hai aur numbers ek hi line par: lagat, rate, munafa.
+                Grid mein aankh ko har card par neeche utarna parta hai; moqable ke waqt
+                wo teen guna kaam hai.
+              */
+              if (listView) {
+                return (
+                  <li key={item.id} className="card flex flex-wrap items-center gap-3 p-2.5">
+                    <Link
+                      href={`/catalogue/${item.id}`}
+                      className="tile-media-wrap h-16 w-16 shrink-0 rounded-card bg-paper-sunken"
+                    >
+                      {item.coverImageUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element -- storage URLs
+                        <img
+                          src={item.coverImageUrl}
+                          alt={title}
+                          loading="lazy"
+                          className="h-full w-full object-cover"
+                        />
+                      )}
+                    </Link>
+
+                    <div className="min-w-0 flex-1">
+                      <Link href={`/catalogue/${item.id}`} className="block">
+                        <p className="truncate text-[0.92rem] font-semibold">{title}</p>
+                      </Link>
+                      <p className="mt-0.5 text-[0.74rem] text-ink-faint">
+                        {pickName(locale, item.category)}
+                        <span className="mx-1.5">·</span>
+                        {timeAgo(locale, item.listedAt, now)}
+                        {!item.inStock && (
+                          <span className="ms-2 rounded-pill bg-coal-900/85 px-2 py-0.5 text-white">
+                            {t('outOfStock')}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="text-end">
+                      <p className="text-[0.72rem] text-ink-faint">
+                        {t('yourCost')}{' '}
+                        <span dir="ltr" className="numeric">
+                          {formatPkr(item.bajiPrice)}
+                        </span>
+                      </p>
+                      <p dir="ltr" className="numeric text-[1.05rem] font-bold">
+                        {formatPkr(myPrice)}
+                      </p>
+                    </div>
+
+                    <span className="inline-flex items-baseline gap-1 rounded-pill bg-accent-50 px-3 py-1 text-[0.78rem] font-semibold text-accent-700">
+                      {t('yourProfit')}
+                      <span dir="ltr" className="numeric">
+                        +{formatPkr(profit)}
+                      </span>
+                    </span>
+
+                    <Link
+                      href={`/catalogue/${item.id}`}
+                      className="btn-primary !px-4 !py-2 !text-[0.8rem]"
+                    >
+                      {t('makePackShort')}
+                    </Link>
+                  </li>
+                )
+              }
 
               return (
                 <li key={item.id} className="tile group flex flex-col">
@@ -231,17 +341,41 @@ export default async function CataloguePage({
                       {timeAgo(locale, item.listedAt, now)}
                     </p>
 
-                    <div className="mt-2 flex items-baseline justify-between gap-2 text-[0.78rem]">
-                      <span className="text-ink-faint line-clamp-1">
-                        {t('yourCost')}{' '}
-                        <span dir="ltr" className="numeric">
+                    {/*
+                      🔴 Teen number, teen alag qatarein — ek hi line mein thay aur 214px
+                      ke card mein "Your cost Rs…" kat jata tha aur rate do lines mein
+                      toot jata ("Rs" upar, "1,350" neeche). Ab har number apni qatar
+                      mein hai aur kisi ko tootna nahi parta.
+
+                      Mashwara (hamara tajweez kardah rate) bhi yahin: reseller ko lagat
+                      aur mashwara dono saath chahiyen, warna wo apna rate andaze se
+                      lagati hai.
+                    */}
+                    <dl className="mt-2 space-y-0.5 text-[0.75rem]">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <dt className="shrink-0 text-ink-faint">{t('yourCost')}</dt>
+                        <dd dir="ltr" className="numeric whitespace-nowrap text-ink-soft">
                           {formatPkr(item.bajiPrice)}
-                        </span>
-                      </span>
-                      <span dir="ltr" className="numeric font-bold">
-                        {formatPkr(myPrice)}
-                      </span>
-                    </div>
+                        </dd>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-2">
+                        <dt className="shrink-0 text-ink-faint">{t('suggested')}</dt>
+                        <dd dir="ltr" className="numeric whitespace-nowrap text-ink-soft">
+                          {formatPkr(item.suggestedRetail)}
+                        </dd>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-2 pt-0.5">
+                        <dt className="shrink-0 text-[0.72rem] font-semibold text-ink">
+                          {t('yourPriceShort')}
+                        </dt>
+                        <dd
+                          dir="ltr"
+                          className="numeric whitespace-nowrap text-[0.95rem] font-bold"
+                        >
+                          {formatPkr(myPrice)}
+                        </dd>
+                      </div>
+                    </dl>
 
                     {/*
                       Munafa aur button ek hi qatar mein thay — 214px ke card mein dono
@@ -250,7 +384,13 @@ export default async function CataloguePage({
                       mein saaf, aur ungli ke liye bara nishana.
                     */}
                     <div className="mt-auto pt-2.5">
-                      <span className="inline-flex rounded-pill bg-accent-50 px-2.5 py-1 text-[0.72rem] font-semibold text-accent-700">
+                      {/*
+                        Pill par lafz lazmi hai. Sirf "+Rs 350" likha tha aur wo pehchana
+                        hi nahi jata tha — reseller ke liye YEHI wo number hai jis par
+                        faisla hota hai, aur bina naam ke wo ek aur qeemat lagta tha.
+                      */}
+                      <span className="inline-flex items-baseline gap-1 rounded-pill bg-accent-50 px-2.5 py-1 text-[0.72rem] font-semibold text-accent-700">
+                        {t('yourProfit')}
                         <span dir="ltr" className="numeric">
                           +{formatPkr(profit)}
                         </span>

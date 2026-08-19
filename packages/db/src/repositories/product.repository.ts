@@ -7,6 +7,7 @@
 import type { Prisma, PrismaClient } from '@prisma/client'
 import type {
   CatalogueFilters,
+  CatalogueSort,
   CursorQuery,
   ProductRepository,
 } from '@oyebazar/core'
@@ -105,7 +106,7 @@ export class PrismaProductRepository implements ProductRepository {
     const rows = await this.db.product.findMany({
       where: await this.resellerWhere(filters),
       select: RESELLER_PRODUCT_SELECT,
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      orderBy: orderFor(filters.sort),
       ...cursorArgs(filters),
     })
     return toPage(rows.map(toResellerView), filters.limit, (p) => p.id)
@@ -327,6 +328,31 @@ type ResellerRow = {
     sortOrder: number
   }[]
   createdAt: Date
+}
+
+/**
+ * Tarteeb — har rukh ke saath id bhi.
+ *
+ * 🔴 id sirf khoobsurti ke liye nahi: do maal ka rate ek jaisa ho (aur hota hai — 500,
+ * 1000 wale rate aam hain) to un ki aapas ki tarteeb har query par badal sakti hai. Us
+ * soorat mein cursor wali pagination ek hi maal do bar dikhati hai ya kisi ko bilkul
+ * chhod deti hai.
+ *
+ * "Munafa zyada" `suggestedRetail` par chalta hai, reseller ke apne rate par nahi: us ka
+ * apna rate doosri table mein hai aur us par tarteeb dene ke liye join chahiye — jis ka
+ * kharcha is chhote faide ke laiq nahi. Hamara mashwara hi us ka nuqta-e-aaghaz hota hai.
+ */
+function orderFor(sort: CatalogueSort | undefined) {
+  switch (sort) {
+    case 'priceLow':
+      return [{ bajiPrice: 'asc' as const }, { id: 'desc' as const }]
+    case 'priceHigh':
+      return [{ bajiPrice: 'desc' as const }, { id: 'desc' as const }]
+    case 'profitHigh':
+      return [{ suggestedRetail: 'desc' as const }, { id: 'desc' as const }]
+    default:
+      return [{ createdAt: 'desc' as const }, { id: 'desc' as const }]
+  }
 }
 
 /** Kisi ek jorhe ki pehli tasveer — sortOrder ke hisab se. */

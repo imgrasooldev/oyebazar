@@ -70,7 +70,20 @@ async function main(): Promise<void> {
 
       for (const path of paths) {
         await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle' })
-        const slug = path === '/' ? 'home' : path.replace(/^\//, '').replace(/\//g, '-')
+        /*
+         * Filename se wo haroof nikal dete hain jo Windows qubool nahi karta.
+         *
+         * `?` sab se aam hai: `/catalogue?view=list` jaisa safha shoot karte hi CLI
+         * ENOENT par mar jati thi — aur wahi safhe hain jinhen dekhna sab se zyada
+         * zaroori hota hai (filter, sort, shakl).
+         */
+        const slug =
+          path === '/'
+            ? 'home'
+            : path
+                .replace(/^\//, '')
+                .replace(/[^a-zA-Z0-9/-]/g, '-')
+                .replace(/\//g, '-')
         const file = resolve(outDir, `${slug}-${viewport.name}.png`)
         // SHOOT_FULLPAGE=0 → sirf pehli screen (dekhne mein aasan, share karne ke liye behtar)
         await page.screenshot({ path: file, fullPage: process.env.SHOOT_FULLPAGE !== '0' })

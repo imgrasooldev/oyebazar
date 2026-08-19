@@ -615,6 +615,13 @@ const DICTIONARY = {
   variantPhotoAdd: { ur: 'تصویر لگائیں', en: 'Add photo', rm: 'Tasveer lagayen' },
   variantPick: { ur: 'رنگ / سائز چنیں', en: 'Pick colour / size', rm: 'Rang / size chunen' },
   // ---- filters
+  sortNewest: { ur: 'نیا پہلے', en: 'Newest', rm: 'Naya pehle' },
+  sortPriceLow: { ur: 'سستا پہلے', en: 'Cheapest', rm: 'Sasta pehle' },
+  sortPriceHigh: { ur: 'مہنگا پہلے', en: 'Priciest', rm: 'Mehnga pehle' },
+  sortProfit: { ur: 'زیادہ منافع', en: 'Best margin', rm: 'Zyada munafa' },
+  viewGrid: { ur: 'گرڈ', en: 'Grid', rm: 'Grid' },
+  viewList: { ur: 'قطار', en: 'List', rm: 'Qatar' },
+  yourPriceShort: { ur: 'آپ کا ریٹ', en: 'Your price', rm: 'Aap ka rate' },
   filterPrice: { ur: 'ریٹ', en: 'Price', rm: 'Rate' },
   filterFrom: { ur: 'سے', en: 'From', rm: 'Se' },
   filterTo: { ur: 'تک', en: 'To', rm: 'Tak' },
