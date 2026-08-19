@@ -5,25 +5,47 @@ import { useState } from 'react'
 import type { CategoryNode } from '@oyebazar/core'
 
 /**
- * Category ka darakht — banao, naam badlo, jagah badlo, tarteeb do.
+ * Category ka darakht — WordPress ke menu editor ki tarz par.
  *
- * Do tareeqe jaan boojh kar saath saath hain:
+ * Do cheezen us design se li hain, aur dono waje se:
  *
- *  · Drag & drop — tez, aur bari tabdeeli ke liye qudrati.
- *  · Buttons (upar/neeche/andar/bahar) — kyunke drag har jagah bharosay ke laiq nahi:
- *    trackpad par lamba safha khenchte waqt haath phisalta hai, aur touch par to ye
- *    aksar chalta hi nahi. Ek hi kaam ke do raaste rakhna yahan fazool nahi hai.
+ *  · Har qatar ek dabba hai jise handle (⠿) se uthaya jata hai. Poori qatar ko
+ *    draggable banane se naam par click kar ke rename karna mushkil ho jata hai —
+ *    browser text chunne ki jagah drag shuru kar deta hai.
+ *  · Girne ki jagah SAAF nazar aati hai: qataron ke beech lakeer (wahan bhai ban kar
+ *    girega) aur qatar ke andar rang (wahan bachcha ban kar). WordPress mein yehi wo
+ *    ek cheez hai jo bataati hai ke "andar" ja raha hai ya "neeche".
  *
- * Koi library nahi — HTML5 ke apne drag events kaafi hain. Ek drag-drop library
- * (dnd-kit/react-beautiful-dnd) is admin safhe par 40-60 KB daal deti, aur poora
- * nizam is se halka rakha gaya hai.
+ * Buttons bhi mojood hain (← → ↑ ↓): drag trackpad par phisalta hai aur touch par
+ * aksar chalta hi nahi. Ek kaam ke do raaste yahan fazool nahi.
+ *
+ * Koi drag library nahi — HTML5 ke apne events kaafi hain. dnd-kit is safhe par 40+ KB
+ * daal deti, aur poora nizam is se halka rakha gaya hai.
  */
 
 type Flat = { node: CategoryNode; depth: number }
 
-/** Darakht ko ek qatar mein — dikhane ke liye gehrai ke saath. */
 function flatten(nodes: readonly CategoryNode[], depth = 0): Flat[] {
   return nodes.flatMap((node) => [{ node, depth }, ...flatten(node.children, depth + 1)])
+}
+
+/** Kisi node ka darja — hint mein "level 3" likhne ke liye. */
+function depthOf(nodes: readonly CategoryNode[], id: string, depth = 0): number {
+  for (const node of nodes) {
+    if (node.id === id) return depth
+    const found = depthOf(node.children, id, depth + 1)
+    if (found >= 0) return found
+  }
+  return -1
+}
+
+function findNode(nodes: readonly CategoryNode[], id: string): CategoryNode | null {
+  for (const node of nodes) {
+    if (node.id === id) return node
+    const found = findNode(node.children, id)
+    if (found) return found
+  }
+  return null
 }
 
 async function call(url: string, method: string, body?: unknown): Promise<string | null> {
@@ -39,6 +61,9 @@ async function call(url: string, method: string, body?: unknown): Promise<string
   return data?.error?.message ?? 'Could not save — try again'
 }
 
+/** Girne ki do soortein: kisi ke ANDAR, ya kisi ke NEECHE (us ka bhai ban kar). */
+type DropSpot = { id: string; mode: 'inside' | 'after' } | null
+
 export function CategoryTreeEditor({
   tree,
   canManage,
@@ -52,9 +77,31 @@ export function CategoryTreeEditor({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dragId, setDragId] = useState<string | null>(null)
-  const [dropTarget, setDropTarget] = useState<string | null>(null)
+  const [spot, setSpot] = useState<DropSpot>(null)
   const [editing, setEditing] = useState<string | null>(null)
   const [addingUnder, setAddingUnder] = useState<string | null | undefined>(undefined)
+  const [confirming, setConfirming] = useState<string | null>(null)
+
+  /*
+   * Ghisatte waqt upar ek patti chipki rehti hai jo saaf lafzon mein batati hai ke abhi
+   * chhorne par kya banega. WordPress ka asal sabaq yehi hai: nesting ka faisla maus ki
+   * jagah se hota hai, is liye us faisle ko dikhana lazmi hai — warna banda kheenchta
+   * hai, chhorta hai, aur nateeja us se alag nikalta hai jo wo chahta tha.
+   */
+  const draggedNode = dragId ? findNode(tree, dragId) : null
+  const targetNode = spot ? findNode(tree, spot.id) : null
+  const hint =
+    draggedNode && targetNode && spot
+      ? spot.mode === 'inside'
+        ? {
+            text: `${draggedNode.nameEn} → inside ${targetNode.nameEn}`,
+            detail: `becomes level ${depthOf(tree, targetNode.id) + 2}`,
+          }
+        : {
+            text: `${draggedNode.nameEn} ↓ after ${targetNode.nameEn}`,
+            detail: `stays level ${depthOf(tree, targetNode.id) + 1}`,
+          }
+      : null
 
   async function run(action: () => Promise<string | null>) {
     setBusy(true)
@@ -69,12 +116,40 @@ export function CategoryTreeEditor({
     router.refresh()
   }
 
+  const siblingsOf = (node: CategoryNode) =>
+    (node.parentId ? findNode(tree, node.parentId)?.children : tree) ?? []
+
   const moveTo = (id: string, newParentId: string | null) =>
     run(() => call(`/api/v1/admin/categories/${id}`, 'PATCH', { action: 'move', newParentId }))
 
-  /** Bhai-behnon mein ek qadam upar/neeche — poori list bhej kar. */
+  /** Kisi ke neeche, us ka bhai ban kar — jagah bhi wahi aur tarteeb bhi. */
+  async function dropAfter(dragged: CategoryNode, target: CategoryNode) {
+    if (dragged.parentId !== target.parentId) {
+      await run(() =>
+        call(`/api/v1/admin/categories/${dragged.id}`, 'PATCH', {
+          action: 'move',
+          newParentId: target.parentId,
+        }),
+      )
+      return
+    }
+
+    const ordered = siblingsOf(target)
+      .map((sibling) => sibling.id)
+      .filter((id) => id !== dragged.id)
+    const at = ordered.indexOf(target.id)
+    ordered.splice(at + 1, 0, dragged.id)
+
+    await run(() =>
+      call('/api/v1/admin/categories', 'PATCH', {
+        parentId: target.parentId,
+        orderedIds: ordered,
+      }),
+    )
+  }
+
   const nudge = (node: CategoryNode, direction: -1 | 1) => {
-    const siblings = (node.parentId ? findNode(tree, node.parentId)?.children : tree) ?? []
+    const siblings = siblingsOf(node)
     const index = siblings.findIndex((sibling) => sibling.id === node.id)
     const target = index + direction
     if (index < 0 || target < 0 || target >= siblings.length) return
@@ -84,32 +159,34 @@ export function CategoryTreeEditor({
     ordered.splice(target, 0, node.id)
 
     return run(() =>
-      call('/api/v1/admin/categories', 'PATCH', {
-        parentId: node.parentId,
-        orderedIds: ordered,
-      }),
+      call('/api/v1/admin/categories', 'PATCH', { parentId: node.parentId, orderedIds: ordered }),
     )
   }
 
   return (
     <div className="space-y-3">
-      {error && (
-        <p className="rounded-card bg-red-50 px-4 py-2.5 text-sm text-red-700">{error}</p>
-      )}
+      {error && <p className="rounded-card bg-red-50 px-4 py-2.5 text-sm text-red-700">{error}</p>}
 
       {canManage && (
-        <button
-          type="button"
-          onClick={() => setAddingUnder(null)}
-          className="rounded-pill bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
-        >
-          + Top-level category
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setAddingUnder(null)}
+            className="rounded-pill bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700"
+          >
+            + Top-level category
+          </button>
+          <p className="text-[0.78rem] text-ink-faint">
+            Drag by <span className="font-semibold">⠿</span> — drop on a row to nest inside it, or
+            on the line between rows to place it there.
+          </p>
+        </div>
       )}
 
       {addingUnder !== undefined && (
         <NewCategoryForm
           parentId={addingUnder}
+          parentName={addingUnder ? (findNode(tree, addingUnder)?.nameEn ?? '') : null}
           busy={busy}
           onCancel={() => setAddingUnder(undefined)}
           onSave={(values) =>
@@ -125,135 +202,201 @@ export function CategoryTreeEditor({
         />
       )}
 
-      <ul className="card divide-y divide-paper-sunken">
-        {rows.map(({ node, depth }) => (
-          <li
-            key={node.id}
-            // Jis par drag guzar raha hai us par halka rang — warna pata hi nahi
-            // chalta ke cheez kis ke andar giregi
-            className={`px-3 py-2 transition ${
-              dropTarget === node.id ? 'bg-brand-50' : dragId === node.id ? 'opacity-40' : ''
-            }`}
-            draggable={canManage && editing !== node.id}
-            onDragStart={() => setDragId(node.id)}
-            onDragEnd={() => {
-              setDragId(null)
-              setDropTarget(null)
-            }}
-            onDragOver={(event) => {
-              if (!canManage || !dragId || dragId === node.id) return
-              event.preventDefault()
-              setDropTarget(node.id)
-            }}
-            onDragLeave={() => setDropTarget((current) => (current === node.id ? null : current))}
-            onDrop={(event) => {
-              event.preventDefault()
-              setDropTarget(null)
-              if (!dragId || dragId === node.id) return
-              void moveTo(dragId, node.id)
-              setDragId(null)
-            }}
-          >
-            <div
-              className="flex flex-wrap items-center gap-2"
-              style={{ paddingInlineStart: `${depth * 20}px` }}
-            >
-              {depth > 0 && <span className="text-ink-faint">└</span>}
-
-              {editing === node.id ? (
-                <RenameForm
-                  node={node}
-                  busy={busy}
-                  onCancel={() => setEditing(null)}
-                  onSave={(values) =>
-                    run(async () => {
-                      const message = await call(`/api/v1/admin/categories/${node.id}`, 'PATCH', {
-                        action: 'rename',
-                        ...values,
-                      })
-                      if (!message) setEditing(null)
-                      return message
-                    })
-                  }
-                />
-              ) : (
-                <>
-                  <span className="font-semibold">{node.nameEn}</span>
-                  <span className="text-ink-soft" dir="rtl">
-                    {node.nameUr}
-                  </span>
-                  <code className="text-[0.72rem] text-ink-faint">{node.slug}</code>
-
-                  {/*
-                    Do ginti alag alag: isi category par kitna maal, aur poori shaakh mein
-                    kitna. Sirf shaakh wali dikhate to "khali" category mitane ki koshish
-                    par error samajh nahi aata.
-                  */}
-                  <span className="text-[0.72rem] text-ink-faint">
-                    {node.productCount} here
-                    {node.branchProductCount !== node.productCount && (
-                      <> · {node.branchProductCount} in branch</>
-                    )}
-                  </span>
-
-                  {canManage && (
-                    <span className="ms-auto flex flex-wrap items-center gap-1">
-                      <TreeButton label="↑" title="Move up" onClick={() => void nudge(node, -1)} />
-                      <TreeButton label="↓" title="Move down" onClick={() => void nudge(node, 1)} />
-                      <TreeButton
-                        label="→"
-                        title="Make child of the row above"
-                        onClick={() => {
-                          const siblings =
-                            (node.parentId ? findNode(tree, node.parentId)?.children : tree) ?? []
-                          const index = siblings.findIndex((sibling) => sibling.id === node.id)
-                          const above = siblings[index - 1]
-                          if (above) void moveTo(node.id, above.id)
-                        }}
-                      />
-                      <TreeButton
-                        label="←"
-                        title="Move out one level"
-                        onClick={() => {
-                          const parent = node.parentId ? findNode(tree, node.parentId) : null
-                          void moveTo(node.id, parent?.parentId ?? null)
-                        }}
-                      />
-                      <TreeButton label="Rename" onClick={() => setEditing(node.id)} />
-                      <TreeButton label="+ Sub" onClick={() => setAddingUnder(node.id)} />
-                      <TreeButton
-                        label="Delete"
-                        tone="danger"
-                        onClick={() => {
-                          void run(() => call(`/api/v1/admin/categories/${node.id}`, 'DELETE'))
-                        }}
-                      />
-                    </span>
-                  )}
-                </>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
-
-      {canManage && (
-        <p className="text-[0.78rem] text-ink-faint">
-          Drag a row onto another to make it a child. Use ← to move it back out. Deleting is
-          blocked while a category still holds products or sub-categories.
-        </p>
+      {/* Ishara — sirf ghisatte waqt, aur wahin jahan aankh pehle se hai */}
+      {hint && (
+        <div className="sticky top-20 z-20 flex flex-wrap items-center gap-2 rounded-card bg-coal-900 px-4 py-2 text-sm text-white shadow-lift">
+          <span className="font-semibold">{hint.text}</span>
+          <span className="text-white/60">{hint.detail}</span>
+        </div>
       )}
+
+      <ul className="space-y-1.5">
+        {rows.map(({ node, depth }) => {
+          const dragging = dragId === node.id
+          const inside = spot?.id === node.id && spot.mode === 'inside'
+          const after = spot?.id === node.id && spot.mode === 'after'
+
+          return (
+            <li
+              key={node.id}
+              style={{ marginInlineStart: `${depth * 24}px` }}
+              // Nested rows par baen halki lakeer — darakht ki shakl ek nazar mein
+              className={depth > 0 ? 'border-s border-dashed border-ink-faint/30 ps-3' : ''}
+            >
+              {/*
+                Neeche girne wali lakeer — usi darje par jahan wo waqai jayega. Sirf rang
+                badalne se ye farq nazar nahi aata ke cheez bhai banegi ya bachcha.
+              */}
+              {after && (
+                <div className="mb-1 flex items-center gap-2">
+                  <span className="h-[3px] flex-1 rounded-full bg-brand-500" />
+                  <span className="rounded-pill bg-brand-500 px-2 py-0.5 text-[0.68rem] font-semibold text-white">
+                    here
+                  </span>
+                </div>
+              )}
+
+              <div
+                draggable={canManage && editing !== node.id}
+                onDragStart={(event) => {
+                  setDragId(node.id)
+                  event.dataTransfer.effectAllowed = 'move'
+                }}
+                onDragEnd={() => {
+                  setDragId(null)
+                  setSpot(null)
+                }}
+                onDragOver={(event) => {
+                  if (!canManage || !dragId || dragId === node.id) return
+                  event.preventDefault()
+
+                  /*
+                   * Qatar ka neechla chautha hissa = "is ke neeche", baqi = "is ke andar".
+                   * Ye WordPress wali baat hai: ek hi qatar par do maqsad, aur farq sirf
+                   * is se ke maus kahan hai — warna nesting ke liye alag button banana
+                   * parta aur har chhoti tabdeeli do click maangti.
+                   */
+                  const box = event.currentTarget.getBoundingClientRect()
+                  const nearBottom = event.clientY > box.bottom - box.height / 4
+                  setSpot({ id: node.id, mode: nearBottom ? 'after' : 'inside' })
+                }}
+                onDragLeave={() => setSpot((current) => (current?.id === node.id ? null : current))}
+                onDrop={(event) => {
+                  event.preventDefault()
+                  const mode = spot?.mode ?? 'inside'
+                  setSpot(null)
+                  if (!dragId || dragId === node.id) return
+
+                  const dragged = findNode(tree, dragId)
+                  setDragId(null)
+                  if (!dragged) return
+
+                  if (mode === 'after') void dropAfter(dragged, node)
+                  else void moveTo(dragged.id, node.id)
+                }}
+                className={`card relative flex flex-wrap items-center gap-2 px-3 py-2.5 transition ${
+                  dragging ? 'opacity-40' : ''
+                } ${
+                  inside
+                    ? // Andar ja raha hai: poora dabba ghera hua, aur baen taraf mota
+                      // nishan — yani "ye us ka naya ghar hai"
+                      'ring-2 ring-brand-500 border-s-4 border-brand-500 bg-brand-50/60'
+                    : ''
+                }`}
+              >
+                {canManage && (
+                  <span
+                    aria-hidden="true"
+                    title="Drag to move"
+                    className="cursor-grab select-none px-1 text-ink-faint active:cursor-grabbing"
+                  >
+                    ⠿
+                  </span>
+                )}
+
+                {editing === node.id ? (
+                  <RenameForm
+                    node={node}
+                    busy={busy}
+                    onCancel={() => setEditing(null)}
+                    onSave={(values) =>
+                      run(async () => {
+                        const message = await call(`/api/v1/admin/categories/${node.id}`, 'PATCH', {
+                          action: 'rename',
+                          ...values,
+                        })
+                        if (!message) setEditing(null)
+                        return message
+                      })
+                    }
+                  />
+                ) : (
+                  <>
+                    <span className="font-semibold">{node.nameEn}</span>
+                    <span className="text-ink-soft" dir="rtl">
+                      {node.nameUr}
+                    </span>
+                    <code className="rounded bg-paper-sunken px-1.5 py-0.5 text-[0.7rem] text-ink-faint">
+                      {node.slug}
+                    </code>
+
+                    {/*
+                      Do ginti alag: isi par kitna maal, aur poori shaakh mein kitna.
+                      Sirf shaakh wali dikhate to "khali" category mitane par error
+                      samajh nahi aata.
+                    */}
+                    <span className="text-[0.72rem] text-ink-faint">
+                      {node.productCount} here
+                      {node.branchProductCount !== node.productCount && (
+                        <> · {node.branchProductCount} in branch</>
+                      )}
+                    </span>
+
+                    {canManage && (
+                      <span className="ms-auto flex flex-wrap items-center gap-0.5">
+                        <TreeButton label="↑" title="Move up" onClick={() => void nudge(node, -1)} />
+                        <TreeButton label="↓" title="Move down" onClick={() => void nudge(node, 1)} />
+                        <TreeButton
+                          label="→"
+                          title="Nest inside the row above"
+                          onClick={() => {
+                            const siblings = siblingsOf(node)
+                            const above = siblings[siblings.findIndex((s) => s.id === node.id) - 1]
+                            if (above) void moveTo(node.id, above.id)
+                          }}
+                        />
+                        <TreeButton
+                          label="←"
+                          title="Move out one level"
+                          onClick={() => {
+                            const parent = node.parentId ? findNode(tree, node.parentId) : null
+                            void moveTo(node.id, parent?.parentId ?? null)
+                          }}
+                        />
+                        <TreeButton label="Rename" onClick={() => setEditing(node.id)} />
+                        <TreeButton label="+ Sub" onClick={() => setAddingUnder(node.id)} />
+
+                        {/*
+                          Mitane se pehle poochha jata hai. Server bhari hui category ko
+                          waise bhi rokta hai, magar khali category ek click mein gum ho
+                          jana bhi ghalti hi hai — aur wapas laane ka koi rasta nahi.
+                        */}
+                        {confirming === node.id ? (
+                          <>
+                            <TreeButton
+                              label={busy ? '…' : 'Yes, delete'}
+                              tone="danger"
+                              onClick={() =>
+                                void run(async () => {
+                                  const message = await call(
+                                    `/api/v1/admin/categories/${node.id}`,
+                                    'DELETE',
+                                  )
+                                  setConfirming(null)
+                                  return message
+                                })
+                              }
+                            />
+                            <TreeButton label="Keep" onClick={() => setConfirming(null)} />
+                          </>
+                        ) : (
+                          <TreeButton
+                            label="Delete"
+                            tone="danger"
+                            onClick={() => setConfirming(node.id)}
+                          />
+                        )}
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+            </li>
+          )
+        })}
+      </ul>
     </div>
   )
-}
-
-function findNode(nodes: readonly CategoryNode[], id: string): CategoryNode | null {
-  for (const node of nodes) {
-    if (node.id === id) return node
-    const found = findNode(node.children, id)
-    if (found) return found
-  }
-  return null
 }
 
 function TreeButton({
@@ -315,18 +458,20 @@ function RenameForm({
       <TreeButton label={busy ? '…' : 'Save'} onClick={() => onSave({ nameUr, nameEn })} />
       <TreeButton label="Cancel" onClick={onCancel} />
       {/* Slug jaan boojh kar nahi badalta — purane WhatsApp links usi par khulte hain */}
-      <span className="text-[0.7rem] text-ink-faint">URL stays {node.slug}</span>
+      <span className="text-[0.7rem] text-ink-faint">URL stays /{node.slug}</span>
     </span>
   )
 }
 
 function NewCategoryForm({
   parentId,
+  parentName,
   busy,
   onSave,
   onCancel,
 }: {
   parentId: string | null
+  parentName: string | null
   busy: boolean
   onSave: (values: { nameUr: string; nameEn: string }) => void
   onCancel: () => void
@@ -335,15 +480,16 @@ function NewCategoryForm({
   const [nameUr, setNameUr] = useState('')
 
   return (
-    <div className="card flex flex-wrap items-center gap-2 p-3">
-      <span className="text-[0.78rem] text-ink-faint">
-        {parentId ? 'New sub-category' : 'New top-level category'}
+    <div className="card flex flex-wrap items-center gap-2 border-s-4 border-brand-500 p-3">
+      <span className="text-[0.78rem] font-semibold text-ink-soft">
+        {parentId ? `New sub-category under ${parentName}` : 'New top-level category'}
       </span>
       <input
         value={nameEn}
         onChange={(event) => setNameEn(event.target.value)}
         className="rounded-card bg-paper-sunken px-3 py-1.5 text-sm"
         placeholder="English name"
+        autoFocus
       />
       <input
         value={nameUr}
@@ -356,7 +502,7 @@ function NewCategoryForm({
         type="button"
         disabled={busy || nameEn.trim().length < 2 || nameUr.trim().length < 2}
         onClick={() => onSave({ nameUr, nameEn })}
-        className="rounded-pill bg-brand-500 px-4 py-1.5 text-[0.78rem] font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
+        className="rounded-pill bg-brand-500 px-4 py-1.5 text-[0.78rem] font-semibold text-white transition hover:bg-brand-700 disabled:opacity-50"
       >
         {busy ? '…' : 'Create'}
       </button>
