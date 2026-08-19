@@ -607,6 +607,10 @@ const DICTIONARY = {
     en: 'No colours or sizes yet — one count for the whole item.',
     rm: 'Abhi koi rang ya size nahi — poore maal ki ek hi ginti chal rahi hai.',
   },
+  // Ginti ke saath alag lafz — "3 رنگ اور سائز" ajeeb parhta hai
+  variantCount: { ur: 'جوڑے', en: 'variants', rm: 'jorhe' },
+  manage: { ur: 'تفصیل', en: 'Manage', rm: 'Tafseel' },
+  photos: { ur: 'تصویریں', en: 'photos', rm: 'tasveerein' },
   variantPhoto: { ur: 'اس رنگ کی تصویر', en: 'Photo for this one', rm: 'Is jorhe ki tasveer' },
   variantPhotoAdd: { ur: 'تصویر لگائیں', en: 'Add photo', rm: 'Tasveer lagayen' },
   variantPick: { ur: 'رنگ / سائز چنیں', en: 'Pick colour / size', rm: 'Rang / size chunen' },

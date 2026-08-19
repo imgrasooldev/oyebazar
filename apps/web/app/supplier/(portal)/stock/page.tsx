@@ -80,9 +80,9 @@ export default async function SupplierStockPage() {
 
       <ul className="space-y-3">
         {products.map((product) => (
-          <li key={product.id} className="card space-y-4 p-4">
-            <div className="flex items-center gap-4">
-            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-card bg-paper-sunken">
+          <li key={product.id} className="card overflow-hidden">
+            <div className="flex flex-wrap items-center gap-3 p-3">
+            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-card bg-paper-sunken">
               {product.imageUrl && (
                 // eslint-disable-next-line @next/next/no-img-element -- storage URLs; next/image Phase 2
                 <img
@@ -134,6 +134,39 @@ export default async function SupplierStockPage() {
               />
             )}
             </div>
+
+            {/*
+              Tafseel band rehti hai.
+              🔴 Ek dukan ke paas chalees maal hote hain. Har ek par variants, tasveerein,
+              rate ki darkhwast aur edit khule rehte to ek safhe par teen maal aate the
+              aur "kis cheez ka stock khatam hai" jaanne ke liye poora safha scroll karna
+              parta. Ab qatar chhoti hai aur andar ka kaam ek tap door.
+
+              `<details>` jaan boojh kar — koi JavaScript nahi, phone par bhi foran khulta
+              hai, aur browser ka apna Ctrl+F is ke andar bhi dhoondh leta hai.
+            */}
+            <details className="group border-t border-paper-sunken">
+              <summary className="flex min-h-tap cursor-pointer list-none items-center gap-2 px-3 py-2 text-[0.82rem] font-semibold text-ink-soft transition hover:bg-paper-sunken">
+                <span className="text-ink-faint transition group-open:rotate-90 rtl:rotate-180 rtl:group-open:-rotate-90">
+                  ›
+                </span>
+                {t('manage')}
+                <span className="font-normal text-ink-faint">
+                  {(variantsByProduct.get(product.id) ?? []).length > 0 && (
+                    <>
+                      {(variantsByProduct.get(product.id) ?? []).length} {t('variantCount')}
+                    </>
+                  )}
+                  {product.media.length > 0 && (
+                    <>
+                      {(variantsByProduct.get(product.id) ?? []).length > 0 ? ' · ' : ''}
+                      {product.media.length} {t('photos')}
+                    </>
+                  )}
+                </span>
+              </summary>
+
+              <div className="space-y-4 px-3 pb-4">
 
             {/*
               Rang aur size — sirf LIVE/OUT_OF_STOCK maal par.
@@ -216,6 +249,8 @@ export default async function SupplierStockPage() {
               media={[...product.media]}
               locale={locale}
             />
+              </div>
+            </details>
           </li>
         ))}
       </ul>
