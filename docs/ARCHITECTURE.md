@@ -29,6 +29,7 @@
 │   repositories/*.ts   — core ke ports ka amal                │
 └──────────────────────────────────────────────────────────────┘
 
+packages/storage — ObjectStorage adapters (local disk / Supabase) + upload ka magic-byte sniffing
 packages/shared — Zod DTOs, money (integer PKR), fee, errors, constants
 ```
 
@@ -65,14 +66,29 @@ aur fee ledger use karta hai. Reseller-facing service us type ko chhoo hi nahi s
 ## Content Studio ka flow
 
 ```
-Reseller "اسٹیٹس پیک بنائیں" dabati hai
-   → POST /api/v1/status-pack { productId, templateKey, retailPrice }
-   → StatusPackService: price tay → CACHE dekha (resellerId+productId+template+price)
+Reseller tasveer chunti hai, phir "اسٹیٹس پیک بنائیں" dabati hai
+   → POST /api/v1/status-pack { productId, mediaId, templateKey, retailPrice }
+   → StatusPackService: tasveer jaanchi (is maal ki hai?) → price tay
+        → CACHE dekha (resellerId+productId+mediaId+template+price+format)
         ├─ hit  → { status: READY, imageUrl }        (<200ms)
         └─ miss → row banti hai + RenderQueue.enqueue → { status: RENDERING }
    → UI poll karti hai GET /api/v1/status-pack?…      (p95 <2s)
    → worker (Playwright) render kar ke markRendered() karta hai
 ```
+
+**`mediaId` cache key mein kyun:** wholesaler ek maal par kai tasveerein daalta hai aur
+reseller khud chunti hai ke kaunsi us ke status par jaye. Key mein na hota to doosri
+tasveer ka pack pehli wali ko chup chaap overwrite kar deta — aur reseller ko wohi
+purani tasveer milti rehti jo us ne badal di thi.
+
+**Khali string = cover tasveer, `null` nahi.** Postgres ke unique index mein NULL kisi
+doosre NULL se nahi takrata; nullable rakhte to cover wale packs ka cache constraint
+kaam karna chhor deta aur ek hi pack ki do rows ban jatin. Purani saari rows (aur raat
+ki pre-generation, jo hamesha cover par hoti hai) isi wajah se bina chhue chalti hain.
+
+**Video par pack nahi banta.** Render Playwright ke HTML screenshot se hota hai; video par
+template lagane ke liye ffmpeg wali bilkul alag pipeline chahiye. Video product gallery ki
+cheez hai — `RENDER_PRODUCT_SELECT` sirf `type: IMAGE` maangta hai.
 
 ### Render ki asli lagat (naapi gayi, andaza nahi)
 

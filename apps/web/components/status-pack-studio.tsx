@@ -16,8 +16,20 @@ const TEMPLATE_NAMES: Record<string, Record<Locale, string>> = {
   summer: { ur: 'گرمی', rm: 'Garmi', en: 'Summer' },
 }
 
+export interface StudioImage {
+  id: string
+  url: string
+}
+
 interface Props {
   productId: string
+  /**
+   * Maal ki saari tasveerein — har ek ka apna pack ban sakta hai.
+   *
+   * 🔴 Sirf tasveerein aati hain, video nahi: pack Playwright ke HTML screenshot se
+   * banta hai aur video par template lagane ka raasta abhi hai hi nahi.
+   */
+  images: StudioImage[]
   bajiPrice: number
   suggestedRetail: number
   myRetailPrice: number | null
@@ -44,6 +56,7 @@ type Phase = 'idle' | 'working' | 'ready' | 'error'
  */
 export function StatusPackStudio({
   productId,
+  images,
   bajiPrice,
   suggestedRetail,
   myRetailPrice,
@@ -53,6 +66,9 @@ export function StatusPackStudio({
   const t = translator(locale)
   const [price, setPrice] = useState<number>(myRetailPrice ?? suggestedRetail)
   const [templateKey, setTemplateKey] = useState<string>(templates[0] ?? 'simple')
+  // Pehli tasveer wohi hai jo wholesaler ne sarwarq banayi — sab se aam soorat mein
+  // reseller ko kuch chunna hi nahi parta
+  const [mediaId, setMediaId] = useState<string | undefined>(images[0]?.id)
   const [phase, setPhase] = useState<Phase>('idle')
   const [kit, setKit] = useState<PackKit | null>(null)
   const [platform, setPlatform] = useState<string>('whatsapp')
@@ -80,7 +96,12 @@ export function StatusPackStudio({
     const res = await fetch('/api/v1/status-pack/kit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ productId, templateKey, retailPrice: price }),
+      body: JSON.stringify({
+        productId,
+        ...(mediaId ? { mediaId } : {}),
+        templateKey,
+        retailPrice: price,
+      }),
     })
 
     if (!res.ok) {
@@ -96,19 +117,23 @@ export function StatusPackStudio({
     // Jo tayyar hai wo foran dikha dete hain — poore kit ka intezar nahi karwate
     setPhase('ready')
     if (data.assets.some((asset) => asset.status === 'RENDERING')) {
-      await pollUntilReady(data.priceUsed)
+      await pollUntilReady(data.priceUsed, mediaId)
     }
   }
 
   /** Har 800ms — jaise jaise naap tayyar hote hain, wahin ke wahin nazar aane lagte hain. */
-  async function pollUntilReady(priceUsed: number) {
+  async function pollUntilReady(priceUsed: number, forMediaId: string | undefined) {
     const deadline = Date.now() + 45_000
 
     while (Date.now() < deadline) {
       await new Promise((resolve) => setTimeout(resolve, 800))
 
+      // 🔴 mediaId polling mein bhi — warna reseller tasveer badal de aur hum purani
+      // wali ka kit poll karte rahen, jo pehle se READY hai: naya pack banta rehta hai
+      // aur screen par purana dikhta hai
       const params = new URLSearchParams({
         productId,
+        ...(forMediaId ? { mediaId: forMediaId } : {}),
         templateKey,
         priceUsed: String(priceUsed),
       })
@@ -202,6 +227,36 @@ export function StatusPackStudio({
             </div>
           </div>
         </div>
+
+        {/*
+          Tasveer chunna — sirf tab jab waqai chunne ko kuch ho.
+          Ek hi tasveer wale maal par ye patti sirf ek extra tap hai, aur 3-tap ka
+          usool (docs/CONVENTIONS.md) usi jagah tootta hai jahan "sirf ek aur" lagta hai.
+        */}
+        {images.length > 1 && (
+          <div>
+            <p className="text-sm font-semibold">{t('choosePhotoForPack')}</p>
+            <div className="rail mt-3">
+              {images.map((image, index) => (
+                <button
+                  key={image.id}
+                  type="button"
+                  onClick={() => setMediaId(image.id)}
+                  aria-label={`${t('photoNumber')} ${index + 1}`}
+                  aria-pressed={image.id === mediaId}
+                  className={
+                    image.id === mediaId
+                      ? 'h-16 w-16 shrink-0 overflow-hidden rounded-card ring-2 ring-accent-700'
+                      : 'link-tap h-16 w-16 shrink-0 overflow-hidden rounded-card ring-1 ring-line'
+                  }
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- storage URLs; next/image Phase 2 */}
+                  <img src={image.url} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* 2 — ٹیمپلیٹ */}
         <div>

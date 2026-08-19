@@ -41,22 +41,33 @@ export const RESELLER_PRODUCT_SELECT = {
   status: true,
   category: { select: { slug: true, nameUr: true, nameEn: true } },
   variants: { select: { id: true, size: true, colour: true, stockQty: true } },
-  media: { select: { processedUrl: true, originalUrl: true, sortOrder: true }, orderBy: { sortOrder: 'asc' } },
+  media: {
+    select: { id: true, processedUrl: true, originalUrl: true, type: true, sortOrder: true },
+    orderBy: { sortOrder: 'asc' },
+  },
   createdAt: true,
   // supplierPrice: NAHI. supplierId: NAHI. supplier: NAHI.
 } satisfies Prisma.ProductSelect
 
-/** Content Studio render — image par sirf yehi cheezein chhapti hain. */
+/**
+ * Content Studio render — image par sirf yehi cheezein chhapti hain.
+ *
+ * 🔴 Media ab SAARI tasveerein laata hai, sirf status wali nahi: reseller khud chunti
+ * hai ke kaunsi tasveer us ke status par jaye. `take: 1` hata dene se yahan bhi wohi
+ * usool rehta hai — koi price column phir bhi nahi maanga jata.
+ *
+ * VIDEO jaan boojh kar bahar hai. Pack Playwright ke HTML screenshot se banta hai;
+ * video ka apna raasta (ffmpeg) abhi hai hi nahi.
+ */
 export const RENDER_PRODUCT_SELECT = {
   id: true,
   titleUr: true,
   titleEn: true,
   category: { select: { nameUr: true } },
   media: {
-    where: { isStatusSource: true },
-    select: { processedUrl: true, originalUrl: true },
-    orderBy: { sortOrder: 'asc' },
-    take: 1,
+    where: { type: 'IMAGE' as const },
+    select: { id: true, processedUrl: true, originalUrl: true, isStatusSource: true },
+    orderBy: [{ isStatusSource: 'desc' as const }, { sortOrder: 'asc' as const }],
   },
 } satisfies Prisma.ProductSelect
 

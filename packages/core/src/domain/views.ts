@@ -54,11 +54,26 @@ export interface PricingProductView {
 }
 
 /** Content Studio render ke liye — image par sirf yehi cheezein chhapti hain. */
+/** Ek tasveer jis par status pack ban sakta hai. */
+export interface RenderImageView {
+  readonly id: string
+  readonly url: string
+}
+
 export interface RenderProductView {
   readonly id: string
   readonly titleUr: string
   readonly titleEn: string
+  /** Pehli/status wali tasveer — mediaId na diya jaye to yehi chalti hai. */
   readonly coverImageUrl: string | null
+  /**
+   * Saari IMAGE media, sortOrder ke hisab se.
+   *
+   * 🔴 Sirf tasveerein — video yahan kabhi nahi aati. Status pack Playwright ke HTML
+   * screenshot se banta hai; video par template lagane ke liye bilkul alag (ffmpeg wali)
+   * pipeline chahiye jo abhi hai hi nahi. Video product gallery ki cheez hai.
+   */
+  readonly images: readonly RenderImageView[]
   readonly categoryNameUr: string
 }
 
@@ -81,6 +96,33 @@ export interface PublicActivityItem {
   readonly listedAt: Date
 }
 
+/**
+ * Rate badalne ki khuli darkhwast — ops ke safhe par yehi dikhti hai.
+ *
+ * 🔴 `resellersUnderWater` hi is poore safhe ki wajah hai: itni resellers ne is maal
+ * par apna retail rate save kar rakha hai jo NAYE bajiPrice se neeche hai. Manzoori
+ * milte hi un sab ka laga hua status pack apni lagat se kam ka rate dikha raha hoga.
+ * Ye number dekhe baghair "haan" kehna andhere mein faisla karna hai.
+ */
+export interface PriceChangeRequestView {
+  readonly id: string
+  readonly productId: string
+  readonly supplierId: string
+  readonly supplierName: string
+  readonly productTitleUr: string
+  readonly productTitleEn: string
+  readonly currentSupplierPrice: Pkr
+  readonly requestedSupplierPrice: Pkr
+  /** Abhi reseller ko kya dikhta hai */
+  readonly currentBajiPrice: Pkr
+  /** Manzoori ke baad kya dikhega */
+  readonly proposedBajiPrice: Pkr
+  readonly reason: string | null
+  readonly resellersWithSavedPrice: number
+  readonly resellersUnderWater: number
+  readonly createdAt: Date
+}
+
 export interface CategoryView {
   readonly slug: string
   readonly nameUr: string
@@ -88,6 +130,9 @@ export interface CategoryView {
 }
 
 export interface ProductMediaView {
+  /** Status pack isi id se maanga jata hai — har tasveer ka apna pack. */
+  readonly id: string
+  readonly type: 'IMAGE' | 'VIDEO'
   readonly url: string
   readonly sortOrder: number
 }
@@ -133,6 +178,8 @@ export interface StatusPackView {
   readonly id: string
   readonly resellerId: string
   readonly productId: string
+  /** Kis tasveer par bana — khali string = cover. */
+  readonly mediaId: string
   readonly templateKey: string
   readonly priceUsed: Pkr
   readonly format: PackFormatKey

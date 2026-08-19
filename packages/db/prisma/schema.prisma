@@ -99,10 +99,11 @@ model Product {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  supplier Supplier         @relation(fields: [supplierId], references: [id])
-  category Category         @relation(fields: [categoryId], references: [id])
-  variants ProductVariant[]
-  media    ProductMedia[]
+  supplier      Supplier              @relation(fields: [supplierId], references: [id])
+  category      Category              @relation(fields: [categoryId], references: [id])
+  variants      ProductVariant[]
+  media         ProductMedia[]
+  priceRequests PriceChangeRequest[]
 
   @@index([status, categoryId])
   @@index([supplierId, status])
@@ -127,6 +128,56 @@ model ProductVariant {
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
+}
+
+/// 🔴 LIVE maal ka rate badalne ki darkhwast — faisla ops ka hai, dukan wale ka nahi.
+///
+/// Wajah: rate barhte hi `bajiPrice` barhta hai, aur jis reseller ne is maal par apna
+/// retail rate save kar rakha hai wo ab apni lagat se NEECHE bech rahi hoti hai — us ka
+/// status pack pehle se WhatsApp par laga hua hai aur usay khabar tak nahi hoti. Ye
+/// nuqsan itla se nahi rukta; is ka faisla pehle hona chahiye.
+///
+/// DRAFT par ye table nahi chalti — wahan dukan wala khud sab kuch badal sakta hai,
+/// kyunke na ops ne dekha hai na kisi reseller ne.
+model PriceChangeRequest {
+  id         String @id @default(cuid())
+  productId  String
+  supplierId String
+
+  /// Darkhwast ke waqt ka rate — faisla baad mein hota hai, tab tak rate badal sakta hai
+  currentSupplierPrice   Int
+  requestedSupplierPrice Int
+  reason                 String?
+
+  status       PriceChangeStatus @default(PENDING)
+  createdAt    DateTime          @default(now())
+  decidedAt    DateTime?
+  decidedBy    String?
+  decisionNote String?
+
+  /// 🔴 Ek maal par ek hi KHULI darkhwast — magar guzri hui saari mehfooz.
+  ///
+  /// Ye khaana PENDING ke doran `productId` rakhta hai aur faisle ke baad `null` ho
+  /// jata hai. Postgres ke unique index mein NULL kisi doosre NULL se nahi takrata, is
+  /// liye ek maal ki das APPROVED/REJECTED rows araam se rehti hain magar doosri PENDING
+  /// nahi ban sakti.
+  ///
+  /// `@@unique([productId, status])` ghalat hota: us se guzri hui darkhwast bhi ek hi
+  /// reh sakti thi, yani har nayi manzoori purani ka nishan mita deti — aur "kis ne kab
+  /// kis rate ki ijazat di" ka jawab hamesha ke liye kho jata.
+  pendingProductId String? @unique
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([supplierId, status])
+  @@index([productId, createdAt])
+}
+
+enum PriceChangeStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 model ProductMedia {
@@ -213,6 +264,13 @@ model StatusPack {
   id           String    @id @default(cuid())
   resellerId   String
   productId    String
+  /// Kis tasveer par pack bana — ek product ki kai tasveerein hoti hain.
+  ///
+  /// 🔴 Khali string ka matlab "product ki cover tasveer", `null` nahi. Postgres ke
+  /// unique index mein NULL kisi doosre NULL se nahi takrata, yani nullable rakhte to
+  /// cover wale packs ka cache constraint chup chaap kaam karna chhor deta aur ek hi
+  /// pack ki do rows ban jatin.
+  mediaId      String    @default("")
   templateKey  String
   priceUsed    Int
   // story (9:16) | square (1:1) | portrait (4:5) | wide (1.91:1) — packages/shared/pack-kit.ts
@@ -229,7 +287,7 @@ model StatusPack {
   // 🔴 CACHE KEY — wohi reseller + product + template + price + naap = wohi image, dobara
   // render nahi. Format is mein shamil hai warna Instagram ka chokor pack WhatsApp ke
   // lambe pack ko cache mein overwrite kar deta.
-  @@unique([resellerId, productId, templateKey, priceUsed, format])
+  @@unique([resellerId, productId, mediaId, templateKey, priceUsed, format])
   @@index([resellerId, createdAt])
   @@index([imageUrl, createdAt])
 }

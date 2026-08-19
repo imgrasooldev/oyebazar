@@ -112,6 +112,8 @@ export class DailyDropService {
         const pack = await this.statusPacks.findByCacheKey({
           resellerId,
           productId,
+          // Rozana ka drop hamesha cover tasveer par — reseller ne kuch chuna hi nahi
+          mediaId: '',
           templateKey,
           priceUsed: myPrice,
           // Rozana ka drop story (9:16) hai — wohi WhatsApp status par jata hai

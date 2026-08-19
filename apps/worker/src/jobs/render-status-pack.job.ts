@@ -25,10 +25,13 @@ export async function handleRenderStatusPack(
   // Purane job (jo migration se pehle queue mein pare the) par format nahi hota — wo sab
   // WhatsApp status the, is liye 'story'
   const format = job.format ?? 'story'
+  // Purane job par mediaId nahi hota — wo sab cover par bante the
+  const mediaId = job.mediaId ?? ''
 
   const existing = await repositories.statusPacks.findByCacheKey({
     resellerId: job.resellerId,
     productId: job.productId,
+    mediaId,
     templateKey: job.templateKey,
     priceUsed: pkr(job.priceUsed),
     format,
@@ -47,6 +50,18 @@ export async function handleRenderStatusPack(
   if (!product) throw new Error(`Product nahi mila: ${job.productId}`)
   if (!reseller) throw new Error(`Reseller nahi mili: ${job.resellerId}`)
 
+  /*
+   * Kaunsi tasveer render par jayegi.
+   *
+   * mediaId enqueue ke waqt service jaanch chuki hoti hai. Yahan phir bhi cover par
+   * girte hain (throw nahi karte): tasveer job queue mein parne ke baad delete ho sakti
+   * hai, aur us soorat mein pack ka na banna reseller ke liye khali jagah chhorta hai —
+   * jabke cover wala pack us ke kaam ka hai.
+   */
+  const photoUrl = mediaId
+    ? (product.images.find((image) => image.id === mediaId)?.url ?? product.coverImageUrl)
+    : product.coverImageUrl
+
   const rendered = await renderer.render(
     job.templateKey,
     {
@@ -55,14 +70,17 @@ export async function handleRenderStatusPack(
       price: pkr(job.priceUsed),
       resellerName: reseller.name,
       resellerPhone: reseller.whatsappPhone,
-      photoUrl: product.coverImageUrl,
+      photoUrl,
     },
     format,
   )
 
   // key mein price aur naap dono — wohi cache key jo DB constraint mein hai. Naap na ho
   // to chokor pack lambe wali file ko storage par overwrite kar deta.
-  const key = `packs/${job.resellerId}/${job.productId}-${job.templateKey}-${job.priceUsed}-${format}.${rendered.extension}`
+  // key mein mediaId bhi — warna ek hi product ki do tasveeron ke pack storage par
+  // ek doosre ko overwrite kar dete
+  const mediaPart = mediaId ? `-${mediaId}` : ''
+  const key = `packs/${job.resellerId}/${job.productId}${mediaPart}-${job.templateKey}-${job.priceUsed}-${format}.${rendered.extension}`
   const stored = await storage.upload(key, rendered.image, rendered.contentType)
 
   await repositories.statusPacks.markRendered(job.statusPackId, stored.url, new Date())

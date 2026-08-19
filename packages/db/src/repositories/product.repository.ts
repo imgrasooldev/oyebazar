@@ -25,10 +25,17 @@ import {
   RESELLER_PRODUCT_SELECT,
 } from '../selectors'
 
-type MediaRow = { processedUrl: string | null; originalUrl: string }
+type MediaRow = { processedUrl: string | null; originalUrl: string; type?: 'IMAGE' | 'VIDEO' }
 
+/**
+ * Cover hamesha TASVEER hoti hai.
+ *
+ * 🔴 `type` ki jaanch is liye lagi ke ab wholesaler video bhi upload karta hai. Sirf
+ * `media[0]` lete to jis maal ki pehli cheez video hoti, us ka cover `<img>` mein ek
+ * mp4 ka link ban kar catalogue par khali dabba dikhata.
+ */
 function coverUrl(media: readonly MediaRow[]): string | null {
-  const first = media[0]
+  const first = media.find((item) => item.type !== 'VIDEO')
   return first ? (first.processedUrl ?? first.originalUrl) : null
 }
 
@@ -120,11 +127,20 @@ export class PrismaProductRepository implements ProductRepository {
       select: RENDER_PRODUCT_SELECT,
     })
     if (!row) return null
+
+    // Selector pehle status wali tasveer deta hai, phir sortOrder — is liye images[0]
+    // hi cover hai aur do alag lists banane ki zaroorat nahi
+    const images = row.media.map((media) => ({
+      id: media.id,
+      url: media.processedUrl ?? media.originalUrl,
+    }))
+
     return {
       id: row.id,
       titleUr: row.titleUr,
       titleEn: row.titleEn,
-      coverImageUrl: coverUrl(row.media),
+      coverImageUrl: images[0]?.url ?? null,
+      images,
       categoryNameUr: row.category.nameUr,
     }
   }
@@ -298,7 +314,13 @@ type ResellerRow = {
   status: string
   category: { slug: string; nameUr: string; nameEn: string }
   variants: { id: string; size: string | null; colour: string | null; stockQty: number }[]
-  media: { processedUrl: string | null; originalUrl: string; sortOrder: number }[]
+  media: {
+    id: string
+    processedUrl: string | null
+    originalUrl: string
+    type: 'IMAGE' | 'VIDEO'
+    sortOrder: number
+  }[]
   createdAt: Date
 }
 
@@ -313,7 +335,12 @@ function toResellerView(row: ResellerRow): ResellerProductView {
     bajiPrice: pkr(row.bajiPrice),
     suggestedRetail: pkr(row.suggestedRetail),
     inStock: row.status === 'LIVE' && row.variants.some((v) => v.stockQty > 0),
-    media: row.media.map((m) => ({ url: m.processedUrl ?? m.originalUrl, sortOrder: m.sortOrder })),
+    media: row.media.map((m) => ({
+      id: m.id,
+      type: m.type,
+      url: m.processedUrl ?? m.originalUrl,
+      sortOrder: m.sortOrder,
+    })),
     variants: row.variants.map((v) => ({
       id: v.id,
       size: v.size,

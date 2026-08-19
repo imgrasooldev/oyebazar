@@ -35,6 +35,12 @@ export interface GenerateStatusPackCommand {
   readonly resellerId: string
   readonly productId: string
   readonly templateKey: string
+  /**
+   * Kis tasveer par pack banana hai — reseller khud chunti hai.
+   *
+   * Na den to product ki cover (status wali) tasveer chalti hai, jo purana bartao hai.
+   */
+  readonly mediaId?: string
   /** slider se aaya hua price; na ho to saved/suggested use hoga */
   readonly retailPrice?: Pkr
   /** Kaun sa naap — na batayen to WhatsApp status (9:16). */
@@ -93,9 +99,12 @@ export class StatusPackService {
       cmd.retailPrice,
     )
 
+    const image = this.resolveImage(product, cmd.mediaId)
+
     const cacheKey = {
       resellerId: cmd.resellerId,
       productId: cmd.productId,
+      mediaId: image.mediaId,
       templateKey: cmd.templateKey,
       priceUsed,
       format: cmd.format ?? 'story',
@@ -120,6 +129,7 @@ export class StatusPackService {
       statusPackId: pending.id,
       resellerId: cmd.resellerId,
       productId: cmd.productId,
+      mediaId: image.mediaId,
       templateKey: cmd.templateKey,
       priceUsed,
       format: cacheKey.format,
@@ -164,9 +174,12 @@ export class StatusPackService {
       cmd.retailPrice,
     )
 
+    const image = this.resolveImage(product, cmd.mediaId)
+
     const base = {
       resellerId: cmd.resellerId,
       productId: cmd.productId,
+      mediaId: image.mediaId,
       templateKey: cmd.templateKey,
       priceUsed,
     }
@@ -185,6 +198,7 @@ export class StatusPackService {
           statusPackId: pending.id,
           resellerId: cmd.resellerId,
           productId: cmd.productId,
+          mediaId: image.mediaId,
           templateKey: cmd.templateKey,
           priceUsed,
           format,
@@ -218,10 +232,14 @@ export class StatusPackService {
   /** Kit ki halat — UI polling ke liye. Naya render shuru nahi karta. */
   async getKitStatus(
     reseller: ResellerView,
-    key: { productId: string; templateKey: string; priceUsed: Pkr },
+    key: { productId: string; mediaId?: string; templateKey: string; priceUsed: Pkr },
     script: CaptionScript = 'ur',
   ): Promise<StatusPackKitResult | null> {
-    const existing = await this.packs.findKit({ resellerId: reseller.id, ...key })
+    const existing = await this.packs.findKit({
+      resellerId: reseller.id,
+      ...key,
+      mediaId: key.mediaId ?? '',
+    })
     if (existing.length === 0) return null
 
     const product = await this.products.findForRender(key.productId)
@@ -243,14 +261,43 @@ export class StatusPackService {
     }
   }
 
+  /**
+   * 🔴 Kaunsi tasveer par pack banega — aur kya ye tasveer waqai IS maal ki hai.
+   *
+   * `mediaId` client se aata hai. Bina jaanche use karte to koi bhi doosre product ki
+   * (ya kisi archived maal ki) tasveer id bhej kar us par apna rate chhpwa leta — aur
+   * cache key alag hone ki wajah se wo pack ban bhi jata aur mehfooz bhi ho jata.
+   *
+   * Na diya jaye to cover chalti hai — yani purani links aur daily drop ke pre-generated
+   * pack sab waise ke waise chalte rehte hain.
+   */
+  private resolveImage(
+    product: RenderProductView,
+    mediaId: string | undefined,
+  ): { mediaId: string; url: string | null } {
+    if (!mediaId) return { mediaId: '', url: product.coverImageUrl }
+
+    const image = product.images.find((item) => item.id === mediaId)
+    if (!image) throw new NotFoundError('Tasveer', mediaId)
+
+    return { mediaId: image.id, url: image.url }
+  }
+
   /** UI polling — render hone tak har 800ms. */
   async getStatus(
     reseller: ResellerView,
-    key: { productId: string; templateKey: string; priceUsed: Pkr; format?: PackFormatKey },
+    key: {
+      productId: string
+      mediaId?: string
+      templateKey: string
+      priceUsed: Pkr
+      format?: PackFormatKey
+    },
   ): Promise<StatusPackResult | null> {
     const pack = await this.packs.findByCacheKey({
       resellerId: reseller.id,
       ...key,
+      mediaId: key.mediaId ?? '',
       format: key.format ?? 'story',
     })
     if (!pack) return null

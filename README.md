@@ -73,6 +73,7 @@ apps/worker      Playwright render pool + BullMQ consumer (Content Studio)
 packages/core    domain + services + ports (koi framework nahi)
 packages/db      Prisma adapters (repository pattern)
 packages/queue   BullMQ producer + connection
+packages/storage ObjectStorage adapters (local disk / Supabase) + upload sniffing
 packages/shared  Zod DTOs, money (integer PKR), fee, errors
 templates/       status pack templates (base.css + layout.html + per-template CSS)
 docs/            ARCHITECTURE, CONVENTIONS

@@ -45,6 +45,8 @@ export const PackKitAssetDTO = z
 export const PackKitDTO = z
   .object({
     productId: z.string(),
+    /** Kis tasveer ka kit hai — UI polling isi ko wapas bhejti hai. */
+    mediaId: z.string().nullable(),
     templateKey: TemplateKeySchema,
     priceUsed: z.number().int().nonnegative(),
     assets: z.array(PackKitAssetDTO),

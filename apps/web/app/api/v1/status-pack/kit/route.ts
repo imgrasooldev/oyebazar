@@ -33,6 +33,7 @@ export async function POST(request: Request) {
       {
         resellerId: reseller.id,
         productId: body.productId,
+        ...(body.mediaId ? { mediaId: body.mediaId } : {}),
         templateKey: body.templateKey,
         retailPrice: body.retailPrice !== undefined ? pkr(body.retailPrice) : undefined,
       },
@@ -40,12 +41,17 @@ export async function POST(request: Request) {
       script,
     )
 
-    return toPackKitDTO(result, { productId: body.productId, templateKey: body.templateKey })
+    return toPackKitDTO(result, {
+      productId: body.productId,
+      mediaId: body.mediaId,
+      templateKey: body.templateKey,
+    })
   })
 }
 
 const PollQuerySchema = z.object({
   productId: z.string().min(1),
+  mediaId: z.string().min(1).max(40).optional(),
   templateKey: z.string().min(1),
   priceUsed: z.coerce.number().int().positive(),
 })
@@ -61,6 +67,7 @@ export async function GET(request: Request) {
       reseller,
       {
         productId: query.productId,
+        ...(query.mediaId ? { mediaId: query.mediaId } : {}),
         templateKey: query.templateKey,
         priceUsed: pkr(query.priceUsed),
       },
@@ -68,7 +75,11 @@ export async function GET(request: Request) {
     )
 
     return result
-      ? toPackKitDTO(result, { productId: query.productId, templateKey: query.templateKey })
+      ? toPackKitDTO(result, {
+          productId: query.productId,
+          mediaId: query.mediaId,
+          templateKey: query.templateKey,
+        })
       : { status: 'NOT_FOUND' as const }
   })
 }

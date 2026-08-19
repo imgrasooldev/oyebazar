@@ -125,6 +125,10 @@ export default async function ProductPage({
         {/* Daen: studio — bari screen par saath saath, chhoti par neeche */}
         <StatusPackStudio
           productId={product.id}
+          // Sirf tasveerein — video par pack nahi banta
+          images={product.media
+            .filter((item) => item.type === 'IMAGE')
+            .map((item) => ({ id: item.id, url: item.url }))}
           bajiPrice={product.bajiPrice}
           suggestedRetail={product.suggestedRetail}
           myRetailPrice={product.myRetailPrice}

@@ -68,6 +68,10 @@ export class PregenerationService {
           const key = {
             resellerId: reseller.id,
             productId,
+            // 🔴 Raat ki pre-generation cover tasveer par hi hoti hai. Reseller ne
+            // abhi koi tasveer chuni hi nahi — aur har tasveer ka pack pehle se
+            // banana matlab 10,000 ki jagah 40,000 renders har raat.
+            mediaId: '',
             templateKey: options.templateKey,
             priceUsed: pkr(priceUsed),
             // Raat ko sirf story (9:16) — yehi 9 baje broadcast mein jata hai. Baqi naap

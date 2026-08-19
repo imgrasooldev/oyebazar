@@ -129,10 +129,12 @@ export function toStatusPackDTO(result: StatusPackResult): StatusPack {
 /** Kit — naap ki tafseel shared/pack-kit se aati hai, hard-code kahin nahi. */
 export function toPackKitDTO(result: StatusPackKitResult, key: {
   productId: string
+  mediaId?: string | undefined
   templateKey: string
 }): PackKit {
   return PackKitDTO.parse({
     productId: key.productId,
+    mediaId: key.mediaId ?? null,
     templateKey: key.templateKey,
     priceUsed: result.priceUsed,
     assets: result.assets.map((asset) => ({

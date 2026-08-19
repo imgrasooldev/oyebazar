@@ -56,6 +56,13 @@ export interface RenderStatusPackJob {
   readonly statusPackId: string
   readonly resellerId: string
   readonly productId: string
+  /**
+   * Kis tasveer par render karna hai. Khali string ya ghair-mojood = product ki cover.
+   *
+   * Purane job (jo migration se pehle queue mein pare the) par ye field nahi hoti —
+   * un sab par cover hi chalti thi, is liye default wohi hai.
+   */
+  readonly mediaId?: string
   readonly templateKey: string
   readonly priceUsed: number
   /** Naap — purane job (queue mein pehle se pare hue) ke liye story maan liya jata hai. */

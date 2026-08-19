@@ -132,6 +132,13 @@ export interface ResellerPricingRepository {
 export interface StatusPackCacheKey {
   readonly resellerId: string
   readonly productId: string
+  /**
+   * Kis tasveer par pack banna hai. Khali string = product ki cover tasveer.
+   *
+   * 🔴 `undefined` ya `null` nahi — cache key ka har hissa hamesha mojood hona chahiye,
+   * warna DB ke unique index aur is object ke darmiyan farq aa jata hai.
+   */
+  readonly mediaId: string
   readonly templateKey: string
   readonly priceUsed: Pkr
   /** Kaun sa naap — kit ka har hissa apni row hai. */

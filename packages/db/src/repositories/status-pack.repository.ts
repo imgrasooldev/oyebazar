@@ -2,10 +2,11 @@
  * StatusPackRepository.
  *
  * 🔴 Cache DB ke unique constraint par khara hai:
- *    (resellerId, productId, templateKey, priceUsed, format)
- * Wohi price + wohi template + wohi naap = wohi image. Dobara render nahi hoga.
- * Format is mein shamil hai warna Instagram ka chokor pack WhatsApp ke lambe ko
- * cache mein overwrite kar deta.
+ *    (resellerId, productId, mediaId, templateKey, priceUsed, format)
+ * Wohi tasveer + wohi price + wohi template + wohi naap = wohi image. Dobara render
+ * nahi hoga. Format is mein shamil hai warna Instagram ka chokor pack WhatsApp ke
+ * lambe ko cache mein overwrite kar deta; mediaId is liye ke ab ek product ki kai
+ * tasveerein hoti hain aur har ek ka apna pack banta hai.
  */
 import type { PrismaClient } from '@prisma/client'
 import type {
@@ -20,6 +21,7 @@ const PACK_SELECT = {
   id: true,
   resellerId: true,
   productId: true,
+  mediaId: true,
   templateKey: true,
   priceUsed: true,
   format: true,
@@ -32,6 +34,7 @@ type Row = {
   id: string
   resellerId: string
   productId: string
+  mediaId: string
   templateKey: string
   priceUsed: number
   format: string
@@ -46,20 +49,26 @@ function toView(row: Row): StatusPackView {
   return { ...row, priceUsed: pkr(row.priceUsed), format: row.format as PackFormatKey }
 }
 
+/** Compound unique ka naam lamba hai — ek hi jagah banate hain, teen jagah likhne se behtar. */
+function uniqueWhere(key: StatusPackCacheKey) {
+  return {
+    resellerId_productId_mediaId_templateKey_priceUsed_format: {
+      resellerId: key.resellerId,
+      productId: key.productId,
+      mediaId: key.mediaId,
+      templateKey: key.templateKey,
+      priceUsed: key.priceUsed,
+      format: key.format,
+    },
+  }
+}
+
 export class PrismaStatusPackRepository implements StatusPackRepository {
   constructor(private readonly db: PrismaClient) {}
 
   async findByCacheKey(key: StatusPackCacheKey): Promise<StatusPackView | null> {
     const row = await this.db.statusPack.findUnique({
-      where: {
-        resellerId_productId_templateKey_priceUsed_format: {
-          resellerId: key.resellerId,
-          productId: key.productId,
-          templateKey: key.templateKey,
-          priceUsed: key.priceUsed,
-          format: key.format,
-        },
-      },
+      where: uniqueWhere(key),
       select: PACK_SELECT,
     })
     return row ? toView(row) : null
@@ -71,18 +80,11 @@ export class PrismaStatusPackRepository implements StatusPackRepository {
    */
   async create(input: StatusPackCacheKey & { imageUrl: string | null }): Promise<StatusPackView> {
     const row = await this.db.statusPack.upsert({
-      where: {
-        resellerId_productId_templateKey_priceUsed_format: {
-          resellerId: input.resellerId,
-          productId: input.productId,
-          templateKey: input.templateKey,
-          priceUsed: input.priceUsed,
-          format: input.format,
-        },
-      },
+      where: uniqueWhere(input),
       create: {
         resellerId: input.resellerId,
         productId: input.productId,
+        mediaId: input.mediaId,
         templateKey: input.templateKey,
         priceUsed: input.priceUsed,
         format: input.format,
@@ -100,6 +102,7 @@ export class PrismaStatusPackRepository implements StatusPackRepository {
       where: {
         resellerId: key.resellerId,
         productId: key.productId,
+        mediaId: key.mediaId,
         templateKey: key.templateKey,
         priceUsed: key.priceUsed,
       },
