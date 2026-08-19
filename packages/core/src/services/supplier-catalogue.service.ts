@@ -22,12 +22,14 @@ import type {
   SupplierProductView,
 } from '../ports/supplier-portal-repositories'
 import type { SupplierInternalRepository } from '../ports/order-repositories'
+import type { InventoryRepository } from '../ports/inventory-repositories'
 import type { Analytics, Logger } from '../ports/infrastructure'
 
 export class SupplierCatalogueService {
   constructor(
     private readonly products: SupplierProductRepository,
     private readonly suppliers: SupplierInternalRepository,
+    private readonly inventory: InventoryRepository,
     private readonly analytics: Analytics,
     private readonly logger: Logger,
   ) {}
@@ -51,6 +53,7 @@ export class SupplierCatalogueService {
       descriptionUr?: string
       categorySlug: string
       supplierPrice: Pkr
+      stockQty: number
       imageUrl?: string
     },
   ): Promise<{ id: string; bajiPrice: Pkr; suggestedRetail: Pkr }> {
@@ -79,6 +82,7 @@ export class SupplierCatalogueService {
       supplierPrice: input.supplierPrice,
       bajiPrice,
       suggestedRetail,
+      stockQty: input.stockQty,
       ...(input.imageUrl ? { imageUrl: input.imageUrl } : {}),
     })
 
@@ -96,6 +100,29 @@ export class SupplierCatalogueService {
     })
 
     return { id: created.id, bajiPrice, suggestedRetail }
+  }
+
+  /**
+   * Ginti theek karna — naya maal aaya, ya gin kar kam nikla.
+   *
+   * Sifar par listing khud band ho jati hai (repository mein) — warna reseller status
+   * lagati rehti hai aur order aakhir mein RTO banta hai.
+   */
+  async setStockQuantity(supplierId: string, productId: string, qty: number): Promise<void> {
+    if (!Number.isInteger(qty) || qty < 0 || qty > 100_000) {
+      throw new ValidationError('Ginti theek nahi')
+    }
+
+    const changed = await this.inventory.setQuantity(supplierId, productId, qty)
+    if (!changed) throw new NotFoundError('Product', productId)
+
+    await this.analytics.track({
+      name: 'supplier_stock_quantity_set',
+      actorType: 'ops',
+      actorId: `supplier:${supplierId}`,
+      properties: { productId, qty },
+    })
+    this.logger.info('supplier_stock_quantity_set', { supplierId, productId, qty })
   }
 
   async listMyProducts(supplierId: string): Promise<SupplierProductView[]> {

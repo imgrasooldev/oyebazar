@@ -25,6 +25,7 @@ export const ORDER_STATUSES = [
   'CONFIRMED',
   'SENT_TO_SUPPLIER',
   'ACCEPTED',
+  'PACKED',
   'REJECTED',
   'DISPATCHED',
   'DELIVERED',
@@ -37,9 +38,13 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number]
 /**
  * Poora safar:
  *
- *   PENDING_CONFIRM → CONFIRMED → SENT_TO_SUPPLIER → ACCEPTED → DISPATCHED → DELIVERED | RTO
- *                                        ↓
- *                                    REJECTED → CANCELLED
+ *   PENDING_CONFIRM → CONFIRMED → SENT_TO_SUPPLIER → ACCEPTED → PACKED → DISPATCHED
+ *                                        ↓                                    ↓
+ *                                    REJECTED → CANCELLED            DELIVERED | RTO
+ *
+ * PACKED wholesaler ka apna qadam hai: "maal bandh diya, courier ka intezar hai".
+ * Is ke baghair ACCEPTED aur DISPATCHED ke darmiyan poora din khamosh guzar jata tha
+ * aur reseller ko pata hi nahi chalta ke kaam ho bhi raha hai ya nahi.
  *
  * 🔴 ACCEPTED ke baghair DISPATCHED nahi: wholesaler ne haan na ki ho aur hum parcel
  * ka intezar karte rahen, to customer teesre din phone karta hai aur reseller ki izzat
@@ -49,7 +54,9 @@ const ALLOWED_TRANSITIONS: Readonly<Record<OrderStatus, readonly OrderStatus[]>>
   PENDING_CONFIRM: ['CONFIRMED', 'CANCELLED'],
   CONFIRMED: ['SENT_TO_SUPPLIER', 'CANCELLED'],
   SENT_TO_SUPPLIER: ['ACCEPTED', 'REJECTED', 'CANCELLED'],
-  ACCEPTED: ['DISPATCHED', 'CANCELLED'],
+  // PACKED ko skip kiya ja sakta hai — chhoti dukan seedha courier ko de deti hai
+  ACCEPTED: ['PACKED', 'DISPATCHED', 'CANCELLED'],
+  PACKED: ['DISPATCHED', 'CANCELLED'],
   REJECTED: ['CANCELLED'],
   DISPATCHED: ['DELIVERED', 'RTO'],
   DELIVERED: [],

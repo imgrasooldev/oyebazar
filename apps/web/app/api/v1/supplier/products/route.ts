@@ -25,6 +25,7 @@ export async function POST(request: Request) {
       ...(body.descriptionUr ? { descriptionUr: body.descriptionUr } : {}),
       categorySlug: body.categorySlug,
       supplierPrice: pkr(body.supplierPrice),
+      stockQty: body.stockQty,
       ...(body.imageUrl ? { imageUrl: body.imageUrl } : {}),
     })
 

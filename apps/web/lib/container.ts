@@ -126,6 +126,7 @@ function build(): Container {
       repositories.suppliers,
       repositories.resellers,
       repositories.feeLedger,
+      repositories.inventory,
       repositories.orderNumbers,
       messaging,
       tokens,
@@ -179,6 +180,7 @@ function build(): Container {
     supplierCatalogue: new SupplierCatalogueService(
       repositories.supplierProducts,
       repositories.suppliers,
+      repositories.inventory,
       analytics,
       logger,
     ),

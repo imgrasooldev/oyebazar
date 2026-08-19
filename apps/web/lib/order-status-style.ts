@@ -16,6 +16,9 @@ export function orderStatusStyle(status: OrderStatusValue): string {
       return 'bg-brand-50 text-brand-700'
     case 'ACCEPTED':
       return 'bg-emerald-50 text-emerald-700'
+    // Maal bandh gaya magar chala nahi — abhi khamosh rang, kaam wholesaler par hai
+    case 'PACKED':
+      return 'bg-sky-50 text-sky-700'
     case 'REJECTED':
       return 'bg-red-50 text-red-700'
     case 'DISPATCHED':

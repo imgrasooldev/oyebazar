@@ -21,6 +21,7 @@ import { PrismaSessionRepository } from './repositories/session.repository'
 import { PrismaOtpChallengeRepository } from './repositories/otp.repository'
 import { PrismaCategoryRepository } from './repositories/category.repository'
 import { PrismaOrderRepository } from './repositories/order.repository'
+import { PrismaInventoryRepository } from './repositories/inventory.repository'
 import { PrismaFeeLedgerRepository } from './repositories/fee-ledger.repository'
 import { PrismaOrderNumberGenerator } from './repositories/order-number'
 import { PrismaDailyDropRepository } from './repositories/daily-drop.repository'
@@ -43,6 +44,7 @@ export interface Repositories {
   otpChallenges: PrismaOtpChallengeRepository
   categories: PrismaCategoryRepository
   orders: PrismaOrderRepository
+  inventory: PrismaInventoryRepository
   feeLedger: PrismaFeeLedgerRepository
   orderNumbers: PrismaOrderNumberGenerator
   dailyDrops: PrismaDailyDropRepository
@@ -65,6 +67,7 @@ export function createRepositories(client: PrismaClient = prisma): Repositories 
     otpChallenges: new PrismaOtpChallengeRepository(client),
     categories: new PrismaCategoryRepository(client),
     orders: new PrismaOrderRepository(client),
+    inventory: new PrismaInventoryRepository(client),
     feeLedger: new PrismaFeeLedgerRepository(client),
     orderNumbers: new PrismaOrderNumberGenerator(client),
     dailyDrops: new PrismaDailyDropRepository(client),
@@ -87,6 +90,7 @@ export * from './repositories/session.repository'
 export * from './repositories/otp.repository'
 export * from './repositories/category.repository'
 export * from './repositories/order.repository'
+export * from './repositories/inventory.repository'
 export * from './repositories/fee-ledger.repository'
 export * from './repositories/order-number'
 export * from './repositories/daily-drop.repository'

@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { pkr, type Pkr } from '@oyebazar/shared'
 import { OrderService } from './order.service'
 import { UnconfirmedOrderError } from '../domain/order-status'
+import type { InventoryRepository } from '../ports/inventory-repositories'
 import type { InternalOrderView } from '../domain/order'
 import type { PricingProductView } from '../domain/views'
 import type {
@@ -96,6 +97,38 @@ class FakeOrders implements Partial<OrderRepository> {
     }
     this.saved[index] = updated
     return updated
+  }
+}
+
+/**
+ * Fake stock — asli qaida wohi: itna maal na ho to reserve nakaam.
+ * Default 100 taake purane test bina badle chalte rahen.
+ */
+class FakeInventory implements InventoryRepository {
+  readonly stock = new Map<string, number>()
+
+  private qty(productId: string): number {
+    return this.stock.get(productId) ?? 100
+  }
+
+  async reserve(line: { productId: string; qty: number }): Promise<boolean> {
+    const have = this.qty(line.productId)
+    if (have < line.qty) return false
+    this.stock.set(line.productId, have - line.qty)
+    return true
+  }
+
+  async release(line: { productId: string; qty: number }): Promise<void> {
+    this.stock.set(line.productId, this.qty(line.productId) + line.qty)
+  }
+
+  async setQuantity(_supplierId: string, productId: string, qty: number): Promise<boolean> {
+    this.stock.set(productId, qty)
+    return true
+  }
+
+  async levelsFor(productIds: readonly string[]) {
+    return productIds.map((productId) => ({ productId, available: this.qty(productId) }))
   }
 }
 
@@ -197,12 +230,15 @@ function buildService(overrides?: {
     },
   }
 
+  const inventory = new FakeInventory()
+
   const service = new OrderService(
     orders as unknown as OrderRepository,
     new FakeProducts(overrides?.products ?? [PRODUCT]) as unknown as ProductRepository,
     SUPPLIERS,
     RESELLERS,
     fees,
+    inventory,
     ORDER_NUMBERS,
     messaging,
     TOKENS,
@@ -212,7 +248,7 @@ function buildService(overrides?: {
     'https://oyebazar.com',
   )
 
-  return { service, orders, fees }
+  return { service, orders, fees, inventory }
 }
 
 const CUSTOMER = {
@@ -473,6 +509,61 @@ describe('wholesaler ka jawab', () => {
   it('ghalat token par kuch nahi milta', async () => {
     const { service } = await sentOrder()
     await expect(service.acceptBySupplier('koi-aur-token')).rejects.toThrow(/nahi mila/)
+  })
+})
+
+describe('inventory', () => {
+  /**
+   * 🔴 Do resellers, ek hi aakhri piece.
+   *
+   * Pehle stock kahin ghatta hi nahi tha: dono ka order lag jata, dono apne apne
+   * customer se paisa wasool kar letin, aur akhir mein ek ko mana karna parta — wo
+   * apne customer ke saamne jhooti banti, hamari wajah se.
+   */
+  it('aakhri piece ke baad doosra order nahi lagta', async () => {
+    const { service, inventory } = buildService()
+    inventory.stock.set('prod_1', 1)
+
+    await service.create({
+      resellerId: 'res_1',
+      customer: CUSTOMER,
+      lines: [{ productId: 'prod_1', qty: 1, retailPrice: pkr(2800) }],
+      deliveryFee: pkr(200),
+      paymentMethod: 'COD',
+    })
+
+    await expect(
+      service.create({
+        resellerId: 'res_2',
+        customer: CUSTOMER,
+        lines: [{ productId: 'prod_1', qty: 1, retailPrice: pkr(2800) }],
+        deliveryFee: pkr(200),
+        paymentMethod: 'COD',
+      }),
+    ).rejects.toThrow()
+
+    expect(inventory.stock.get('prod_1')).toBe(0)
+  })
+
+  it('wholesaler ke mana karne par maal wapas ginti mein aata hai', async () => {
+    const { service, inventory } = buildService()
+    inventory.stock.set('prod_1', 3)
+
+    const order = await service.create({
+      resellerId: 'res_1',
+      customer: CUSTOMER,
+      lines: [{ productId: 'prod_1', qty: 2, retailPrice: pkr(2800) }],
+      deliveryFee: pkr(200),
+      paymentMethod: 'COD',
+    })
+    expect(inventory.stock.get('prod_1')).toBe(1)
+
+    await service.confirmByOps(order.id, 'ops_1')
+    await service.sendToSupplier(order.id, 'ops_1')
+    await service.rejectBySupplier('test-supplier-token', 'maal khatam hai')
+
+    // Order mar gaya — maal dobara bikne ke liye mojood hona chahiye
+    expect(inventory.stock.get('prod_1')).toBe(3)
   })
 })
 

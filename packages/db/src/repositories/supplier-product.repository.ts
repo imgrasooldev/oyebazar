@@ -60,6 +60,16 @@ export class PrismaSupplierProductRepository implements SupplierProductRepositor
         select: { id: true },
       })
 
+      // Ek default variant — bina is ke product kabhi "mojood" nahi hota aur order
+      // lagate hi OUT_OF_STOCK milta hai. Size/rang wale variants Phase 2 mein.
+      await tx.productVariant.create({
+        data: {
+          productId: product.id,
+          skuCode: `${product.id}-default`,
+          stockQty: input.stockQty,
+        },
+      })
+
       if (input.imageUrl) {
         await tx.productMedia.create({
           data: {
@@ -111,6 +121,7 @@ export class PrismaSupplierProductRepository implements SupplierProductRepositor
           select: { processedUrl: true, originalUrl: true },
           take: 1,
         },
+        variants: { select: { stockQty: true } },
       },
       orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
     })
@@ -134,6 +145,7 @@ export class PrismaSupplierProductRepository implements SupplierProductRepositor
       supplierPrice: pkr(row.supplierPrice),
       imageUrl: row.media[0]?.processedUrl ?? row.media[0]?.originalUrl ?? null,
       openOrders: openByProduct.get(row.id) ?? 0,
+      stockQty: row.variants.reduce((sum, variant) => sum + variant.stockQty, 0),
     }))
   }
 

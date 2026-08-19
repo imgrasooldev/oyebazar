@@ -5,7 +5,15 @@ import { container } from '@/lib/container'
 
 export const runtime = 'nodejs'
 
-const StockSchema = z.object({ inStock: z.boolean() }).strict()
+/**
+ * Do tarah ka kaam, dono stock ke bare mein:
+ *  · `inStock` — switch (jaldi mein band/chalu)
+ *  · `qty` — asli ginti (naya maal aaya, ya gin kar kam nikla)
+ */
+const StockSchema = z.union([
+  z.object({ inStock: z.boolean() }).strict(),
+  z.object({ qty: z.number().int().min(0).max(100_000) }).strict(),
+])
 
 /**
  * PATCH /api/v1/supplier/products/:productId/stock
@@ -17,9 +25,15 @@ const StockSchema = z.object({ inStock: z.boolean() }).strict()
 export async function PATCH(request: Request, ctx: { params: Promise<{ productId: string }> }) {
   return apiHandler(async () => {
     const { supplier } = await requireSupplier()
-    const { inStock } = await parseBody(request, StockSchema)
+    const body = await parseBody(request, StockSchema)
     const { productId } = await ctx.params
-    await container.supplierCatalogue.setStock(supplier.id, productId, inStock)
-    return { ok: true, inStock }
+
+    if ('qty' in body) {
+      await container.supplierCatalogue.setStockQuantity(supplier.id, productId, body.qty)
+      return { ok: true, qty: body.qty }
+    }
+
+    await container.supplierCatalogue.setStock(supplier.id, productId, body.inStock)
+    return { ok: true, inStock: body.inStock }
   })
 }

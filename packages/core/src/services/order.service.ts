@@ -21,6 +21,7 @@ import {
   multiplyPkr,
   pkr,
   subtractPkr,
+  formatPkr,
   type Page,
   type Pkr,
 } from '@oyebazar/shared'
@@ -38,6 +39,7 @@ import type {
   SupplierInternalRepository,
   SupplierOrderView,
 } from '../ports/order-repositories'
+import type { InventoryRepository } from '../ports/inventory-repositories'
 import type { CursorQuery, ProductRepository, ResellerRepository } from '../ports/repositories'
 import type {
   Analytics,
@@ -55,6 +57,7 @@ export class OrderService {
     private readonly suppliers: SupplierInternalRepository,
     private readonly resellers: ResellerRepository,
     private readonly feeLedger: FeeLedgerRepository,
+    private readonly inventory: InventoryRepository,
     private readonly orderNumbers: OrderNumberGenerator,
     private readonly messaging: MessagingProvider,
     private readonly tokens: TokenGenerator,
@@ -134,6 +137,30 @@ export class OrderService {
     const subtotal = addPkr(...lines.map((l) => multiplyPkr(l.retailPriceSnapshot, l.qty)))
     const total = addPkr(subtotal, command.deliveryFee)
     const bajiFee = calculateBajiFee(lines, supplier.feeRateBps)
+
+    /*
+     * 🔴 Maal ABHI rok lete hain, dispatch par nahi.
+     *
+     * Warna do resellers ek hi aakhri piece apne apne customer ko bech deti hain, dono
+     * paisa wasool kar leti hain, aur akhir mein ek ko mana karna parta hai — wo apne
+     * customer ke saamne jhooti banti hai, hamari wajah se.
+     *
+     * Koi ek line na mile to pehle wali wapas chhor dete hain: adhoora reserve stock
+     * hamesha ke liye kha jata aur kisi ko pata bhi na chalta.
+     */
+    const reserved: OrderLineView[] = []
+    for (const line of lines) {
+      const ok = await this.inventory.reserve({ productId: line.productId, qty: line.qty })
+      if (ok) {
+        reserved.push(line)
+        continue
+      }
+
+      for (const done of reserved) {
+        await this.inventory.release({ productId: done.productId, qty: done.qty })
+      }
+      throw new OutOfStockError({ productId: line.productId })
+    }
 
     const order = await this.orders.create({
       orderNo: await this.orderNumbers.next(),
@@ -281,6 +308,45 @@ export class OrderService {
   // ------------------------------------------------------- wholesaler ka jawab
 
   /** Magic link se order dikhana — token hi chabi hai, koi login nahi. */
+  /**
+   * Wholesaler khud apna kaam aage barhata hai: maal bandh diya → courier ko de diya.
+   *
+   * Pehle ye dono ops karti thi. Natija: dukan par maal tayyar hota tha aur system
+   * mein order teen din "qubool kiya" par khara rehta — reseller phone kar ke poochti
+   * ke kya hua, aur ops ke paas jawab nahi hota. Jo shakhs kaam kar raha hai, wohi
+   * batata hai ke kahan tak pohancha.
+   *
+   * 🔴 supplierId ke saath dhoonda jata hai — doosri dukan ka order chhua nahi ja sakta.
+   */
+  async markPackedBySupplier(supplierId: string, orderNo: string): Promise<InternalOrderView> {
+    const view = await this.orders.findForSupplier(supplierId, orderNo)
+    if (!view) throw new NotFoundError('Order', orderNo)
+
+    return this.transition(view.id, 'PACKED', {
+      actorType: 'ops',
+      actorId: `supplier:${supplierId}`,
+      note: 'Wholesaler ne maal bandh diya',
+    })
+  }
+
+  async markDispatchedBySupplier(
+    supplierId: string,
+    orderNo: string,
+  ): Promise<InternalOrderView> {
+    const view = await this.orders.findForSupplier(supplierId, orderNo)
+    if (!view) throw new NotFoundError('Order', orderNo)
+
+    const order = await this.transition(view.id, 'DISPATCHED', {
+      actorType: 'ops',
+      actorId: `supplier:${supplierId}`,
+      note: 'Wholesaler ne courier ko de diya',
+    })
+
+    // Reseller ko foran khabar — us ka customer isi ka intezar kar raha hota hai
+    await this.notifyReseller(order, 'baji_order_dispatched', { orderNo: order.orderNo })
+    return order
+  }
+
   /** Portal ki list — wholesaler ke apne order, naye pehle. */
   async listForSupplier(
     supplierId: string,
@@ -411,6 +477,7 @@ export class OrderService {
     })
 
     await this.feeLedger.markWrittenOff(order.id, `Supplier rejected: ${reason}`)
+    await this.releaseStock(order)
 
     await this.notifyReseller(order, 'baji_order_rejected', {
       orderNo: order.orderNo,
@@ -427,6 +494,27 @@ export class OrderService {
   }
 
   /** Reseller ko WhatsApp — message fail ho to order na ruke. */
+  /**
+   * Order mar gaya — maal wapas ginti mein.
+   *
+   * Har nakaam order ke sath stock hamesha ke liye kam hota rehta to kuch hafton mein
+   * poora catalogue "khatam" dikhne lagta, halanke dukan par maal para hota.
+   */
+  private async releaseStock(order: InternalOrderView): Promise<void> {
+    for (const item of order.items) {
+      await this.inventory.release({ productId: item.productId, qty: item.qty })
+    }
+  }
+
+  /** Reseller ka munafa: (us ka rate − hamara rate) × tadaad. */
+  private resellerEarnings(order: InternalOrderView): Pkr {
+    const total = order.items.reduce(
+      (sum, item) => sum + (item.retailPriceSnapshot - item.bajiPriceSnapshot) * item.qty,
+      0,
+    )
+    return pkr(Math.max(total, 0))
+  }
+
   private async notifyReseller(
     order: InternalOrderView,
     template: string,
@@ -461,6 +549,12 @@ export class OrderService {
     const updated = await this.transition(orderId, 'DELIVERED', { actorType: 'ops', actorId })
 
     await this.feeLedger.markEarned(orderId, this.clock.now())
+
+    // Reseller ko khabar — aur usi paighaam mein us ki kamai, kyunke asal sawal wohi hai
+    await this.notifyReseller(updated, 'baji_order_delivered', {
+      orderNo: updated.orderNo,
+      earnings: formatPkr(this.resellerEarnings(updated)),
+    })
     await this.analytics.track({
       name: 'fee_earned',
       actorType: 'ops',
@@ -479,6 +573,7 @@ export class OrderService {
       note: reason,
     })
     await this.feeLedger.markWrittenOff(orderId, `RTO: ${reason}`)
+    await this.releaseStock(updated)
     await this.analytics.track({
       name: 'order_rto',
       actorType: 'ops',

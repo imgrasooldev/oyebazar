@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { formatPkr } from '@oyebazar/shared'
 import { SupplierAddProduct } from '@/components/supplier-add-product'
+import { SupplierStockQuantity } from '@/components/supplier-stock-quantity'
 import { SupplierStockToggle } from '@/components/supplier-stock-toggle'
 import { requireSupplier } from '@/lib/api/supplier-session'
 import { container } from '@/lib/container'
@@ -89,6 +90,13 @@ export default async function SupplierStockPage() {
                 )}
               </p>
             </div>
+
+            <SupplierStockQuantity
+              productId={product.id}
+              stockQty={product.stockQty}
+              label={t('inStockQty')}
+              saveLabel={t('save')}
+            />
 
             {/* DRAFT maal wholesaler khud live nahi kar sakta — pehle ops verify karti hai */}
             {product.status === 'DRAFT' ? (

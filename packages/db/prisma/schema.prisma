@@ -353,6 +353,8 @@ enum OrderStatus {
   SENT_TO_SUPPLIER
   /// Wholesaler ne qubool kiya — maal mojood hai aur wo bhej raha hai
   ACCEPTED
+  /// Maal bandh diya, courier ka intezar — wholesaler ka apna qadam
+  PACKED
   /// Wholesaler ne mana kiya (maal khatam / ilaqa door) — order CANCELLED ho jata hai
   REJECTED
   DISPATCHED

@@ -51,6 +51,8 @@ export const NewProductSchema = z
     descriptionUr: z.string().trim().max(300).optional(),
     categorySlug: z.string().trim().min(2),
     supplierPrice: z.number().int().positive('ریٹ لکھیں').max(1_000_000),
+    // Bina stock ke maal order nahi ho sakta — is liye ye khaana lazmi hai
+    stockQty: z.number().int().min(1, 'کتنا مال ہے؟').max(100_000),
     imageUrl: z.string().url().max(500).optional(),
   })
   .strict()

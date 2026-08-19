@@ -58,6 +58,7 @@ export function SupplierAddProduct({
           titleEn: String(data.get('titleEn') ?? ''),
           categorySlug: String(data.get('categorySlug') ?? ''),
           supplierPrice: Number(data.get('supplierPrice') ?? 0),
+          stockQty: Number(data.get('stockQty') ?? 0),
           ...(data.get('descriptionUr') ? { descriptionUr: String(data.get('descriptionUr')) } : {}),
           ...(data.get('imageUrl') ? { imageUrl: String(data.get('imageUrl')) } : {}),
         }),
@@ -152,6 +153,19 @@ export function SupplierAddProduct({
           </div>
         </div>
       )}
+
+      <label className="block">
+        <span className="text-sm font-semibold">{t('stockQty')}</span>
+        <input
+          name="stockQty"
+          type="number"
+          min={1}
+          defaultValue={10}
+          required
+          dir="ltr"
+          className="field mt-2"
+        />
+      </label>
 
       <label className="block">
         <span className="text-sm font-semibold">{t('photoUrlOptional')}</span>

@@ -51,6 +51,8 @@ export interface SupplierProductView {
   readonly imageUrl: string | null
   /** Abhi jo order is maal ke chal rahe hain — stock band karne se pehle dikhna chahiye. */
   readonly openOrders: number
+  /** Kitna maal bacha hai — reserve shuda nikaal kar */
+  readonly stockQty: number
 }
 
 export interface NewSupplierProduct {
@@ -64,6 +66,14 @@ export interface NewSupplierProduct {
   readonly bajiPrice: Pkr
   readonly suggestedRetail: Pkr
   readonly imageUrl?: string | undefined
+  /**
+   * Kitna maal mojood hai.
+   *
+   * 🔴 Bina stock ke product order HI nahi ho sakta (inStock = LIVE + koi variant jis
+   * mein stock ho). Pehle ye khaana nahi tha, aur wholesaler ka daala hua maal live
+   * hone ke baad bhi "Ye item is waqt mojood nahi" deta tha — bina kisi wajah ke.
+   */
+  readonly stockQty: number
 }
 
 export interface SupplierProductRepository {

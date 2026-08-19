@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { formatPkr } from '@oyebazar/shared'
 import type { SupplierOrderView } from '@oyebazar/core'
 import { SupplierOrderActions } from '@/components/supplier-order-actions'
+import { SupplierStatusButton } from '@/components/supplier-status-button'
 import { PinIcon } from '@/components/icons'
 import { requireSupplier } from '@/lib/api/supplier-session'
 import { container } from '@/lib/container'
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 /** Ye status ab bhi chal rahe hain — mukammal nahi hue. */
-const RUNNING = new Set(['ACCEPTED', 'DISPATCHED'])
+const RUNNING = new Set(['ACCEPTED', 'PACKED', 'DISPATCHED'])
 
 /**
  * Wholesaler ke order.
@@ -68,7 +69,7 @@ export default async function SupplierOrdersPage() {
       )}
 
       {running.length > 0 && (
-        <Section title={t('runningOrders')} orders={running} locale={locale} />
+        <Section title={t('runningOrders')} orders={running} locale={locale} withActions />
       )}
       {done.length > 0 && <Section title={t('finishedOrders')} orders={done} locale={locale} />}
     </div>
@@ -79,18 +80,52 @@ function Section({
   title,
   orders,
   locale,
+  withActions = false,
 }: {
   title: string
   orders: readonly SupplierOrderView[]
   locale: Locale
+  /** Chal rahe orders par agla qadam — mukammal shuda par koi button nahi */
+  withActions?: boolean
 }) {
+  const t = translator(locale)
+
   return (
     <section>
       <h2 className="mb-4 text-[1.05rem] font-bold">{title}</h2>
       <ul className="grid gap-4 lg:grid-cols-2">
         {orders.map((order) => (
-          <li key={order.id} className="card p-5">
+          <li key={order.id} className="card space-y-4 p-5">
             <OrderCard order={order} locale={locale} />
+
+            {/*
+              Agla qadam wohi jo ab bana hai — dukan par jaldi mein chunna nahi parta.
+              PACKED skip bhi ho sakta hai: chhoti dukan seedha courier ko de deti hai.
+            */}
+            {withActions && order.status === 'ACCEPTED' && (
+              <div className="flex flex-wrap gap-2">
+                <SupplierStatusButton
+                  orderNo={order.orderNo}
+                  toStatus="PACKED"
+                  label={t('markPacked')}
+                />
+                <SupplierStatusButton
+                  orderNo={order.orderNo}
+                  toStatus="DISPATCHED"
+                  label={t('markDispatched')}
+                  tone="primary"
+                />
+              </div>
+            )}
+
+            {withActions && order.status === 'PACKED' && (
+              <SupplierStatusButton
+                orderNo={order.orderNo}
+                toStatus="DISPATCHED"
+                label={t('markDispatched')}
+                tone="primary"
+              />
+            )}
           </li>
         ))}
       </ul>

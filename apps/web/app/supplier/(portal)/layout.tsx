@@ -17,9 +17,14 @@ export const dynamic = 'force-dynamic'
  * boojh kar. Dukan par aksar ek hi computer par dono kaam hote hain; ek nazar mein
  * pata chalna chahiye ke abhi kis taraf khare hain.
  *
- * Sirf do kaam upar hain: aaye hue order, aur apna maal on/off. Baqi sab ops ka kaam
- * hai — is portal ka maqsad wholesaler ka waqt bachana hai, use software dena nahi.
+ * Dhaancha wohi jo baqi portals ka hai: bari screen par side mein nav, chhoti par upar
+ * patti. Sirf do kaam: aaye hue order, aur apna maal.
  */
+const NAV = [
+  { href: '/supplier/orders', key: 'supplierOrdersNav', Icon: ListIcon },
+  { href: '/supplier/stock', key: 'supplierStockNav', Icon: BoxesIcon },
+] as const
+
 export default async function SupplierPortalLayout({ children }: { children: React.ReactNode }) {
   const [session, locale] = await Promise.all([getSupplierOrNull(), getLocale()])
   if (!session) redirect('/supplier/login')
@@ -30,7 +35,10 @@ export default async function SupplierPortalLayout({ children }: { children: Rea
     <div className="min-h-screen bg-paper">
       <header className="sticky top-0 z-30 bg-coal-900 text-white">
         <div className="mx-auto flex max-w-shell items-center justify-between gap-3 px-5 py-3 lg:px-8">
-          <Link href="/supplier/orders" className="flex min-h-tap flex-col justify-center leading-none">
+          <Link
+            href="/supplier/orders"
+            className="flex min-h-tap flex-col justify-center leading-none"
+          >
             <span className="text-[1.15rem] font-bold text-brand-300">
               {locale === 'ur' ? BRAND.nameUr : BRAND.name}
             </span>
@@ -48,38 +56,39 @@ export default async function SupplierPortalLayout({ children }: { children: Rea
           </div>
         </div>
 
-        <nav className="mx-auto flex max-w-shell gap-1 px-5 lg:px-8">
-          <PortalTab href="/supplier/orders" label={t('supplierOrdersNav')} Icon={ListIcon} />
-          <PortalTab href="/supplier/stock" label={t('supplierStockNav')} Icon={BoxesIcon} />
+        {/* Chhoti screen par upar — bari par neeche side nav hai */}
+        <nav className="mx-auto flex max-w-shell gap-1 px-5 lg:hidden">
+          {NAV.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="inline-flex min-h-tap items-center gap-2 rounded-t-card px-4 py-2 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
+            >
+              <item.Icon className="h-4 w-4" />
+              {t(item.key)}
+            </Link>
+          ))}
         </nav>
       </header>
 
-      <main className="mx-auto max-w-shell px-5 py-6 lg:px-8">{children}</main>
-    </div>
-  )
-}
+      <div className="mx-auto flex max-w-shell gap-8 px-5 py-6 lg:px-8">
+        <aside className="hidden w-52 shrink-0 lg:block">
+          <nav className="sticky top-24 space-y-1">
+            {NAV.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex min-h-tap items-center gap-3 rounded-card px-4 text-[0.95rem] font-semibold text-ink-soft transition hover:bg-paper-raised hover:text-brand-700 hover:shadow-soft"
+              >
+                <item.Icon className="h-5 w-5" />
+                {t(item.key)}
+              </Link>
+            ))}
+          </nav>
+        </aside>
 
-/**
- * Tab ka "abhi yahan hain" wala nishan CSS se nahi aata — layout server component hai
- * aur pathname yahan nahi milta. Halka rang dono par, aur hover par ubhaar: is chhoti
- * si navigation mein active state ke liye poora client component banana zyada mehnga hai.
- */
-function PortalTab({
-  href,
-  label,
-  Icon,
-}: {
-  href: '/supplier/orders' | '/supplier/stock'
-  label: string
-  Icon: (props: { className?: string }) => React.ReactElement
-}) {
-  return (
-    <Link
-      href={href}
-      className="inline-flex min-h-tap items-center gap-2 rounded-t-card px-4 py-2 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
-    >
-      <Icon className="h-4 w-4" />
-      {label}
-    </Link>
+        <main className="min-w-0 flex-1">{children}</main>
+      </div>
+    </div>
   )
 }
