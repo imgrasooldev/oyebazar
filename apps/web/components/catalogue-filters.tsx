@@ -63,7 +63,7 @@ export function CatalogueFilters({
   const dirty = minPrice.trim() !== '' || maxPrice.trim() !== '' || inStockOnly
 
   return (
-    <div className="card flex flex-wrap items-center gap-3 p-3">
+    <div className="card flex flex-wrap items-center gap-x-4 gap-y-3 p-4">
       <span className="text-[0.8rem] font-semibold text-ink-soft">{labels.price}</span>
 
       <div className="flex items-center gap-2">
@@ -100,8 +100,11 @@ export function CatalogueFilters({
 
       {/*
         "Sirf mojood maal" ek tap par chalta hai, Apply ka intezar nahi karta — ye
-        haan/na wala sawal hai aur us par do qadam lena bekar hai.
+        haan/na wala sawal hai aur us par do qadam lena bekar hai. Lakeer is liye ke
+        ye rate ki hadd se alag sawal hai.
       */}
+      <span aria-hidden="true" className="hidden h-6 w-px bg-black/[0.08] sm:block" />
+
       <button
         type="button"
         onClick={toggleStock}

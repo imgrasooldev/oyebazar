@@ -52,12 +52,12 @@ export function CatalogueToolbar({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
       <span className="numeric text-[0.82rem] text-ink-faint">
         {count} {labels.results}
       </span>
 
-      <div className="ms-auto flex flex-wrap items-center gap-1.5">
+      <div className="ms-auto flex flex-wrap items-center gap-2">
         {SORTS.map((option) => (
           <button
             key={option}
@@ -73,8 +73,13 @@ export function CatalogueToolbar({
           </button>
         ))}
 
-        {/* Shakl ka switch — do halat, is liye do button, koi menu nahi */}
-        <span className="ms-1 flex overflow-hidden rounded-pill bg-paper-sunken">
+        {/*
+          Shakl ka switch — do halat, is liye do button, koi menu nahi. Tarteeb se alag
+          cheez hai, is liye beech mein lakeer.
+        */}
+        <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-black/[0.08] sm:block" />
+
+        <span className="flex overflow-hidden rounded-pill bg-paper-sunken">
           <button
             type="button"
             onClick={() => set('view', null)}

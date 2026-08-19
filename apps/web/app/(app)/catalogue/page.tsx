@@ -183,6 +183,11 @@ export default async function CataloguePage({
           </ScrollRail>
         </div>
 
+        {/*
+          Tarteeb, filter aur list — teenon alag cheezein hain, is liye teenon ke beech
+          khuli jagah. Pehle ye ek doosre se chipke hue the aur ek hi patti lagte the.
+        */}
+        <div className="mb-5 space-y-3">
         <CatalogueToolbar
           count={items.length}
           labels={{
@@ -207,6 +212,7 @@ export default async function CataloguePage({
             clear: t('filterClear'),
           }}
         />
+        </div>
 
         {items.length === 0 ? (
           <p className="card p-6 text-ink-soft">{t('noItemsListed')}</p>
@@ -281,9 +287,12 @@ export default async function CataloguePage({
                       </p>
                     </div>
 
-                    <span className="inline-flex items-baseline gap-1 rounded-pill bg-accent-50 px-3 py-1 text-[0.78rem] font-semibold text-accent-700">
-                      {t('yourProfit')}
-                      <span dir="ltr" className="numeric">
+                    {/* Qatar mein bhi wahi wazan — chhoti goli baqi numbers mein gum ho jati thi */}
+                    <span className="inline-flex items-baseline gap-1.5 rounded-card bg-accent-50 px-3 py-1.5 text-accent-700">
+                      <span className="text-[0.7rem] font-semibold uppercase tracking-wide text-accent-700/80">
+                        {t('yourProfit')}
+                      </span>
+                      <span dir="ltr" className="numeric text-[1rem] font-bold">
                         +{formatPkr(profit)}
                       </span>
                     </span>
@@ -385,16 +394,28 @@ export default async function CataloguePage({
                     */}
                     <div className="mt-auto pt-2.5">
                       {/*
-                        Pill par lafz lazmi hai. Sirf "+Rs 350" likha tha aur wo pehchana
-                        hi nahi jata tha — reseller ke liye YEHI wo number hai jis par
-                        faisla hota hai, aur bina naam ke wo ek aur qeemat lagta tha.
+                        Munafa — card ka sab se numaya number.
+                        Pehle ye ek chhoti si goli thi aur "+Rs 350" par lafz bhi nahi
+                        tha. Reseller ke liye YEHI faisla hai (baqi do number us tak
+                        pohanchne ka rasta hain), is liye ab poori chaurai par apna
+                        khaana, bara hindsa aur sabz zameen.
                       */}
-                      <span className="inline-flex items-baseline gap-1 rounded-pill bg-accent-50 px-2.5 py-1 text-[0.72rem] font-semibold text-accent-700">
-                        {t('yourProfit')}
-                        <span dir="ltr" className="numeric">
+                      <div className="rounded-card bg-accent-50 px-3 py-2">
+                        {/*
+                          Lafz upar, hindsa neeche — saath rakhte to 180px ke card mein
+                          dono toot jate the ("YOUR / PROFIT" aur "+Rs / 350"). Tootа hua
+                          number parhne mein sab se buri cheez hai.
+                        */}
+                        <span className="block text-[0.68rem] font-semibold text-accent-700/70">
+                          {t('yourProfit')}
+                        </span>
+                        <span
+                          dir="ltr"
+                          className="numeric mt-0.5 block whitespace-nowrap text-[1.1rem] font-bold leading-none text-accent-700"
+                        >
                           +{formatPkr(profit)}
                         </span>
-                      </span>
+                      </div>
 
                       <Link
                         href={`/catalogue/${item.id}`}
