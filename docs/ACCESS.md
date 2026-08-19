@@ -16,6 +16,59 @@ sakti hai, jo password ke sath mumkin nahi.
 
 ---
 
+## 0. Saare raaste ek jagah
+
+Production par `http://localhost:3000` ki jagah `https://oyebazar.com`.
+
+### Bina login (koi bhi khol sakta hai)
+
+| Safha | Raasta |
+|---|---|
+| Home | `/` |
+| Bazaar — dukanon ki directory | `/bazaar` |
+| Ek dukan ka safha | `/bazaar/<slug>` — misal `/bazaar/al-madina-fabrics` |
+| Nayi dukan ki darkhwast | `/supplier/join` |
+| Order ka magic link (WhatsApp se) | `/supplier/o/<token>` |
+
+🔴 Bazaar par koi rate nahi aur koi order button nahi — ye qanooni faisla hai, dekhen §2.
+
+### Reseller
+
+| Safha | Raasta |
+|---|---|
+| Login / naya account | `/login` |
+| Dashboard | `/dashboard` |
+| Catalogue | `/catalogue` |
+| Maal ka safha + Content Studio | `/catalogue/<productId>` |
+| Naya order | `/orders/new/<productId>` |
+| Apne order | `/orders` |
+
+### Wholesaler
+
+| Safha | Raasta |
+|---|---|
+| Login | `/supplier/login` |
+| Aaye hue order | `/supplier/orders` |
+| Apna maal — stock, tasveerein, rate | `/supplier/stock` |
+
+### Ops / Admin
+
+| Safha | Raasta | Kam se kam darja |
+|---|---|---|
+| Login | `/admin/login` | — |
+| Dashboard | `/admin` | REVIEWER |
+| Orders | `/admin/orders` | REVIEWER |
+| Wholesalers | `/admin/suppliers` | REVIEWER |
+| Products + rate ki darkhwasten | `/admin/products` | REVIEWER (faisla: MANAGER) |
+| Resellers | `/admin/resellers` | REVIEWER |
+| Money — fee, invoice | `/admin/money` | REVIEWER (invoice: SUPER_ADMIN) |
+| Team | `/admin/team` | SUPER_ADMIN |
+
+Dekhna aur karna alag cheezen hain: REVIEWER har safha khol sakta hai magar wahan ka koi
+button nahi chalta (rok service mein hai, UI par nahi — §3).
+
+---
+
 ## 1. Reseller (bahenein jo status par bechti hain)
 
 | | |
@@ -191,31 +244,56 @@ darwaza hamesha ke liye band ho jata hai, aur koi bacha hi nahi jo usay wapas kh
 
 ## 4. Dev machine par test accounts
 
-Ye sirf local seed ke hain. Production par ye numbers mojood nahi.
+Ye sirf local ke hain — production par ye numbers mojood nahi. Koi password nahi; number
+daalen aur screen par aaya hua OTP daal den.
 
-### Ops
+Number DB mein hamesha E.164 mein rakha jata hai (`923004445566`), magar login par
+`03004445566` likhna kaafi hai — dono ek hi cheez hain.
 
-| Naam | Number | Role |
+### Ops (seed se)
+
+| Naam | Number | Role | Email |
+|---|---|---|---|
+| Ghulam Rasool | `03004445566` | SUPER_ADMIN | founder@oyebazar.com |
+| Ops Coordinator | `03004445577` | COORDINATOR | coordinator@oyebazar.com |
+| Auditor Sahib | `03005556677` | REVIEWER | audit@oyebazar.com |
+
+Is machine par jaanch ke doran do aur bane the — `Ops Malik` (`03211234567`,
+SUPER_ADMIN) aur `Sana Ops` (`03001119999`, MANAGER, **band**). Naye seed par ye nahi
+aayenge; Sana ka account is liye band hai ke "Disable karte hi sessions khatam" wali baat
+jaanchi ja sake.
+
+### Reseller (seed se)
+
+| Naam | Number | Sheher |
 |---|---|---|
-| Ghulam Rasool | `03004445566` | SUPER_ADMIN |
-| Ops Coordinator | `03004445577` | COORDINATOR |
-| Auditor Sahib | `03005556677` | REVIEWER |
+| صادیہ | `03001234567` | Lahore |
+| عائشہ | `03009876543` | Karachi |
+| حرا | `03331112233` | Rawalpindi |
 
-### Reseller
+Reseller ka account khud-ba-khud banta hai, is liye is machine par kuch aur bhi hain jo
+jaanch ke doran `/login` se bane.
 
-| Naam | Number |
-|---|---|
-| صادیہ | `03001234567` |
-| عائشہ | `03009876543` |
-| حرا | `03331112233` |
+### Wholesaler — saari 13 dukanen VERIFIED aur Bazaar par listed hain
 
-### Wholesaler
+| Dukan | Number | Sheher |
+|---|---|---|
+| المدینہ فیبرکس | `03001200000` | Karachi |
+| نور ٹیکسٹائل | `03001200010` | Karachi |
+| شہزاد کلاتھ ہاؤس | `03001200020` | Lahore |
+| گلبرگ کلیکشن | `03001200030` | Lahore |
+| فیصل فیبرکس | `03001200040` | Faisalabad |
+| رحمان ٹریڈرز | `03001200050` | Karachi |
+| خان الیکٹرانکس | `03001200060` | Rawalpindi |
+| Crescent Cosmetics | `03001264508` | Karachi |
+| Metro Home Supplies | `03001222951` | Lahore |
+| Multan Dry Fruits & Spices | `03001299665` | Multan |
+| Peshawar Crockery House | `03001240160` | Peshawar |
+| Sialkot Sports Co. | `03001201884` | Sialkot |
+| Gujranwala Steel House | `03217654321` | Gujranwala |
 
-| Dukan | Number |
-|---|---|
-| المدینہ فیبرکس | `03001200000` |
-| نور ٹیکسٹائل | `03001200010` |
-| فیصل فیبرکس | `03001200040` |
+Dukan ka naam usi zaban mein rehta hai jo us ne khud likha — Bazaar par tarjuma nahi
+hota, kyunke naam pehchan hai.
 
 ### Dev par OTP kahan se milta hai
 
