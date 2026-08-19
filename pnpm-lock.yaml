@@ -44,6 +44,9 @@ importers:
       '@oyebazar/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@oyebazar/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
       '@oyebazar/whatsapp':
         specifier: workspace:*
         version: link:../../packages/whatsapp
@@ -108,12 +111,12 @@ importers:
       '@oyebazar/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@oyebazar/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
       '@oyebazar/whatsapp':
         specifier: workspace:*
         version: link:../../packages/whatsapp
-      '@supabase/supabase-js':
-        specifier: ^2.47.10
-        version: 2.112.3
       bullmq:
         specifier: ^5.34.6
         version: 5.81.3(supports-color@7.2.0)
@@ -214,6 +217,25 @@ importers:
       zod:
         specifier: ^3.24.1
         version: 3.25.76
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(supports-color@7.2.0)
+
+  packages/storage:
+    dependencies:
+      '@oyebazar/core':
+        specifier: workspace:*
+        version: link:../core
+      '@oyebazar/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@supabase/supabase-js':
+        specifier: ^2.47.10
+        version: 2.112.3
     devDependencies:
       typescript:
         specifier: ^5.7.2

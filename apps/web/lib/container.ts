@@ -12,6 +12,7 @@ import {
   DailyDropService,
   FeeInvoiceService,
   OrderService,
+  PriceChangeService,
   PricingService,
   OpsAuthService,
   StatusPackService,
@@ -23,10 +24,12 @@ import {
   type Logger,
   type MessagingProvider,
   type RateLimiter,
+  type ObjectStorage,
   type RenderQueue,
   type TokenGenerator,
 } from '@oyebazar/core'
 import { createRepositories, type Repositories } from '@oyebazar/db'
+import { createStorage, storageConfigFrom } from '@oyebazar/storage'
 import { BullMqRenderQueue, createRedisConnection } from '@oyebazar/queue'
 import { ConsoleLogger, CryptoTokenGenerator, SystemClock } from './adapters/system'
 import { InMemoryRateLimiter } from './adapters/rate-limiter'
@@ -43,6 +46,10 @@ export interface Container {
   readonly rateLimiter: RateLimiter
   readonly messaging: MessagingProvider
   readonly renderQueue: RenderQueue
+  /** Wholesaler ki upload ki hui tasveerein aur video yahan jate hain. */
+  readonly storage: ObjectStorage
+  /** Hamari storage ka public prefix — upload ki hui media ki pehchan isi se hoti hai. */
+  readonly mediaBaseUrl: string
   readonly bazaar: BazaarService
   readonly catalogue: CatalogueService
   readonly pricing: PricingService
@@ -54,6 +61,8 @@ export interface Container {
   readonly opsAuth: OpsAuthService
   readonly admin: AdminService
   readonly supplierCatalogue: SupplierCatalogueService
+  /** 🔴 LIVE maal ka rate — dukan wala maangta hai, ops badalti hai. */
+  readonly priceChanges: PriceChangeService
   /** Nayi dukan ki darkhwast — public form se aati hai, chalu ops karti hai. */
   readonly supplierOnboarding: SupplierOnboardingService
   readonly orders: OrderService
@@ -84,6 +93,14 @@ function build(): Container {
   const messaging = createMessagingProvider(process.env, logger)
   const renderQueue = buildRenderQueue(logger)
 
+  /*
+   * Dev mein upload seedha `apps/web/public/_dev-media` mein girti hai, jahan se Next
+   * usay serve kar deta hai — naya developer bina kisi cloud account ke poora flow
+   * chala leta hai. SUPABASE_URL + SUPABASE_SERVICE_KEY set hon to wahi chalti hai.
+   */
+  const storage = createStorage(storageConfigFrom(process.env, `${process.cwd()}/public/_dev-media`))
+  const mediaBaseUrl = storage.publicUrl('')
+
   const pricing = new PricingService(repositories.products, repositories.resellerPricing, analytics)
 
   // AdminService bhi isay istemal karti hai, is liye object literal se bahar —
@@ -99,6 +116,8 @@ function build(): Container {
     rateLimiter,
     messaging,
     renderQueue,
+    storage,
+    mediaBaseUrl,
     pricing,
     bazaar: new BazaarService(repositories.suppliers, repositories.products),
     catalogue: new CatalogueService(repositories.products, repositories.resellerPricing),
@@ -177,12 +196,21 @@ function build(): Container {
       analytics,
       logger,
     ),
+    priceChanges: new PriceChangeService(
+      repositories.priceChanges,
+      repositories.products,
+      repositories.suppliers,
+      clock,
+      analytics,
+      logger,
+    ),
     supplierCatalogue: new SupplierCatalogueService(
       repositories.supplierProducts,
       repositories.suppliers,
       repositories.inventory,
       analytics,
       logger,
+      mediaBaseUrl,
     ),
     supplierOnboarding: new SupplierOnboardingService(
       repositories.suppliers,

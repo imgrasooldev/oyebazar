@@ -15,8 +15,7 @@ import { loadConfig } from '../config'
 import { ConsoleLogger } from '../logger'
 import { RenderPool } from '../render/pool'
 import { StatusPackRenderer } from '../render/render-status-pack'
-import { LocalDiskStorage } from '../storage/local'
-import { SupabaseStorage } from '../storage/supabase'
+import { createStorage } from '@oyebazar/storage'
 import type { PackFormatKey } from '@oyebazar/shared'
 import { handleRenderStatusPack } from '../jobs/render-status-pack.job'
 
@@ -32,6 +31,9 @@ async function main(): Promise<void> {
       id: true,
       resellerId: true,
       productId: true,
+      // 🔴 mediaId bhi — warna ek hi product ki do tasveeron ke pack ek doosre ko
+      // storage par overwrite kar dete hain (key mein mediaId shamil hai)
+      mediaId: true,
       templateKey: true,
       priceUsed: true,
       // 🔴 Naap bhi — warna chaaron naap 'story' bana kar ek doosre ko overwrite kar dete
@@ -49,11 +51,7 @@ async function main(): Promise<void> {
 
   console.log(`${pending.length} pack render ho rahe hain…`)
 
-  const storage =
-    config.storage.kind === 'supabase'
-      ? new SupabaseStorage(config.storage.url, config.storage.serviceKey, config.storage.bucket)
-      : new LocalDiskStorage(config.storage.directory, config.storage.publicUrl)
-
+  const storage = createStorage(config.storage)
   const pool = new RenderPool(2, logger)
   await pool.init()
 
@@ -71,6 +69,7 @@ async function main(): Promise<void> {
           statusPackId: pack.id,
           resellerId: pack.resellerId,
           productId: pack.productId,
+          mediaId: pack.mediaId,
           templateKey: pack.templateKey,
           priceUsed: pack.priceUsed,
           format: pack.format as PackFormatKey,

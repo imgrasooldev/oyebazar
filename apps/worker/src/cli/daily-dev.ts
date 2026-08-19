@@ -17,8 +17,7 @@ import { loadConfig } from '../config'
 import { ConsoleLogger } from '../logger'
 import { RenderPool } from '../render/pool'
 import { StatusPackRenderer } from '../render/render-status-pack'
-import { LocalDiskStorage } from '../storage/local'
-import { SupabaseStorage } from '../storage/supabase'
+import { createStorage } from '@oyebazar/storage'
 import { handleRenderStatusPack } from '../jobs/render-status-pack.job'
 
 const logger = new ConsoleLogger()
@@ -74,11 +73,7 @@ async function main(): Promise<void> {
     return
   }
 
-  const storage =
-    config.storage.kind === 'supabase'
-      ? new SupabaseStorage(config.storage.url, config.storage.serviceKey, config.storage.bucket)
-      : new LocalDiskStorage(config.storage.directory, config.storage.publicUrl)
-
+  const storage = createStorage(config.storage)
   const pool = new RenderPool(config.renderConcurrency, logger)
   await pool.init()
   const deps = { repositories, renderer: new StatusPackRenderer(pool, logger), storage, logger }

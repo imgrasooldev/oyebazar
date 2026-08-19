@@ -19,8 +19,7 @@ import { ConsoleLogger } from './logger'
 import { TokenBucketPacer } from './pacer'
 import { RenderPool } from './render/pool'
 import { StatusPackRenderer } from './render/render-status-pack'
-import { LocalDiskStorage } from './storage/local'
-import { SupabaseStorage } from './storage/supabase'
+import { createStorage } from '@oyebazar/storage'
 
 /** Analytics DB mein — worker ka koi PostHog client nahi (Phase 2). */
 class PrismaAnalytics implements Analytics {
@@ -69,10 +68,7 @@ export async function buildContainer(
   const analytics = new PrismaAnalytics(logger)
   const connection = createRedisConnection(config.redisUrl)
 
-  const storage: ObjectStorage =
-    config.storage.kind === 'supabase'
-      ? new SupabaseStorage(config.storage.url, config.storage.serviceKey, config.storage.bucket)
-      : new LocalDiskStorage(config.storage.directory, config.storage.publicUrl)
+  const storage: ObjectStorage = createStorage(config.storage)
 
   const pool = new RenderPool(config.renderConcurrency, logger)
   await pool.init()
