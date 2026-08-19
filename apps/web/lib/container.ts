@@ -12,6 +12,7 @@ import {
   DailyDropService,
   FeeInvoiceService,
   OrderService,
+  PayoutService,
   PriceChangeService,
   PricingService,
   OpsAuthService,
@@ -66,6 +67,8 @@ export interface Container {
   /** Nayi dukan ki darkhwast — public form se aati hai, chalu ops karti hai. */
   readonly supplierOnboarding: SupplierOnboardingService
   readonly orders: OrderService
+  /** 🔴 Reseller ke paise — do taraf ki tasdeeq, tafseel PayoutService mein. */
+  readonly payouts: PayoutService
   readonly dailyDrops: DailyDropService
   readonly feeInvoices: FeeInvoiceService
 }
@@ -107,6 +110,23 @@ function build(): Container {
   // literal ke andar se apni hi property reference nahi ho sakti
   const feeInvoices = new FeeInvoiceService(repositories.feeLedger, clock, analytics, logger)
 
+  /*
+   * PayoutService OrderService se pehle banti hai — delivery par order hi payout ki row
+   * kholta hai. Phone lookup do chhote function hain, poore repositories nahi: service
+   * ko sirf number chahiye, `payoutAccount` ya `feeRateBps` tak rasai nahi honi chahiye.
+   */
+  const payouts = new PayoutService(
+    repositories.payouts,
+    {
+      reseller: async (id) => (await repositories.resellers.findById(id))?.whatsappPhone ?? '',
+      supplier: async (id) => (await repositories.suppliers.findInternal(id))?.phone ?? '',
+    },
+    messaging,
+    clock,
+    analytics,
+    logger,
+  )
+
   return {
     repositories,
     clock,
@@ -139,12 +159,14 @@ function build(): Container {
       clock,
       logger,
     ),
+    payouts,
     orders: new OrderService(
       repositories.orders,
       repositories.products,
       repositories.suppliers,
       repositories.resellers,
       repositories.feeLedger,
+      payouts,
       repositories.inventory,
       repositories.orderNumbers,
       messaging,

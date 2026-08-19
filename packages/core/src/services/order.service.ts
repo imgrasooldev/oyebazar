@@ -40,6 +40,7 @@ import type {
   SupplierOrderView,
 } from '../ports/order-repositories'
 import type { InventoryRepository } from '../ports/inventory-repositories'
+import type { PayoutService } from './payout.service'
 import type { CursorQuery, ProductRepository, ResellerRepository } from '../ports/repositories'
 import type {
   Analytics,
@@ -57,6 +58,15 @@ export class OrderService {
     private readonly suppliers: SupplierInternalRepository,
     private readonly resellers: ResellerRepository,
     private readonly feeLedger: FeeLedgerRepository,
+    /**
+     * Sirf ek method — poori PayoutService nahi.
+     *
+     * Delivery par do cheezein ek saath hoti hain: hamari fee EARNED banti hai aur
+     * reseller ka haq likha jata hai. Dono ek hi jagah se chalni chahiyen, warna ek din
+     * aisa order banta hai jis par hamari fee to ginti mein hai magar reseller ka
+     * hissa kahin darj hi nahi.
+     */
+    private readonly payouts: Pick<PayoutService, 'openForDeliveredOrder'>,
     private readonly inventory: InventoryRepository,
     private readonly orderNumbers: OrderNumberGenerator,
     private readonly messaging: MessagingProvider,
@@ -323,8 +333,8 @@ export class OrderService {
     if (!view) throw new NotFoundError('Order', orderNo)
 
     return this.transition(view.id, 'PACKED', {
-      actorType: 'ops',
-      actorId: `supplier:${supplierId}`,
+      actorType: 'supplier',
+      actorId: supplierId,
       note: 'Wholesaler ne maal bandh diya',
     })
   }
@@ -337,8 +347,8 @@ export class OrderService {
     if (!view) throw new NotFoundError('Order', orderNo)
 
     const order = await this.transition(view.id, 'DISPATCHED', {
-      actorType: 'ops',
-      actorId: `supplier:${supplierId}`,
+      actorType: 'supplier',
+      actorId: supplierId,
       note: 'Wholesaler ne courier ko de diya',
     })
 
@@ -550,6 +560,14 @@ export class OrderService {
 
     await this.feeLedger.markEarned(orderId, this.clock.now())
 
+    // Reseller ka hissa ab wholesaler ke zimme — hisab khul gaya
+    await this.payouts.openForDeliveredOrder({
+      orderId: updated.id,
+      resellerId: updated.resellerId,
+      supplierId: updated.supplierId,
+      amount: this.resellerEarnings(updated),
+    })
+
     // Reseller ko khabar — aur usi paighaam mein us ki kamai, kyunke asal sawal wohi hai
     await this.notifyReseller(updated, 'baji_order_delivered', {
       orderNo: updated.orderNo,
@@ -601,7 +619,7 @@ export class OrderService {
   private async transition(
     orderId: string,
     to: OrderStatus,
-    actor: { actorType: 'reseller' | 'ops' | 'system'; actorId?: string; note?: string },
+    actor: { actorType: 'reseller' | 'supplier' | 'ops' | 'system'; actorId?: string; note?: string },
   ): Promise<InternalOrderView> {
     const order = await this.orders.findById(orderId)
     if (!order) throw new NotFoundError('Order', orderId)

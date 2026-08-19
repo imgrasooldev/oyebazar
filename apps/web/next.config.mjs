@@ -29,6 +29,16 @@ const nextConfig = {
   async headers() {
     return [
       {
+        /*
+         * Font ki file kabhi badalti nahi (naam mein version hai). Public folder ki
+         * default header `max-age=0` hai — yani har safhe par browser sirf poochhne ke
+         * liye ek chakkar lagata hai. 3G par wo chakkar hi taqreeban utna waqt leta hai
+         * jitna file. Naya font chahiye to file ka naam badlega.
+         */
+        source: '/fonts/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+      {
         source: '/:path*',
         headers: [
           { key: 'X-Content-Type-Options', value: 'nosniff' },

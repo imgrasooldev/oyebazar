@@ -100,8 +100,8 @@ export class PriceChangeService {
 
     await this.analytics.track({
       name: 'price_change_requested',
-      actorType: 'ops',
-      actorId: `supplier:${supplierId}`,
+      actorType: 'supplier',
+      actorId: supplierId,
       properties: {
         productId,
         from: product.supplierPrice,

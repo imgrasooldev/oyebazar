@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { BRAND } from '@oyebazar/shared'
 import { LanguageToggle } from '@/components/language-toggle'
 import { SupplierLogoutButton } from '@/components/supplier-logout-button'
-import { BoxesIcon, ListIcon } from '@/components/icons'
+import { BoxesIcon, ListIcon, MoneyIcon } from '@/components/icons'
 import { getSupplierOrNull } from '@/lib/api/supplier-session'
 import { translator } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
@@ -23,6 +23,7 @@ export const dynamic = 'force-dynamic'
 const NAV = [
   { href: '/supplier/orders', key: 'supplierOrdersNav', Icon: ListIcon },
   { href: '/supplier/stock', key: 'supplierStockNav', Icon: BoxesIcon },
+  { href: '/supplier/payouts', key: 'payoutsNav', Icon: MoneyIcon },
 ] as const
 
 export default async function SupplierPortalLayout({ children }: { children: React.ReactNode }) {

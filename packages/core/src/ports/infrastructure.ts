@@ -119,7 +119,15 @@ export interface RateLimiter {
 
 export interface AnalyticsEvent {
   readonly name: string
-  readonly actorType: 'reseller' | 'ops' | 'system' | 'customer' | 'anonymous'
+  /**
+   * 🔴 'supplier' yahan hona zaroori hai.
+   *
+   * Pehle ye union mein nahi tha, is liye dukan wale ke har kaam par `actorType: 'ops'`
+   * likha ja raha tha aur asli farq `actorId: 'supplier:<id>'` mein chhupaya gaya tha.
+   * Nateeja: analytics mein "hamari team ne maal archive kiya" aur "dukan wale ne khud
+   * kiya" ek jaise dikhte the — jab ke ops ki jawabdehi naapna hi is table ka maqsad hai.
+   */
+  readonly actorType: 'reseller' | 'supplier' | 'ops' | 'system' | 'customer' | 'anonymous'
   readonly actorId?: string
   readonly properties?: Record<string, unknown>
 }

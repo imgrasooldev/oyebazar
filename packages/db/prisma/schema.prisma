@@ -47,6 +47,7 @@ model Supplier {
   sessions     Session[]
   contentPacks ContentPack[]
   feeLedger    FeeLedger[]
+  payouts      ResellerPayout[]
 
   @@index([status, city])
   @@index([listedOnBazaar, status])
@@ -219,6 +220,7 @@ model Reseller {
   createdAt     DateTime       @default(now())
 
   pricing     ResellerPricing[]
+  payouts     ResellerPayout[]
   orders      Order[]
   statusPacks StatusPack[]
   sessions    Session[]
@@ -387,6 +389,7 @@ model Order {
   items     OrderItem[]
   events    OrderEvent[]
   feeLedger FeeLedger?
+  payout    ResellerPayout?
 
   @@index([status, createdAt])
   @@index([resellerId, createdAt])
@@ -445,7 +448,7 @@ model OrderEvent {
   orderId    String
   fromStatus OrderStatus?
   toStatus   OrderStatus
-  actorType  String // reseller | ops | system | customer
+  actorType  String // reseller | supplier | ops | system | customer
   actorId    String?
   note       String?
   createdAt  DateTime     @default(now())
@@ -456,6 +459,68 @@ model OrderEvent {
 }
 
 // ============================================================ FEE LEDGER (revenue)
+
+/**
+ * Reseller ke paise — wo 450 jo customer ne diye aur wholesaler ke paas hain.
+ *
+ * Ye FeeLedger ka jorha hai, ulta rukh: FeeLedger mein wholesaler HUMEIN dena hai,
+ * yahan wholesaler RESELLER ko dena hai. Dono rows ek hi lamhe banti hain — jab maal
+ * pohanchta hai.
+ *
+ * COD ka sach ye hai ke paisa wholesaler ke haath mein jata hai. Hum beech mein nahi
+ * hain, is liye hum "paisa bhej diya" ko dekh nahi sakte — sirf DONO taraf se pooch
+ * sakte hain. Isi liye do alag khaane hain: `sentAt` (wholesaler ka dawa) aur
+ * `confirmedAt` (reseller ki tasdeeq). Sirf dono milne par hisab band hota hai.
+ *
+ * 🔴 Ek taraf ka dawa kaafi kyun nahi: agar wholesaler ke "bhej diya" par row band ho
+ * jati to hamare paas ye jaanne ka koi zariya na hota ke reseller ko waqai mile ya nahi
+ * — aur reseller hamare paas hi aati hai, wholesaler ke paas nahi.
+ */
+model ResellerPayout {
+  id         String       @id @default(cuid())
+  orderId    String       @unique // har delivered order par exactly ek row
+  resellerId String
+  supplierId String
+  amount     Int // retail - bajiPrice, snapshot se — baad mein rate badle to ye nahi badalta
+  status     PayoutStatus @default(PENDING)
+
+  /// wholesaler ka dawa — "bhej diye"
+  sentAt        DateTime?
+  /// EasyPaisa/bank ka TID — jhagre mein yehi ek cheez asli hai
+  sentReference String?
+  /// reseller ki tasdeeq — "mil gaye"
+  confirmedAt   DateTime?
+  /// reseller ne kaha nahi mile
+  disputedAt    DateTime?
+  disputeNote   String?
+  /// ops ne faisla kiya (dono ke beech phansne par)
+  resolvedById  String?
+  resolvedAt    DateTime?
+  resolveNote   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order    Order    @relation(fields: [orderId], references: [id])
+  reseller Reseller @relation(fields: [resellerId], references: [id])
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+
+  @@index([supplierId, status])
+  @@index([resellerId, status])
+  // Admin ki screen: sab se purana baqaya sab se upar
+  @@index([status, createdAt])
+}
+
+enum PayoutStatus {
+  /// maal pohanch gaya, paise wholesaler ke paas hain
+  PENDING
+  /// wholesaler ka dawa: bhej diye
+  SENT
+  /// reseller ki tasdeeq: mil gaye — hisab band
+  SETTLED
+  /// reseller: nahi mile
+  DISPUTED
+}
 
 model FeeLedger {
   id          String    @id @default(cuid())

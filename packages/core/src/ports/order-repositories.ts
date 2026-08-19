@@ -35,7 +35,7 @@ export interface OrderStatusChange {
   readonly from: OrderStatus
   readonly to: OrderStatus
   readonly at: Date
-  readonly actorType: 'reseller' | 'ops' | 'system' | 'customer'
+  readonly actorType: 'reseller' | 'supplier' | 'ops' | 'system' | 'customer'
   readonly actorId?: string | undefined
   readonly note?: string | undefined
   readonly confirmedBy?: ConfirmedBy | undefined

@@ -1,0 +1,130 @@
+import type { Metadata } from 'next'
+import { formatPkr } from '@oyebazar/shared'
+import { isOverdue } from '@oyebazar/core'
+import { SupplierPayoutSend } from '@/components/payout-actions'
+import { requireSupplier } from '@/lib/api/supplier-session'
+import { container } from '@/lib/container'
+import { timeAgo, translator } from '@/lib/i18n'
+import { getLocale } from '@/lib/i18n-server'
+
+export const metadata: Metadata = { title: 'Reseller ke paise' }
+export const dynamic = 'force-dynamic'
+
+/**
+ * Wholesaler ka hisab — reseller ka wo hissa jo COD mein us ke haath aaya.
+ *
+ * Tarteeb umar se hai, raqam se nahi: sab se purana baqaya sab se upar. Ek chhoti raqam
+ * jo do hafte se ruki hai, us bari raqam se zyada khatarnak hai jo kal bani thi — jhagra
+ * hamesha waqt se banta hai, raqam se nahi.
+ *
+ * 🔴 "Bhej diye" dabane se hisab band NAHI hota — wo sirf dawa darj karta hai. Band tab
+ * hota hai jab reseller apni taraf se tasdeeq kare. Yehi baat safhe par bhi likhi hui hai,
+ * warna dukan wala samajhta hai ke us ka kaam khatam ho gaya.
+ */
+export default async function SupplierPayoutsPage() {
+  const [{ supplier }, locale] = await Promise.all([requireSupplier(), getLocale()])
+  const t = translator(locale)
+
+  const payouts = await container.payouts.listForSupplier(supplier.id)
+  const now = new Date()
+
+  const open = payouts.filter((payout) => payout.status !== 'SETTLED')
+  const settled = payouts.filter((payout) => payout.status === 'SETTLED')
+  const owed = open.reduce((sum, payout) => sum + payout.amount, 0)
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-[1.3rem] font-bold tracking-tight">{t('payoutsNav')}</h1>
+        <p className="mt-1 max-w-2xl text-sm text-ink-soft">{t('payoutNote')}</p>
+      </div>
+
+      <div className="card p-5">
+        <p className="text-[0.78rem] text-ink-faint">{t('moneyAwaiting')}</p>
+        <p dir="ltr" className="numeric mt-1 text-2xl font-bold">
+          {formatPkr(owed)}
+        </p>
+      </div>
+
+      {open.length === 0 ? (
+        <p className="card p-6 text-ink-soft">{t('payoutEmpty')}</p>
+      ) : (
+        <ul className="space-y-3">
+          {open.map((payout) => (
+            <li key={payout.id} className="card p-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <div className="min-w-0">
+                  <p dir="ltr" className="numeric font-bold">
+                    {payout.orderNo}
+                  </p>
+                  <p className="mt-0.5 text-[0.78rem] text-ink-faint">
+                    {timeAgo(locale, payout.createdAt, now)}
+                    {/* Der ka nishan — ye wohi rows hain jin par reseller pehle shikayat karti hai */}
+                    {isOverdue(payout, now) && (
+                      <span className="ms-2 rounded-pill bg-red-50 px-2 py-0.5 font-semibold text-red-700">
+                        {t('payoutOverdue')}
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <p dir="ltr" className="numeric text-lg font-bold">
+                  {formatPkr(payout.amount)}
+                </p>
+              </div>
+
+              <div className="mt-3">
+                {payout.status === 'SENT' ? (
+                  <p className="text-[0.82rem] text-ink-soft">
+                    {t('payoutSentClaim')}
+                    {payout.sentReference && (
+                      <span dir="ltr" className="numeric ms-2 text-ink-faint">
+                        {payout.sentReference}
+                      </span>
+                    )}
+                  </p>
+                ) : (
+                  <>
+                    {payout.status === 'DISPUTED' && (
+                      <p className="mb-2 rounded-card bg-red-50 px-3 py-2 text-[0.8rem] text-red-700">
+                        {t('payoutDisputed')}
+                        {payout.disputeNote && <span className="ms-1">— {payout.disputeNote}</span>}
+                      </p>
+                    )}
+                    <SupplierPayoutSend
+                      payoutId={payout.id}
+                      labels={{
+                        send: t('payoutSend'),
+                        reference: t('payoutReference'),
+                        saving: t('saving'),
+                      }}
+                    />
+                  </>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {settled.length > 0 && (
+        <section>
+          <h2 className="mb-2 text-[0.78rem] font-bold uppercase tracking-wider text-ink-faint">
+            {t('payoutSettled')}
+          </h2>
+          <ul className="card divide-y divide-paper-sunken">
+            {settled.slice(0, 20).map((payout) => (
+              <li key={payout.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                <span dir="ltr" className="numeric text-sm">
+                  {payout.orderNo}
+                </span>
+                <span dir="ltr" className="numeric text-sm text-ink-soft">
+                  {formatPkr(payout.amount)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  )
+}

@@ -108,8 +108,8 @@ export class SupplierCatalogueService {
 
     await this.analytics.track({
       name: 'supplier_product_added',
-      actorType: 'ops',
-      actorId: `supplier:${supplierId}`,
+      actorType: 'supplier',
+      actorId: supplierId,
       properties: {
         productId: created.id,
         supplierPrice: input.supplierPrice,
@@ -145,8 +145,8 @@ export class SupplierCatalogueService {
 
     await this.analytics.track({
       name: 'supplier_stock_quantity_set',
-      actorType: 'ops',
-      actorId: `supplier:${supplierId}`,
+      actorType: 'supplier',
+      actorId: supplierId,
       properties: { productId, qty },
     })
     this.logger.info('supplier_stock_quantity_set', { supplierId, productId, qty })
@@ -167,8 +167,8 @@ export class SupplierCatalogueService {
 
     await this.analytics.track({
       name: inStock ? 'supplier_stock_on' : 'supplier_stock_off',
-      actorType: 'ops',
-      actorId: `supplier:${supplierId}`,
+      actorType: 'supplier',
+      actorId: supplierId,
       properties: { productId },
     })
     this.logger.info('supplier_stock_changed', { supplierId, productId, status })
@@ -225,8 +225,8 @@ export class SupplierCatalogueService {
 
     await this.analytics.track({
       name: 'supplier_draft_updated',
-      actorType: 'ops',
-      actorId: `supplier:${supplierId}`,
+      actorType: 'supplier',
+      actorId: supplierId,
       properties: { productId, supplierPrice: input.supplierPrice, bajiPrice },
     })
     this.logger.info('supplier_draft_updated', { supplierId, productId })
@@ -258,8 +258,8 @@ export class SupplierCatalogueService {
 
     await this.analytics.track({
       name: 'supplier_media_added',
-      actorType: 'ops',
-      actorId: `supplier:${supplierId}`,
+      actorType: 'supplier',
+      actorId: supplierId,
       properties: { productId, count: checked.length },
     })
     this.logger.info('supplier_media_added', { supplierId, productId, count: checked.length })
@@ -271,8 +271,8 @@ export class SupplierCatalogueService {
 
     await this.analytics.track({
       name: 'supplier_media_removed',
-      actorType: 'ops',
-      actorId: `supplier:${supplierId}`,
+      actorType: 'supplier',
+      actorId: supplierId,
       properties: { productId, mediaId },
     })
   }
@@ -286,8 +286,8 @@ export class SupplierCatalogueService {
 
     await this.analytics.track({
       name: 'supplier_media_cover_set',
-      actorType: 'ops',
-      actorId: `supplier:${supplierId}`,
+      actorType: 'supplier',
+      actorId: supplierId,
       properties: { productId, mediaId },
     })
   }

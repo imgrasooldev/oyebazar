@@ -7,6 +7,7 @@
  */
 import { beforeEach, describe, expect, it } from 'vitest'
 import { pkr, type Pkr } from '@oyebazar/shared'
+import type { PayoutService } from './payout.service'
 import { OrderService } from './order.service'
 import { UnconfirmedOrderError } from '../domain/order-status'
 import type { InventoryRepository } from '../ports/inventory-repositories'
@@ -232,12 +233,22 @@ function buildService(overrides?: {
 
   const inventory = new FakeInventory()
 
+  // Delivery par reseller ka hisab khulta hai — test yahan sirf ye dekhta hai ke
+  // wo waqai khula aur kitni raqam par
+  const payoutsOpened: { orderId: string; amount: number }[] = []
+  const payouts = {
+    async openForDeliveredOrder(input: { orderId: string; amount: number }) {
+      payoutsOpened.push({ orderId: input.orderId, amount: input.amount })
+    },
+  }
+
   const service = new OrderService(
     orders as unknown as OrderRepository,
     new FakeProducts(overrides?.products ?? [PRODUCT]) as unknown as ProductRepository,
     SUPPLIERS,
     RESELLERS,
     fees,
+    payouts as unknown as PayoutService,
     inventory,
     ORDER_NUMBERS,
     messaging,
@@ -248,7 +259,7 @@ function buildService(overrides?: {
     'https://oyebazar.com',
   )
 
-  return { service, orders, fees, inventory }
+  return { service, orders, fees, inventory, payoutsOpened }
 }
 
 const CUSTOMER = {

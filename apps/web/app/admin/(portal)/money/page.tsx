@@ -26,7 +26,10 @@ export const dynamic = 'force-dynamic'
  */
 export default async function AdminMoneyPage() {
   const { user } = await requireOpsUser()
-  const money = await container.admin.money(user)
+  const [money, payoutSummary] = await Promise.all([
+    container.admin.money(user),
+    container.payouts.summariseBySupplier(),
+  ])
 
   const pendingTotal = money.pending.reduce((sum, row) => sum + row.amount, 0)
   const canGenerate = canDo(user.role, 'generateInvoices')
@@ -169,6 +172,67 @@ export default async function AdminMoneyPage() {
                     tone="primary"
                   />
                 )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/*
+        4 — reseller ke paise.
+        Ye hamari kamai nahi hai, magar hamare portal ka sab se bara bharosa yahin
+        tootta hai: reseller ka paisa wholesaler ke paas atka rahe aur humein khabar na
+        ho. Tarteeb umar se hai, raqam se nahi — purana baqaya pehle jhagra banta hai.
+      */}
+      <section>
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-[0.72rem] font-bold uppercase tracking-[0.14em] text-ink-faint">
+            Reseller payouts held by wholesalers
+          </h2>
+          <p className="text-sm text-ink-soft">
+            This money never touches us — we only record who said what.
+          </p>
+        </div>
+
+        {payoutSummary.length === 0 ? (
+          <p className="card p-6 text-ink-soft">Nothing outstanding.</p>
+        ) : (
+          <ul className="card divide-y divide-paper-sunken">
+            {payoutSummary.map((row) => (
+              <li
+                key={row.supplierId}
+                className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-semibold">{row.businessName}</p>
+                  <p dir="ltr" className="numeric mt-0.5 text-[0.78rem] text-ink-faint">
+                    {row.supplierPhone} · {row.pendingCount} order
+                    {row.pendingCount === 1 ? '' : 's'}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  {row.disputedCount > 0 && (
+                    <span className="badge bg-red-50 text-red-700">
+                      {row.disputedCount} disputed
+                    </span>
+                  )}
+                  {/* 14 din — is se aage baqaya wasooli ka masla hai, yaad-dihani ka nahi */}
+                  <span
+                    className={`badge ${
+                      row.oldestPendingDays >= 14
+                        ? 'bg-red-50 text-red-700'
+                        : row.oldestPendingDays >= 3
+                          ? 'bg-brand-50 text-brand-700'
+                          : 'bg-paper-sunken text-ink-faint'
+                    }`}
+                  >
+                    {row.oldestPendingDays}d oldest
+                  </span>
+                  <span dir="ltr" className="numeric font-bold">
+                    {formatPkr(row.pendingAmount)}
+                  </span>
+                </div>
               </li>
             ))}
           </ul>
