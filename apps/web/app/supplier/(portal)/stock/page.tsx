@@ -5,6 +5,7 @@ import { SupplierPriceRequest } from '@/components/supplier-price-request'
 import { SupplierProductMedia } from '@/components/supplier-product-media'
 import { SupplierAddProduct } from '@/components/supplier-add-product'
 import { SupplierStockQuantity } from '@/components/supplier-stock-quantity'
+import { SupplierVariants } from '@/components/supplier-variants'
 import { SupplierStockToggle } from '@/components/supplier-stock-toggle'
 import { requireSupplier } from '@/lib/api/supplier-session'
 import { container } from '@/lib/container'
@@ -43,6 +44,20 @@ export default async function SupplierStockPage() {
 
   // Jis maal par pehle se darkhwast khuli hai us par dobara form kholne ka faida nahi
   const pendingByProduct = new Map(pendingPriceRequests.map((row) => [row.productId, row]))
+
+  /*
+   * Saare variants ek saath — har maal par alag query se 40 maal ka safha 40 query
+   * maangta. Ye list waise bhi chhoti hai (ek dukan ka apna maal).
+   */
+  const variantLists = await Promise.all(
+    products
+      .filter((product) => product.status !== 'DRAFT')
+      .map(async (product) => [
+        product.id,
+        await container.supplierCatalogue.listVariants(supplier.id, product.id),
+      ] as const),
+  )
+  const variantsByProduct = new Map(variantLists)
 
   return (
     <div className="space-y-6">
@@ -119,6 +134,29 @@ export default async function SupplierStockPage() {
               />
             )}
             </div>
+
+            {/*
+              Rang aur size — sirf LIVE/OUT_OF_STOCK maal par.
+              DRAFT par nahi: wo abhi ops ki nazar se guzra hi nahi, aur us par variants
+              banate rehna us kaam ka doharao hai jo manzoori ke baad waise bhi karna hai.
+            */}
+            {product.status !== 'DRAFT' && (
+              <SupplierVariants
+                productId={product.id}
+                variants={variantsByProduct.get(product.id) ?? []}
+                labels={{
+                  title: t('variantsTitle'),
+                  colour: t('variantColour'),
+                  size: t('variantSize'),
+                  qty: t('inStockQty'),
+                  add: t('variantAdd'),
+                  remove: t('variantRemove'),
+                  total: t('variantTotal'),
+                  empty: t('variantEmpty'),
+                  saving: t('saving'),
+                }}
+              />
+            )}
 
             {/* 🔴 Tafseel badalna SIRF DRAFT par. Live maal par naam ya rate badalne ka
                 matlab hai ke reseller ka pehle se laga hua status pack jhoot bol raha ho

@@ -15,12 +15,32 @@
 export interface StockLine {
   readonly productId: string
   readonly qty: number
+  /**
+   * Kaunsa variant — rang/size wala.
+   *
+   * 🔴 Ye pehle nahi tha aur wahi sab se bara khatra tha: order variant mehfooz karta
+   * tha magar stock kisi BHI variant se kat jata. Yani customer laal medium leti, aur
+   * ginti neeli large se ghatti — kaghaz par sab theek, dukan par galat maal.
+   *
+   * Na ho to purana chalan: jis variant mein maal ho usi se. Wo un purani listings ke
+   * liye hai jahan ek hi variant hai.
+   */
+  readonly variantId?: string | undefined
 }
 
 export interface StockLevel {
   readonly productId: string
   /** Abhi kitna bech sakte hain — reserve shuda nikaal kar */
   readonly available: number
+}
+
+/** Ek variant — rang/size ka jorha aur us ki apni ginti. */
+export interface VariantView {
+  readonly id: string
+  readonly size: string | null
+  readonly colour: string | null
+  readonly skuCode: string
+  readonly stockQty: number
 }
 
 export interface InventoryRepository {
@@ -43,4 +63,35 @@ export interface InventoryRepository {
 
   /** Reseller ko dikhane ke liye — kitna bacha hai. */
   levelsFor(productIds: readonly string[]): Promise<StockLevel[]>
+
+  // ------------------------------------------------------------- variants
+
+  /**
+   * 🔴 Har method mein supplierId shart hai, sirf productId nahi.
+   *
+   * Variants ki id URL/API mein nazar aati hain. Bina supplierId ke koi bhi dukan wala
+   * doosre ka maal chhoo sakta tha — aur ginti badalna sab se khamosh nuqsan hai:
+   * na koi paighaam jata hai, na koi safha badla hua lagta hai.
+   */
+  listVariants(supplierId: string, productId: string): Promise<VariantView[]>
+
+  addVariant(input: {
+    supplierId: string
+    productId: string
+    size: string | null
+    colour: string | null
+    skuCode: string
+    stockQty: number
+  }): Promise<VariantView | null>
+
+  updateVariant(input: {
+    supplierId: string
+    variantId: string
+    size?: string | null
+    colour?: string | null
+    stockQty?: number
+  }): Promise<boolean>
+
+  /** Sirf tab jab is variant par koi order na ho — warna tareekh toot jati hai. */
+  removeVariant(supplierId: string, variantId: string): Promise<'removed' | 'in-use' | 'not-found'>
 }

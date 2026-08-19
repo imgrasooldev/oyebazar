@@ -7,6 +7,11 @@ import { translator, type Locale } from '@/lib/i18n'
 
 interface Props {
   productId: string
+  /**
+   * Rang/size ke jorhe. Khali ho to picker aata hi nahi — jis maal par variants nahi
+   * hain wahan ek fazool sawal poochhna reseller ka waqt khana hai.
+   */
+  variants?: readonly { id: string; size: string | null; colour: string | null; inStock: boolean }[]
   title: string
   bajiPrice: number
   defaultRetailPrice: number
@@ -22,7 +27,14 @@ interface Props {
  *  · Idempotency-Key har form load par ek — do baar submit se do order na banen.
  *  · Munafa live dikhta hai, taake price likhte waqt hi pata chale ke kya bach raha hai.
  */
-export function OrderForm({ productId, title, bajiPrice, defaultRetailPrice, locale }: Props) {
+export function OrderForm({
+  productId,
+  variants = [],
+  title,
+  bajiPrice,
+  defaultRetailPrice,
+  locale,
+}: Props) {
   const t = translator(locale)
   const router = useRouter()
 
@@ -32,6 +44,14 @@ export function OrderForm({ productId, title, bajiPrice, defaultRetailPrice, loc
   const [address, setAddress] = useState('')
   const [area, setArea] = useState('')
   const [qty, setQty] = useState(1)
+  /*
+   * Pehle se chuna hua: pehla wo jorha jis mein maal ho. Reseller aksar customer se
+   * baat kar chuki hoti hai aur usay sirf tasdeeq karni hoti hai — khali picker use
+   * ek fazool qadam deta.
+   */
+  const [variantId, setVariantId] = useState<string | undefined>(
+    () => variants.find((variant) => variant.inStock)?.id,
+  )
   const [retailPrice, setRetailPrice] = useState(defaultRetailPrice)
   const [deliveryFee, setDeliveryFee] = useState(200)
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
@@ -73,7 +93,17 @@ export function OrderForm({ productId, title, bajiPrice, defaultRetailPrice, loc
           area,
           ...(location ? { locationLat: location.lat, locationLng: location.lng } : {}),
         },
-        lines: [{ productId, qty, retailPrice }],
+        lines: [
+          {
+            productId,
+            // 🔴 Chuna hua variant order ke saath jata hai: ginti usi se ghatti hai.
+            // Na bhejen to system "jis mein maal ho" us se ghata deta hai — yani
+            // customer laal mangwati aur dukan par neela kam ho jata.
+            ...(variantId ? { variantId } : {}),
+            qty,
+            retailPrice,
+          },
+        ],
         deliveryFee,
         paymentMethod: 'COD',
       }),
@@ -157,6 +187,39 @@ export function OrderForm({ productId, title, bajiPrice, defaultRetailPrice, loc
                 : t('locationCapture')}
         </button>
       </div>
+
+      {/* Rang/size — sirf jab waqai jorhe hon */}
+      {variants.length > 0 && (
+        <div>
+          <span className="text-sm font-semibold">{t('variantPick')}</span>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {variants.map((variant) => {
+              const label =
+                [variant.colour, variant.size].filter(Boolean).join(' · ') || t('variantPick')
+
+              return (
+                <button
+                  key={variant.id}
+                  type="button"
+                  // Khatam ho chuka jorha dikhta hai magar chuna nahi jata: chhupa dete
+                  // to reseller customer se wo rang waada kar baithti jo hai hi nahi
+                  disabled={!variant.inStock}
+                  onClick={() => setVariantId(variant.id)}
+                  className={`rounded-pill px-4 py-2 text-sm font-semibold transition ${
+                    variantId === variant.id
+                      ? 'bg-brand-500 text-white'
+                      : variant.inStock
+                        ? 'bg-paper-sunken text-ink-soft hover:text-ink'
+                        : 'bg-paper-sunken text-ink-faint line-through opacity-60'
+                  }`}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-3">
         <label className="block">

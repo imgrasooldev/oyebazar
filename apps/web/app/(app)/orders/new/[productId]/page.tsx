@@ -34,6 +34,7 @@ export default async function NewOrderPage({
 
       <OrderForm
         productId={item.product.id}
+        variants={item.product.variants}
         title={locale === 'ur' ? item.product.titleUr : item.product.titleEn}
         bajiPrice={item.product.bajiPrice}
         defaultRetailPrice={item.myRetailPrice ?? item.product.suggestedRetail}

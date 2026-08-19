@@ -107,20 +107,42 @@ class FakeOrders implements Partial<OrderRepository> {
  */
 class FakeInventory implements InventoryRepository {
   readonly stock = new Map<string, number>()
+  /** Kis kis variant se maal nikla — variant-wise ginti ka test isi par chalta hai */
+  readonly reservedFrom: (string | undefined)[] = []
 
   private qty(productId: string): number {
     return this.stock.get(productId) ?? 100
   }
 
-  async reserve(line: { productId: string; qty: number }): Promise<boolean> {
+  async reserve(line: {
+    productId: string
+    qty: number
+    variantId?: string | undefined
+  }): Promise<boolean> {
     const have = this.qty(line.productId)
     if (have < line.qty) return false
+
+    this.reservedFrom.push(line.variantId)
     this.stock.set(line.productId, have - line.qty)
     return true
   }
 
   async release(line: { productId: string; qty: number }): Promise<void> {
     this.stock.set(line.productId, this.qty(line.productId) + line.qty)
+  }
+
+  // Variants ka intizam supplier portal ka kaam hai — order ke test ka nahi
+  async listVariants() {
+    return []
+  }
+  async addVariant() {
+    return null
+  }
+  async updateVariant() {
+    return false
+  }
+  async removeVariant() {
+    return 'not-found' as const
   }
 
   async setQuantity(_supplierId: string, productId: string, qty: number): Promise<boolean> {
@@ -531,6 +553,43 @@ describe('inventory', () => {
    * customer se paisa wasool kar letin, aur akhir mein ek ko mana karna parta — wo
    * apne customer ke saamne jhooti banti, hamari wajah se.
    */
+  /**
+   * 🔴 Jo variant chuna gaya, ginti usi se ghate.
+   *
+   * Pehle reserve sirf productId leta tha aur "jis mein maal ho" us se ghata deta tha.
+   * Yani customer laal medium mangwati aur ginti neeli large se kam hoti — kaghaz par
+   * sab theek, dukan par galat maal, aur pata tab chalta jab packing ho rahi hoti.
+   */
+  it('reserve usi variant se hota hai jo customer ne chuna', async () => {
+    const { service, inventory } = buildService()
+
+    await service.create({
+      resellerId: 'res_1',
+      customer: CUSTOMER,
+      lines: [{ productId: 'prod_1', variantId: 'var_red_m', qty: 1, retailPrice: pkr(2800) }],
+      deliveryFee: pkr(200),
+      paymentMethod: 'COD',
+      idempotencyKey: 'variant-1',
+    })
+
+    expect(inventory.reservedFrom).toEqual(['var_red_m'])
+  })
+
+  it('variant na chuna gaya ho to purana chalan — jis mein maal ho', async () => {
+    const { service, inventory } = buildService()
+
+    await service.create({
+      resellerId: 'res_1',
+      customer: CUSTOMER,
+      lines: [{ productId: 'prod_1', qty: 1, retailPrice: pkr(2800) }],
+      deliveryFee: pkr(200),
+      paymentMethod: 'COD',
+      idempotencyKey: 'variant-2',
+    })
+
+    expect(inventory.reservedFrom).toEqual([undefined])
+  })
+
   it('aakhri piece ke baad doosra order nahi lagta', async () => {
     const { service, inventory } = buildService()
     inventory.stock.set('prod_1', 1)

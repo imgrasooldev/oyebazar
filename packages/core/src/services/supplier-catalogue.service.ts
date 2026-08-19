@@ -10,6 +10,7 @@
  * chuka (LIVE ya OUT_OF_STOCK). DRAFT/ARCHIVED ops ka faisla hai.
  */
 import {
+  ConflictError,
   MAX_MEDIA_PER_PRODUCT,
   NotFoundError,
   ValidationError,
@@ -150,6 +151,116 @@ export class SupplierCatalogueService {
       properties: { productId, qty },
     })
     this.logger.info('supplier_stock_quantity_set', { supplierId, productId, qty })
+  }
+
+  // ------------------------------------------------------------- variants
+
+  /**
+   * Rang aur size — har jorhe ki apni ginti.
+   *
+   * 🔴 Ye "ek maal, ek ginti" wale purane tareeqe ki jagah nahi leta, us ke ooper aata
+   * hai: jis maal par variants na hon wo waise hi chalta rehta hai (ek default variant),
+   * aur jis par hon us ki ginti variants ke jama se banti hai.
+   */
+  listVariants(supplierId: string, productId: string) {
+    return this.inventory.listVariants(supplierId, productId)
+  }
+
+  async addVariant(
+    supplierId: string,
+    productId: string,
+    input: { size?: string; colour?: string; stockQty: number },
+  ) {
+    const size = input.size?.trim() || null
+    const colour = input.colour?.trim() || null
+
+    // Dono khali = wohi purana "sada" variant. Us par alag qatar banane ka koi matlab nahi
+    if (!size && !colour) {
+      throw new ValidationError('Rang ya size, kam se kam ek likhen')
+    }
+    if (!Number.isInteger(input.stockQty) || input.stockQty < 0 || input.stockQty > 100_000) {
+      throw new ValidationError('Ginti theek nahi')
+    }
+
+    const existing = await this.inventory.listVariants(supplierId, productId)
+
+    // Wohi rang aur size dobara — warna ek hi cheez do qataron mein aa jati hai aur
+    // ginti do jagah batti hai
+    const clash = existing.some(
+      (variant) =>
+        (variant.size ?? null) === size && (variant.colour ?? null) === colour,
+    )
+    if (clash) throw new ConflictError('Ye rang aur size pehle se maujood hai')
+
+    /*
+     * SKU khud banta hai. Dukan wale se maangte to har dafa ek jhagra hota: ya wo khali
+     * chhorta, ya wohi code do jagah likh deta — aur SKU poore nizam mein unique hai.
+     */
+    const suffix = [colour, size].filter(Boolean).join('-').toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    const skuCode = `${productId}-${suffix || 'v'}-${existing.length + 1}`
+
+    const created = await this.inventory.addVariant({
+      supplierId,
+      productId,
+      size,
+      colour,
+      skuCode,
+      stockQty: input.stockQty,
+    })
+    if (!created) throw new NotFoundError('Product', productId)
+
+    await this.analytics.track({
+      name: 'supplier_variant_added',
+      actorType: 'supplier',
+      actorId: supplierId,
+      properties: { productId, size, colour, stockQty: input.stockQty },
+    })
+
+    return created
+  }
+
+  async updateVariant(
+    supplierId: string,
+    variantId: string,
+    input: { size?: string | null; colour?: string | null; stockQty?: number },
+  ): Promise<void> {
+    if (
+      input.stockQty !== undefined &&
+      (!Number.isInteger(input.stockQty) || input.stockQty < 0 || input.stockQty > 100_000)
+    ) {
+      throw new ValidationError('Ginti theek nahi')
+    }
+
+    const changed = await this.inventory.updateVariant({ supplierId, variantId, ...input })
+    if (!changed) throw new NotFoundError('Variant', variantId)
+
+    await this.analytics.track({
+      name: 'supplier_variant_updated',
+      actorType: 'supplier',
+      actorId: supplierId,
+      properties: { variantId, ...input },
+    })
+  }
+
+  async removeVariant(supplierId: string, variantId: string): Promise<void> {
+    const result = await this.inventory.removeVariant(supplierId, variantId)
+
+    if (result === 'not-found') throw new NotFoundError('Variant', variantId)
+    if (result === 'in-use') {
+      /*
+       * Jis par order ho chuka wo mitta nahi — us ki id purane orders mein likhi hai.
+       * Mit jaye to "kaun sa rang tha" ka jawab hamesha ke liye gum, aur wahi sawal
+       * jhagre mein poochha jata hai. Ginti sifar karna hamesha maujood hai.
+       */
+      throw new ConflictError('Is par order ho chuka hai — mitane ki jagah ginti sifar kar den')
+    }
+
+    await this.analytics.track({
+      name: 'supplier_variant_removed',
+      actorType: 'supplier',
+      actorId: supplierId,
+      properties: { variantId },
+    })
   }
 
   async listMyProducts(supplierId: string): Promise<SupplierProductView[]> {

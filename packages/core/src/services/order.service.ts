@@ -160,7 +160,12 @@ export class OrderService {
      */
     const reserved: OrderLineView[] = []
     for (const line of lines) {
-      const ok = await this.inventory.reserve({ productId: line.productId, qty: line.qty })
+      const ok = await this.inventory.reserve({
+        productId: line.productId,
+        qty: line.qty,
+        // Jo variant customer ne chuna, ginti usi se — dekhen StockLine
+        ...(line.variantId ? { variantId: line.variantId } : {}),
+      })
       if (ok) {
         reserved.push(line)
         continue
@@ -512,7 +517,12 @@ export class OrderService {
    */
   private async releaseStock(order: InternalOrderView): Promise<void> {
     for (const item of order.items) {
-      await this.inventory.release({ productId: item.productId, qty: item.qty })
+      await this.inventory.release({
+        productId: item.productId,
+        qty: item.qty,
+        // Wapas usi variant mein jis se nikla tha
+        ...(item.variantId ? { variantId: item.variantId } : {}),
+      })
     }
   }
 
