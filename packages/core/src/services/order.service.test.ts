@@ -43,6 +43,8 @@ class FakeProducts implements Pick<ProductRepository, 'findForPricing'> {
 
 class FakeOrders implements Partial<OrderRepository> {
   readonly saved: InternalOrderView[] = []
+  /** Jo kuch mehfooz karne bheja gaya — `saved` mein delivery ka khaana hai hi nahi */
+  readonly persisted: PersistOrderInput[] = []
   readonly changes: OrderStatusChange[] = []
   private seq = 0
 
@@ -60,6 +62,7 @@ class FakeOrders implements Partial<OrderRepository> {
       confirmedBy: null,
       items: input.lines,
     }
+    this.persisted.push(input)
     this.saved.push(order)
     return order
   }
@@ -197,7 +200,16 @@ class FakeFeeLedger implements FeeLedgerRepository {
 
 const SUPPLIERS: SupplierInternalRepository = {
   async findInternal(id) {
-    return { id, businessName: 'المدینہ فیبرکس', phone: '923001112222', feeRateBps: 500, status: 'VERIFIED' }
+    return {
+      id,
+      businessName: 'المدینہ فیبرکس',
+      phone: '923001112222',
+      feeRateBps: 500,
+      status: 'VERIFIED',
+      // Delivery ke rate dukan ke apne — order in dono ke bahar koi qadar nahi leta
+      deliveryFeeCity: 200,
+      deliveryFeeOther: 350,
+    }
   },
 }
 
@@ -542,6 +554,59 @@ describe('wholesaler ka jawab', () => {
   it('ghalat token par kuch nahi milta', async () => {
     const { service } = await sentOrder()
     await expect(service.acceptBySupplier('koi-aur-token')).rejects.toThrow(/nahi mila/)
+  })
+})
+
+describe('delivery ka rate', () => {
+  it('dukan ka doosre sheher wala rate qubool hota hai', async () => {
+    const { service, orders } = buildService()
+
+    await service.create({
+      resellerId: 'res_1',
+      customer: CUSTOMER,
+      lines: [{ productId: 'prod_1', qty: 1, retailPrice: pkr(2800) }],
+      deliveryFee: pkr(350),
+      paymentMethod: 'COD',
+      idempotencyKey: 'delivery-1',
+    })
+
+    expect(orders.persisted[0]?.deliveryFee).toBe(350)
+  })
+
+  /**
+   * 🔴 Asal rok: courier ka bill dukan bharti hai, is liye rate bhi usi ka chalega.
+   * Pehle ye khaana khula tha — reseller 0 bhej deti aur nuqsan chup chaap dukan ke
+   * zimme aa jata, jis ka usay delivery ke baad pata chalta.
+   */
+  it('bahar ki koi bhi qadar dukan ke rate par le aati hai', async () => {
+    const { service, orders } = buildService()
+
+    await service.create({
+      resellerId: 'res_1',
+      customer: CUSTOMER,
+      lines: [{ productId: 'prod_1', qty: 1, retailPrice: pkr(2800) }],
+      deliveryFee: pkr(0),
+      paymentMethod: 'COD',
+      idempotencyKey: 'delivery-2',
+    })
+
+    expect(orders.persisted[0]?.deliveryFee).toBe(200)
+  })
+
+  it('kul raqam mein delivery bhi shamil hoti hai', async () => {
+    const { service, orders } = buildService()
+
+    await service.create({
+      resellerId: 'res_1',
+      customer: CUSTOMER,
+      lines: [{ productId: 'prod_1', qty: 2, retailPrice: pkr(2500) }],
+      deliveryFee: pkr(350),
+      paymentMethod: 'COD',
+      idempotencyKey: 'delivery-3',
+    })
+
+    // 2 × 2500 = 5000, aur upar se delivery 350
+    expect(orders.persisted[0]?.total).toBe(5350)
   })
 })
 

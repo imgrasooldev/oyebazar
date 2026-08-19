@@ -24,6 +24,11 @@ export class CatalogueService {
     private readonly pricing: ResellerPricingRepository,
   ) {}
 
+  /** Is maal ki dukan ke delivery rate — order ke form ke liye. */
+  deliveryRatesFor(productId: string): Promise<{ city: number; other: number }> {
+    return this.products.deliveryRatesFor(productId)
+  }
+
   async list(resellerId: string, filters: CatalogueFilters): Promise<Page<CatalogueItem>> {
     const page = await this.products.findResellerList(filters)
     if (page.items.length === 0) return { items: [], nextCursor: page.nextCursor }

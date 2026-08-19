@@ -45,6 +45,15 @@ model Supplier {
    * aur wo waada pehle hi din tootta hai.
    */
   payoutTermDays Int          @default(3)
+  /**
+   * Delivery ka rate — do khaane, kyunke courier ka bill bhi do tarah ka hota hai.
+   *
+   * 🔴 Rate wohi likhta hai jo courier ka bill bharta hai. Pehle ye reseller order lagate
+   * waqt khud likhti thi (default 200): sheher ka koi farq nahi tha, aur wo 0 likh deti to
+   * nuqsan chup chaap dukan ke zimme aa jata — jis par us ka koi bas hi nahi tha.
+   */
+  deliveryFeeCity  Int        @default(200)
+  deliveryFeeOther Int        @default(350)
   feeRateBps   Int            @default(500) // 500 = 5% · per-supplier negotiate ho sakta hai
   status       SupplierStatus @default(PENDING)
   notes        String?

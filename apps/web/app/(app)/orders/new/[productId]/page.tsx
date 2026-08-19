@@ -18,9 +18,11 @@ export default async function NewOrderPage({
   const { productId } = await params
   const locale = await getLocale()
 
-  const [item, paymentRecord] = await Promise.all([
+  const [item, paymentRecord, delivery] = await Promise.all([
     container.catalogue.getById(reseller.id, productId).catch(() => null),
     container.payouts.paymentRecordForProduct(productId),
+    // Dukan ke apne rate — naam ya id nahi, sirf do number
+    container.catalogue.deliveryRatesFor(productId),
   ])
   if (!item) notFound()
 
@@ -35,6 +37,7 @@ export default async function NewOrderPage({
       <OrderForm
         productId={item.product.id}
         variants={item.product.variants}
+        delivery={delivery}
         title={locale === 'ur' ? item.product.titleUr : item.product.titleEn}
         bajiPrice={item.product.bajiPrice}
         defaultRetailPrice={item.myRetailPrice ?? item.product.suggestedRetail}

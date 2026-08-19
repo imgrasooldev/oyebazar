@@ -101,7 +101,15 @@ export class PrismaSupplierRepository
   async findInternal(supplierId: string) {
     return this.db.supplier.findUnique({
       where: { id: supplierId },
-      select: { id: true, businessName: true, phone: true, feeRateBps: true, status: true },
+      select: {
+        id: true,
+        businessName: true,
+        phone: true,
+        feeRateBps: true,
+        status: true,
+        deliveryFeeCity: true,
+        deliveryFeeOther: true,
+      },
     })
   }
 

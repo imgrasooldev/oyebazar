@@ -177,6 +177,14 @@ export interface SupplierProductRepository {
    *
    * @returns false agar wo media is dukan ke kisi maal ki nahi
    */
+  /**
+   * Delivery ka rate — do khaane, dukan ke apne.
+   *
+   * Ye maal ka nahi, dukan ka khaana hai; magar port yahin hai kyunke wahid jagah jahan
+   * dukan wala kuch likhta hai wo yehi portal hai.
+   */
+  setDeliveryRates(supplierId: string, rates: { city: number; other: number }): Promise<boolean>
+
   removeMedia(supplierId: string, productId: string, mediaId: string): Promise<boolean>
 
   /**

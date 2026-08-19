@@ -192,5 +192,9 @@ export interface SupplierInternalRepository {
     phone: string
     feeRateBps: number
     status: 'PENDING' | 'VERIFIED' | 'SUSPENDED'
+    /** Isi sheher mein delivery ka rate — dukan khud likhti hai */
+    deliveryFeeCity: number
+    /** Doosre sheher ka rate */
+    deliveryFeeOther: number
   } | null>
 }

@@ -112,6 +112,19 @@ export class PrismaProductRepository implements ProductRepository {
     return toPage(rows.map(toResellerView), filters.limit, (p) => p.id)
   }
 
+  async deliveryRatesFor(productId: string): Promise<{ city: number; other: number }> {
+    const row = await this.db.product.findUnique({
+      where: { id: productId },
+      select: { supplier: { select: { deliveryFeeCity: true, deliveryFeeOther: true } } },
+    })
+
+    // Maal na mile to wohi qadar jo nayi dukan par lagti hai — safha rukna nahi chahiye
+    return {
+      city: row?.supplier.deliveryFeeCity ?? 200,
+      other: row?.supplier.deliveryFeeOther ?? 350,
+    }
+  }
+
   async findResellerById(productId: string): Promise<ResellerProductView | null> {
     const row = await this.db.product.findFirst({
       where: { id: productId, status: { in: ['LIVE', 'OUT_OF_STOCK'] } },

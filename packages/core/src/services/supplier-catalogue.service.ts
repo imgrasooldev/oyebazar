@@ -153,6 +153,34 @@ export class SupplierCatalogueService {
     this.logger.info('supplier_stock_quantity_set', { supplierId, productId, qty })
   }
 
+  /**
+   * Delivery ka rate — isi sheher ka, aur doosre sheher ka.
+   *
+   * Do khaane is liye ke courier ka bill bhi do tarah ka hota hai: Karachi ke andar aur
+   * Karachi se Skardu. Ek hi rate rakhne par ya dukan nuqsan uthati hai ya door wale
+   * customer se zyada wasool hota hai.
+   */
+  async setDeliveryRates(
+    supplierId: string,
+    rates: { city: number; other: number },
+  ): Promise<void> {
+    const ok = (value: number) => Number.isInteger(value) && value >= 0 && value <= 5_000
+    if (!ok(rates.city) || !ok(rates.other)) {
+      throw new ValidationError('Delivery ka rate theek nahi')
+    }
+
+    const changed = await this.products.setDeliveryRates(supplierId, rates)
+    if (!changed) throw new NotFoundError('Supplier', supplierId)
+
+    await this.analytics.track({
+      name: 'supplier_delivery_rates_set',
+      actorType: 'supplier',
+      actorId: supplierId,
+      properties: rates,
+    })
+    this.logger.info('supplier_delivery_rates_set', { supplierId, ...rates })
+  }
+
   // ------------------------------------------------------------- variants
 
   /**

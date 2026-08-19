@@ -8,6 +8,14 @@ import { translator, type Locale } from '@/lib/i18n'
 interface Props {
   productId: string
   /**
+   * Dukan ke apne delivery rate. Reseller in mein se chunti hai — likhti nahi.
+   *
+   * 🔴 Pehle ye khaana khula tha aur wo kuch bhi likh sakti thi (0 bhi). Courier ka bill
+   * dukan bharti hai; us ka rate kisi aur ke likhne par nuqsan chup chaap us ke zimme
+   * aa jata tha. Server bhi ab sirf inhi do qadar qubool karta hai.
+   */
+  delivery: { city: number; other: number }
+  /**
    * Rang/size ke jorhe. Khali ho to picker aata hi nahi — jis maal par variants nahi
    * hain wahan ek fazool sawal poochhna reseller ka waqt khana hai.
    */
@@ -35,6 +43,7 @@ interface Props {
  */
 export function OrderForm({
   productId,
+  delivery,
   variants = [],
   title,
   bajiPrice,
@@ -59,7 +68,9 @@ export function OrderForm({
     () => variants.find((variant) => variant.inStock)?.id,
   )
   const [retailPrice, setRetailPrice] = useState(defaultRetailPrice)
-  const [deliveryFee, setDeliveryFee] = useState(200)
+  // Pehle se "isi sheher mein" — aksar order isi sheher ke hote hain
+  const [outOfCity, setOutOfCity] = useState(false)
+  const deliveryFee = outOfCity ? delivery.other : delivery.city
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [locationState, setLocationState] = useState<'idle' | 'getting' | 'failed'>('idle')
   const [error, setError] = useState<string | null>(null)
@@ -268,18 +279,40 @@ export function OrderForm({
           />
         </label>
 
-        <label className="block">
+        {/*
+          Delivery ka rate likha nahi jata, chuna jata hai — dono qadar dukan ki hain.
+          Reseller sirf ye batati hai ke customer isi sheher mein hai ya doosre mein;
+          wo ye baat jaanti hai, aur rate ka faisla us ka hai hi nahi.
+        */}
+        <div className="block">
           <span className="text-sm font-semibold">{t('delivery')}</span>
-          <input
-            type="number"
-            min={0}
-            step={50}
-            dir="ltr"
-            value={deliveryFee}
-            onChange={(e) => setDeliveryFee(Number(e.target.value))}
-            className="mt-2 w-full rounded-lg ring-1 ring-black/10 px-3 py-3"
-          />
-        </label>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setOutOfCity(false)}
+              className={`flex-1 rounded-lg px-2 py-3 text-sm font-semibold transition ${
+                outOfCity ? 'bg-paper-sunken text-ink-soft' : 'bg-brand-500 text-white'
+              }`}
+            >
+              {t('deliveryInCity')}
+              <span dir="ltr" className="numeric ms-1.5">
+                {delivery.city}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setOutOfCity(true)}
+              className={`flex-1 rounded-lg px-2 py-3 text-sm font-semibold transition ${
+                outOfCity ? 'bg-brand-500 text-white' : 'bg-paper-sunken text-ink-soft'
+              }`}
+            >
+              {t('deliveryOutCity')}
+              <span dir="ltr" className="numeric ms-1.5">
+                {delivery.other}
+              </span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="rounded-lg bg-paper-sunken p-4 text-sm">

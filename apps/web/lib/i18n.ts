@@ -581,6 +581,20 @@ const DICTIONARY = {
     rm: 'Ye raqam wholesaler aur reseller ke darmiyan hai. OyeBazar paise wasool ya ada nahi karta — hum sirf record rakhte hain ke kis ne kya kaha aur kab.',
   },
   // ---- dukan ka apna waada
+  // ---- delivery ka rate
+  deliveryTitle: {
+    ur: 'ڈیلیوری کا ریٹ — کورئیر کا بل آپ بھرتے ہیں، اس لیے ریٹ بھی آپ کا',
+    en: 'Delivery charge — you pay the courier, so you set it',
+    rm: 'Delivery ka rate — courier ka bill aap bharte hain, is liye rate bhi aap ka',
+  },
+  deliveryInCity: { ur: 'اسی شہر میں', en: 'Same city', rm: 'Isi sheher mein' },
+  deliveryOutCity: { ur: 'دوسرے شہر', en: 'Other city', rm: 'Doosre sheher' },
+  deliverySaved: { ur: 'محفوظ — نئے آرڈرز پر لاگو', en: 'Saved — applies to new orders', rm: 'Mehfooz — naye orders par' },
+  deliveryNote: {
+    ur: 'ریسیلر کو آرڈر سے پہلے یہی ریٹ دکھتا ہے۔ بدلنے سے پرانے آرڈرز پر اثر نہیں پڑتا۔',
+    en: 'Resellers see this before they order. Changing it does not affect existing orders.',
+    rm: 'Reseller ko order se pehle yehi rate dikhta hai. Badalne se purane orders par asar nahi parta.',
+  },
   termTitle: {
     ur: 'میرا وعدہ — ڈیلیوری کے بعد ریسیلر کو پیسے',
     en: 'My promise — paying the reseller after delivery',

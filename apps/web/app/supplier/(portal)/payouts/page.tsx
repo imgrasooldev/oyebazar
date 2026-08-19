@@ -4,6 +4,7 @@ import { formatPkr } from '@oyebazar/shared'
 import { isOverdue } from '@oyebazar/core'
 import { CounterpartyLedger } from '@/components/counterparty-ledger'
 import { SupplierPayoutSend } from '@/components/payout-actions'
+import { SupplierDeliveryRates } from '@/components/supplier-delivery-rates'
 import { SupplierPaymentTerm } from '@/components/supplier-payment-term'
 import { PayoutTimeline } from '@/components/payout-timeline'
 import { requireSupplier } from '@/lib/api/supplier-session'
@@ -29,11 +30,13 @@ export default async function SupplierPayoutsPage() {
   const [{ supplier }, locale] = await Promise.all([requireSupplier(), getLocale()])
   const t = translator(locale)
 
-  const [payouts, ledger, platformFee, term] = await Promise.all([
+  const [payouts, ledger, platformFee, term, internal] = await Promise.all([
     container.payouts.listForSupplier(supplier.id),
     container.payouts.ledgerByReseller(supplier.id),
     container.payouts.platformFeeForSupplier(supplier.id),
     container.payouts.paymentTerm(supplier.id),
+    // Delivery ke rate internal view se — session wali view mein wo hain hi nahi
+    container.repositories.suppliers.findInternal(supplier.id),
   ])
   const now = new Date()
 
@@ -87,6 +90,20 @@ export default async function SupplierPayoutsPage() {
           </p>
         </div>
       </div>
+
+      {/* Delivery ka rate — courier ka bill dukan bharti hai, is liye rate bhi us ka */}
+      <SupplierDeliveryRates
+        city={internal?.deliveryFeeCity ?? 200}
+        other={internal?.deliveryFeeOther ?? 350}
+        labels={{
+          title: t('deliveryTitle'),
+          inCity: t('deliveryInCity'),
+          outCity: t('deliveryOutCity'),
+          save: t('save'),
+          saved: t('deliverySaved'),
+          note: t('deliveryNote'),
+        }}
+      />
 
       {/* Apna waada — isi se der napi jati hai, hamare andaze se nahi */}
       <SupplierPaymentTerm

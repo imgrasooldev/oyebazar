@@ -273,6 +273,17 @@ export class PrismaSupplierProductRepository implements SupplierProductRepositor
    * rokti hai; ye raasta MOJOODA maal par lagta hai, jahan pehle se kuch media pari hoti
    * hai — is liye hadd DB ki asli ginti par lagni chahiye, sirf bheji hui list par nahi.
    */
+  async setDeliveryRates(
+    supplierId: string,
+    rates: { city: number; other: number },
+  ): Promise<boolean> {
+    const { count } = await this.db.supplier.updateMany({
+      where: { id: supplierId },
+      data: { deliveryFeeCity: rates.city, deliveryFeeOther: rates.other },
+    })
+    return count > 0
+  }
+
   async addMedia(
     supplierId: string,
     productId: string,

@@ -144,8 +144,24 @@ export class OrderService {
       }
     })
 
+    /*
+     * 🔴 Delivery ka rate wo do qadar hi ho sakti hain jo DUKAN ne likhi hain.
+     *
+     * Pehle ye khaana khula tha aur reseller kuch bhi bhej sakti thi (0 bhi). Courier
+     * ka bill dukan bharti hai — us ka rate kisi aur ke likhne par nuqsan chup chaap us
+     * ke zimme aa jata tha, aur usay pata bhi delivery ke baad chalta.
+     *
+     * Jo qadar in dono mein se na ho, us par isi sheher wala rate lagta hai — order
+     * rukta nahi (bandi customer se baat kar chuki hoti hai), magar rate dukan ka hi
+     * chalta hai.
+     */
+    const allowedDelivery = [supplier.deliveryFeeCity, supplier.deliveryFeeOther]
+    const deliveryFee = allowedDelivery.includes(command.deliveryFee)
+      ? command.deliveryFee
+      : pkr(supplier.deliveryFeeCity)
+
     const subtotal = addPkr(...lines.map((l) => multiplyPkr(l.retailPriceSnapshot, l.qty)))
-    const total = addPkr(subtotal, command.deliveryFee)
+    const total = addPkr(subtotal, deliveryFee)
     const bajiFee = calculateBajiFee(lines, supplier.feeRateBps)
 
     /*
@@ -184,7 +200,7 @@ export class OrderService {
       customer: command.customer,
       lines,
       subtotal,
-      deliveryFee: command.deliveryFee,
+      deliveryFee,
       total,
       bajiFee,
       feeRateBps: supplier.feeRateBps,

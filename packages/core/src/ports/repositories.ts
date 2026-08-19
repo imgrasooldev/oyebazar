@@ -61,6 +61,14 @@ export interface ProductRepository {
 
   /** RESELLER (login ke baad) — bajiPrice hai, supplierPrice nahi. */
   findResellerList(filters: CatalogueFilters): Promise<Page<ResellerProductView>>
+  /**
+   * Is maal ki dukan ke delivery rate — sirf do number.
+   *
+   * 🔴 Dukan ka naam ya id yahan se nahi lautti (dekhen dto/supplier.ts): reseller ko
+   * ye jaanna chahiye ke delivery kitne ki paregi, ye nahi ke dukan kaun si hai.
+   */
+  deliveryRatesFor(productId: string): Promise<{ city: number; other: number }>
+
   findResellerById(productId: string): Promise<ResellerProductView | null>
 
   /** Content Studio render ke liye. */
