@@ -204,10 +204,18 @@ export class PrismaMoneyLedgerRepository implements MoneyLedgerRepository {
   async paymentRecords(supplierIds: readonly string[]): Promise<SupplierPaymentRecord[]> {
     if (supplierIds.length === 0) return []
 
-    const rows = await this.db.resellerPayout.findMany({
-      where: { supplierId: { in: [...supplierIds] } },
-      select: { supplierId: true, status: true, createdAt: true, confirmedAt: true },
-    })
+    const [rows, suppliers] = await Promise.all([
+      this.db.resellerPayout.findMany({
+        where: { supplierId: { in: [...supplierIds] } },
+        select: { supplierId: true, status: true, createdAt: true, confirmedAt: true },
+      }),
+      this.db.supplier.findMany({
+        where: { id: { in: [...supplierIds] } },
+        select: { id: true, payoutTermDays: true },
+      }),
+    ])
+
+    const promised = new Map(suppliers.map((s) => [s.id, s.payoutTermDays]))
 
     const now = Date.now()
     const acc = new Map<
@@ -252,6 +260,7 @@ export class PrismaMoneyLedgerRepository implements MoneyLedgerRepository {
           ? Math.round((value.days.reduce((sum, d) => sum + d, 0) / value.days.length) * 10) / 10
           : null,
       oldestOpenDays: value.oldest,
+      promisedDays: promised.get(supplierId) ?? 3,
     }))
   }
 
@@ -265,7 +274,27 @@ export class PrismaMoneyLedgerRepository implements MoneyLedgerRepository {
     if (!product) return null
 
     const [record] = await this.paymentRecords([product.supplierId])
-    if (!record) return null
+
+    /*
+     * Nayi dukan par abhi ek bhi hisab nahi bana — magar us ka WAADA phir bhi hai, aur
+     * reseller ko wohi chahiye. Khali lauta dete to nayi dukan par safha bilkul khamosh
+     * rehta aur us ke saath koi shart hi nazar na aati.
+     */
+    if (!record) {
+      const supplier = await this.db.supplier.findUnique({
+        where: { id: product.supplierId },
+        select: { payoutTermDays: true },
+      })
+      return {
+        total: 0,
+        settled: 0,
+        open: 0,
+        disputed: 0,
+        avgDaysToSettle: null,
+        oldestOpenDays: 0,
+        promisedDays: supplier?.payoutTermDays ?? 3,
+      }
+    }
 
     // supplierId yahin gir jati hai — safhe tak sirf ginti jati hai
     const { supplierId: _ignored, ...rest } = record

@@ -23,13 +23,22 @@ import type { SupplierPayoutSummary } from '../ports/payout-repositories'
 import type { Analytics, Clock, Logger, MessagingProvider } from '../ports/infrastructure'
 
 /**
- * Itne din baad khamosh baqaya "der" ginta hai.
+ * Nayi dukan ka default waada — delivery ke itne din baad.
  *
- * Teen din is liye ke COD ka paisa courier se wholesaler tak pohanchne mein hi ek do
- * din lagte hain — pehle din taqaza karna sirf shor hai. Aur is se zyada rakhen to
- * reseller ka bharosa pehle tootta hai.
+ * Pehle ye har dukan par lagne wali TAY-SHUDA hadd thi. Us mein kharabi ye thi ke der
+ * hamare andaze se napi jati thi, aur dukan wala theek keh sakta tha: "maine kabhi
+ * nahi kaha teen din mein doonga". Ab har dukan apni shart khud likhti hai; ye sirf
+ * shuruaati qadar hai.
  */
-export const PAYOUT_OVERDUE_DAYS = 3
+export const DEFAULT_PAYOUT_TERM_DAYS = 3
+
+/**
+ * Waade ki hadd.
+ *
+ * Sifar = delivery wale din hi. Saat se aage jaan boojh kar nahi: reseller ka apna
+ * customer paise de chuka hota hai, aur us se aage rok lena hamara masla ban jata hai.
+ */
+export const MAX_PAYOUT_TERM_DAYS = 7
 
 export interface PayoutActor {
   readonly type: 'supplier' | 'reseller'
@@ -74,7 +83,11 @@ export class PayoutService {
     // Sifar margin (reseller ne apni lagat par bech diya) — row banane ka faida nahi
     if (input.amount <= 0) return
 
-    await this.payouts.create(input)
+    // Shart abhi snapshot hoti hai — baad mein dukan apna waada badle to purana hisab
+    // usi shart par rehta hai jis par wo bana tha
+    const termDays = await this.payouts.supplierTerm(input.supplierId)
+
+    await this.payouts.create({ ...input, termDays })
     this.logger.info('payout_opened', { orderId: input.orderId, amount: input.amount })
   }
 
@@ -125,6 +138,25 @@ export class PayoutService {
     })
 
     return { ...payout, status: 'SENT', sentAt: at, sentReference: trimmed }
+  }
+
+  /**
+   * Dukan apna waada khud likhti hai: delivery ke kitne din baad paise deta hoon.
+   *
+   * Ye reseller ko order lagane se pehle dikhta hai — us ke asal record ke saath. Waada
+   * akela sasti baat hai aur record akela bina pemane ke; dono saath hi kaam ke hain.
+   */
+  async setPaymentTerm(supplierId: string, days: number): Promise<void> {
+    if (!Number.isInteger(days) || days < 0 || days > MAX_PAYOUT_TERM_DAYS) {
+      throw new ValidationError(`Waada 0 se ${MAX_PAYOUT_TERM_DAYS} din ke darmiyan hona chahiye`)
+    }
+
+    await this.payouts.setSupplierTerm(supplierId, days)
+    this.logger.info('payout_term_set', { supplierId, days })
+  }
+
+  paymentTerm(supplierId: string): Promise<number> {
+    return this.payouts.supplierTerm(supplierId)
   }
 
   listForSupplier(supplierId: string, status?: PayoutStatus): Promise<PayoutView[]> {
@@ -339,8 +371,8 @@ export class PayoutService {
    * band karwa deta hai (aur WhatsApp ka kharcha bhi hai).
    */
   async remindOverdue(): Promise<number> {
-    const cutoff = new Date(this.clock.now().getTime() - PAYOUT_OVERDUE_DAYS * 86_400_000)
-    const overdue = await this.payouts.listOverduePending(cutoff)
+    // Har row apni shart se chhanti hai — ek hi tareekh sab par nahi lagti
+    const overdue = await this.payouts.listOverduePending(this.clock.now())
 
     for (const payout of overdue) {
       await this.messaging.sendTemplate({
@@ -372,7 +404,13 @@ export function payoutStatusMeaning(status: PayoutStatus): string {
   }
 }
 
+/**
+ * Der = dukan ka apna waada guzar gaya.
+ *
+ * 🔴 Shart row ke apne snapshot se aati hai, dukan ki mojooda setting se nahi. Warna
+ * baqaya purana hote hi shart barha kar record saaf kiya ja sakta tha.
+ */
 export function isOverdue(payout: PayoutView, now: Date): boolean {
   if (payout.status !== 'PENDING') return false
-  return now.getTime() - payout.createdAt.getTime() > PAYOUT_OVERDUE_DAYS * 86_400_000
+  return now.getTime() - payout.createdAt.getTime() > payout.termDays * 86_400_000
 }

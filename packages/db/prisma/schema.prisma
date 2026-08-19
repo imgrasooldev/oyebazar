@@ -36,6 +36,15 @@ model Supplier {
   bankAccount  String?
   // 🔴 Bazaar par sirf listed + VERIFIED suppliers dikhte hain
   listedOnBazaar Boolean      @default(false)
+  /**
+   * Dukan ka apna waada: delivery ke kitne din baad reseller ko paise deta hai.
+   * 0 = usi din. Hadd 7 din (service mein).
+   *
+   * 🔴 Ghari DELIVERY se chalti hai, order se nahi. COD mein paisa dukan ke haath
+   * delivery par aata hai — "order ke do din baad" ka matlab apni jeb se dena hai,
+   * aur wo waada pehle hi din tootta hai.
+   */
+  payoutTermDays Int          @default(3)
   feeRateBps   Int            @default(500) // 500 = 5% · per-supplier negotiate ho sakta hai
   status       SupplierStatus @default(PENDING)
   notes        String?
@@ -502,6 +511,13 @@ model ResellerPayout {
   resellerId String
   supplierId String
   amount     Int // retail - bajiPrice, snapshot se — baad mein rate badle to ye nahi badalta
+  /**
+   * Us waqt ki shart ka snapshot — der isi se napi jati hai.
+   *
+   * 🔴 Dukan ki mojooda shart se na napen: 10 din ka baqaya khare hone par wo shart 15
+   * din kar ke apna record saaf kar leta, aur "der" ka poora pemana bekar ho jata.
+   */
+  termDays   Int          @default(3)
   status     PayoutStatus @default(PENDING)
 
   /// wholesaler ka dawa — "bhej diye"

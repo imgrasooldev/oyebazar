@@ -16,6 +16,8 @@ export interface PayoutView {
   readonly resellerId: string
   readonly supplierId: string
   readonly amount: Pkr
+  /** Us waqt ki shart ka snapshot — der isi se napi jati hai */
+  readonly termDays: number
   readonly status: PayoutStatus
   readonly sentAt: Date | null
   readonly sentReference: string | null
@@ -43,7 +45,17 @@ export interface PayoutRepository {
     resellerId: string
     supplierId: string
     amount: Pkr
+    termDays: number
   }): Promise<void>
+
+  /**
+   * Dukan ka apna waada — parhna aur likhna.
+   *
+   * Ye Supplier ki row par hai magar port yahan hai: is ka wahid maqsad payout ki der
+   * napna hai, aur us ke saath rehne se ye baat sab ko nazar aati hai.
+   */
+  supplierTerm(supplierId: string): Promise<number>
+  setSupplierTerm(supplierId: string, days: number): Promise<void>
 
   findByOrderId(orderId: string): Promise<PayoutView | null>
 
@@ -100,8 +112,10 @@ export interface PayoutRepository {
   summariseBySupplier(): Promise<SupplierPayoutSummary[]>
 
   /**
-   * Wo rows jin par wholesaler ne abhi tak kuch nahi kiya aur din guzar chuke hain —
-   * inhi par yaad-dihani jati hai.
+   * Wo rows jin par dukan ne kuch nahi kiya aur US KA APNA waada guzar chuka hai.
+   *
+   * 🔴 Ek tay-shuda tareekh se nahi chhanti ja saktin: har row ki apni shart hai, is
+   * liye hadd har row ke apne `termDays` se banti hai.
    */
-  listOverduePending(olderThan: Date): Promise<PayoutView[]>
+  listOverduePending(now: Date): Promise<PayoutView[]>
 }

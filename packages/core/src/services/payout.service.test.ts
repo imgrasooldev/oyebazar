@@ -6,7 +6,7 @@
  */
 import { beforeEach, describe, expect, it } from 'vitest'
 import { pkr } from '@oyebazar/shared'
-import { PayoutService, PAYOUT_OVERDUE_DAYS, isOverdue } from './payout.service'
+import { PayoutService, DEFAULT_PAYOUT_TERM_DAYS, isOverdue } from './payout.service'
 import type { PayoutRepository, PayoutStatus, PayoutView } from '../ports/payout-repositories'
 
 const NOW = new Date('2026-08-20T10:00:00Z')
@@ -19,6 +19,7 @@ function makeRow(overrides: Partial<PayoutView> = {}): PayoutView {
     resellerId: 'r1',
     supplierId: 's1',
     amount: pkr(450),
+    termDays: DEFAULT_PAYOUT_TERM_DAYS,
     status: 'PENDING',
     sentAt: null,
     sentReference: null,
@@ -34,8 +35,22 @@ class FakePayouts implements PayoutRepository {
   rows: PayoutView[] = [makeRow()]
   created: unknown[] = []
 
-  async create(input: { orderId: string; resellerId: string; supplierId: string; amount: number }) {
+  term = DEFAULT_PAYOUT_TERM_DAYS
+
+  async create(input: {
+    orderId: string
+    resellerId: string
+    supplierId: string
+    amount: number
+    termDays: number
+  }) {
     this.created.push(input)
+  }
+  async supplierTerm() {
+    return this.term
+  }
+  async setSupplierTerm(_supplierId: string, days: number) {
+    this.term = days
   }
   async findByOrderId(orderId: string) {
     return this.rows.find((r) => r.orderId === orderId) ?? null
@@ -84,8 +99,13 @@ class FakePayouts implements PayoutRepository {
   async summariseBySupplier() {
     return []
   }
-  async listOverduePending() {
-    return this.rows.filter((r) => r.status === 'PENDING')
+  async listOverduePending(now: Date) {
+    // Asli repo SQL mein chhanta hai; yahan wohi qaida JS mein
+    return this.rows.filter(
+      (r) =>
+        r.status === 'PENDING' &&
+        now.getTime() - r.createdAt.getTime() > r.termDays * 86_400_000,
+    )
   }
 }
 
@@ -263,7 +283,7 @@ describe('reseller ki tasdeeq', () => {
 })
 
 describe('der', () => {
-  it(`${PAYOUT_OVERDUE_DAYS} din se purani khamosh row der ginti hai`, () => {
+  it('apne waade se purani khamosh row der ginti hai', () => {
     const old = makeRow({ createdAt: new Date('2026-08-10T10:00:00Z') })
     expect(isOverdue(old, NOW)).toBe(true)
   })
@@ -278,11 +298,61 @@ describe('der', () => {
     expect(isOverdue(sent, NOW)).toBe(false)
   })
 
+  /**
+   * 🔴 Der dukan ki MOJOODA setting se nahi, row ke apne snapshot se napi jati hai.
+   * Warna 10 din ka baqaya khare hone par shart 15 din kar ke record saaf kiya ja sakta.
+   */
+  it('shart row ke apne snapshot se lagti hai', () => {
+    const patient = makeRow({ termDays: 7, createdAt: new Date('2026-08-15T10:00:00Z') })
+    const strict = makeRow({ termDays: 1, createdAt: new Date('2026-08-15T10:00:00Z') })
+
+    // Dono ek hi din bane — farq sirf un ke apne waade ka hai
+    expect(isOverdue(patient, NOW)).toBe(false)
+    expect(isOverdue(strict, NOW)).toBe(true)
+  })
+
+  it('delivery wale din ka waada (0 din) usi din der ban jata hai', () => {
+    const sameDay = makeRow({ termDays: 0, createdAt: new Date('2026-08-19T09:00:00Z') })
+    expect(isOverdue(sameDay, NOW)).toBe(true)
+  })
+
   it('yaad-dihani wholesaler ko jati hai, reseller ko nahi', async () => {
-    const { service, sent } = build()
+    const { service, sent, repo } = build()
+    // Waada guzar chuka ho — warna yaad-dihani ka sawal hi nahi
+    repo.rows = [makeRow({ termDays: 3, createdAt: new Date('2026-08-10T10:00:00Z') })]
+
     const count = await service.remindOverdue()
 
     expect(count).toBe(1)
     expect(sent).toEqual([{ to: '923001200000', template: 'baji_payout_reminder' }])
+  })
+})
+
+describe('dukan ka apna waada', () => {
+  it('hadd se bahar qubool nahi hota', async () => {
+    const { service } = build()
+    await expect(service.setPaymentTerm('s1', 30)).rejects.toThrow(/waada/i)
+    await expect(service.setPaymentTerm('s1', -1)).rejects.toThrow(/waada/i)
+  })
+
+  it('0 (usi din) chalta hai', async () => {
+    const { service, repo } = build()
+    await service.setPaymentTerm('s1', 0)
+    expect(repo.term).toBe(0)
+  })
+
+  /** Naya hisab khulte waqt shart usi lamhe copy hoti hai. */
+  it('naye payout par mojooda shart snapshot hoti hai', async () => {
+    const { service, repo } = build()
+    await service.setPaymentTerm('s1', 5)
+
+    await service.openForDeliveredOrder({
+      orderId: 'o9',
+      resellerId: 'r1',
+      supplierId: 's1',
+      amount: pkr(300),
+    })
+
+    expect(repo.created).toEqual([expect.objectContaining({ termDays: 5 })])
   })
 })

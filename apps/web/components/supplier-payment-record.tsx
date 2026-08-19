@@ -25,12 +25,32 @@ export function SupplierPaymentRecord({
 }) {
   const t = LABELS[locale]
 
-  // Naya wholesaler — koi record hi nahi. Khamoshi behtar hai: "0 hisab" us ko bura
-  // dikhata hai jab ke us ne kuch bura kiya hi nahi
+  /*
+   * Nayi dukan — abhi koi record nahi, magar waada phir bhi hai.
+   *
+   * Pehle yahan sirf "koi record nahi" likha aata tha. Ab waada bhi likhte hain: naye
+   * wholesaler ko bhi kuch keh sakne ka mauqa milna chahiye, warna nayi dukan hamesha
+   * khamosh — aur khamoshi shak hi paida karti hai.
+   */
   if (!record || record.total === 0) {
     return (
       <p className="text-[0.78rem] text-ink-faint">
-        <span className="me-1.5">◷</span>
+        {record ? (
+          <>
+            {t.promise}{' '}
+            {record.promisedDays === 0 ? (
+              t.sameDay
+            ) : (
+              <>
+                <span dir="ltr" className="numeric">
+                  {record.promisedDays}
+                </span>{' '}
+                {t.days}
+              </>
+            )}
+            <span className="mx-1.5">·</span>
+          </>
+        ) : null}
         {t.noRecord}
       </p>
     )
@@ -49,7 +69,20 @@ export function SupplierPaymentRecord({
             : 'bg-accent-50 text-accent-700'
       }`}
     >
+      {/* Waada pehle, phir asal — isi tarteeb se donon ka moqabla nazar aata hai */}
       <p className="font-semibold">
+        {t.promise}{' '}
+        {record.promisedDays === 0 ? (
+          t.sameDay
+        ) : (
+          <>
+            <span dir="ltr" className="numeric">
+              {record.promisedDays}
+            </span>{' '}
+            {t.days}
+          </>
+        )}
+        <span className="mx-1.5">·</span>
         {t.title}{' '}
         <span dir="ltr" className="numeric">
           {record.settled}/{record.total}
@@ -107,6 +140,8 @@ const LABELS = {
     open: 'باقی',
     oldest: 'سب سے پرانا',
     disputed: 'تنازعہ',
+    promise: 'وعدہ',
+    sameDay: 'اُسی دن',
     noRecord: 'ابھی کوئی ادائیگی کا ریکارڈ نہیں',
   },
   rm: {
@@ -117,6 +152,8 @@ const LABELS = {
     open: 'baqi',
     oldest: 'sab se purana',
     disputed: 'jhagra',
+    promise: 'Waada',
+    sameDay: 'usi din',
     noRecord: 'Abhi koi adaigi ka record nahi',
   },
   en: {
@@ -127,6 +164,8 @@ const LABELS = {
     open: 'open',
     oldest: 'oldest',
     disputed: 'disputed',
+    promise: 'Promise',
+    sameDay: 'same day',
     noRecord: 'No payment record yet',
   },
   // Teen zubanon ka poora set lazmi — `satisfies` yahin par rok deta hai agar koi

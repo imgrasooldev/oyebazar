@@ -67,6 +67,14 @@ export interface SupplierPaymentRecord {
   /** Sab se purana baqaya kitne din ka hai */
   readonly oldestOpenDays: number
   readonly disputed: number
+  /**
+   * Dukan ka apna waada — delivery ke kitne din baad.
+   *
+   * Ye record ke SAATH dikhta hai, us ki jagah nahi: waada akela sasti baat hai, aur
+   * record akela bina pemane ke. "Waada 3 din · asal aosat 2.4" ek jumle mein sab keh
+   * deta hai — aur "waada 3 din · asal 11 din" bhi.
+   */
+  readonly promisedDays: number
 }
 
 /**

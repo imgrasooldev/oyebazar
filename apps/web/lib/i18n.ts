@@ -580,6 +580,21 @@ const DICTIONARY = {
     en: 'This money moves between the wholesaler and the reseller. OyeBazar neither collects nor pays it — we only record who said what, and when.',
     rm: 'Ye raqam wholesaler aur reseller ke darmiyan hai. OyeBazar paise wasool ya ada nahi karta — hum sirf record rakhte hain ke kis ne kya kaha aur kab.',
   },
+  // ---- dukan ka apna waada
+  termTitle: {
+    ur: 'میرا وعدہ — ڈیلیوری کے بعد ریسیلر کو پیسے',
+    en: 'My promise — paying the reseller after delivery',
+    rm: 'Mera waada — delivery ke baad reseller ko paise',
+  },
+  termSameDay: { ur: 'اُسی دن', en: 'Same day', rm: 'Usi din' },
+  termDays: { ur: 'دن میں', en: 'days', rm: 'din mein' },
+  termSaved: { ur: 'محفوظ ہو گیا — نئے آرڈرز پر لاگو', en: 'Saved — applies to new orders', rm: 'Mehfooz — naye orders par' },
+  termNote: {
+    ur: 'یہ وعدہ ریسیلر کو آرڈر سے پہلے دکھتا ہے، آپ کے اصل ریکارڈ کے ساتھ۔ بدلنے سے پرانے حساب پر اثر نہیں پڑتا۔',
+    en: 'Resellers see this before they order, next to your actual record. Changing it does not affect existing payouts.',
+    rm: 'Ye waada reseller ko order se pehle dikhta hai, aap ke asal record ke saath. Badalne se purane hisab par asar nahi parta.',
+  },
+  termPromise: { ur: 'وعدہ', en: 'Promise', rm: 'Waada' },
   moneyNav: { ur: 'پیسے', en: 'Money', rm: 'Paise' },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
   moneyByReseller: { ur: 'ریسیلر کے حساب سے', en: 'By reseller', rm: 'Reseller ke hisab se' },

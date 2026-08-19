@@ -4,6 +4,7 @@ import { formatPkr } from '@oyebazar/shared'
 import { isOverdue } from '@oyebazar/core'
 import { CounterpartyLedger } from '@/components/counterparty-ledger'
 import { SupplierPayoutSend } from '@/components/payout-actions'
+import { SupplierPaymentTerm } from '@/components/supplier-payment-term'
 import { PayoutTimeline } from '@/components/payout-timeline'
 import { requireSupplier } from '@/lib/api/supplier-session'
 import { container } from '@/lib/container'
@@ -28,10 +29,11 @@ export default async function SupplierPayoutsPage() {
   const [{ supplier }, locale] = await Promise.all([requireSupplier(), getLocale()])
   const t = translator(locale)
 
-  const [payouts, ledger, platformFee] = await Promise.all([
+  const [payouts, ledger, platformFee, term] = await Promise.all([
     container.payouts.listForSupplier(supplier.id),
     container.payouts.ledgerByReseller(supplier.id),
     container.payouts.platformFeeForSupplier(supplier.id),
+    container.payouts.paymentTerm(supplier.id),
   ])
   const now = new Date()
 
@@ -85,6 +87,18 @@ export default async function SupplierPayoutsPage() {
           </p>
         </div>
       </div>
+
+      {/* Apna waada — isi se der napi jati hai, hamare andaze se nahi */}
+      <SupplierPaymentTerm
+        current={term}
+        labels={{
+          title: t('termTitle'),
+          sameDay: t('termSameDay'),
+          days: t('termDays'),
+          saved: t('termSaved'),
+          note: t('termNote'),
+        }}
+      />
 
       {open.length === 0 ? (
         <p className="card p-6 text-ink-soft">{t('payoutEmpty')}</p>

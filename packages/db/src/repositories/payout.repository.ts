@@ -25,6 +25,7 @@ const PAYOUT_SELECT = {
   resellerId: true,
   supplierId: true,
   amount: true,
+  termDays: true,
   status: true,
   sentAt: true,
   sentReference: true,
@@ -45,6 +46,7 @@ function toView(row: Row): PayoutView {
     resellerId: row.resellerId,
     supplierId: row.supplierId,
     amount: pkr(row.amount),
+    termDays: row.termDays,
     status: row.status,
     sentAt: row.sentAt,
     sentReference: row.sentReference,
@@ -63,6 +65,7 @@ export class PrismaPayoutRepository implements PayoutRepository {
     resellerId: string
     supplierId: string
     amount: Pkr
+    termDays: number
   }): Promise<void> {
     await this.db.resellerPayout.upsert({
       where: { orderId: input.orderId },
@@ -71,6 +74,7 @@ export class PrismaPayoutRepository implements PayoutRepository {
         resellerId: input.resellerId,
         supplierId: input.supplierId,
         amount: input.amount,
+        termDays: input.termDays,
         status: 'PENDING',
       },
       // 🔴 Jaan boojh kar khali: dobara delivered mark hone par purani row jyun ki tyun
@@ -254,13 +258,39 @@ export class PrismaPayoutRepository implements PayoutRepository {
     return [...bySupplier.values()].sort((a, b) => b.oldestPendingDays - a.oldestPendingDays)
   }
 
-  async listOverduePending(olderThan: Date): Promise<PayoutView[]> {
+  /**
+   * 🔴 Chhantai SQL mein hoti hai, JS mein nahi: har row ki apni shart hai, is liye
+   * hadd row ke apne `termDays` se banti hai. Saari PENDING rows utha kar JS mein
+   * chhanne se ek din wo query poori table le aati.
+   */
+  async listOverduePending(now: Date): Promise<PayoutView[]> {
+    const ids = await this.db.$queryRaw<{ id: string }[]>`
+      SELECT "id" FROM "ResellerPayout"
+      WHERE "status" = 'PENDING'
+        AND "createdAt" + make_interval(days => "termDays") < ${now}
+      ORDER BY "createdAt" ASC
+      LIMIT 200
+    `
+
+    if (ids.length === 0) return []
+
     const rows = await this.db.resellerPayout.findMany({
-      where: { status: 'PENDING', createdAt: { lt: olderThan } },
+      where: { id: { in: ids.map((row) => row.id) } },
       select: PAYOUT_SELECT,
       orderBy: { createdAt: 'asc' },
-      take: 200,
     })
     return rows.map(toView)
+  }
+
+  async supplierTerm(supplierId: string): Promise<number> {
+    const supplier = await this.db.supplier.findUnique({
+      where: { id: supplierId },
+      select: { payoutTermDays: true },
+    })
+    return supplier?.payoutTermDays ?? 3
+  }
+
+  async setSupplierTerm(supplierId: string, days: number): Promise<void> {
+    await this.db.supplier.update({ where: { id: supplierId }, data: { payoutTermDays: days } })
   }
 }
