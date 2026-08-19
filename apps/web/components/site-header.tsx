@@ -27,7 +27,8 @@ export function SiteHeader({
 
   return (
     <header className="sticky top-0 z-30">
-      <div className="bg-coal-900 text-white/90">
+      {/* Dhalta hua chrome — flat gehra rang safhe ke upar patti jaisa lagta hai */}
+      <div className="bg-gradient-to-r from-coal-950 via-coal-900 to-coal-950 text-white/90">
         <div className="mx-auto flex max-w-shell items-center justify-between gap-3 px-5 py-1 text-[0.75rem] lg:px-8">
           {/*
             min-w-0 lazmi hai: truncate tab hi chalta hai jab flex item ko sikurne ki

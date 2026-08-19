@@ -81,7 +81,7 @@ export default async function HomePage() {
           </aside>
 
         {/* ------------------------------------------------------------------ hero */}
-        <section className="relative overflow-hidden rounded-[1.75rem] bg-coal-900 text-white shadow-lift">
+        <section className="relative overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-coal-800 via-coal-900 to-coal-950 text-white shadow-lift">
           <div
             aria-hidden
             className="pointer-events-none absolute -end-32 -top-32 h-[26rem] w-[26rem] rounded-full bg-brand-500/25 blur-3xl"
@@ -328,7 +328,7 @@ export default async function HomePage() {
               return (
                 <li key={product.slug} className="tile group">
                   <Link href={`/bazaar/${product.supplierSlug}`} className="block">
-                    <div className="relative aspect-square overflow-hidden bg-paper-sunken">
+                    <div className="tile-media-wrap relative aspect-square bg-paper-sunken">
                       {product.coverImageUrl && (
                         // eslint-disable-next-line @next/next/no-img-element -- storage URLs
                         <img

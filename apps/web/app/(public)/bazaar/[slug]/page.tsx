@@ -175,17 +175,17 @@ export default async function SupplierPage({ params }: Props) {
               const title = locale === 'ur' ? product.titleUr : product.titleEn
               return (
                 <li key={product.slug} className="tile group transition hover:shadow-lift">
-                  {product.coverImageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- storage URLs
-                    <img
-                      src={product.coverImageUrl}
-                      alt={title}
-                      loading="lazy"
-                      className="aspect-square w-full object-cover"
-                    />
-                  ) : (
-                    <div className="aspect-square w-full bg-paper-sunken" />
-                  )}
+                  <div className="tile-media-wrap aspect-square bg-paper-sunken">
+                    {product.coverImageUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element -- storage URLs
+                      <img
+                        src={product.coverImageUrl}
+                        alt={title}
+                        loading="lazy"
+                        className="tile-media h-full"
+                      />
+                    )}
+                  </div>
                   <div className="p-2.5">
                     <p className="line-clamp-2 text-sm leading-snug">{title}</p>
                     <p className="mt-1.5 text-[0.72rem] text-ink-faint">

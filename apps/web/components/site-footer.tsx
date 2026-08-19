@@ -10,7 +10,8 @@ export function SiteFooter({ locale }: { locale: Locale }) {
   const t = translator(locale)
 
   return (
-    <footer className="mt-16 bg-coal-900 text-white/70">
+    <footer className="mt-16 bg-gradient-to-b from-coal-900 to-coal-950 text-white/70">
+      {/* Footer aur header ek hi khandan ke — safha upar-neeche se juda hua lagta hai */}
       <div className="mx-auto grid max-w-shell gap-10 px-5 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <p className="text-xl font-bold text-white">
