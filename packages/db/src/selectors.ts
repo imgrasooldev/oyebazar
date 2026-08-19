@@ -42,7 +42,15 @@ export const RESELLER_PRODUCT_SELECT = {
   category: { select: { slug: true, nameUr: true, nameEn: true } },
   variants: { select: { id: true, size: true, colour: true, stockQty: true } },
   media: {
-    select: { id: true, processedUrl: true, originalUrl: true, type: true, sortOrder: true },
+    // variantId: kis jorhe ki tasveer hai — reseller ko chuna hua rang dikhane ke liye
+    select: {
+      id: true,
+      processedUrl: true,
+      originalUrl: true,
+      type: true,
+      sortOrder: true,
+      variantId: true,
+    },
     orderBy: { sortOrder: 'asc' },
   },
   createdAt: true,

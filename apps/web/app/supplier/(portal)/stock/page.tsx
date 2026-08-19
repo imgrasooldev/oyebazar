@@ -144,7 +144,19 @@ export default async function SupplierStockPage() {
               <SupplierVariants
                 productId={product.id}
                 variants={variantsByProduct.get(product.id) ?? []}
+                /*
+                 * Kis jorhe par kaunsi tasveer — pehli wali. Ek variant par kai
+                 * tasveerein ho sakti hain; qatar mein sirf ek dikhani hai.
+                 */
+                images={Object.fromEntries(
+                  product.media
+                    .filter((item) => item.variantId && item.type === 'IMAGE')
+                    .map((item) => [item.variantId as string, item.url])
+                    .reverse(),
+                )}
                 labels={{
+                  photo: t('variantPhoto'),
+                  photoAdd: t('variantPhotoAdd'),
                   title: t('variantsTitle'),
                   colour: t('variantColour'),
                   size: t('variantSize'),

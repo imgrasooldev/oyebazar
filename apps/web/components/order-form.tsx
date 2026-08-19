@@ -11,7 +11,13 @@ interface Props {
    * Rang/size ke jorhe. Khali ho to picker aata hi nahi — jis maal par variants nahi
    * hain wahan ek fazool sawal poochhna reseller ka waqt khana hai.
    */
-  variants?: readonly { id: string; size: string | null; colour: string | null; inStock: boolean }[]
+  variants?: readonly {
+    id: string
+    size: string | null
+    colour: string | null
+    inStock: boolean
+    imageUrl: string | null
+  }[]
   title: string
   bajiPrice: number
   defaultRetailPrice: number
@@ -205,7 +211,7 @@ export function OrderForm({
                   // to reseller customer se wo rang waada kar baithti jo hai hi nahi
                   disabled={!variant.inStock}
                   onClick={() => setVariantId(variant.id)}
-                  className={`rounded-pill px-4 py-2 text-sm font-semibold transition ${
+                  className={`flex items-center gap-2 rounded-pill py-1.5 pe-4 ps-1.5 text-sm font-semibold transition ${
                     variantId === variant.id
                       ? 'bg-brand-500 text-white'
                       : variant.inStock
@@ -213,6 +219,21 @@ export function OrderForm({
                         : 'bg-paper-sunken text-ink-faint line-through opacity-60'
                   }`}
                 >
+                  {/*
+                    Jorhe ki apni tasveer — lafz "Red" se zyada khud laal rang batata
+                    hai. Na ho to sirf naam, taake qatar ka dhaancha na tootay.
+                  */}
+                  {variant.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- storage URLs
+                    <img
+                      src={variant.imageUrl}
+                      alt=""
+                      loading="lazy"
+                      className="h-7 w-7 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="w-1.5" />
+                  )}
                   {label}
                 </button>
               )

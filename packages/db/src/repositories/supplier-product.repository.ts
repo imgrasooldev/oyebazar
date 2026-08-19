@@ -224,6 +224,7 @@ export class PrismaSupplierProductRepository implements SupplierProductRepositor
             originalUrl: true,
             type: true,
             isStatusSource: true,
+            variantId: true,
           },
           orderBy: { sortOrder: 'asc' },
         },
@@ -258,6 +259,7 @@ export class PrismaSupplierProductRepository implements SupplierProductRepositor
         url: item.processedUrl ?? item.originalUrl,
         type: item.type,
         isStatusSource: item.isStatusSource,
+        variantId: item.variantId,
       })),
       openOrders: openByProduct.get(row.id) ?? 0,
       stockQty: row.variants.reduce((sum, variant) => sum + variant.stockQty, 0),
@@ -298,9 +300,29 @@ export class PrismaSupplierProductRepository implements SupplierProductRepositor
     })
     const from = (last?.sortOrder ?? -1) + 1
 
+    /*
+     * 🔴 Variant ki tasdeeq: sirf ISI maal ke jorhe qubool hain.
+     *
+     * Client se aayi hui id par bharosa nahi kiya ja sakta — doosre maal (ya doosri
+     * dukan) ke variant ki id bhej kar tasveer wahan chipkai ja sakti thi. Ek hi query
+     * mein saare jaanch lete hain; jo na mile us ki tasveer poore maal ki ban jati hai.
+     */
+    const wanted = [...new Set(media.map((item) => item.variantId).filter(Boolean))] as string[]
+    const allowed = new Set(
+      wanted.length === 0
+        ? []
+        : (
+            await this.db.productVariant.findMany({
+              where: { id: { in: wanted }, productId },
+              select: { id: true },
+            })
+          ).map((variant) => variant.id),
+    )
+
     await this.db.productMedia.createMany({
       data: media.map((item, index) => ({
         productId,
+        variantId: item.variantId && allowed.has(item.variantId) ? item.variantId : null,
         originalUrl: item.url,
         processedUrl: item.url,
         type: item.type,

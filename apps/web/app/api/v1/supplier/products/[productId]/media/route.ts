@@ -26,6 +26,14 @@ const AddSchema = z
           .object({
             url: z.string().url().max(500),
             type: z.enum(['IMAGE', 'VIDEO']),
+            /**
+             * Kis rang/size ki tasveer — na ho to poore maal ki.
+             *
+             * Repository is id ko jaanchti hai (sirf ISI maal ke jorhe qubool): client
+             * se aayi id par bharosa kar lete to doosre maal ke variant par tasveer
+             * chipkai ja sakti thi.
+             */
+            variantId: z.string().min(1).nullable().optional(),
           })
           .strict(),
       )

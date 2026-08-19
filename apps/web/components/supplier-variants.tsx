@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { VariantView } from '@oyebazar/core'
 
 /**
@@ -17,11 +17,16 @@ import type { VariantView } from '@oyebazar/core'
 export function SupplierVariants({
   productId,
   variants,
+  images,
   labels,
 }: {
   productId: string
   variants: readonly VariantView[]
+  /** Kis variant par kaunsi tasveer — variantId se URL */
+  images: Readonly<Record<string, string>>
   labels: {
+    photo: string
+    photoAdd: string
     title: string
     colour: string
     size: string
@@ -84,6 +89,19 @@ export function SupplierVariants({
         <ul className="mt-2 space-y-1.5">
           {variants.map((variant) => (
             <li key={variant.id} className="flex flex-wrap items-center gap-2">
+              {/*
+                Har jorhe ki apni tasveer — "Red" apne aap mein alag maal jaisa lagta
+                hai. Ek hi tasveer sab rangon par lagti to reseller ka status pack neela
+                dikhata aur customer ko laal milta; farq milne par hi pata chalta.
+              */}
+              <VariantPhoto
+                productId={productId}
+                variantId={variant.id}
+                url={images[variant.id]}
+                labels={{ photo: labels.photo, add: labels.photoAdd }}
+                onDone={() => router.refresh()}
+              />
+
               <span className="min-w-[7rem] text-[0.82rem]">
                 {[variant.colour, variant.size].filter(Boolean).join(' · ') || '—'}
               </span>
@@ -176,5 +194,83 @@ export function SupplierVariants({
 
       {error && <p className="mt-2 text-[0.75rem] text-red-600">{error}</p>}
     </div>
+  )
+}
+
+/**
+ * Ek jorhe ki tasveer — chhota sa chowkhta, seedha qatar mein.
+ *
+ * Alag safha ya modal jaan boojh kar nahi: dukan wala paanch rang ek saath lagata hai,
+ * aur har rang par safha khulna aur band hona paanch guna kaam hai.
+ */
+function VariantPhoto({
+  productId,
+  variantId,
+  url,
+  labels,
+  onDone,
+}: {
+  productId: string
+  variantId: string
+  url: string | undefined
+  labels: { photo: string; add: string }
+  onDone: () => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+
+  async function pick(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    // Input foran khali — warna wohi file dobara chunne par change event nahi chalta
+    event.target.value = ''
+    if (!file) return
+
+    setBusy(true)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      const uploaded = await fetch('/api/v1/supplier/media', { method: 'POST', body: form })
+      if (!uploaded.ok) return
+
+      const media = (await uploaded.json()) as { url: string; type: 'IMAGE' | 'VIDEO' }
+
+      // Video variant par nahi — status pack tasveer par banta hai
+      if (media.type !== 'IMAGE') return
+
+      await fetch(`/api/v1/supplier/products/${productId}/media`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ media: [{ url: media.url, type: 'IMAGE', variantId }] }),
+      })
+      onDone()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        onChange={(event) => void pick(event)}
+        className="hidden"
+      />
+      <button
+        type="button"
+        disabled={busy}
+        title={url ? labels.photo : labels.add}
+        onClick={() => inputRef.current?.click()}
+        className="h-10 w-10 shrink-0 overflow-hidden rounded-card bg-paper-raised ring-1 ring-black/[0.06] transition hover:ring-brand-400 disabled:opacity-50"
+      >
+        {url ? (
+          // eslint-disable-next-line @next/next/no-img-element -- storage URLs
+          <img src={url} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <span className="text-[1.1rem] text-ink-faint">+</span>
+        )}
+      </button>
+    </>
   )
 }

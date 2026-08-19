@@ -49,6 +49,8 @@ export const ProductVariantDTO = z
     size: z.string().nullable(),
     colour: z.string().nullable(),
     inStock: z.boolean(),
+    /** Is jorhe ki apni tasveer — na ho to poore maal wali chalti hai */
+    imageUrl: z.string().nullable(),
   })
   .strict()
 

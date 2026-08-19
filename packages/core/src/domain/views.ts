@@ -142,6 +142,14 @@ export interface ProductVariantView {
   readonly size: string | null
   readonly colour: string | null
   readonly inStock: boolean
+  /**
+   * Is jorhe ki apni tasveer — na ho to poore maal wali chalti hai.
+   *
+   * Reseller ko yehi chahiye: jab wo "laal" chunti hai to us ke saamne laal aaye, warna
+   * us ka status pack neela dikhata hai aur customer ko laal milta — aur farq milne par
+   * hi pata chalta hai.
+   */
+  readonly imageUrl: string | null
 }
 
 export interface PublicSupplierView {

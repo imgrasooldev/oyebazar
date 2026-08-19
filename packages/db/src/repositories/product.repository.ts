@@ -322,10 +322,20 @@ type ResellerRow = {
     id: string
     processedUrl: string | null
     originalUrl: string
+    variantId: string | null
     type: 'IMAGE' | 'VIDEO'
     sortOrder: number
   }[]
   createdAt: Date
+}
+
+/** Kisi ek jorhe ki pehli tasveer — sortOrder ke hisab se. */
+function firstImageFor(
+  media: readonly { processedUrl: string | null; originalUrl: string; variantId: string | null }[],
+  variantId: string,
+): string | null {
+  const found = media.find((item) => item.variantId === variantId)
+  return found ? (found.processedUrl ?? found.originalUrl) : null
 }
 
 function toResellerView(row: ResellerRow): ResellerProductView {
@@ -350,6 +360,8 @@ function toResellerView(row: ResellerRow): ResellerProductView {
       size: v.size,
       colour: v.colour,
       inStock: v.stockQty > 0,
+      // Is jorhe ki apni tasveer — na ho to null, phir poore maal wali chalti hai
+      imageUrl: firstImageFor(row.media, v.id),
     })),
     listedAt: row.createdAt,
   }

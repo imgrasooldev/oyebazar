@@ -607,6 +607,8 @@ const DICTIONARY = {
     en: 'No colours or sizes yet — one count for the whole item.',
     rm: 'Abhi koi rang ya size nahi — poore maal ki ek hi ginti chal rahi hai.',
   },
+  variantPhoto: { ur: 'اس رنگ کی تصویر', en: 'Photo for this one', rm: 'Is jorhe ki tasveer' },
+  variantPhotoAdd: { ur: 'تصویر لگائیں', en: 'Add photo', rm: 'Tasveer lagayen' },
   variantPick: { ur: 'رنگ / سائز چنیں', en: 'Pick colour / size', rm: 'Rang / size chunen' },
   moneyNav: { ur: 'پیسے', en: 'Money', rm: 'Paise' },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
