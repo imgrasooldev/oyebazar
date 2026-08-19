@@ -70,20 +70,25 @@ export interface ProductRepository {
 }
 
 /** Mega-menu ke liye — badi category aur us ke neeche wali. */
+/**
+ * Darakht ka ek khaana — apne bachchon samet, jitne bhi darje hon.
+ *
+ * 🔴 Pehle `children` ke andar bachche NAHI the (sirf do darje). Ops ab teesra darja
+ * bana sakti hai, aur us waqt purani shakl mein wo bachcha kahin dikhta hi nahi — na
+ * menu mein, na kisi list mein. Ab node apne aap par khatam nahi hota.
+ */
 export interface CategoryTreeNode extends CategoryView {
+  /** Is shaakh ka kul maal — apna aur neeche walon ka */
   readonly productCount: number
   readonly coverImageUrl: string | null
-  readonly children: readonly (CategoryView & {
-    productCount: number
-    coverImageUrl: string | null
-  })[]
+  readonly children: readonly CategoryTreeNode[]
 }
 
 export interface CategoryRepository {
   /** 🔴 Sirf BARI categories (parent wali nahi) — warna 58 chips ki patti ban jati hai. */
   findAll(): Promise<CategoryView[]>
 
-  /** Do darjay ka darakht — sidebar + flyout menu isi se banta hai. */
+  /** Poora darakht, har darja — sidebar aur flyout menu isi se bante hain. */
   findTree(): Promise<CategoryTreeNode[]>
   findBySlug(slug: string): Promise<CategoryView | null>
   /**

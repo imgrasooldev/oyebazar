@@ -74,6 +74,32 @@ export function CategoryMenu({
                             {child.productCount}
                           </span>
                         </Link>
+
+                        {/*
+                          Teesra darja — chhote lafzon mein, apne baap ke neeche.
+                          Ops ab jitni gehri shaakh bana sakti hai, magar menu par teesre
+                          se aage nahi jate: chautha darja is dabbe mein parha hi nahi
+                          jata, aur wahan tak pohanchne ka rasta category ka apna safha hai.
+                        */}
+                        {child.children.length > 0 && (
+                          <ul className="mb-1 ms-9 flex flex-wrap gap-x-3 gap-y-0.5">
+                            {child.children.slice(0, 6).map((grand) => (
+                              <li key={grand.slug}>
+                                <Link
+                                  href={{ pathname: '/bazaar', query: { category: grand.slug } }}
+                                  className="text-[0.78rem] text-ink-faint transition hover:text-brand-700"
+                                >
+                                  {pickName(locale, grand)}
+                                </Link>
+                              </li>
+                            ))}
+                            {child.children.length > 6 && (
+                              <li className="text-[0.78rem] text-ink-faint">
+                                +{child.children.length - 6}
+                              </li>
+                            )}
+                          </ul>
+                        )}
                       </li>
                     ))}
                   </ul>
