@@ -154,6 +154,24 @@ export class PrismaPayoutRepository implements PayoutRepository {
     })
   }
 
+  async listForPeriod(
+    scope: { resellerId?: string; supplierId?: string },
+    from: Date,
+    to: Date,
+  ): Promise<PayoutView[]> {
+    const rows = await this.db.resellerPayout.findMany({
+      where: {
+        ...(scope.resellerId ? { resellerId: scope.resellerId } : {}),
+        ...(scope.supplierId ? { supplierId: scope.supplierId } : {}),
+        // Hisab us din ka hai jis din maal pohancha — us din wo raqam bani
+        createdAt: { gte: from, lt: to },
+      },
+      select: PAYOUT_SELECT,
+      orderBy: { createdAt: 'asc' },
+    })
+    return rows.map(toView)
+  }
+
   async listForSupplier(supplierId: string, status?: PayoutStatus): Promise<PayoutView[]> {
     const rows = await this.db.resellerPayout.findMany({
       where: { supplierId, ...(status ? { status } : {}) },

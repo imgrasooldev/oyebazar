@@ -12,7 +12,7 @@
  * 🔴 Ye service kisi ko paise nahi bhejti — sirf likhti hai ke kis ne kya kaha aur kab.
  * Paisa asal mein EasyPaisa/bank par chalta hai, hamare bahar.
  */
-import { NotFoundError, ValidationError, type Pkr } from '@oyebazar/shared'
+import { NotFoundError, ValidationError, pkr, type Pkr } from '@oyebazar/shared'
 import type { PayoutRepository, PayoutStatus, PayoutView } from '../ports/payout-repositories'
 import type {
   CounterpartyLedgerRow,
@@ -249,6 +249,47 @@ export class PayoutService {
   /** Dukan ke zimme HAMARI fee — reseller wale paison se bilkul alag khaana. */
   platformFeeForSupplier(supplierId: string) {
     return this.ledger.platformFeeForSupplier(supplierId)
+  }
+
+  /**
+   * Mahine ka statement — dono taraf ek hi kaghaz.
+   *
+   * Mahina "YYYY-MM" mein aata hai. Server ka apna waqt istemal nahi hota: dukan wala
+   * aur reseller alag alag waqt par kholen to bhi wohi mahina bane, aur PDF ka number
+   * kabhi na badle.
+   */
+  async statement(
+    scope: { resellerId?: string; supplierId?: string },
+    month: string,
+  ): Promise<{
+    month: string
+    rows: PayoutView[]
+    totals: { earned: Pkr; received: Pkr; awaiting: Pkr }
+  }> {
+    const match = /^(\d{4})-(\d{2})$/.exec(month)
+    if (!match) throw new ValidationError('Mahina YYYY-MM ki shakl mein chahiye')
+
+    const year = Number(match[1])
+    const monthIndex = Number(match[2]) - 1
+    if (monthIndex < 0 || monthIndex > 11) throw new ValidationError('Mahina theek nahi')
+
+    const from = new Date(Date.UTC(year, monthIndex, 1))
+    const to = new Date(Date.UTC(year, monthIndex + 1, 1))
+
+    const rows = await this.payouts.listForPeriod(scope, from, to)
+
+    const sum = (list: PayoutView[]) => list.reduce((total, row) => total + row.amount, 0)
+    const settled = rows.filter((row) => row.status === 'SETTLED')
+
+    return {
+      month,
+      rows,
+      totals: {
+        earned: pkr(sum(rows)),
+        received: pkr(sum(settled)),
+        awaiting: pkr(sum(rows.filter((row) => row.status !== 'SETTLED'))),
+      },
+    }
   }
 
   // -------------------------------------------------------------------- ops

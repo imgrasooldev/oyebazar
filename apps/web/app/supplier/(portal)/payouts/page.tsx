@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { Metadata } from 'next'
 import { formatPkr } from '@oyebazar/shared'
 import { isOverdue } from '@oyebazar/core'
@@ -40,10 +41,16 @@ export default async function SupplierPayoutsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
         <h1 className="text-[1.3rem] font-bold tracking-tight">{t('payoutsNav')}</h1>
         {/* Dukan wale ke liye apne lafz — reseller wala jumla yahan ulta parhta hai */}
         <p className="mt-1 max-w-2xl text-sm text-ink-soft">{t('payoutNoteSupplier')}</p>
+        </div>
+        {/* Reseller ke paas bilkul yehi kaghaz hai — numbers dono taraf ek */}
+        <Link href="/supplier/statement" className="btn-ghost shrink-0">
+          {t('statement')}
+        </Link>
       </div>
 
       {/*

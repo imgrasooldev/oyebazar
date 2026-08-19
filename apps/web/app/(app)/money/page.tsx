@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { Metadata } from 'next'
 import { formatPkr } from '@oyebazar/shared'
 import { CounterpartyLedger } from '@/components/counterparty-ledger'
@@ -37,9 +38,15 @@ export default async function ResellerMoneyPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-[1.35rem] font-bold tracking-tight">{t('myMoney')}</h1>
-        <p className="mt-1 max-w-2xl text-[0.92rem] text-ink-soft">{t('payoutNote')}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-[1.35rem] font-bold tracking-tight">{t('myMoney')}</h1>
+          <p className="mt-1 max-w-2xl text-[0.92rem] text-ink-soft">{t('payoutNote')}</p>
+        </div>
+        {/* Wohi kaghaz jo wholesaler ke paas hai — jhagre mein "apna hisab bhejein" khatam */}
+        <Link href="/money/statement" className="btn-ghost shrink-0">
+          {t('statement')}
+        </Link>
       </div>
 
       <section className="grid gap-4 sm:grid-cols-2">

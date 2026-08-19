@@ -78,6 +78,19 @@ export interface PayoutRepository {
     at: Date
   }): Promise<void>
 
+  /**
+   * Ek mahine ka hisab — statement ke liye.
+   *
+   * Scope mein ya reseller hai ya supplier: dono ek hi query se aate hain taake ek hi
+   * mahine ka statement dono taraf BILKUL ek jaise numbers dikhaye. Do alag query hotin
+   * to ek din un mein farq aa jata — aur us din statement ka poora maqsad khatam.
+   */
+  listForPeriod(
+    scope: { resellerId?: string; supplierId?: string },
+    from: Date,
+    to: Date,
+  ): Promise<PayoutView[]>
+
   listForSupplier(supplierId: string, status?: PayoutStatus): Promise<PayoutView[]>
   listForReseller(resellerId: string, status?: PayoutStatus): Promise<PayoutView[]>
 

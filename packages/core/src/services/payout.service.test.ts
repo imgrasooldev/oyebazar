@@ -69,6 +69,9 @@ class FakePayouts implements PayoutRepository {
     ])
   }
   async resolve() {}
+  async listForPeriod() {
+    return this.rows
+  }
   async listForSupplier() {
     return this.rows
   }
