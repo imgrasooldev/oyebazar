@@ -62,97 +62,92 @@ export default async function SupplierPage({ params }: Props) {
         (logo, naam, tasdeeq, ilaqa) aur daen wo do cheezein jin par faisla hota hai —
         WhatsApp ka rasta, aur ye ke dukan zinda hai ya nahi.
       */}
+      {/*
+        Dukan ka sarwarq — kasa hua.
+        Pehle ye do sutoon ka grid tha: baen pehchan, daen stats ka dabba aur bara CTA.
+        Jis dukan ka bio na ho aur ek hi category ho, us par baen wala hissa chhota reh
+        jata aur daen wala lamba — beech mein poora safed maidan. Ab sab kuch ek hi qatar
+        mein hai aur card utna hi lamba hota hai jitna us mein waqai likha ho.
+      */}
       <section className="card overflow-hidden">
-        <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
-          <div className="flex min-w-0 items-start gap-4">
-            <SupplierLogo name={detail.businessName} logoUrl={detail.logoUrl} size="lg" />
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-3 p-4 sm:p-5">
+          <SupplierLogo name={detail.businessName} logoUrl={detail.logoUrl} size="lg" />
 
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-[1.6rem] font-bold leading-tight tracking-tight">
-                  {detail.businessName}
-                </h1>
-                <span className="badge-verified">
-                  <CheckBadgeIcon className="h-3.5 w-3.5" />
-                  {t('verified')}
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-[1.4rem] font-bold leading-tight tracking-tight">
+                {detail.businessName}
+              </h1>
+              <span className="badge-verified">
+                <CheckBadgeIcon className="h-3.5 w-3.5" />
+                {t('verified')}
+              </span>
+            </div>
+
+            {/* Sheher, taazgi aur ginti ek hi qatar mein — teen alag qatarein teen guna jagah leti thin */}
+            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.88rem] text-ink-soft">
+              <PinIcon className="h-4 w-4 shrink-0 text-ink-faint" />
+              {detail.city}
+              {detail.marketName ? ` · ${detail.marketName}` : ''}
+              <span aria-hidden="true" className="text-ink-faint">·</span>
+              <span className="numeric">
+                {detail.productCount} {t('items')}
+              </span>
+              <span aria-hidden="true" className="text-ink-faint">·</span>
+              {detail.lastListedAt ? (
+                <span
+                  className={
+                    isFresh(detail.lastListedAt, now) ? 'font-semibold text-accent-700' : undefined
+                  }
+                >
+                  {isFresh(detail.lastListedAt, now) ? t('newStock') : t('lastListed')}{' '}
+                  {timeAgo(locale, detail.lastListedAt, now)}
                 </span>
-              </div>
-
-              <p className="mt-1.5 flex items-center gap-1.5 text-[0.95rem] text-ink-soft">
-                <PinIcon className="h-4 w-4 shrink-0 text-ink-faint" />
-                {detail.city}
-                {detail.marketName ? ` · ${detail.marketName}` : ''}
-              </p>
-
-              {detail.bioUr && (
-                <p className="mt-3 max-w-xl leading-relaxed text-ink">{detail.bioUr}</p>
+              ) : (
+                <span>{t('noListingYet')}</span>
               )}
-
-              {/* Categories ab chips — lambi "·" wali qatar parhi nahi jati thi */}
-              {detail.categories.length > 0 && (
-                <ul className="mt-3 flex flex-wrap gap-1.5">
-                  {detail.categories.map((category) => (
-                    <li
-                      key={category.nameEn}
-                      className="rounded-pill bg-paper-sunken px-3 py-1 text-[0.78rem] text-ink-soft"
-                    >
-                      {pickName(locale, category)}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3 lg:w-64">
-            {/*
-              Taazgi — number se zyada ye batata hai ke dukan chal rahi hai ya nahi, aur
-              WhatsApp par rate poochhne se pehle bandi yehi dekhti hai. Is liye ye CTA
-              ke SAATH hai, kahin neeche matn mein nahi.
-            */}
-            <div className="rounded-card bg-paper-sunken px-4 py-3">
-              <p className="numeric text-[1.15rem] font-bold leading-none">
-                {detail.productCount}{' '}
-                <span className="text-[0.85rem] font-semibold text-ink-soft">{t('items')}</span>
-              </p>
-              <p className="mt-2 text-[0.82rem]">
-                {detail.lastListedAt ? (
-                  <span
-                    className={
-                      isFresh(detail.lastListedAt, now)
-                        ? 'font-semibold text-accent-700'
-                        : 'text-ink-faint'
-                    }
-                  >
-                    {isFresh(detail.lastListedAt, now) ? t('newStock') : t('lastListed')}{' '}
-                    {timeAgo(locale, detail.lastListedAt, now)}
-                  </span>
-                ) : (
-                  <span className="text-ink-faint">{t('noListingYet')}</span>
-                )}
-              </p>
-              <p className="mt-1 text-[0.78rem] text-ink-faint">
+              <span aria-hidden="true" className="text-ink-faint">·</span>
+              <span className="text-ink-faint">
                 {t('onBazaarSince')} {detail.memberSince.getFullYear()}
-              </p>
-            </div>
+              </span>
+            </p>
 
-            {/* 🔴 Wahid call to action — order button NAHI, seedha WhatsApp */}
-            {detail.whatsappPublic && (
-              <a
-                href={whatsappLink(detail.whatsappPublic)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary w-full justify-center gap-2"
-              >
-                <WhatsAppIcon className="h-5 w-5" />
-                {t('askRateWhatsapp')}
-              </a>
+            {detail.bioUr && (
+              <p className="mt-2 max-w-2xl text-[0.92rem] leading-relaxed text-ink">
+                {detail.bioUr}
+              </p>
+            )}
+
+            {detail.categories.length > 0 && (
+              <ul className="mt-2 flex flex-wrap gap-1.5">
+                {detail.categories.map((category) => (
+                  <li
+                    key={category.nameEn}
+                    className="rounded-pill bg-paper-sunken px-3 py-1 text-[0.76rem] text-ink-soft"
+                  >
+                    {pickName(locale, category)}
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
+
+          {/* 🔴 Wahid call to action — order button NAHI, seedha WhatsApp */}
+          {detail.whatsappPublic && (
+            <a
+              href={whatsappLink(detail.whatsappPublic)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary shrink-0 gap-2"
+            >
+              <WhatsAppIcon className="h-5 w-5" />
+              {t('askRateWhatsapp')}
+            </a>
+          )}
         </div>
 
-        {/* 🔴 Qanooni jumla — patti ki shakl mein, card ke andar dabba nahi */}
-        <p className="border-t border-paper-sunken bg-paper-sunken/60 px-5 py-3 text-[0.8rem] text-ink-soft sm:px-6">
+        {/* 🔴 Qanooni jumla — patti ki shakl mein */}
+        <p className="border-t border-paper-sunken bg-paper-sunken/60 px-4 py-2.5 text-[0.78rem] text-ink-soft sm:px-5">
           {locale === 'ur'
             ? `${BRAND.nameUr} یہاں سے آرڈر نہیں لیتا اور کوئی فیس نہیں لیتا — سودا براہِ راست ہول سیلر سے ہوتا ہے۔`
             : `${BRAND.name} takes no orders and charges no fee here — you deal with the wholesaler directly.`}
