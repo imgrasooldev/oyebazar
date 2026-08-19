@@ -14,6 +14,10 @@
  */
 import { NotFoundError, ValidationError, type Pkr } from '@oyebazar/shared'
 import type { PayoutRepository, PayoutStatus, PayoutView } from '../ports/payout-repositories'
+import type {
+  CounterpartyLedgerRow,
+  MoneyLedgerRepository,
+} from '../ports/money-ledger-repositories'
 import type { SupplierPayoutSummary } from '../ports/payout-repositories'
 import type { Analytics, Clock, Logger, MessagingProvider } from '../ports/infrastructure'
 
@@ -41,6 +45,7 @@ export class PayoutService {
    */
   constructor(
     private readonly payouts: PayoutRepository,
+    private readonly ledger: MoneyLedgerRepository,
     private readonly phones: {
       reseller(id: string): Promise<string>
       supplier(id: string): Promise<string>
@@ -199,6 +204,27 @@ export class PayoutService {
   /** Dashboard ka jama — "mil chuke" aur "aana baqi hai" alag alag. */
   totalsForReseller(resellerId: string): Promise<{ settled: Pkr; awaiting: Pkr }> {
     return this.payouts.totalsForReseller(resellerId)
+  }
+
+  /**
+   * "Kis dukan ke saath mera kya hisab hai" — reseller ka poora naqsha.
+   *
+   * Ye `listForReseller` se alag sawal hai: wo har order ki row deti hai, ye har DUKAN
+   * ka jama. Bees order ke baad row-by-row list se ye pata nahi chalta ke kis dukan par
+   * paisa atka hua hai — aur asal sawal wohi hai.
+   */
+  ledgerBySupplier(resellerId: string): Promise<CounterpartyLedgerRow[]> {
+    return this.ledger.bySupplierForReseller(resellerId)
+  }
+
+  /** Wohi sawal ulta — wholesaler ke liye, har reseller ka alag hisab. */
+  ledgerByReseller(supplierId: string): Promise<CounterpartyLedgerRow[]> {
+    return this.ledger.byResellerForSupplier(supplierId)
+  }
+
+  /** Dukan ke zimme HAMARI fee — reseller wale paison se bilkul alag khaana. */
+  platformFeeForSupplier(supplierId: string) {
+    return this.ledger.platformFeeForSupplier(supplierId)
   }
 
   // -------------------------------------------------------------------- ops

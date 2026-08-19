@@ -117,6 +117,7 @@ function build(): Container {
    */
   const payouts = new PayoutService(
     repositories.payouts,
+    repositories.moneyLedger,
     {
       reseller: async (id) => (await repositories.resellers.findById(id))?.whatsappPhone ?? '',
       supplier: async (id) => (await repositories.suppliers.findInternal(id))?.phone ?? '',

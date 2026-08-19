@@ -92,6 +92,18 @@ function build() {
 
   const service = new PayoutService(
     repo,
+    // Ledger sirf parhne wale safhon ke liye hai — in tests mein koi is tak nahi pohanchta
+    {
+      async bySupplierForReseller() {
+        return []
+      },
+      async byResellerForSupplier() {
+        return []
+      },
+      async platformFeeForSupplier() {
+        return { earned: pkr(0), invoiced: pkr(0), collected: pkr(0) }
+      },
+    },
     { reseller: async () => '923001234567', supplier: async () => '923001200000' },
     {
       async sendTemplate(input: { to: string; template: string }) {

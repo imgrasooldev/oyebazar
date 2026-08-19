@@ -4,7 +4,7 @@ import { BRAND } from '@oyebazar/shared'
 import { getResellerOrNull } from '@/lib/api/session'
 import { LanguageToggle } from '@/components/language-toggle'
 import { LogoutButton } from '@/components/logout-button'
-import { GridIcon, ListIcon, SparkIcon, StoreIcon } from '@/components/icons'
+import { GridIcon, ListIcon, MoneyIcon, SparkIcon, StoreIcon } from '@/components/icons'
 import { translator } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
 
@@ -25,6 +25,7 @@ const NAV = [
   { href: '/dashboard', key: 'dashboard', Icon: SparkIcon },
   { href: '/catalogue', key: 'catalogue', Icon: GridIcon },
   { href: '/orders', key: 'orders', Icon: ListIcon },
+  { href: '/money', key: 'moneyNav', Icon: MoneyIcon },
   { href: '/bazaar', key: 'bazaar', Icon: StoreIcon },
 ] as const
 

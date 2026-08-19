@@ -34,7 +34,14 @@ function walk(dir: string): string[] {
 }
 
 describe('🔴 dev OTP production mein na nikle', () => {
-  it('taala 1: NODE_ENV=production par code kabhi nahi milta', async () => {
+  /*
+   * 20 second ki chhoot jaan boojh kar: ye test `lib/api/dev-otp` ko naye sire se import
+   * karta hai, jo poora container (Prisma samet) le kar aata hai — akela 1.8s leta hai.
+   * Poore suite mein sab packages ek saath chalte hain aur ye default 5s ki hadd se
+   * nikal jata tha. Ek hifazat ka test waqt ki tangi se girna nahi chahiye: aisa test
+   * kabhi kabhi laal ho to log usay "flaky" keh kar dekhna chhor dete hain.
+   */
+  it('taala 1: NODE_ENV=production par code kabhi nahi milta', { timeout: 20_000 }, async () => {
     vi.stubEnv('NODE_ENV', 'production')
     // Module cache saaf, warna purana NODE_ENV le kar bana hua module milta hai
     vi.resetModules()

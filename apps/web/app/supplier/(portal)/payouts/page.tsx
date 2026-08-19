@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { formatPkr } from '@oyebazar/shared'
 import { isOverdue } from '@oyebazar/core'
+import { CounterpartyLedger } from '@/components/counterparty-ledger'
 import { SupplierPayoutSend } from '@/components/payout-actions'
 import { requireSupplier } from '@/lib/api/supplier-session'
 import { container } from '@/lib/container'
@@ -25,7 +26,11 @@ export default async function SupplierPayoutsPage() {
   const [{ supplier }, locale] = await Promise.all([requireSupplier(), getLocale()])
   const t = translator(locale)
 
-  const payouts = await container.payouts.listForSupplier(supplier.id)
+  const [payouts, ledger, platformFee] = await Promise.all([
+    container.payouts.listForSupplier(supplier.id),
+    container.payouts.ledgerByReseller(supplier.id),
+    container.payouts.platformFeeForSupplier(supplier.id),
+  ])
   const now = new Date()
 
   const open = payouts.filter((payout) => payout.status !== 'SETTLED')
@@ -36,14 +41,41 @@ export default async function SupplierPayoutsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-[1.3rem] font-bold tracking-tight">{t('payoutsNav')}</h1>
-        <p className="mt-1 max-w-2xl text-sm text-ink-soft">{t('payoutNote')}</p>
+        {/* Dukan wale ke liye apne lafz — reseller wala jumla yahan ulta parhta hai */}
+        <p className="mt-1 max-w-2xl text-sm text-ink-soft">{t('payoutNoteSupplier')}</p>
       </div>
 
-      <div className="card p-5">
-        <p className="text-[0.78rem] text-ink-faint">{t('moneyAwaiting')}</p>
-        <p dir="ltr" className="numeric mt-1 text-2xl font-bold">
-          {formatPkr(owed)}
-        </p>
+      {/*
+        Do bilkul alag khaane, jaan boojh kar saath saath: baayen reseller ka paisa
+        (jo aap ne dena hai), daayen hamari fee (jo hamein deni hai). Dukan par ye dono
+        aksar aapas mein gaddmadd ho jate hain — aur phir na reseller ko poora milta hai
+        na hamein.
+      */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="card p-5">
+          <p className="text-[0.78rem] text-ink-faint">{t('moneyOwedToResellers')}</p>
+          <p dir="ltr" className="numeric mt-1 text-2xl font-bold text-brand-700">
+            {formatPkr(owed)}
+          </p>
+        </div>
+
+        <div className="card p-5">
+          <p className="text-[0.78rem] text-ink-faint">{t('platformFee')}</p>
+          <p dir="ltr" className="numeric mt-1 text-2xl font-bold">
+            {formatPkr(platformFee.earned + platformFee.invoiced)}
+          </p>
+          <p className="mt-1 text-[0.74rem] text-ink-faint">
+            {t('feeInvoicedLabel')}{' '}
+            <span dir="ltr" className="numeric">
+              {formatPkr(platformFee.invoiced)}
+            </span>
+            <span className="mx-1.5">·</span>
+            {t('feeCollectedLabel')}{' '}
+            <span dir="ltr" className="numeric">
+              {formatPkr(platformFee.collected)}
+            </span>
+          </p>
+        </div>
       </div>
 
       {open.length === 0 ? (
@@ -105,6 +137,29 @@ export default async function SupplierPayoutsPage() {
           ))}
         </ul>
       )}
+
+      <section>
+        <h2 className="mb-3 text-[0.78rem] font-bold uppercase tracking-wider text-ink-faint">
+          {t('moneyByReseller')}
+        </h2>
+        <CounterpartyLedger
+          rows={ledger}
+          locale={locale}
+          now={now}
+          labels={{
+            empty: t('noDealingsYet'),
+            orders: t('ordersCount'),
+            delivered: t('ordersDeliveredShort'),
+            running: t('ordersRunningShort'),
+            lost: t('ordersLostShort'),
+            earned: t('moneyEarnedTotal'),
+            received: t('feeCollectedLabel'),
+            awaiting: t('moneyAwaiting'),
+            disputed: t('disputedShort'),
+            lastOrder: t('lastOrder'),
+          }}
+        />
+      </section>
 
       {settled.length > 0 && (
         <section>
