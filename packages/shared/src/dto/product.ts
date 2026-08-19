@@ -18,20 +18,37 @@ export const CategoryRefDTO = z
   })
   .strict()
 
+/**
+ * Ek tasveer ya video.
+ *
+ * `id` yahan is liye hai ke reseller har tasveer ka ALAG status pack bana sakti hai —
+ * POST /status-pack par yehi id `mediaId` ban kar jati hai. Ye product ki apni media
+ * row ki id hai, koi supplier ya price ka data nahi.
+ */
 export const ProductMediaDTO = z
   .object({
+    id: z.string(),
+    type: z.enum(['IMAGE', 'VIDEO']),
     url: z.string(),
     sortOrder: z.number().int(),
   })
   .strict()
 
+/**
+ * Ek variant (size/rang) — Phase 2 tak har product par ek hi hota hai.
+ *
+ * 🔴 Yahan `listedAt` NAHI hai, aur ye jaan boojh kar: listing ki tareekh product ki
+ * hai, variant ki nahi (wo `ResellerProductListItemDTO` par pehle se hai). Pehle ye
+ * khaana yahan bhi para tha aur repository usay bharti hi nahi thi — natija ye ke
+ * `.strict()` DTO har dafa "Invalid date" par throw karta tha aur POORA product ka
+ * safha (yani Content Studio) 500 deta tha.
+ */
 export const ProductVariantDTO = z
   .object({
     id: z.string(),
     size: z.string().nullable(),
     colour: z.string().nullable(),
     inStock: z.boolean(),
-    listedAt: z.coerce.date(),
   })
   .strict()
 
