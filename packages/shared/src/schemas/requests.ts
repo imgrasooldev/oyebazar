@@ -148,6 +148,11 @@ export const BazaarQuerySchema = CursorPaginationSchema.extend({
   city: z.string().trim().max(40).optional(),
   category: z.string().trim().max(40).optional(),
   q: z.string().trim().min(1).max(60).optional(),
+  /** Sirf wo dukanen jinhon ne pichhle hafte kuch naya lagaya */
+  fresh: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((value) => value === 'true'),
 })
 
 // ---------- Pricing ----------

@@ -105,6 +105,14 @@ export interface CategoryRepository {
 export interface SupplierFilters extends CursorQuery {
   readonly city?: string | undefined
   readonly categorySlug?: string | undefined
+  /**
+   * Sirf wo dukanen jinhon ne pichhle hafte kuch naya lagaya.
+   *
+   * Bazaar ka sab se bara sawal yehi hai: kaun si dukan zinda hai. Ginti aur naam se
+   * ye pata nahi chalta — 40 item wali dukan jis ne 8 mahine se kuch nahi lagaya, 4
+   * item wali taaza dukan se buri hai.
+   */
+  readonly freshOnly?: boolean | undefined
   readonly search?: string | undefined
 }
 

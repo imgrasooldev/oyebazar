@@ -151,6 +151,22 @@ export class PrismaSupplierRepository
             ],
           }
         : {}),
+      /*
+       * "Naya maal" = pichhle 7 din mein koi LIVE listing.
+       * Shart products par lagti hai, kisi jama kiye hue khaane par nahi: aisa khaana
+       * ek din asli listing se alag ho jata (koi update chhoot jaye) aur phir wo dukan
+       * hamesha ghalat side par khari rehti.
+       */
+      ...(filters.freshOnly
+        ? {
+            products: {
+              some: {
+                status: 'LIVE',
+                createdAt: { gte: new Date(Date.now() - 7 * 86_400_000) },
+              },
+            },
+          }
+        : {}),
     }
   }
 

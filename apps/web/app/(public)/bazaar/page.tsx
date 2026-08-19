@@ -32,6 +32,7 @@ export default async function BazaarPage({
     city: typeof raw.city === 'string' ? raw.city : undefined,
     category: typeof raw.category === 'string' ? raw.category : undefined,
     q: typeof raw.q === 'string' ? raw.q : undefined,
+    fresh: raw.fresh === 'true' ? 'true' : undefined,
     limit: '24',
   })
 
@@ -44,6 +45,7 @@ export default async function BazaarPage({
       city: query.city,
       categorySlug: query.category,
       search: query.q,
+      freshOnly: query.fresh,
     }),
   ])
 
@@ -81,6 +83,32 @@ export default async function BazaarPage({
                 </li>
               ))}
             </ul>
+          </div>
+
+          {/*
+            "Sirf naya maal" — Bazaar ka asal sawal yehi hai ke kaun si dukan zinda hai.
+            City ki list ke saath rakha hai kyunke dono ek hi tarah ke faisle hain:
+            "kahan se" aur "kis mein jaan hai".
+          */}
+          <div className="card mt-3 p-4">
+            <Link
+              href={{
+                pathname: '/bazaar',
+                query: {
+                  ...(query.city ? { city: query.city } : {}),
+                  ...(query.category ? { category: query.category } : {}),
+                  ...(query.fresh ? {} : { fresh: 'true' }),
+                },
+              }}
+              className={`flex min-h-tap items-center justify-between rounded-card px-3 text-sm font-semibold transition ${
+                query.fresh
+                  ? 'bg-accent-500 text-white'
+                  : 'bg-paper-sunken text-ink-soft hover:text-ink'
+              }`}
+            >
+              {t('filterFresh')}
+              <span aria-hidden="true">{query.fresh ? '✓' : '+'}</span>
+            </Link>
           </div>
 
           <div className="card mt-3 p-4 text-sm text-ink-soft">

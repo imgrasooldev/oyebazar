@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { DEFAULT_TEMPLATE_KEY, formatPkr } from '@oyebazar/shared'
+import { DEFAULT_TEMPLATE_KEY, formatPkr, pkr } from '@oyebazar/shared'
 import { DownloadIcon, SparkIcon } from '@/components/icons'
 import { toResellerProductListItemDTO } from '@/lib/api/mappers'
 import { requireReseller } from '@/lib/api/session'
 import { container } from '@/lib/container'
+import { CatalogueFilters } from '@/components/catalogue-filters'
 import { SearchSuggest } from '@/components/search-suggest'
 import { pickName, pickTitle, timeAgo, translator } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
@@ -23,7 +24,13 @@ export const dynamic = 'force-dynamic'
 export default async function CataloguePage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; category?: string }>
+  searchParams: Promise<{
+    q?: string
+    category?: string
+    minPrice?: string
+    maxPrice?: string
+    inStockOnly?: string
+  }>
 }) {
   const { reseller } = await requireReseller()
   const [locale, query] = await Promise.all([getLocale(), searchParams])
@@ -34,11 +41,32 @@ export default async function CataloguePage({
   const search = query.q?.trim() || undefined
   const category = query.category || undefined
 
+  /*
+   * Rate ki hadd URL se aati hai. Ghalat ya khali qadar ko chup chaap girate hain —
+   * ek ajeeb link (kisi ne khud type kar liya) par safha tootna nahi chahiye, wo
+   * bas bina us filter ke chal jaye.
+   */
+  const toPositive = (value: string | undefined): number | undefined => {
+    if (!value?.trim()) return undefined
+    const parsed = Number(value)
+    return Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : undefined
+  }
+
+  const minPrice = toPositive(query.minPrice)
+  const maxPrice = toPositive(query.maxPrice)
+  const inStockOnly = query.inStockOnly === 'true'
+
   const [page, dailyPacks, categories] = await Promise.all([
     container.catalogue.list(reseller.id, {
       limit: 24,
       ...(search ? { search } : {}),
       ...(category ? { categorySlug: category } : {}),
+      ...(minPrice !== undefined ? { minPrice: pkr(minPrice) } : {}),
+      // Ulti hadd (min > max) par sirf max girate hain — us se list khali nahi hoti
+      ...(maxPrice !== undefined && (minPrice === undefined || maxPrice >= minPrice)
+        ? { maxPrice: pkr(maxPrice) }
+        : {}),
+      ...(inStockOnly ? { inStockOnly: true } : {}),
     }),
     container.dailyDrops.packsForReseller(reseller.id, DEFAULT_TEMPLATE_KEY),
     container.repositories.categories.findAll(),
@@ -138,6 +166,18 @@ export default async function CataloguePage({
             ))}
           </div>
         </div>
+
+        {/* Rate ki hadd aur "sirf mojood maal" — server ye pehle se jaanta tha */}
+        <CatalogueFilters
+          labels={{
+            price: t('filterPrice'),
+            from: t('filterFrom'),
+            to: t('filterTo'),
+            inStockOnly: t('filterInStock'),
+            apply: t('filterApply'),
+            clear: t('filterClear'),
+          }}
+        />
 
         {items.length === 0 ? (
           <p className="card p-6 text-ink-soft">{t('noItemsListed')}</p>
