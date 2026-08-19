@@ -202,9 +202,14 @@ export function CategoryTreeEditor({
         />
       )}
 
-      {/* Ishara — sirf ghisatte waqt, aur wahin jahan aankh pehle se hai */}
+      {/*
+        Ishara — tairta hua, layout se bahar.
+        🔴 Pehle ye `sticky` tha aur qatar mein apni jagah ghairta tha: drag shuru hote
+        hi saari qatarein 50px neeche khisak jatin, yani jis cheez par cursor tha wo
+        badal jati. Ab `fixed` hai — aata jata hai magar kuch hilta nahi.
+      */}
       {hint && (
-        <div className="sticky top-20 z-20 flex flex-wrap items-center gap-2 rounded-card bg-coal-900 px-4 py-2 text-sm text-white shadow-lift">
+        <div className="fixed inset-x-0 bottom-6 z-40 mx-auto flex w-fit flex-wrap items-center gap-2 rounded-pill bg-coal-900 px-5 py-2.5 text-sm text-white shadow-lift">
           <span className="font-semibold">{hint.text}</span>
           <span className="text-white/60">{hint.detail}</span>
         </div>
@@ -223,18 +228,6 @@ export function CategoryTreeEditor({
               // Nested rows par baen halki lakeer — darakht ki shakl ek nazar mein
               className={depth > 0 ? 'border-s border-dashed border-ink-faint/30 ps-3' : ''}
             >
-              {/*
-                Neeche girne wali lakeer — usi darje par jahan wo waqai jayega. Sirf rang
-                badalne se ye farq nazar nahi aata ke cheez bhai banegi ya bachcha.
-              */}
-              {after && (
-                <div className="mb-1 flex items-center gap-2">
-                  <span className="h-[3px] flex-1 rounded-full bg-brand-500" />
-                  <span className="rounded-pill bg-brand-500 px-2 py-0.5 text-[0.68rem] font-semibold text-white">
-                    here
-                  </span>
-                </div>
-              )}
 
               <div
                 draggable={canManage && editing !== node.id}
@@ -258,9 +251,27 @@ export function CategoryTreeEditor({
                    */
                   const box = event.currentTarget.getBoundingClientRect()
                   const nearBottom = event.clientY > box.bottom - box.height / 4
-                  setSpot({ id: node.id, mode: nearBottom ? 'after' : 'inside' })
+                  const mode = nearBottom ? 'after' : 'inside'
+
+                  /*
+                   * `dragover` maus ke har halke se hilne par chalta hai — kai dafa fi
+                   * second. Har baar state likhne se React har baar dobara render karta
+                   * hai aur wohi jhilmilahat banti hai. Sirf tab likho jab waqai kuch
+                   * badla ho.
+                   */
+                  setSpot((current) =>
+                    current?.id === node.id && current.mode === mode
+                      ? current
+                      : { id: node.id, mode },
+                  )
                 }}
-                onDragLeave={() => setSpot((current) => (current?.id === node.id ? null : current))}
+                /*
+                 * `onDragLeave` jaan boojh kar nahi hai. Wo har us waqt bhi chalta hai
+                 * jab maus qatar ke ANDAR kisi chhote element (naam, badge, button) par
+                 * jaye — yani halat baar baar khali ho kar wapas banti hai. Nishan agli
+                 * qatar par jate hi khud badal jata hai, aur drag khatam hone par saaf
+                 * ho jata hai; is se zyada kuch chahiye hi nahi.
+                 */
                 onDrop={(event) => {
                   event.preventDefault()
                   const mode = spot?.mode ?? 'inside'
@@ -276,7 +287,7 @@ export function CategoryTreeEditor({
                 }}
                 className={`card relative flex flex-wrap items-center gap-2 px-3 py-2.5 transition ${
                   dragging ? 'opacity-40' : ''
-                } ${
+                } ${dragId ? '[&_*]:pointer-events-none' : ''} ${
                   inside
                     ? // Andar ja raha hai: poora dabba ghera hua, aur baen taraf mota
                       // nishan — yani "ye us ka naya ghar hai"
@@ -284,6 +295,25 @@ export function CategoryTreeEditor({
                     : ''
                 }`}
               >
+                {/*
+                  🔴 Ye lakeer `absolute` hai, layout mein nahi.
+                  Pehle ye qatar ke ooper ek asli dabba tha — us ke aate hi qatar neeche
+                  khisak jati, cursor doosre element par chala jata, halat badal jati,
+                  lakeer gayab ho jati, qatar wapas apni jagah... aur poora safha kaanpne
+                  lagta tha. Ab jagah nahi ghairta, is liye kuch hilta bhi nahi.
+                */}
+                {after && (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-x-0 -bottom-[3px] flex items-center gap-2"
+                  >
+                    <span className="h-[3px] flex-1 rounded-full bg-brand-500" />
+                    <span className="rounded-pill bg-brand-500 px-2 text-[0.68rem] font-semibold leading-4 text-white">
+                      here
+                    </span>
+                  </span>
+                )}
+
                 {canManage && (
                   <span
                     aria-hidden="true"
@@ -294,6 +324,7 @@ export function CategoryTreeEditor({
                   </span>
                 )}
 
+                {/* Ghisatte waqt andar ke purze maus na chheenen — warna wahi jhilmilahat */}
                 {editing === node.id ? (
                   <RenameForm
                     node={node}
