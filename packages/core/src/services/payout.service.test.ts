@@ -103,6 +103,15 @@ function build() {
       async platformFeeForSupplier() {
         return { earned: pkr(0), invoiced: pkr(0), collected: pkr(0) }
       },
+      async paymentRecords() {
+        return []
+      },
+      async paymentRecordForProduct() {
+        return null
+      },
+      async listDisputed() {
+        return []
+      },
     },
     { reseller: async () => '923001234567', supplier: async () => '923001200000' },
     {

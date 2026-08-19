@@ -3,6 +3,7 @@ import { formatPkr } from '@oyebazar/shared'
 import { canDo } from '@oyebazar/core'
 import { AdminRowAction } from '@/components/admin-row-action'
 import { AdminPostAction } from '@/components/admin-post-action'
+import { AdminPayoutDecision } from '@/components/admin-payout-decision'
 import { requireOpsUser } from '@/lib/api/admin-session'
 import { container } from '@/lib/container'
 
@@ -26,9 +27,10 @@ export const dynamic = 'force-dynamic'
  */
 export default async function AdminMoneyPage() {
   const { user } = await requireOpsUser()
-  const [money, payoutSummary] = await Promise.all([
+  const [money, payoutSummary, disputes] = await Promise.all([
     container.admin.money(user),
     container.payouts.summariseBySupplier(),
+    container.payouts.listDisputed(),
   ])
 
   const pendingTotal = money.pending.reduce((sum, row) => sum + row.amount, 0)
@@ -179,7 +181,79 @@ export default async function AdminMoneyPage() {
       </section>
 
       {/*
-        4 — reseller ke paise.
+        4 — jhagre. Sab se upar kyunke yahan ek asli banda intezar kar raha hai.
+        Dono ki baat saath rakhi hai: wholesaler ka TID, aur reseller ka jumla. Faisla
+        in dono ko saath dekhe baghair nahi hota, aur do screen par baant dena wo soorat
+        banata hai jahan ops ek taraf dekh kar faisla kar leti hai.
+      */}
+      {disputes.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-[0.72rem] font-bold uppercase tracking-[0.14em] text-red-700">
+            Disputes — {disputes.length} waiting
+          </h2>
+          <ul className="space-y-3">
+            {disputes.map((dispute) => (
+              <li key={dispute.id} className="card border-l-4 border-red-500 p-5">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <p dir="ltr" className="numeric font-bold">
+                    {dispute.orderNo}
+                  </p>
+                  <p dir="ltr" className="numeric text-lg font-bold">
+                    {formatPkr(dispute.amount)}
+                  </p>
+                </div>
+
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-card bg-paper-sunken p-3">
+                    <p className="text-[0.72rem] uppercase tracking-wider text-ink-faint">
+                      Wholesaler says
+                    </p>
+                    <p className="mt-1 text-sm font-semibold">{dispute.supplierName}</p>
+                    <p dir="ltr" className="numeric text-[0.78rem] text-ink-soft">
+                      {dispute.supplierPhone}
+                    </p>
+                    <p className="mt-1.5 text-[0.82rem]">
+                      {dispute.sentReference ? (
+                        <>
+                          Sent ·{' '}
+                          <span dir="ltr" className="numeric font-semibold">
+                            {dispute.sentReference}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-ink-faint">Never claimed to have sent</span>
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="rounded-card bg-paper-sunken p-3">
+                    <p className="text-[0.72rem] uppercase tracking-wider text-ink-faint">
+                      Reseller says
+                    </p>
+                    <p className="mt-1 text-sm font-semibold">{dispute.resellerName}</p>
+                    <p dir="ltr" className="numeric text-[0.78rem] text-ink-soft">
+                      {dispute.resellerPhone}
+                    </p>
+                    <p className="mt-1.5 text-[0.82rem]">{dispute.disputeNote}</p>
+                  </div>
+                </div>
+
+                {/* Faisla sirf wahi kar sakta hai jo order aage barha sakta hai */}
+                {canDo(user.role, 'moveOrders') ? (
+                  <AdminPayoutDecision payoutId={dispute.id} />
+                ) : (
+                  <p className="mt-3 text-[0.8rem] text-ink-faint">
+                    Coordinator or above can decide this.
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/*
+        5 — reseller ke paise.
         Ye hamari kamai nahi hai, magar hamare portal ka sab se bara bharosa yahin
         tootta hai: reseller ka paisa wholesaler ke paas atka rahe aur humein khabar na
         ho. Tarteeb umar se hai, raqam se nahi — purana baqaya pehle jhagra banta hai.

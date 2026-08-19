@@ -3,6 +3,7 @@ import { formatPkr } from '@oyebazar/shared'
 import { isOverdue } from '@oyebazar/core'
 import { CounterpartyLedger } from '@/components/counterparty-ledger'
 import { SupplierPayoutSend } from '@/components/payout-actions'
+import { PayoutTimeline } from '@/components/payout-timeline'
 import { requireSupplier } from '@/lib/api/supplier-session'
 import { container } from '@/lib/container'
 import { timeAgo, translator } from '@/lib/i18n'
@@ -104,6 +105,18 @@ export default async function SupplierPayoutsPage() {
                 </p>
               </div>
 
+              <PayoutTimeline
+                payout={payout}
+                locale={locale}
+                now={now}
+                labels={{
+                  delivered: t('tlDelivered'),
+                  claimedSent: t('tlClaimedSent'),
+                  confirmed: t('tlConfirmed'),
+                  disputed: t('tlDisputed'),
+                  reference: t('tlReference'),
+                }}
+              />
               <div className="mt-3">
                 {payout.status === 'SENT' ? (
                   <p className="text-[0.82rem] text-ink-soft">

@@ -10,7 +10,12 @@
  * ho gaye — jo raste mein hain ya wapas aa gaye, wo kahin dikhte hi nahi.
  */
 import type { PrismaClient } from '@prisma/client'
-import type { CounterpartyLedgerRow, MoneyLedgerRepository } from '@oyebazar/core'
+import type {
+  CounterpartyLedgerRow,
+  DisputedPayoutRow,
+  MoneyLedgerRepository,
+  SupplierPaymentRecord,
+} from '@oyebazar/core'
 import { pkr, type Pkr } from '@oyebazar/shared'
 
 /** Ye teen halaton mein kisi ka kisi par kuch nahi banta. */
@@ -82,7 +87,9 @@ export class PrismaMoneyLedgerRepository implements MoneyLedgerRepository {
           supplierId: true,
           status: true,
           createdAt: true,
-          supplier: { select: { businessName: true, city: true } },
+          // businessName jaan boojh kar nahi: jo cheez query mein hi nahi, wo kisi
+          // future edit se galti se bahar bhi nahi ja sakti
+          supplier: { select: { city: true } },
         },
       }),
       this.db.resellerPayout.findMany({
@@ -94,9 +101,33 @@ export class PrismaMoneyLedgerRepository implements MoneyLedgerRepository {
     const names = new Map<string, { name: string; city: string }>()
     const buckets = new Map<string, Bucket>()
 
+    /*
+     * 🔴 Reseller ko dukan ka ASLI naam nahi jata — laqab jata hai ("Dukan 1").
+     *
+     * Qaida (dto/supplier.ts): reseller-facing kisi response mein supplier ka naam nahi.
+     * Wajah sirf usool nahi, karobar hai: Bazaar par har VERIFIED dukan ka WhatsApp number
+     * public hai. Naam mil jaye to reseller wahan se number nikal kar seedha sauda kar
+     * sakti hai — aur hum beech se nikal jate hain.
+     *
+     * Magar grouping us ke liye zaroori hai: "kis ke paas mera paisa atka hai" ka jawab
+     * chahiye. Laqab dono kaam kar deta hai — hisab alag alag dikhta hai, pehchan nahi
+     * khulti. Laqab pehle order ki tarteeb se banta hai, is liye har baar wohi rehta hai.
+     */
+    const firstOrderAt = new Map<string, Date>()
+    for (const order of orders) {
+      const seen = firstOrderAt.get(order.supplierId)
+      if (!seen || order.createdAt < seen) firstOrderAt.set(order.supplierId, order.createdAt)
+    }
+
+    const aliases = new Map(
+      [...firstOrderAt.entries()]
+        .sort((a, b) => a[1].getTime() - b[1].getTime())
+        .map(([supplierId], index) => [supplierId, index + 1]),
+    )
+
     for (const order of orders) {
       names.set(order.supplierId, {
-        name: order.supplier.businessName,
+        name: `Dukan ${aliases.get(order.supplierId) ?? '?'}`,
         city: order.supplier.city,
       })
       this.countOrder(buckets, order.supplierId, order.status, order.createdAt)
@@ -161,6 +192,120 @@ export class PrismaMoneyLedgerRepository implements MoneyLedgerRepository {
       invoiced: pkr(sumOf('INVOICED')),
       collected: pkr(sumOf('COLLECTED')),
     }
+  }
+
+  /**
+   * Payment record — reseller ko faisle se pehle dikhne wala number.
+   *
+   * Aosat sirf BAND ho chuke hisab par ginta hai. Baqi rows ko shamil karte to jo dukan
+   * abhi tak ek bhi hisab band nahi kar payi us ka aosat sab se achha aata — kyunke us
+   * ki ginti abhi shuru hi nahi hui.
+   */
+  async paymentRecords(supplierIds: readonly string[]): Promise<SupplierPaymentRecord[]> {
+    if (supplierIds.length === 0) return []
+
+    const rows = await this.db.resellerPayout.findMany({
+      where: { supplierId: { in: [...supplierIds] } },
+      select: { supplierId: true, status: true, createdAt: true, confirmedAt: true },
+    })
+
+    const now = Date.now()
+    const acc = new Map<
+      string,
+      { total: number; settled: number; open: number; disputed: number; days: number[]; oldest: number }
+    >()
+
+    for (const row of rows) {
+      const current = acc.get(row.supplierId) ?? {
+        total: 0,
+        settled: 0,
+        open: 0,
+        disputed: 0,
+        days: [] as number[],
+        oldest: 0,
+      }
+
+      current.total += 1
+
+      if (row.status === 'SETTLED') {
+        current.settled += 1
+        if (row.confirmedAt) {
+          current.days.push((row.confirmedAt.getTime() - row.createdAt.getTime()) / 86_400_000)
+        }
+      } else {
+        current.open += 1
+        if (row.status === 'DISPUTED') current.disputed += 1
+        current.oldest = Math.max(current.oldest, Math.floor((now - row.createdAt.getTime()) / 86_400_000))
+      }
+
+      acc.set(row.supplierId, current)
+    }
+
+    return [...acc.entries()].map(([supplierId, value]) => ({
+      supplierId,
+      total: value.total,
+      settled: value.settled,
+      open: value.open,
+      disputed: value.disputed,
+      avgDaysToSettle:
+        value.days.length > 0
+          ? Math.round((value.days.reduce((sum, d) => sum + d, 0) / value.days.length) * 10) / 10
+          : null,
+      oldestOpenDays: value.oldest,
+    }))
+  }
+
+  async paymentRecordForProduct(
+    productId: string,
+  ): Promise<Omit<SupplierPaymentRecord, 'supplierId'> | null> {
+    const product = await this.db.product.findUnique({
+      where: { id: productId },
+      select: { supplierId: true },
+    })
+    if (!product) return null
+
+    const [record] = await this.paymentRecords([product.supplierId])
+    if (!record) return null
+
+    // supplierId yahin gir jati hai — safhe tak sirf ginti jati hai
+    const { supplierId: _ignored, ...rest } = record
+    return rest
+  }
+
+  async listDisputed(): Promise<DisputedPayoutRow[]> {
+    const rows = await this.db.resellerPayout.findMany({
+      where: { status: 'DISPUTED' },
+      select: {
+        id: true,
+        amount: true,
+        sentReference: true,
+        sentAt: true,
+        disputeNote: true,
+        disputedAt: true,
+        createdAt: true,
+        order: { select: { orderNo: true } },
+        supplier: { select: { businessName: true, phone: true } },
+        reseller: { select: { name: true, whatsappPhone: true } },
+      },
+      // Sab se purana jhagra sab se upar — wahi sab se zyada bharosa kha chuka hai
+      orderBy: { disputedAt: 'asc' },
+      take: 100,
+    })
+
+    return rows.map((row) => ({
+      id: row.id,
+      orderNo: row.order.orderNo,
+      amount: pkr(row.amount),
+      supplierName: row.supplier.businessName,
+      supplierPhone: row.supplier.phone,
+      resellerName: row.reseller.name,
+      resellerPhone: row.reseller.whatsappPhone,
+      sentReference: row.sentReference,
+      sentAt: row.sentAt,
+      disputeNote: row.disputeNote,
+      disputedAt: row.disputedAt,
+      createdAt: row.createdAt,
+    }))
   }
 
   private countOrder(

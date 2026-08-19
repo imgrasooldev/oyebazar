@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { STATUS_PACK_TEMPLATES, formatPkr } from '@oyebazar/shared'
 import { StatusPackStudio } from '@/components/status-pack-studio'
+import { SupplierPaymentRecord } from '@/components/supplier-payment-record'
 import { ChevronIcon } from '@/components/icons'
 import { toResellerProductDetailDTO } from '@/lib/api/mappers'
 import { requireReseller } from '@/lib/api/session'
@@ -35,7 +36,10 @@ export default async function ProductPage({
   const locale = await getLocale()
   const t = translator(locale)
 
-  const item = await container.catalogue.getById(reseller.id, productId).catch(() => null)
+  const [item, paymentRecord] = await Promise.all([
+    container.catalogue.getById(reseller.id, productId).catch(() => null),
+    container.payouts.paymentRecordForProduct(productId),
+  ])
   if (!item) notFound()
 
   const product = toResellerProductDetailDTO(item)
@@ -115,6 +119,15 @@ export default async function ProductPage({
               tone={margin > 0 ? 'good' : 'plain'}
             />
           </div>
+
+          {/*
+            Is maal wali dukan ka payment record — order lagane se PEHLE.
+            Baqi sara hisab tab kaam aata hai jab paisa atak chuka ho; asal jagah yehi
+            hai. Dukan ka naam ya id yahan nahi aati (aur service se bhi nahi aati) —
+            reseller ko ye jaanna chahiye ke paise waqt par milte hain ya nahi, ye nahi
+            ke dukan kaun si hai.
+          */}
+          <SupplierPaymentRecord record={paymentRecord} locale={locale} />
 
           {/* Customer se baat ho chuki ho to yahan se order lagta hai */}
           <Link href={`/orders/new/${product.id}`} className="btn-secondary w-full">

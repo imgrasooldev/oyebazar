@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { formatPkr } from '@oyebazar/shared'
 import { CounterpartyLedger } from '@/components/counterparty-ledger'
 import { ResellerPayoutReply } from '@/components/payout-actions'
+import { PayoutTimeline } from '@/components/payout-timeline'
 import { requireReseller } from '@/lib/api/session'
 import { container } from '@/lib/container'
 import { timeAgo, translator } from '@/lib/i18n'
@@ -68,7 +69,8 @@ export default async function ResellerMoneyPage() {
           </h2>
           <ul className="card divide-y divide-paper-sunken">
             {open.map((payout) => (
-              <li key={payout.id} className="flex flex-wrap items-center gap-3 px-5 py-3">
+              <li key={payout.id} className="px-5 py-3">
+                <div className="flex flex-wrap items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <p dir="ltr" className="numeric text-sm font-semibold">
                     {payout.orderNo}
@@ -99,6 +101,21 @@ export default async function ResellerMoneyPage() {
                     }}
                   />
                 )}
+                </div>
+
+                {/* Wohi tareekh jo wholesaler ke safhe par hai — lafz bhi wohi */}
+                  <PayoutTimeline
+                    payout={payout}
+                    locale={locale}
+                    now={now}
+                    labels={{
+                      delivered: t('tlDelivered'),
+                      claimedSent: t('tlClaimedSent'),
+                      confirmed: t('tlConfirmed'),
+                      disputed: t('tlDisputed'),
+                      reference: t('tlReference'),
+                    }}
+                  />
               </li>
             ))}
           </ul>

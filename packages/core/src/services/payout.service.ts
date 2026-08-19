@@ -17,6 +17,7 @@ import type { PayoutRepository, PayoutStatus, PayoutView } from '../ports/payout
 import type {
   CounterpartyLedgerRow,
   MoneyLedgerRepository,
+  SupplierPaymentRecord,
 } from '../ports/money-ledger-repositories'
 import type { SupplierPayoutSummary } from '../ports/payout-repositories'
 import type { Analytics, Clock, Logger, MessagingProvider } from '../ports/infrastructure'
@@ -217,6 +218,29 @@ export class PayoutService {
     return this.ledger.bySupplierForReseller(resellerId)
   }
 
+  /**
+   * Dukan ka payment record — reseller ko order lagane se PEHLE.
+   *
+   * 🔴 Ye sirf login ke baad dikhta hai, public Bazaar par nahi. Bazaar Google par hai
+   * aur wahan "ye dukan paise nahi deti" chhapna alag cheez hai — wo ilzam poori duniya
+   * ke saamne hai aur us ke qanooni nataij hain. Reseller ko wo jagah chahiye jahan wo
+   * faisla karti hai; wo jagah login ke andar hai.
+   */
+  paymentRecords(supplierIds: readonly string[]): Promise<SupplierPaymentRecord[]> {
+    return this.ledger.paymentRecords(supplierIds)
+  }
+
+  /**
+   * Is maal ki dukan ka payment record — reseller ke product safhe par.
+   *
+   * Dukan ka naam ya id kuch bhi wapas nahi aata, sirf ginti. Reseller ko ye jaanna
+   * chahiye ke "is maal wali dukan paise waqt par deti hai ya nahi" — us ka ye jaanna
+   * zaroori nahi ke wo dukan kaun si hai.
+   */
+  paymentRecordForProduct(productId: string) {
+    return this.ledger.paymentRecordForProduct(productId)
+  }
+
   /** Wohi sawal ulta — wholesaler ke liye, har reseller ka alag hisab. */
   ledgerByReseller(supplierId: string): Promise<CounterpartyLedgerRow[]> {
     return this.ledger.byResellerForSupplier(supplierId)
@@ -228,6 +252,11 @@ export class PayoutService {
   }
 
   // -------------------------------------------------------------------- ops
+
+  /** Ops ki screen — jahan dono apni baat par qaim hain. */
+  listDisputed() {
+    return this.ledger.listDisputed()
+  }
 
   summariseBySupplier(): Promise<SupplierPayoutSummary[]> {
     return this.payouts.summariseBySupplier()

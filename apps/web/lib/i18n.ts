@@ -558,6 +558,12 @@ const DICTIONARY = {
     en: 'This is the reseller’s share of the cash you collected. Add the transaction ID when you send it — the account closes when she confirms.',
     rm: 'Ye raqam reseller ki hai jo COD mein aap ke paas aayi. Bhejte waqt transaction ID likhen — hisab reseller ki tasdeeq par band hota hai.',
   },
+  // ---- payout ki tareekh (dono taraf ek jaisi)
+  tlDelivered: { ur: 'مال پہنچا', en: 'Delivered', rm: 'Maal pohancha' },
+  tlClaimedSent: { ur: 'ہول سیلر: بھیج دیے', en: 'Wholesaler: sent', rm: 'Wholesaler: bhej diye' },
+  tlConfirmed: { ur: 'ریسیلر: مل گئے', en: 'Reseller: received', rm: 'Reseller: mil gaye' },
+  tlDisputed: { ur: 'ریسیلر: نہیں ملے', en: 'Reseller: not received', rm: 'Reseller: nahi mile' },
+  tlReference: { ur: 'آئی ڈی', en: 'ID', rm: 'ID' },
   moneyNav: { ur: 'پیسے', en: 'Money', rm: 'Paise' },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
   moneyByReseller: { ur: 'ریسیلر کے حساب سے', en: 'By reseller', rm: 'Reseller ke hisab se' },
