@@ -11,6 +11,7 @@ import {
   CatalogueService,
   DailyDropService,
   FeeInvoiceService,
+  CategoryAdminService,
   OrderService,
   PayoutService,
   PriceChangeService,
@@ -69,6 +70,8 @@ export interface Container {
   readonly orders: OrderService
   /** 🔴 Reseller ke paise — do taraf ki tasdeeq, tafseel PayoutService mein. */
   readonly payouts: PayoutService
+  /** Category ka darakht — ops banati aur tarteeb deti hai. */
+  readonly categoryAdmin: CategoryAdminService
   readonly dailyDrops: DailyDropService
   readonly feeInvoices: FeeInvoiceService
 }
@@ -161,6 +164,7 @@ function build(): Container {
       logger,
     ),
     payouts,
+    categoryAdmin: new CategoryAdminService(repositories.categoryAdmin, analytics, logger),
     orders: new OrderService(
       repositories.orders,
       repositories.products,

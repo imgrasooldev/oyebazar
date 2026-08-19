@@ -67,7 +67,7 @@ export class PrismaProductRepository implements ProductRepository {
     filters: Omit<CatalogueFilters, 'minPrice' | 'maxPrice'>,
   ): Promise<Page<PublicProductView>> {
     const rows = await this.db.product.findMany({
-      where: this.publicWhere(filters),
+      where: await this.publicWhere(filters),
       select: PUBLIC_PRODUCT_SELECT,
       orderBy: [{ createdAt: 'desc' }, { slug: 'desc' }],
       ...publicCursorArgs(filters),
@@ -103,7 +103,7 @@ export class PrismaProductRepository implements ProductRepository {
 
   async findResellerList(filters: CatalogueFilters): Promise<Page<ResellerProductView>> {
     const rows = await this.db.product.findMany({
-      where: this.resellerWhere(filters),
+      where: await this.resellerWhere(filters),
       select: RESELLER_PRODUCT_SELECT,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       ...cursorArgs(filters),
@@ -242,23 +242,27 @@ export class PrismaProductRepository implements ProductRepository {
 
   // ------------------------------------------------------------ where builders
 
-  private publicWhere(
+  private async publicWhere(
     filters: Omit<CatalogueFilters, 'minPrice' | 'maxPrice'>,
-  ): Prisma.ProductWhereInput {
+  ): Promise<Prisma.ProductWhereInput> {
     return {
       status: 'LIVE',
       // 🔴 Bazaar par sirf wo suppliers jo listed + verified hain
       supplier: { listedOnBazaar: true, status: 'VERIFIED' },
-      ...(filters.categorySlug ? { category: categoryFilter(filters.categorySlug) } : {}),
+      ...(filters.categorySlug
+        ? { category: await categoryFilter(this.db, filters.categorySlug) }
+        : {}),
       ...(filters.search ? { OR: searchClause(filters.search) } : {}),
     }
   }
 
-  private resellerWhere(filters: CatalogueFilters): Prisma.ProductWhereInput {
+  private async resellerWhere(filters: CatalogueFilters): Promise<Prisma.ProductWhereInput> {
     return {
       status: filters.inStockOnly ? 'LIVE' : { in: ['LIVE', 'OUT_OF_STOCK'] },
       supplier: { status: 'VERIFIED' },
-      ...(filters.categorySlug ? { category: categoryFilter(filters.categorySlug) } : {}),
+      ...(filters.categorySlug
+        ? { category: await categoryFilter(this.db, filters.categorySlug) }
+        : {}),
       ...(filters.search ? { OR: searchClause(filters.search) } : {}),
       ...(filters.minPrice !== undefined || filters.maxPrice !== undefined
         ? {
@@ -352,12 +356,27 @@ function toResellerView(row: ResellerRow): ResellerProductView {
 }
 
 /**
- * Category ka filter — apni category YA us ki bari category.
+ * Category ka filter — ye category AUR is ke neeche ka poora darakht.
  *
- * 🔴 Maal hamesha SUB-category par lagta hai (lawn, abaya…), magar sidebar aur chips
- * BARI category dikhate hain (kapra aur malbusat). Sirf `slug` par match karte to
- * "کپڑا" par click karne se 0 nataij aate — aur user samajhta ke maal hai hi nahi.
+ * 🔴 Maal hamesha sab se neeche wali category par lagta hai (lawn, abaya…), magar chips
+ * aur menu upar wali dikhate hain (kapra aur malbusat). Sirf `slug` par match karte to
+ * "کپڑا" par click karne se 0 nataij aate.
+ *
+ * Pehle yahan `{ OR: [{ slug }, { parent: { slug } }] }` tha — yani sirf DO darje. Ab
+ * darakht jitna marzi gehra ja sakta hai, aur teesre darje ka maal us purane filter se
+ * chup chaap ghaib ho jata: koi error nahi, bas "koi maal nahi mila".
+ *
+ * Ab path se: har category ka path jarh se us tak ka rasta hai ("/a/b/c/"), is liye
+ * "is shaakh ka sab kuch" sirf ek `startsWith` hai — chahe wo paanch darje neeche ho.
  */
-function categoryFilter(slug: string): Prisma.CategoryWhereInput {
-  return { OR: [{ slug }, { parent: { slug } }] }
+async function categoryFilter(
+  db: PrismaClient,
+  slug: string,
+): Promise<Prisma.CategoryWhereInput> {
+  const target = await db.category.findUnique({ where: { slug }, select: { path: true } })
+
+  // Category hi na mile to woh slug kisi maal par nahi lagta — khali natija sahi jawab hai
+  if (!target) return { slug }
+
+  return { path: { startsWith: target.path } }
 }

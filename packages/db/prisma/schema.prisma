@@ -78,10 +78,30 @@ model Category {
   parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
   children Category[] @relation("CategoryTree")
 
+  /**
+   * Materialised path — jarh se yahan tak ka rasta, IDs mein: "/root/child/yeh/"
+   *
+   * 🔴 Ye khaana isliye hai ke darakht ab kitna bhi gehra ja sakta hai. Adjacency list
+   * (sirf parentId) se "is category aur us ke NEECHE ka saara maal" nikalne ke liye
+   * har darje par ek query lagti hai — pehle code do darjay farz kar ke chal raha tha
+   * (`{ OR: [{ slug }, { parent: { slug } }] }`), aur teesra darja banate hi us ka maal
+   * ghaib ho jata.
+   *
+   * Path se wohi sawal ek shart mein hal hota hai: `path startsWith us ka path`.
+   *
+   * IDs rakhe hain, slug nahi: naam badalna aam hai aur us se poora darakht dobara
+   * likhna parta. Path sirf JAGAH badalne par badalta hai.
+   */
+  path  String @default("/")
+  /// Jarh = 0. Sirf dikhane aur hadd lagane ke liye — sach `path` mein hai.
+  depth Int    @default(0)
+
   products Product[]
 
   @@index([parentId, sortOrder])
   @@index([sortOrder])
+  // "Is shaakh ka saara maal" — sab se aam sawal, isi index par chalta hai
+  @@index([path])
 }
 
 model Product {

@@ -52,6 +52,18 @@ export const OPS_PERMISSIONS = {
     label: 'Make products live, archive them',
   },
   /*
+   * Category ka darakht MANAGER par hai.
+   *
+   * Ye rozana ka kaam hai — naya mausam, nayi shaakh — aur SUPER_ADMIN par rakhne ka
+   * matlab hota ke har chhoti tabdeeli ke liye qatar lage. Khatra bhi mehdood hai:
+   * category mitane par maal ke saath rok pehle se lagi hui hai, aur jagah badalne se
+   * maal gum nahi hota, sirf jagah badalti hai.
+   */
+  manageCategories: {
+    needs: 'MANAGER',
+    label: 'Create, rename, move and reorder categories',
+  },
+  /*
    * Rate ki manzoori MANAGER par hai, SUPER_ADMIN par nahi — jaan boojh kar.
    *
    * Ye fee rate nahi hai (wo SUPER_ADMIN par hai aur wahin rehna chahiye). Ye ek maal

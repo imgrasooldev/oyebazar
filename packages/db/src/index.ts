@@ -25,6 +25,7 @@ import { PrismaOrderRepository } from './repositories/order.repository'
 import { PrismaInventoryRepository } from './repositories/inventory.repository'
 import { PrismaPayoutRepository } from './repositories/payout.repository'
 import { PrismaMoneyLedgerRepository } from './repositories/money-ledger.repository'
+import { PrismaCategoryAdminRepository } from './repositories/category-admin.repository'
 import { PrismaFeeLedgerRepository } from './repositories/fee-ledger.repository'
 import { PrismaOrderNumberGenerator } from './repositories/order-number'
 import { PrismaDailyDropRepository } from './repositories/daily-drop.repository'
@@ -51,6 +52,7 @@ export interface Repositories {
   inventory: PrismaInventoryRepository
   payouts: PrismaPayoutRepository
   moneyLedger: PrismaMoneyLedgerRepository
+  categoryAdmin: PrismaCategoryAdminRepository
   feeLedger: PrismaFeeLedgerRepository
   orderNumbers: PrismaOrderNumberGenerator
   dailyDrops: PrismaDailyDropRepository
@@ -77,6 +79,7 @@ export function createRepositories(client: PrismaClient = prisma): Repositories 
     inventory: new PrismaInventoryRepository(client),
     payouts: new PrismaPayoutRepository(client),
     moneyLedger: new PrismaMoneyLedgerRepository(client),
+    categoryAdmin: new PrismaCategoryAdminRepository(client),
     feeLedger: new PrismaFeeLedgerRepository(client),
     orderNumbers: new PrismaOrderNumberGenerator(client),
     dailyDrops: new PrismaDailyDropRepository(client),
@@ -102,6 +105,7 @@ export * from './repositories/order.repository'
 export * from './repositories/inventory.repository'
 export * from './repositories/payout.repository'
 export * from './repositories/money-ledger.repository'
+export * from './repositories/category-admin.repository'
 export * from './repositories/fee-ledger.repository'
 export * from './repositories/order-number'
 export * from './repositories/daily-drop.repository'

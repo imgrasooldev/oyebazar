@@ -34,6 +34,7 @@ const TABS = [
   { href: '/admin/orders', label: 'Orders', needs: 'REVIEWER', Icon: ListIcon },
   { href: '/admin/suppliers', label: 'Wholesalers', needs: 'REVIEWER', Icon: StoreIcon },
   { href: '/admin/products', label: 'Products', needs: 'REVIEWER', Icon: BoxesIcon },
+  { href: '/admin/categories', label: 'Categories', needs: 'REVIEWER', Icon: GridIcon },
   { href: '/admin/resellers', label: 'Resellers', needs: 'REVIEWER', Icon: UsersIcon },
   { href: '/admin/money', label: 'Money', needs: 'REVIEWER', Icon: MoneyIcon },
   { href: '/admin/team', label: 'Team', needs: 'SUPER_ADMIN', Icon: ShieldIcon },
