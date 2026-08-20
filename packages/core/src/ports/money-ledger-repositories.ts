@@ -101,6 +101,32 @@ export interface DisputedPayoutRow {
   readonly createdAt: Date
 }
 
+/**
+ * Reseller ka RTO record — wholesaler ko order QUBOOL karne se pehle.
+ *
+ * 🔴 RTO ka nuqsan dukan uthati hai: courier dono taraf ka paisa leta hai aur maal wapas
+ * aa jata hai. Abhi wo nuqsan kisi ke hisab mein nahi tha, aur dukan wale ke paas order
+ * qubool karte waqt koi ishara bhi nahi hota tha.
+ *
+ * Ye ilzam nahi, ginti hai — aur wahi jagah hai jahan us ka faida hai: order aane par.
+ */
+export interface ResellerRiskRecord {
+  readonly resellerId: string
+  /** Is dukan ke saath kul order (chal rahe milakar) */
+  readonly orders: number
+  readonly delivered: number
+  readonly rto: number
+  /** Pohanche + wapas aaye mein se kitne wapas aaye — 0 jab tak koi mukammal na ho */
+  readonly rtoRate: number | null
+  /**
+   * Un wapas aaye orders par likha hua delivery ka rate — yani wo raqam jo dukan ne
+   * bhijwane par lagai aur wapas nahi mili. Asal nuqsan is se zyada hai (wapsi ka
+   * kirchaya alag), magar ye wo number hai jo hamare paas WAQAI mojood hai — andaza
+   * lagane se behtar hai ke jo sach maloom hai wohi dikhaya jaye.
+   */
+  readonly rtoDeliveryCost: Pkr
+}
+
 export interface MoneyLedgerRepository {
   /** Reseller ka hisab — har wholesaler ke saath alag. */
   bySupplierForReseller(resellerId: string): Promise<CounterpartyLedgerRow[]>
@@ -139,4 +165,16 @@ export interface MoneyLedgerRepository {
 
   /** Ops ki screen — wo hisab jahan dono apni baat par qaim hain. */
   listDisputed(): Promise<DisputedPayoutRow[]>
+
+  /**
+   * Kai resellers ka RTO record ek saath — wholesaler ke order wale safhe ke liye.
+   *
+   * `supplierId` de den to sirf USI dukan ke saath ka record; na den to poore platform ka.
+   * Pehli soorat rozana ke faisle ke liye hai ("mere saath is ka kya chalan raha"),
+   * doosri ops ke liye.
+   */
+  resellerRisk(
+    resellerIds: readonly string[],
+    supplierId?: string,
+  ): Promise<ResellerRiskRecord[]>
 }

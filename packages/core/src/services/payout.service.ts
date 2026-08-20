@@ -326,6 +326,16 @@ export class PayoutService {
 
   // -------------------------------------------------------------------- ops
 
+  /**
+   * Reseller ka RTO record — dukan ko order qubool karne se PEHLE.
+   *
+   * Wapsi ka nuqsan dukan uthati hai, is liye us ka haq hai ke faisle se pehle wo ginti
+   * dekhe. Ye ilzam nahi: sirf "kitne bheje, kitne pohanche, kitne wapas aaye".
+   */
+  resellerRisk(resellerIds: readonly string[], supplierId?: string) {
+    return this.ledger.resellerRisk(resellerIds, supplierId)
+  }
+
   /** Ops ki screen — jahan dono apni baat par qaim hain. */
   listDisputed() {
     return this.ledger.listDisputed()

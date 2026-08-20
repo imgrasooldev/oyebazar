@@ -123,6 +123,34 @@ export class PrismaInventoryRepository implements InventoryRepository {
     })
   }
 
+  async listVariantsFor(
+    supplierId: string,
+    productIds: readonly string[],
+  ): Promise<Map<string, VariantView[]>> {
+    if (productIds.length === 0) return new Map()
+
+    const rows = await this.db.productVariant.findMany({
+      where: { productId: { in: [...productIds] }, product: { supplierId } },
+      select: {
+        id: true,
+        productId: true,
+        size: true,
+        colour: true,
+        skuCode: true,
+        stockQty: true,
+      },
+      orderBy: [{ colour: 'asc' }, { size: 'asc' }],
+    })
+
+    const byProduct = new Map<string, VariantView[]>()
+    for (const { productId, ...variant } of rows) {
+      const list = byProduct.get(productId) ?? []
+      list.push(variant)
+      byProduct.set(productId, list)
+    }
+    return byProduct
+  }
+
   async addVariant(input: {
     supplierId: string
     productId: string

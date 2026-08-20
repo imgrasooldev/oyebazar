@@ -14,6 +14,7 @@ import type {
   CounterpartyLedgerRow,
   DisputedPayoutRow,
   MoneyLedgerRepository,
+  ResellerRiskRecord,
   SupplierPaymentRecord,
 } from '@oyebazar/core'
 import { pkr, type Pkr } from '@oyebazar/shared'
@@ -335,6 +336,54 @@ export class PrismaMoneyLedgerRepository implements MoneyLedgerRepository {
       disputedAt: row.disputedAt,
       createdAt: row.createdAt,
     }))
+  }
+
+  async resellerRisk(
+    resellerIds: readonly string[],
+    supplierId?: string,
+  ): Promise<ResellerRiskRecord[]> {
+    if (resellerIds.length === 0) return []
+
+    const orders = await this.db.order.findMany({
+      where: {
+        resellerId: { in: [...resellerIds] },
+        ...(supplierId ? { supplierId } : {}),
+      },
+      select: { resellerId: true, status: true, deliveryFee: true },
+    })
+
+    const acc = new Map<string, { orders: number; delivered: number; rto: number; cost: number }>()
+
+    for (const order of orders) {
+      const current = acc.get(order.resellerId) ?? { orders: 0, delivered: 0, rto: 0, cost: 0 }
+      current.orders += 1
+
+      if (order.status === 'DELIVERED') current.delivered += 1
+      if (order.status === 'RTO') {
+        current.rto += 1
+        current.cost += order.deliveryFee
+      }
+
+      acc.set(order.resellerId, current)
+    }
+
+    return [...acc.entries()].map(([resellerId, value]) => {
+      /*
+       * Rate sirf MUKAMMAL hue orders par: chal rahe order ka anjaam abhi maloom nahi,
+       * aur unhen shamil karne se naya banda hamesha achha lagta hai (kyunke us ke
+       * saare order abhi raaste mein hain).
+       */
+      const finished = value.delivered + value.rto
+
+      return {
+        resellerId,
+        orders: value.orders,
+        delivered: value.delivered,
+        rto: value.rto,
+        rtoRate: finished > 0 ? Math.round((value.rto / finished) * 100) : null,
+        rtoDeliveryCost: pkr(value.cost),
+      }
+    })
   }
 
   private countOrder(

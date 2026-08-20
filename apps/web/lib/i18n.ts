@@ -582,6 +582,12 @@ const DICTIONARY = {
   },
   // ---- dukan ka apna waada
   // ---- delivery ka rate
+  shopRules: { ur: 'دکان کے قواعد', en: 'Shop rules', rm: 'Dukan ke qawaid' },
+  shopRulesBody: {
+    ur: 'ڈیلیوری کا ریٹ اور ادائیگی کا وعدہ — یہ دونوں ریسیلر کو آرڈر سے پہلے دکھتے ہیں۔',
+    en: 'Delivery charge and payment promise — resellers see both before they order.',
+    rm: 'Delivery ka rate aur adaigi ka waada — ye dono reseller ko order se pehle dikhte hain.',
+  },
   deliveryTitle: {
     ur: 'ڈیلیوری کا ریٹ — کورئیر کا بل آپ بھرتے ہیں، اس لیے ریٹ بھی آپ کا',
     en: 'Delivery charge — you pay the courier, so you set it',
@@ -610,6 +616,12 @@ const DICTIONARY = {
   },
   termPromise: { ur: 'وعدہ', en: 'Promise', rm: 'Waada' },
   // ---- rang / size (variants)
+  optional: { ur: 'اختیاری', en: 'optional', rm: 'ikhtiyari' },
+  variantsAddNote: {
+    ur: 'اگر ایک ہی قسم ہے تو یہ خالی چھوڑ دیں — اوپر والی گنتی ہی چلے گی۔ بعد میں بھی لگ سکتے ہیں۔',
+    en: 'One kind only? Leave this empty — the count above is used. You can add these later too.',
+    rm: 'Ek hi qism hai to ye khali chhor den — upar wali ginti chalegi. Baad mein bhi lag sakte hain.',
+  },
   variantsTitle: { ur: 'رنگ اور سائز', en: 'Colours and sizes', rm: 'Rang aur size' },
   variantColour: { ur: 'رنگ', en: 'Colour', rm: 'Rang' },
   variantSize: { ur: 'سائز', en: 'Size', rm: 'Size' },

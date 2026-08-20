@@ -81,6 +81,8 @@ export class SupplierCatalogueService {
       supplierPrice: Pkr
       stockQty: number
       media?: readonly ProductMediaInput[]
+      /** Rang/size ke jorhe — optional, aur optional hi rehne chahiyen */
+      variants?: readonly { colour?: string; size?: string; stockQty: number }[]
     },
   ): Promise<{ id: string; bajiPrice: Pkr; suggestedRetail: Pkr }> {
     const supplier = await this.suppliers.findInternal(supplierId)
@@ -106,6 +108,21 @@ export class SupplierCatalogueService {
       stockQty: input.stockQty,
       media,
     })
+
+    /*
+     * Variants maal banne ke BAAD lagte hain, us ke saath nahi.
+     *
+     * Wajah: har variant ko apna SKU chahiye jo product ki id se banta hai, aur wo id
+     * banne se pehle mojood hi nahi hoti. Ek variant ki ghalti par poora maal na mare,
+     * is liye har ek alag — jo chal jaye wo lag jata hai.
+     */
+    for (const variant of input.variants ?? []) {
+      await this.addVariant(supplierId, created.id, {
+        ...(variant.colour ? { colour: variant.colour } : {}),
+        ...(variant.size ? { size: variant.size } : {}),
+        stockQty: variant.stockQty,
+      })
+    }
 
     await this.analytics.track({
       name: 'supplier_product_added',
@@ -190,6 +207,11 @@ export class SupplierCatalogueService {
    * hai: jis maal par variants na hon wo waise hi chalta rehta hai (ek default variant),
    * aur jis par hon us ki ginti variants ke jama se banti hai.
    */
+  /** Kai maal ke variants ek saath — safhe ke liye. */
+  listVariantsFor(supplierId: string, productIds: readonly string[]) {
+    return this.inventory.listVariantsFor(supplierId, productIds)
+  }
+
   listVariants(supplierId: string, productId: string) {
     return this.inventory.listVariants(supplierId, productId)
   }

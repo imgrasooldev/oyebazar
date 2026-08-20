@@ -135,6 +135,9 @@ function build() {
       async listDisputed() {
         return []
       },
+      async resellerRisk() {
+        return []
+      },
     },
     { reseller: async () => '923001234567', supplier: async () => '923001200000' },
     {

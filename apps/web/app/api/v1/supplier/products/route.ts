@@ -27,6 +27,7 @@ export async function POST(request: Request) {
       supplierPrice: pkr(body.supplierPrice),
       stockQty: body.stockQty,
       ...(body.media ? { media: body.media } : {}),
+      ...(body.variants ? { variants: body.variants } : {}),
     })
 
     // Wholesaler ko poora hisab wapas — "aap ko itna milega, reseller ko itna dikhega"

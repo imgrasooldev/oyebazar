@@ -55,6 +55,32 @@ export const NewProductSchema = z
     // Bina stock ke maal order nahi ho sakta — is liye ye khaana lazmi hai
     stockQty: z.number().int().min(1, 'کتنا مال ہے؟').max(100_000),
     /**
+     * Rang/size ke jorhe — JAAN BOOJH KAR optional.
+     *
+     * Bohot sa maal aisa hai jis par rang ya size hote hi nahi (ek design, ek qism).
+     * Un par ye sawal poochhna maal daalne ka rasta lamba karta hai, aur lamba rasta
+     * wo cheez hai jis par dukan wala beech mein chhor kar chala jata hai.
+     *
+     * Jab hon: har jorhe ki apni ginti, aur upar wali `stockQty` un ka jama nahi —
+     * wo poore maal ki apni ginti hai jo variants na hone par chalti hai.
+     */
+    variants: z
+      .array(
+        z
+          .object({
+            colour: z.string().trim().max(30).optional(),
+            size: z.string().trim().max(30).optional(),
+            stockQty: z.number().int().min(0).max(100_000),
+          })
+          .strict()
+          // Dono khali = wo "sada" maal hai, us ke liye alag qatar bekar hai
+          .refine((v) => Boolean(v.colour?.trim() || v.size?.trim()), {
+            message: 'Rang ya size, kam se kam ek likhen',
+          }),
+      )
+      .max(30)
+      .optional(),
+    /**
      * Tasveerein aur video — pehle `/api/v1/supplier/media` par upload ho chuki hoti hain.
      *
      * 🔴 URL yahan sirf shakl ke lehaz se jaancha jata hai. Ye HAMARI storage ka hai ya

@@ -75,6 +75,18 @@ export interface InventoryRepository {
    */
   listVariants(supplierId: string, productId: string): Promise<VariantView[]>
 
+  /**
+   * Kai maal ke variants EK query mein.
+   *
+   * 🔴 Stock ka safha pehle har maal par alag query chalata tha: chalees maal = chalees
+   * chakkar, aur safha do second se upar chala jata tha. Ginti barhne par ye kharab hi
+   * hota jata — aur wahi safha dukan wala din mein sab se zyada kholta hai.
+   */
+  listVariantsFor(
+    supplierId: string,
+    productIds: readonly string[],
+  ): Promise<Map<string, VariantView[]>>
+
   addVariant(input: {
     supplierId: string
     productId: string

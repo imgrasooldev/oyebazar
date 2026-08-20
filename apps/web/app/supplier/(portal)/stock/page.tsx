@@ -46,18 +46,16 @@ export default async function SupplierStockPage() {
   const pendingByProduct = new Map(pendingPriceRequests.map((row) => [row.productId, row]))
 
   /*
-   * Saare variants ek saath — har maal par alag query se 40 maal ka safha 40 query
-   * maangta. Ye list waise bhi chhoti hai (ek dukan ka apna maal).
+   * 🔴 Saare variants EK query mein.
+   *
+   * Pehle yahan har maal par alag query chalti thi (`Promise.all` ke andar map): chalees
+   * maal = chalees chakkar DB tak. Safha do second se upar chala jata tha — aur yehi wo
+   * safha hai jo dukan wala din mein sab se zyada kholta hai.
    */
-  const variantLists = await Promise.all(
-    products
-      .filter((product) => product.status !== 'DRAFT')
-      .map(async (product) => [
-        product.id,
-        await container.supplierCatalogue.listVariants(supplier.id, product.id),
-      ] as const),
+  const variantsByProduct = await container.supplierCatalogue.listVariantsFor(
+    supplier.id,
+    products.filter((product) => product.status !== 'DRAFT').map((product) => product.id),
   )
-  const variantsByProduct = new Map(variantLists)
 
   return (
     <div className="space-y-6">

@@ -34,6 +34,14 @@ export function SupplierAddProduct({
   const [open, setOpen] = useState(false)
   const [price, setPrice] = useState(0)
   const [media, setMedia] = useState<UploadedMedia[]>([])
+  /*
+   * Rang/size — band rakhe hue, aur khali.
+   *
+   * 🔴 Bohot sa maal aisa hai jis par rang/size hote hi nahi (ek design, ek qism). Un
+   * par ye sawal saamne rakhna maal daalne ka rasta lamba karta hai — aur lamba rasta
+   * wo cheez hai jis par dukan wala beech mein chhor kar chala jata hai.
+   */
+  const [variants, setVariants] = useState<{ colour: string; size: string; stockQty: number }[]>([])
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -60,6 +68,19 @@ export function SupplierAddProduct({
           stockQty: Number(data.get('stockQty') ?? 0),
           ...(data.get('descriptionUr') ? { descriptionUr: String(data.get('descriptionUr')) } : {}),
           ...(media.length > 0 ? { media } : {}),
+          ...(variants.length > 0
+            ? {
+                variants: variants
+                  // Khali qatarein chup chaap gir jati hain — banda ek qatar khol kar
+                  // chhor de to us par form rukna nahi chahiye
+                  .filter((variant) => variant.colour.trim() || variant.size.trim())
+                  .map((variant) => ({
+                    ...(variant.colour.trim() ? { colour: variant.colour.trim() } : {}),
+                    ...(variant.size.trim() ? { size: variant.size.trim() } : {}),
+                    stockQty: variant.stockQty,
+                  })),
+              }
+            : {}),
         }),
       })
 
@@ -160,6 +181,78 @@ export function SupplierAddProduct({
           className="field mt-2"
         />
       </label>
+
+      {/* Rang aur size — chahen to. Band hai, is liye sada maal ka rasta wesa hi chhota */}
+      <details className="rounded-card bg-paper-sunken p-3">
+        <summary className="cursor-pointer list-none text-sm font-semibold text-ink-soft">
+          + {t('variantsTitle')}{' '}
+          <span className="font-normal text-ink-faint">({t('optional')})</span>
+        </summary>
+
+        <div className="mt-3 space-y-2">
+          {variants.map((variant, index) => (
+            <div key={index} className="flex flex-wrap items-center gap-2">
+              <input
+                value={variant.colour}
+                onChange={(event) =>
+                  setVariants((rows) =>
+                    rows.map((row, i) =>
+                      i === index ? { ...row, colour: event.target.value } : row,
+                    ),
+                  )
+                }
+                placeholder={t('variantColour')}
+                className="w-28 rounded-card bg-paper-raised px-3 py-1.5 text-sm"
+              />
+              <input
+                value={variant.size}
+                onChange={(event) =>
+                  setVariants((rows) =>
+                    rows.map((row, i) => (i === index ? { ...row, size: event.target.value } : row)),
+                  )
+                }
+                placeholder={t('variantSize')}
+                className="w-24 rounded-card bg-paper-raised px-3 py-1.5 text-sm"
+              />
+              <input
+                type="number"
+                min={0}
+                value={variant.stockQty}
+                onChange={(event) =>
+                  setVariants((rows) =>
+                    rows.map((row, i) =>
+                      i === index
+                        ? { ...row, stockQty: Math.max(0, Number(event.target.value)) }
+                        : row,
+                    ),
+                  )
+                }
+                dir="ltr"
+                className="numeric w-20 rounded-card bg-paper-raised px-3 py-1.5 text-center text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => setVariants((rows) => rows.filter((_, i) => i !== index))}
+                className="rounded-card px-2 py-1 text-[0.72rem] font-semibold text-red-600 hover:bg-red-50"
+              >
+                {t('variantRemove')}
+              </button>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={() =>
+              setVariants((rows) => [...rows, { colour: '', size: '', stockQty: 0 }])
+            }
+            className="rounded-pill bg-paper-raised px-4 py-1.5 text-[0.78rem] font-semibold text-ink-soft hover:text-ink"
+          >
+            + {t('variantAdd')}
+          </button>
+
+          <p className="text-[0.74rem] text-ink-faint">{t('variantsAddNote')}</p>
+        </div>
+      </details>
 
       <MediaUploader media={media} onChange={setMedia} locale={locale} disabled={pending} />
 

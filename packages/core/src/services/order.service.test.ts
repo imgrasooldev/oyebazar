@@ -138,6 +138,9 @@ class FakeInventory implements InventoryRepository {
   async listVariants() {
     return []
   }
+  async listVariantsFor() {
+    return new Map()
+  }
   async addVariant() {
     return null
   }
