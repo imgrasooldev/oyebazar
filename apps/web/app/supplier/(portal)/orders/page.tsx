@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import { formatPkr } from '@oyebazar/shared'
-import type { SupplierOrderView } from '@oyebazar/core'
+import type { ResellerRiskRecord, SupplierOrderView } from '@oyebazar/core'
 import { SupplierOrderActions } from '@/components/supplier-order-actions'
+import { ResellerRtoRecord } from '@/components/reseller-rto-record'
 import { SupplierStatusButton } from '@/components/supplier-status-button'
 import { PinIcon } from '@/components/icons'
 import { requireSupplier } from '@/lib/api/supplier-session'
@@ -34,6 +35,19 @@ export default async function SupplierOrdersPage() {
   const page = await container.orders.listForSupplier(supplier.id, { limit: 40 })
   const orders = page.items
 
+  /*
+   * RTO ka record — sirf ISI dukan ke saath ka chalan.
+   *
+   * Poore platform ka record dikhana zyada "mukammal" lagta, magar faisla yahan ye hai
+   * ke "mere saath is ka kya chalan raha" — aur wahi wo cheez hai jis par dukan wala
+   * apna maal bhejta hai.
+   */
+  const risk = await container.payouts.resellerRisk(
+    [...new Set(orders.map((order) => order.resellerId))],
+    supplier.id,
+  )
+  const riskByReseller = new Map(risk.map((row) => [row.resellerId, row]))
+
   const waiting = orders.filter((order) => order.status === 'SENT_TO_SUPPLIER')
   const running = orders.filter((order) => RUNNING.has(order.status))
   const done = orders.filter(
@@ -60,7 +74,7 @@ export default async function SupplierOrdersPage() {
           <ul className="grid gap-4 lg:grid-cols-2">
             {waiting.map((order) => (
               <li key={order.id} className="card space-y-4 p-5 ring-1 ring-brand-200">
-                <OrderCard order={order} locale={locale} />
+                <OrderCard order={order} locale={locale} risk={riskByReseller} />
                 <SupplierOrderActions endpoint={`/api/v1/supplier/orders/${order.orderNo}`} />
               </li>
             ))}
@@ -69,9 +83,17 @@ export default async function SupplierOrdersPage() {
       )}
 
       {running.length > 0 && (
-        <Section title={t('runningOrders')} orders={running} locale={locale} withActions />
+        <Section
+          title={t('runningOrders')}
+          orders={running}
+          locale={locale}
+          risk={riskByReseller}
+          withActions
+        />
       )}
-      {done.length > 0 && <Section title={t('finishedOrders')} orders={done} locale={locale} />}
+      {done.length > 0 && (
+        <Section title={t('finishedOrders')} orders={done} locale={locale} risk={riskByReseller} />
+      )}
     </div>
   )
 }
@@ -80,11 +102,14 @@ function Section({
   title,
   orders,
   locale,
+  risk,
   withActions = false,
 }: {
   title: string
   orders: readonly SupplierOrderView[]
   locale: Locale
+  /** Reseller ka RTO record — id se */
+  risk: Map<string, ResellerRiskRecord>
   /** Chal rahe orders par agla qadam — mukammal shuda par koi button nahi */
   withActions?: boolean
 }) {
@@ -96,7 +121,7 @@ function Section({
       <ul className="grid gap-4 lg:grid-cols-2">
         {orders.map((order) => (
           <li key={order.id} className="card space-y-4 p-5">
-            <OrderCard order={order} locale={locale} />
+            <OrderCard order={order} locale={locale} risk={risk} showRecord={withActions} />
 
             {/*
               Agla qadam wohi jo ab bana hai — dukan par jaldi mein chunna nahi parta.
@@ -133,7 +158,24 @@ function Section({
   )
 }
 
-function OrderCard({ order, locale }: { order: SupplierOrderView; locale: Locale }) {
+function OrderCard({
+  order,
+  locale,
+  risk,
+  showRecord = true,
+}: {
+  order: SupplierOrderView
+  locale: Locale
+  risk: Map<string, ResellerRiskRecord>
+  /**
+   * RTO ka record sirf wahan jahan us se KUCH badal sakta hai.
+   *
+   * Mukammal ho chuke order par ye sirf shor hai — faisla ho chuka, maal ja chuka. Har
+   * qatar par ek laal nishan lagate rehne se wo nishan bemani ho jata hai, aur phir jis
+   * din wo waqai kaam ka hota hai us din bhi koi nahi dekhta.
+   */
+  showRecord?: boolean
+}) {
   const t = translator(locale)
   const label = orderStatusLabel(locale, order.status)
 
@@ -148,6 +190,13 @@ function OrderCard({ order, locale }: { order: SupplierOrderView; locale: Locale
         </span>
         <span className={`badge ${orderStatusStyle(order.status)}`}>{label}</span>
       </div>
+
+      {/*
+        RTO ka record — order qubool karne se PEHLE.
+        Wapsi ka kirchaya dukan uthati hai; faisla us ka hai, magar faisle ke waqt us ke
+        paas koi ishara hota hi nahi tha. Ye ilzam nahi, ginti hai.
+      */}
+      {showRecord && <ResellerRtoRecord record={risk.get(order.resellerId)} locale={locale} />}
 
       <div>
         <p className="font-bold">{order.customerName}</p>

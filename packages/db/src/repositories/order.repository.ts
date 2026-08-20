@@ -54,6 +54,8 @@ const INTERNAL_SELECT = {
 const SUPPLIER_SELECT = {
   id: true,
   orderNo: true,
+  // RTO ka record isi se banta hai — dukan ko qubool karne se pehle
+  resellerId: true,
   status: true,
   customerName: true,
   customerPhone: true,
@@ -238,6 +240,7 @@ export class PrismaOrderRepository implements OrderRepository {
     return {
       id: row.id,
       orderNo: row.orderNo,
+      resellerId: row.resellerId,
       status: row.status,
       customerName: row.customerName,
       customerPhone: row.customerPhone,

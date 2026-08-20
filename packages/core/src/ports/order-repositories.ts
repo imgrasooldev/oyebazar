@@ -59,6 +59,14 @@ export interface PendingConfirmationOrder {
 export interface SupplierOrderView {
   readonly id: string
   readonly orderNo: string
+  /**
+   * Kis reseller ka order — RTO ka record dikhane ke liye.
+   *
+   * 🔴 Reseller ki id dukan tak jati hai, magar customer ka retail rate phir bhi nahi
+   * (dekhen magic link wala safha). Wapsi ka nuqsan dukan uthati hai, is liye us ka haq
+   * hai ke qubool karne se pehle wo ginti dekhe jis ka asar usi par parta hai.
+   */
+  readonly resellerId: string
   readonly status: OrderStatus
   readonly customerName: string
   readonly customerPhone: string
