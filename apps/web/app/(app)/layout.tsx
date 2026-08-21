@@ -48,7 +48,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <header className="sticky top-0 z-30 border-b border-black/[0.05] bg-paper/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-shell items-center justify-between gap-3 px-5 py-3 lg:px-8">
           <Link href="/dashboard" className="flex min-h-tap flex-col justify-center leading-none">
-            <span className="text-[1.25rem] font-bold text-brand-700">
+            <span className="font-nastaliq text-[1.25rem] font-bold text-brand-700">
               {locale === 'ur' ? BRAND.nameUr : BRAND.name}
             </span>
             <span className="mt-1 text-[0.7rem] text-ink-faint">{t('resellerPortal')}</span>

@@ -48,7 +48,7 @@ export default async function SupplierPortalLayout({ children }: { children: Rea
             href="/supplier/dashboard"
             className="flex min-h-tap flex-col justify-center leading-none"
           >
-            <span className="text-[1.15rem] font-bold text-brand-300">
+            <span className="font-nastaliq text-[1.15rem] font-bold text-brand-300">
               {locale === 'ur' ? BRAND.nameUr : BRAND.name}
             </span>
             <span className="mt-1 text-[0.7rem] text-white/55">{t('wholesalerPortal')}</span>

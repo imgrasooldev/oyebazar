@@ -77,7 +77,7 @@ export function SiteHeader({
               href="/"
               className="flex min-h-tap shrink-0 flex-col justify-center leading-none"
             >
-              <span className="block text-[1.35rem] font-bold text-brand-800">
+              <span className="block font-nastaliq text-[1.35rem] font-bold text-brand-800">
                 {locale === 'ur' ? BRAND.nameUr : BRAND.name}
               </span>
               {/* Domain sirf desktop par — mobile par ye itna chhota hota hai ke parha

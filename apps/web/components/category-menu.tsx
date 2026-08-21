@@ -52,7 +52,20 @@ export function CategoryMenu({
                 naam pehchana nahi jata, aur banda us par click hi nahi karta.
                 Do lakeeron mein poora naam aa jata hai.
               */}
-              <span className="line-clamp-2 flex-1 leading-snug">{pickName(locale, category)}</span>
+              {/*
+                🔴 Yahan na `truncate` chalta hai, na `line-clamp`, na koi tang
+                line-height.
+
+                Nastaliq ke haroof lakeer se upar aur neeche nikalte hain (کپڑا ka ک,
+                گھریلو ka گ). `line-clamp`/`truncate` overflow kaat dete hain aur
+                `leading-snug` jagah hi nahi chhorta — natija ye ke harf ka sar kat
+                jata hai aur "کپڑا" parhne mein "لپڑا" lagta hai. Ye katne se bhi bura
+                hai: banda samajhta hai hum ne naam GHALAT likha hai.
+
+                Naam chhote hain, do lakeer mein aa jate hain — unhen bas khula chhor
+                dena hi sab se theek hai.
+              */}
+              <span className="flex-1">{pickName(locale, category)}</span>
               <ChevronIcon className="h-3.5 w-3.5 shrink-0 text-ink-faint transition group-hover/cat:text-brand-600 rtl:rotate-180" />
             </Link>
 
@@ -75,9 +88,7 @@ export function CategoryMenu({
                           className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-ink-soft transition hover:bg-paper-sunken hover:text-brand-800"
                         >
                           <Thumb url={child.coverImageUrl} size="sm" />
-                          <span className="line-clamp-2 flex-1 leading-snug">
-                            {pickName(locale, child)}
-                          </span>
+                          <span className="flex-1">{pickName(locale, child)}</span>
                           <span className="numeric shrink-0 text-xs text-ink-faint">
                             {child.productCount}
                           </span>
