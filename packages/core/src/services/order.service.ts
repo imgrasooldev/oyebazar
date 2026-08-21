@@ -554,6 +554,53 @@ export class OrderService {
     return this.applyAccept(view.id, 'link')
   }
 
+  /**
+   * Link se hi poora safar — qubool karne ke BAAD wale qadam bhi.
+   *
+   * 🔴 Ye sab se bari asani hai, aur us ki wajah karobari hai, taknoloji ki nahi:
+   * dukan wala WhatsApp par link kholta hai aur ek tap mein order qubool kar leta hai.
+   * Us ke baad ke qadam (maal bandh diya, bhej diya, pohanch gaya) sirf portal mein
+   * the — yani login, password nahi to OTP, aur ek aur app jaisi cheez. Bohot se
+   * dukan wale wahan tak jate hi nahi.
+   *
+   * Us ki qeemat kisi aur ne bhugatni thi: DELIVERED wohi qadam hai jis par reseller ka
+   * hissa khulta hai. Login na hone ka matlab tha ke us ka paisa hawa mein latka rahe.
+   *
+   * Hifazat wohi jo pehle thi: token 32 bytes ka hai, ek hi order par chalta hai, aur
+   * IP par rate limit lagi hai. Faida uthane ki soorat bhi nahi banti — DELIVERED
+   * likhne se dukan ke ZIMME paisa charhta hai, ghatta nahi.
+   */
+  async markStatusByToken(
+    token: string,
+    toStatus: 'PACKED' | 'DISPATCHED' | 'DELIVERED' | 'RTO' | 'CANCELLED',
+    reason?: string,
+  ): Promise<InternalOrderView> {
+    const view = await this.orders.findBySupplierToken(token)
+    if (!view) throw new NotFoundError('Order')
+
+    /*
+     * Token wale view mein dukan ki id hai hi nahi (us safhe ko us ki zaroorat nahi
+     * thi), aur aage wali sab methods usi par chalti hain — is liye yahan ek dafa
+     * poora order utha lete hain.
+     */
+    const order = await this.orders.findById(view.id)
+    if (!order) throw new NotFoundError('Order', view.orderNo)
+
+    // Aage ka kaam wohi service karti hai jo portal ke liye karti hai — do raste, ek hisab
+    switch (toStatus) {
+      case 'PACKED':
+        return this.markPackedBySupplier(order.supplierId, order.orderNo)
+      case 'DISPATCHED':
+        return this.markDispatchedBySupplier(order.supplierId, order.orderNo)
+      case 'DELIVERED':
+        return this.markDeliveredBySupplier(order.supplierId, order.orderNo)
+      case 'RTO':
+        return this.markRtoBySupplier(order.supplierId, order.orderNo, reason ?? '')
+      case 'CANCELLED':
+        return this.cancelBySupplier(order.supplierId, order.orderNo, reason ?? '')
+    }
+  }
+
   /** Portal se — logged-in wholesaler. Order us ka na ho to milta hi nahi. */
   async acceptForSupplier(supplierId: string, orderNo: string): Promise<InternalOrderView> {
     const view = await this.orders.findForSupplier(supplierId, orderNo)

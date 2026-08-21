@@ -20,6 +20,7 @@ type Next = 'PACKED' | 'DISPATCHED' | 'DELIVERED' | 'RTO' | 'CANCELLED'
  */
 export function SupplierStatusButton({
   orderNo,
+  endpoint,
   toStatus,
   label,
   tone = 'plain',
@@ -27,6 +28,14 @@ export function SupplierStatusButton({
   labels,
 }: {
   orderNo: string
+  /**
+   * Kahan bhejna hai.
+   *
+   * Do raste hain aur dono zaroori hain: portal ka (login ke baad) aur WhatsApp wale
+   * link ka (bilkul bina login). Button dono par ek jaisa hai — dukan wale ke liye wo
+   * ek hi cheez hai, chahe wo kisi bhi darwaze se aaya ho.
+   */
+  endpoint?: string
   toStatus: Next
   label: string
   tone?: 'plain' | 'primary' | 'quiet' | 'danger'
@@ -47,7 +56,7 @@ export function SupplierStatusButton({
     setPending(true)
     setError(null)
 
-    const res = await fetch(`/api/v1/supplier/orders/${orderNo}/status`, {
+    const res = await fetch(endpoint ?? `/api/v1/supplier/orders/${orderNo}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ toStatus, ...(needsReason ? { reason: reason.trim() } : {}) }),

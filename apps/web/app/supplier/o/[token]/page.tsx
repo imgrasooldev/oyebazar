@@ -2,8 +2,10 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { BRAND, formatPkr } from '@oyebazar/shared'
 import { SupplierOrderActions } from '@/components/supplier-order-actions'
+import { SupplierStatusButton } from '@/components/supplier-status-button'
 import { PinIcon } from '@/components/icons'
 import { container } from '@/lib/container'
+import { translator } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
 
 export const dynamic = 'force-dynamic'
@@ -30,12 +32,20 @@ export default async function SupplierOrderPage({
   params: Promise<{ token: string }>
 }) {
   const { token } = await params
+  const statusEndpoint = `/api/v1/supplier/link/${token}/status`
   const locale = await getLocale()
 
   const order = await container.orders.getForSupplierToken(token).catch(() => null)
   if (!order) notFound()
 
-  const decided = order.status !== 'SENT_TO_SUPPLIER'
+  const t = translator(locale)
+
+  // Teen button, teen lafz — ek hi jagah se, taake portal aur link par ek jaise rahen
+  const actionLabels = {
+    reasonAsk: t('reasonAsk'),
+    confirm: t('confirmAction'),
+    back: t('backOut'),
+  }
   const mapsUrl =
     order.locationLat && order.locationLng
       ? `https://maps.google.com/?q=${order.locationLat},${order.locationLng}`
@@ -107,16 +117,81 @@ export default async function SupplierOrderPage({
         </div>
       </div>
 
-      {decided ? (
-        <p className="card mt-5 p-5 text-center text-sm">
-          {order.status === 'ACCEPTED' || order.status === 'DISPATCHED' || order.status === 'DELIVERED'
-            ? '✓ آپ یہ آرڈر قبول کر چکے ہیں۔'
-            : 'یہ آرڈر بند ہو چکا ہے۔'}
-        </p>
-      ) : (
+      {/*
+        🔴 Poora safar isi ek link par — login kahin nahi.
+
+        Pehle yahan sirf "qubool" ya "maazrat" tha; us ke baad har qadam portal mein
+        tha (login, OTP, ek aur app jaisi cheez) aur bohot se dukan wale wahan tak jate
+        hi nahi. Us ki qeemat reseller bhugatti thi: "pohanch gaya" wohi qadam hai jis
+        par us ka hissa khulta hai — na likha jaye to us ka paisa hawa mein latka rehta.
+
+        Har halat par sirf WAHI button jo ab bante hain — teen ya us se kam. Dukan par
+        koi list parh kar nahi chunta; wo wohi dabata hai jo saamne hai.
+      */}
+      {order.status === 'SENT_TO_SUPPLIER' && (
         <div className="mt-5">
           <SupplierOrderActions endpoint={`/api/v1/supplier/link/${token}`} />
         </div>
+      )}
+
+      {(order.status === 'ACCEPTED' || order.status === 'PACKED') && (
+        <div className="mt-5 flex flex-wrap items-start gap-2">
+          {order.status === 'ACCEPTED' && (
+            <SupplierStatusButton
+              orderNo={order.orderNo}
+              endpoint={statusEndpoint}
+              toStatus="PACKED"
+              label={t('markPacked')}
+              labels={actionLabels}
+            />
+          )}
+          <SupplierStatusButton
+            orderNo={order.orderNo}
+            endpoint={statusEndpoint}
+            toStatus="DISPATCHED"
+            label={t('markDispatched')}
+            tone="primary"
+            labels={actionLabels}
+          />
+          <SupplierStatusButton
+            orderNo={order.orderNo}
+            endpoint={statusEndpoint}
+            toStatus="CANCELLED"
+            label={t('markCancelled')}
+            tone="quiet"
+            labels={actionLabels}
+          />
+        </div>
+      )}
+
+      {order.status === 'DISPATCHED' && (
+        <div className="mt-5 flex flex-wrap items-start gap-2">
+          <SupplierStatusButton
+            orderNo={order.orderNo}
+            endpoint={statusEndpoint}
+            toStatus="DELIVERED"
+            label={t('markDelivered')}
+            tone="primary"
+            note={t('deliveredOpensMoney')}
+            labels={actionLabels}
+          />
+          <SupplierStatusButton
+            orderNo={order.orderNo}
+            endpoint={statusEndpoint}
+            toStatus="RTO"
+            label={t('markRto')}
+            tone="danger"
+            labels={actionLabels}
+          />
+        </div>
+      )}
+
+      {/* Mukammal ho chuka — ab dabane ko kuch nahi, sirf khabar */}
+      {(order.status === 'DELIVERED' || order.status === 'RTO' || order.status === 'CANCELLED' ||
+        order.status === 'REJECTED') && (
+        <p className="card mt-5 p-5 text-center text-sm">
+          {order.status === 'DELIVERED' ? '✓ یہ آرڈر مکمل ہو گیا۔' : 'یہ آرڈر بند ہو چکا ہے۔'}
+        </p>
       )}
     </div>
   )
