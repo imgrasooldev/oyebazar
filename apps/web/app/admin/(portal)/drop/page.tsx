@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { LazyImage } from '@/components/lazy-image'
 import { canDo } from '@oyebazar/core'
 import { formatPkr } from '@oyebazar/shared'
 import { BuildDropButton } from '@/components/build-drop-button'
@@ -108,11 +109,9 @@ export default async function AdminDropPage() {
                 <li key={product.id} className="flex items-center gap-3 px-4 py-3">
                   <div className="h-12 w-12 shrink-0 overflow-hidden rounded-card bg-paper-sunken">
                     {product.coverImageUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element -- storage URLs
-                      <img
+                      <LazyImage
                         src={product.coverImageUrl}
                         alt=""
-                        loading="lazy"
                         className="h-full w-full object-cover"
                       />
                     )}

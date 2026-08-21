@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { LazyImage } from '@/components/lazy-image'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { STATUS_PACK_TEMPLATES, formatPkr } from '@oyebazar/shared'
@@ -64,10 +65,15 @@ export default async function ProductPage({
         <div className="space-y-5">
           <div className="card overflow-hidden">
             {product.coverImageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- storage URLs; next/image Phase 2
-              <img
+              <LazyImage
                 src={product.coverImageUrl}
                 alt={title}
+                /*
+                 * Safhe ki pehli aur sab se bari tasveer — is par `lazy` ulta nuqsan
+                 * hai (browser usay bhi der se maangta hai), is liye `eager`.
+                 */
+                eager
+                wrapperClassName="w-full bg-paper-sunken"
                 // max-h: bari screen par tasveer ko poora safha khane se rokta hai
                 className="max-h-[26rem] w-full object-cover"
               />

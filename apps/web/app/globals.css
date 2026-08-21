@@ -166,6 +166,74 @@
     background: linear-gradient(180deg, rgb(0 0 0 / 0) 0%, rgb(0 0 0 / 0.1) 100%);
   }
 
+  /*
+   * Shimmer — tasveer aane se pehle wali chamak.
+   *
+   * 🔴 Sada khaali khaana (ya sada nabz wala pulse) aur chalti hui chamak mein farq
+   * mehsoos hota hai: chamak "aa rahi hai" kehti hai, khaali khaana "kuch nahi hai"
+   * kehta hai. Is app ki poori jaan tasveerein hain aur wo sasti internet par der se
+   * aati hain — us intezar ko khamosh chhorna wohi ghalti hai jo navigation par thi.
+   *
+   * Ye poori CSS hai, koi JavaScript nahi: chamak neeche chalti rehti hai aur tasveer
+   * upar aa kar usay dhaanp leti hai.
+   */
+  /*
+   * 🔴 Yahan apna rang NAHI lagta.
+   *
+   * Pehle ye khaki (paper-sunken) rang khud laga leta tha — aur kaale khane par
+   * (jaise "aaj ka pack" wali patti) safed dabbe ban jate the. Rang us khane ka apna
+   * hona chahiye jis par chamak chal rahi hai; chamak sirf uske ooper se guzarti hai.
+   */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shimmer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      rgb(255 255 255 / 0) 0%,
+      rgb(255 255 255 / 0.55) 50%,
+      rgb(255 255 255 / 0) 100%
+    );
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /*
+   * Tasveer aane par narmi se ubharti hai — jhatke se nahi.
+   * `loaded` class us waqt lagti hai jab browser keh de ke tasveer aa gayi.
+   */
+  .fade-media {
+    opacity: 0;
+    transition: opacity 400ms ease-out;
+  }
+
+  .fade-media.loaded {
+    opacity: 1;
+  }
+
+  /* Jise harkat se takleef ho: chamak khari, tasveer seedhi nazar aati hai */
+  @media (prefers-reduced-motion: reduce) {
+    .shimmer::before {
+      animation: none;
+    }
+
+    .fade-media {
+      opacity: 1;
+      transition: none;
+    }
+  }
+
   .tile-media {
     @apply w-full object-cover transition duration-500 ease-soft group-hover:scale-[1.04];
   }

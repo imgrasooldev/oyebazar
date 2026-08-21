@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { LazyImage } from '@/components/lazy-image'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { BRAND, isFresh, whatsappLink } from '@oyebazar/shared'
@@ -172,11 +173,9 @@ export default async function SupplierPage({ params }: Props) {
                 <li key={product.slug} className="tile group transition hover:shadow-lift">
                   <div className="tile-media-wrap aspect-square bg-paper-sunken">
                     {product.coverImageUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element -- storage URLs
-                      <img
+                      <LazyImage
                         src={product.coverImageUrl}
                         alt={title}
-                        loading="lazy"
                         className="tile-media h-full"
                       />
                     )}

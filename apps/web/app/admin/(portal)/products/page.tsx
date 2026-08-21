@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { LazyImage } from '@/components/lazy-image'
 import { formatPkr } from '@oyebazar/shared'
 import { AdminPriceDecision } from '@/components/admin-price-decision'
 import { AdminRowAction } from '@/components/admin-row-action'
@@ -164,11 +165,9 @@ function ProductList({
           <li key={product.id} className="card flex flex-wrap items-center gap-4 p-4">
             <div className="h-16 w-16 shrink-0 overflow-hidden rounded-card bg-paper-sunken">
               {product.imageUrl && (
-                // eslint-disable-next-line @next/next/no-img-element -- storage URLs; next/image Phase 2
-                <img
+                <LazyImage
                   src={product.imageUrl}
                   alt=""
-                  loading="lazy"
                   className="h-full w-full object-cover"
                 />
               )}

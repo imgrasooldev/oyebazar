@@ -6,6 +6,7 @@ import { toResellerProductListItemDTO } from '@/lib/api/mappers'
 import { requireReseller } from '@/lib/api/session'
 import { container } from '@/lib/container'
 import { CatalogueFilters } from '@/components/catalogue-filters'
+import { LazyImage } from '@/components/lazy-image'
 import { CatalogueToolbar } from '@/components/catalogue-toolbar'
 import { ScrollRail } from '@/components/scroll-rail'
 import { SearchSuggest } from '@/components/search-suggest'
@@ -128,11 +129,10 @@ export default async function CataloguePage({
                 <Link href={`/catalogue/${pack.productId}`} className="group block">
                   <div className="relative aspect-[9/16] overflow-hidden rounded-2xl bg-white/10 ring-1 ring-white/15">
                     {(pack.imageUrl ?? pack.coverImageUrl) && (
-                      // eslint-disable-next-line @next/next/no-img-element -- storage URLs
-                      <img
+                      <LazyImage
                         src={pack.imageUrl ?? pack.coverImageUrl ?? ''}
                         alt={pickTitle(locale, pack)}
-                        loading="lazy"
+                        wrapperClassName="h-full w-full"
                         className="h-full w-full object-cover transition duration-500 ease-soft group-hover:scale-105"
                       />
                     )}
@@ -181,11 +181,10 @@ export default async function CataloguePage({
                 >
                   <div className="tile-media-wrap aspect-square rounded-card bg-paper-sunken">
                     {item.coverImageUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element -- storage URLs
-                      <img
+                      <LazyImage
                         src={item.coverImageUrl}
                         alt={title}
-                        loading="lazy"
+                        wrapperClassName="h-full w-full"
                         className="h-full w-full object-cover transition duration-500 ease-soft group-hover:scale-105"
                       />
                     )}
@@ -328,11 +327,10 @@ export default async function CataloguePage({
                       className="tile-media-wrap h-16 w-16 shrink-0 rounded-card bg-paper-sunken"
                     >
                       {item.coverImageUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element -- storage URLs
-                        <img
+                        <LazyImage
                           src={item.coverImageUrl}
                           alt={title}
-                          loading="lazy"
+                          wrapperClassName="h-full w-full"
                           className="h-full w-full object-cover"
                         />
                       )}
@@ -405,11 +403,10 @@ export default async function CataloguePage({
                   <Link href={`/catalogue/${item.id}`} className="block">
                     <div className="relative aspect-square overflow-hidden bg-paper-sunken">
                       {item.coverImageUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element -- storage URLs
-                        <img
+                        <LazyImage
                           src={item.coverImageUrl}
                           alt={title}
-                          loading="lazy"
+                          wrapperClassName="h-full w-full"
                           className="tile-media h-full"
                         />
                       )}

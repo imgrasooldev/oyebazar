@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { LazyImage } from '@/components/lazy-image'
 import { isFresh } from '@oyebazar/shared'
 import { CategoryMenu } from '@/components/category-menu'
 import { CategoryStrip } from '@/components/category-strip'
@@ -243,11 +244,9 @@ export default async function HomePage() {
                     className="tile group relative block aspect-[5/3]"
                   >
                     {category.coverImageUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element -- storage URLs
-                      <img
+                      <LazyImage
                         src={category.coverImageUrl}
                         alt=""
-                        loading="lazy"
                         className="tile-media h-full"
                       />
                     )}
@@ -330,11 +329,9 @@ export default async function HomePage() {
                   <Link href={`/bazaar/${product.supplierSlug}`} className="block">
                     <div className="tile-media-wrap relative aspect-square bg-paper-sunken">
                       {product.coverImageUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element -- storage URLs
-                        <img
+                        <LazyImage
                           src={product.coverImageUrl}
                           alt={title}
-                          loading="lazy"
                           className="tile-media h-full"
                         />
                       )}

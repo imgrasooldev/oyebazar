@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { LazyImage } from '@/components/lazy-image'
 import type { Metadata } from 'next'
 import { formatPkr } from '@oyebazar/shared'
 import { CounterpartyLedger } from '@/components/counterparty-ledger'
@@ -208,11 +209,9 @@ export default async function SupplierDashboardPage() {
                 <li key={row.product.id} className="flex items-center gap-3 px-4 py-2.5">
                   <div className="h-10 w-10 shrink-0 overflow-hidden rounded-card bg-paper-sunken">
                     {row.product.imageUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element -- storage URLs
-                      <img
+                      <LazyImage
                         src={row.product.imageUrl}
                         alt=""
-                        loading="lazy"
                         className="h-full w-full object-cover"
                       />
                     )}

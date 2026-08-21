@@ -19,6 +19,23 @@ import { useEffect, useState } from 'react'
  * Sidebar ka apna nishan alag hai (wahan usi khane par ghoomta hai). Ye us ke liye hai
  * jo baqi poore safhe par hai: card, button, neeche wali patti.
  */
+/**
+ * Wo navigation jo click se nahi, code se hoti hai (`router.push`).
+ *
+ * 🔴 Filter, tarteeb aur grid/qatar ke button `<a>` nahi hain — wo URL khud badalte
+ * hain. Yani jis lakeer ne click ka jawab dena tha, wo un par chalti hi nahi thi, aur
+ * wahi jagah hai jahan intezar sab se zyada khalta hai: reseller filter dabati hai aur
+ * poori list dobara banti hai.
+ *
+ * Ek chhota sa paighaam kaafi hai — RouteProgress ko kisi component se joRne (ya har
+ * jagah state pass karne) se ye behtar hai.
+ */
+export const ROUTE_PROGRESS_EVENT = 'oyebazar:navigating'
+
+export function signalNavigation(): void {
+  window.dispatchEvent(new CustomEvent(ROUTE_PROGRESS_EVENT))
+}
+
 export function RouteProgress() {
   const pathname = usePathname()
   const [running, setRunning] = useState(false)
@@ -51,8 +68,16 @@ export function RouteProgress() {
       setRunning(true)
     }
 
+    function onSignal() {
+      setRunning(true)
+    }
+
     document.addEventListener('click', onClick, { capture: true })
-    return () => document.removeEventListener('click', onClick, { capture: true })
+    window.addEventListener(ROUTE_PROGRESS_EVENT, onSignal)
+    return () => {
+      document.removeEventListener('click', onClick, { capture: true })
+      window.removeEventListener(ROUTE_PROGRESS_EVENT, onSignal)
+    }
   }, [])
 
   /*

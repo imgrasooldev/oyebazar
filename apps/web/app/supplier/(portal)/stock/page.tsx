@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { LazyImage } from '@/components/lazy-image'
 import { formatPkr } from '@oyebazar/shared'
 import { SupplierEditProduct } from '@/components/supplier-edit-product'
 import { SupplierPriceRequest } from '@/components/supplier-price-request'
@@ -110,11 +111,9 @@ export default async function SupplierStockPage() {
               >
                 <div className="h-11 w-11 shrink-0 overflow-hidden rounded-card bg-paper">
                   {row.product.imageUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element -- storage URLs
-                    <img
+                    <LazyImage
                       src={row.product.imageUrl}
                       alt=""
-                      loading="lazy"
                       className="h-full w-full object-cover"
                     />
                   )}
@@ -157,11 +156,9 @@ export default async function SupplierStockPage() {
             <div className="flex flex-wrap items-center gap-3 p-3">
             <div className="h-14 w-14 shrink-0 overflow-hidden rounded-card bg-paper-sunken">
               {product.imageUrl && (
-                // eslint-disable-next-line @next/next/no-img-element -- storage URLs; next/image Phase 2
-                <img
+                <LazyImage
                   src={product.imageUrl}
                   alt=""
-                  loading="lazy"
                   className="h-full w-full object-cover"
                 />
               )}
