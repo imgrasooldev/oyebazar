@@ -18,16 +18,27 @@ dono jate hain.
 
 ## 1 · Faislay — pehle ye tay karen
 
-| sawal | tajweez | wajah |
-|---|---|---|
-| Database | **Supabase** (ya Neon — dono chalte hain) | Tasveerein waise bhi Supabase storage par jati hain; ek hi jagah rakhna hisab aur bill dono saada rakhta hai. Neon behtar Postgres deta hai — lena ho to sirf `DATABASE_URL` badalta hai, aur kuch nahi. |
-| Region | **DB aur app EK hi ilaqe mein** | Har safha DB se baat karta hai. App Singapore aur DB Mumbai ho to har query par ~60ms zaya — aur ek safhe par kai query hoti hain. |
-| Redis | **Upstash** (Fly extension) | Iske baghair status pack render nahi hota (queue log-only mode mein chali jati hai). |
-| WhatsApp | **wati** ya **meta** | 🔴 Iske baghair OTP nahi jata, yani **koi login hi nahi kar sakta**. Ye launch ki sab se ahem chabi hai. |
+Ye tay ho chuke hain:
 
-Fly ke qareeb tareen region: `bom` (Mumbai) sab se qareeb hai, `sin` (Singapore) doosra.
-Abhi `fly.web.toml` aur `fly.worker.toml` dono par `sin` likha hai — Mumbai lena ho to
-dono files mein `primary_region` badal den.
+| cheez | faisla | wajah |
+|---|---|---|
+| Database | **Supabase** | Tasveerein waise bhi Supabase storage par jati hain (code aur config dono usi par hain). Ek vendor = ek region, ek bill, kam tootne wali jagahen. Neon par jana ho to sirf `DATABASE_URL`/`DIRECT_URL` badalte hain — koi darwaza band nahi. |
+| Region | **Singapore (`sin`)** — DB bhi wahin (ap-southeast-1) | Har safha DB se baat karta hai. App aur DB alag ilaqon mein hon to har query par faasle ka waqt lagta hai, aur ek safhe par kai query hoti hain. |
+| Redis | **Upstash** | Iske baghair status pack render nahi hota (queue log-only mode mein chali jati hai) — aur wohi is karobar ka asal kaam hai. |
+| WhatsApp | **abhi nahi** | 🔴 Neeche parhen — is ka natija saaf samajh lena zaroori hai. |
+
+### 🔴 WhatsApp ke baghair live jane ka matlab
+
+Provider na ho to paighaam kahin nahi jate — sirf server ke **logs mein chhapte hain**.
+Amal mein is ka matlab:
+
+* Aap khud `flyctl logs -a oyebazar-web` se OTP parh kar andar aa sakte hain.
+* **Koi asli reseller ya dukan wala andar nahi aa sakega** — usay code kabhi nahi milega.
+* Jis ke paas logs ka rasta hai, wo kisi ke bhi number par OTP parh sakta hai.
+
+Is liye site chalu to ho jayegi, magar **us ka pata kisi ko na den** jab tak WATI ya
+Meta na lag jaye. Wo lagte hi `WHATSAPP_PROVIDER` set karen aur dobara deploy — aur kuch
+nahi badalta.
 
 ---
 
@@ -64,7 +75,13 @@ flyctl auth login
 flyctl apps create oyebazar-web
 flyctl apps create oyebazar-worker
 
-# 2) Secrets (misal — apni asli qadrein daalen)
+# 2) Secrets — .env.production bhar kar, ek hi command se dono apps par
+#    (qadrein terminal par kabhi nahi chhapti — dekhen scripts/fly-secrets.mjs)
+cp .env.production.example .env.production   # phir isay bharen
+node scripts/fly-secrets.mjs --dry-run       # pehle dekh len kya ja raha hai
+node scripts/fly-secrets.mjs
+
+# --- ya haath se, agar zyada pasand ho ---
 flyctl secrets set -a oyebazar-web \
   DATABASE_URL="..." DIRECT_URL="..." APP_URL="https://oyebazar.com" \
   SESSION_COOKIE_NAME="oyebazar_session" DEFAULT_FEE_RATE_BPS="500" \
