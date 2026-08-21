@@ -17,6 +17,8 @@ COPY packages/shared/package.json packages/shared/
 COPY packages/core/package.json packages/core/
 COPY packages/db/package.json packages/db/
 COPY packages/queue/package.json packages/queue/
+COPY packages/storage/package.json packages/storage/
+COPY packages/whatsapp/package.json packages/whatsapp/
 COPY apps/web/package.json apps/web/
 RUN pnpm install --frozen-lockfile --filter @oyebazar/web...
 
