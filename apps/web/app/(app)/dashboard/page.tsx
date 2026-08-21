@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { formatPkr } from '@oyebazar/shared'
-import { GridIcon, ListIcon, SparkIcon } from '@/components/icons'
+import { MiniBars, StatTile, Widget } from '@/components/dash-kit'
+import { BoxesIcon, GridIcon, ListIcon, MoneyIcon, SparkIcon } from '@/components/icons'
 import { ResellerPayoutReply } from '@/components/payout-actions'
 import { toResellerOrderDTO } from '@/lib/api/mappers'
 import { requireReseller } from '@/lib/api/session'
@@ -12,6 +13,9 @@ import { orderStatusStyle } from '@/lib/order-status-style'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 export const dynamic = 'force-dynamic'
+
+/** Chaal kitne dinon ki — do hafte, dono dashboard par ek jaisa. */
+const TREND_DAYS = 14
 
 /**
  * Reseller ka dashboard — login ke baad pehli screen.
@@ -36,6 +40,34 @@ export default async function ResellerDashboard() {
   ])
 
   const orders = ordersPage.items.map(toResellerOrderDTO)
+
+  /*
+   * Kamai ki chaal — do hafte.
+   *
+   * Ginti PAYOUT ki qataron se banti hai, orders se nahi: payout usi din khulta hai jis
+   * din maal pohanchta hai, aur "kamai" ka asal matlab wohi hai. Order ki tareekh se
+   * ginte to raste mein khare order bhi kamai mein shumar ho jate — aur wo abhi kamai
+   * hai hi nahi.
+   *
+   * Din sthaniya (local) waqt par bante hain — reseller apna din dekhti hai, UTC ka nahi.
+   */
+  const dayKey = (date: Date) => `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+
+  const perDay = new Map<string, number>()
+  for (const payout of payouts) {
+    const key = dayKey(new Date(payout.createdAt))
+    perDay.set(key, (perDay.get(key) ?? 0) + payout.amount)
+  }
+
+  const points = Array.from({ length: TREND_DAYS }, (_, index) => {
+    const date = new Date()
+    date.setDate(date.getDate() - (TREND_DAYS - 1 - index))
+    return {
+      label: `${date.getDate()}/${date.getMonth() + 1}`,
+      value: perDay.get(dayKey(date)) ?? 0,
+    }
+  })
+  const inTrend = points.reduce((sum, point) => sum + point.value, 0)
   const pending = orders.filter((order) => order.status === 'PENDING_CONFIRM')
   const openPayouts = payouts.filter((payout) => payout.status !== 'SETTLED')
 
@@ -78,28 +110,76 @@ export default async function ResellerDashboard() {
         </section>
       )}
 
-      {/* Kamai — reseller ka asal sawal */}
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="card bg-coal-900 p-5 text-white">
-          <p className="text-[0.72rem] uppercase tracking-wider text-white/50">
+      {/*
+        Kamai — reseller ka asal sawal.
+
+        Ye khana kaala hai aur baqi safed: is safhe par sab se bara sawal yehi hai, aur
+        ek nazar mein pata chalna chahiye ke wo kahan likha hai.
+      */}
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="card bg-coal-900 p-4 text-white">
+          <span
+            className="flex h-10 w-10 items-center justify-center rounded-card bg-white/10 text-brand-300"
+            aria-hidden="true"
+          >
+            <MoneyIcon className="h-5 w-5" />
+          </span>
+          <p className="mt-3 text-[0.72rem] font-semibold uppercase tracking-wider text-white/50">
             {t('earnedThisMonth')}
           </p>
-          <p dir="ltr" className="numeric mt-2 text-[1.7rem] font-bold leading-none text-brand-300">
+          <p dir="ltr" className="numeric mt-1 text-[1.5rem] font-bold leading-none text-brand-300">
             {formatPkr(stats.earnedThisMonth)}
           </p>
-          <p className="mt-2 text-[0.76rem] text-white/45">
+          <p className="mt-1.5 text-[0.76rem] text-white/45">
             {t('earnedTotal')} <span dir="ltr">{formatPkr(stats.earnedTotal)}</span>
           </p>
         </div>
 
-        <Stat label={t('ordersRunning')} value={stats.ordersRunning} hint={t('ordersRunningHint')} />
-        <Stat label={t('ordersDelivered')} value={stats.ordersDelivered} />
-        <Stat
+        <StatTile
+          icon={<ListIcon className="h-5 w-5" />}
+          label={t('ordersRunning')}
+          value={String(stats.ordersRunning)}
+          hint={t('ordersRunningHint')}
+          href="/orders"
+        />
+        <StatTile
+          icon={<BoxesIcon className="h-5 w-5" />}
+          label={t('ordersDelivered')}
+          value={String(stats.ordersDelivered)}
+          tone="accent"
+          href="/orders"
+        />
+        {/*
+          Pack banaye aur pack utaare — do alag ginti, aur farq hi asal khabar hai:
+          jo pack ban kar utara hi nahi gaya wo kabhi kisi status par nahi laga.
+        */}
+        <StatTile
+          icon={<SparkIcon className="h-5 w-5" />}
           label={t('packsMade')}
-          value={stats.packsMade}
+          value={String(stats.packsMade)}
           hint={`${stats.packsDownloaded} ${t('packsDownloaded')}`}
+          {...(stats.packsMade > 0
+            ? { progress: Math.round((stats.packsDownloaded / stats.packsMade) * 100) }
+            : {})}
+          href="/catalogue"
         />
       </section>
+
+      {/*
+        Kamai ki chaal — sirf tab jab kuch bana ho.
+
+        Khali chart "abhi kuch nahi hua" se bura hai: wo poori jagah ghair kar ke bhi
+        kuch nahi kehta, aur nayi reseller ko pehle din yehi sab se bara khana dikhta
+        hai. Jab pehli kamai aati hai, ye khud aa jata hai.
+      */}
+      {inTrend > 0 && (
+        <Widget
+          title={t('earningsTrend')}
+          subtitle={`${formatPkr(inTrend)} · ${TREND_DAYS} ${t('daysShort')}`}
+        >
+          <MiniBars points={points} caption={t('earningsTrendCaption')} unit={t('rupees')} />
+        </Widget>
+      )}
 
       {/*
         Mere paise — kamai aur "haath mein aaye paise" do alag cheezein hain.
@@ -183,15 +263,12 @@ export default async function ResellerDashboard() {
       </section>
 
       {orders.length > 0 && (
-        <section>
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 className="text-[1.05rem] font-bold">{t('myOrders')}</h2>
-            <Link href="/orders" className="link-tap text-sm font-semibold text-brand-700">
-              {t('viewAll')}
-            </Link>
-          </div>
-
-          <ul className="card divide-y divide-black/[0.05]">
+        <Widget
+          title={t('myOrders')}
+          subtitle={t('dashboardOrdersHint')}
+          action={{ label: t('viewAll'), href: '/orders' }}
+        >
+          <ul className="divide-y divide-black/[0.05]">
             {orders.map((order) => (
               <li key={order.id} className="flex flex-wrap items-center gap-3 px-5 py-3">
                 <span dir="ltr" className="numeric text-sm font-bold text-ink-faint">
@@ -207,20 +284,8 @@ export default async function ResellerDashboard() {
               </li>
             ))}
           </ul>
-        </section>
+        </Widget>
       )}
-    </div>
-  )
-}
-
-function Stat({ label, value, hint }: { label: string; value: number; hint?: string }) {
-  return (
-    <div className="card p-5">
-      <p className="text-[0.72rem] uppercase tracking-wider text-ink-faint">{label}</p>
-      <p dir="ltr" className="numeric mt-2 text-[1.7rem] font-bold leading-none">
-        {value}
-      </p>
-      {hint && <p className="mt-2 text-[0.76rem] text-ink-faint">{hint}</p>}
     </div>
   )
 }

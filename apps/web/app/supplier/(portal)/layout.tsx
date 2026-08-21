@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { BRAND } from '@oyebazar/shared'
 import { LanguageToggle } from '@/components/language-toggle'
 import { SupplierLogoutButton } from '@/components/supplier-logout-button'
-import { BoxesIcon, ListIcon, MoneyIcon, ShieldIcon } from '@/components/icons'
+import { BoxesIcon, GridIcon, ListIcon, MoneyIcon, ShieldIcon } from '@/components/icons'
 import { getSupplierOrNull } from '@/lib/api/supplier-session'
 import { translator } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
@@ -21,6 +21,7 @@ export const dynamic = 'force-dynamic'
  * patti. Sirf do kaam: aaye hue order, aur apna maal.
  */
 const NAV = [
+  { href: '/supplier/dashboard', key: 'supplierDashboardNav', Icon: GridIcon },
   { href: '/supplier/orders', key: 'supplierOrdersNav', Icon: ListIcon },
   { href: '/supplier/stock', key: 'supplierStockNav', Icon: BoxesIcon },
   { href: '/supplier/payouts', key: 'payoutsNav', Icon: MoneyIcon },
@@ -38,7 +39,7 @@ export default async function SupplierPortalLayout({ children }: { children: Rea
       <header className="sticky top-0 z-30 bg-coal-900 text-white">
         <div className="mx-auto flex max-w-shell items-center justify-between gap-3 px-5 py-3 lg:px-8">
           <Link
-            href="/supplier/orders"
+            href="/supplier/dashboard"
             className="flex min-h-tap flex-col justify-center leading-none"
           >
             <span className="text-[1.15rem] font-bold text-brand-300">
