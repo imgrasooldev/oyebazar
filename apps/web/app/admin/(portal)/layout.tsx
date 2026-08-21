@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { RouteProgress } from '@/components/route-progress'
 import { redirect } from 'next/navigation'
 import { BRAND } from '@oyebazar/shared'
 import { OPS_ROLE_RANK } from '@oyebazar/core'
@@ -50,6 +51,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div dir="ltr" className="min-h-screen bg-paper font-sans">
+      {/* Click ka foran jawab — dekhen RouteProgress */}
+      <RouteProgress />
+
       <header className="sticky top-0 z-30 bg-coal-950 text-white">
         <div className="mx-auto flex max-w-shell items-center justify-between gap-3 px-5 py-3 lg:px-8">
           <Link href="/admin" className="flex min-h-tap flex-col justify-center leading-none">

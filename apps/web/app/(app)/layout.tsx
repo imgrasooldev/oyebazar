@@ -4,6 +4,7 @@ import { BRAND } from '@oyebazar/shared'
 import { getResellerOrNull } from '@/lib/api/session'
 import { LanguageToggle } from '@/components/language-toggle'
 import { LogoutButton } from '@/components/logout-button'
+import { RouteProgress } from '@/components/route-progress'
 import { PortalSidebar } from '@/components/portal-sidebar'
 import { GridIcon, ListIcon, MoneyIcon, SparkIcon, StoreIcon } from '@/components/icons'
 import { translator } from '@/lib/i18n'
@@ -40,6 +41,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-paper pb-24 lg:pb-0">
+      {/* Click ka foran jawab — dekhen RouteProgress */}
+      <RouteProgress />
+
       <header className="sticky top-0 z-30 border-b border-black/[0.05] bg-paper/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-shell items-center justify-between gap-3 px-5 py-3 lg:px-8">
           <Link href="/dashboard" className="flex min-h-tap flex-col justify-center leading-none">

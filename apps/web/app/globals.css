@@ -257,6 +257,40 @@
     display: none;
   }
 
+  /*
+   * Safha badalne wali lakeer.
+   *
+   * Chaal jaan boojh kar aisi hai: shuru mein tez (taake click ka jawab foran mile) aur
+   * phir dheemi, 90% par ja kar tham jati hai. Asal waqt hamein pata hi nahi hota; 100%
+   * dikha kar intezar karwana jhoot hai aur us se bharosa jata hai.
+   */
+  .route-progress {
+    animation: route-progress 12s cubic-bezier(0.1, 0.6, 0.2, 1) forwards;
+  }
+
+  @keyframes route-progress {
+    0% {
+      transform: scaleX(0.02);
+    }
+    12% {
+      transform: scaleX(0.4);
+    }
+    45% {
+      transform: scaleX(0.72);
+    }
+    100% {
+      transform: scaleX(0.9);
+    }
+  }
+
+  /* Jise harkat se takleef hoti hai us ke liye lakeer khari rehti hai, bhaagti nahi */
+  @media (prefers-reduced-motion: reduce) {
+    .route-progress {
+      animation: none;
+      transform: scaleX(0.35);
+    }
+  }
+
   /* Halki si sunehri lakeer — sections ko baantne ke liye border se behtar */
   .hairline {
     @apply h-px w-full bg-gradient-to-l from-transparent via-black/[0.07] to-transparent;

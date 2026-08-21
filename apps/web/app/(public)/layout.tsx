@@ -1,3 +1,4 @@
+import { RouteProgress } from '@/components/route-progress'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
 import { getResellerOrNull } from '@/lib/api/session'
@@ -15,6 +16,9 @@ export default async function PublicLayout({ children }: { children: React.React
 
   return (
     <div className="flex min-h-screen flex-col bg-paper">
+      {/* Click ka foran jawab — Bazaar ke safhe sab se bhaari hain (tasveerein) */}
+      <RouteProgress />
+
       <SiteHeader loggedIn={actor !== null} locale={locale} />
       <main className="flex-1">{children}</main>
       <SiteFooter locale={locale} />

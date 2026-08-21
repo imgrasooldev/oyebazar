@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import Link, { useLinkStatus } from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import type { Route } from 'next'
@@ -89,8 +89,7 @@ export function PortalSidebar({
               active ? 'bg-brand-500 text-white shadow-lift' : 'text-white/65 hover:bg-white/10 hover:text-white'
             } ${collapsed ? 'justify-center' : ''}`}
           >
-            <span className="shrink-0">{item.icon}</span>
-            {!collapsed && <span className="truncate">{item.label}</span>}
+            <NavItemBody icon={item.icon} label={item.label} collapsed={collapsed} />
           </Link>
         )
       })}
@@ -119,6 +118,53 @@ export function PortalSidebar({
         {!collapsed && <span className="truncate">{labels.collapse}</span>}
       </button>
     </nav>
+  )
+}
+
+/**
+ * Khana khud — aur us ka "chal raha hai" wala nishan.
+ *
+ * 🔴 Ye alag component is liye hai ke `useLinkStatus` sirf Link ke ANDAR kaam karta hai.
+ *
+ * Masla ye tha: click ke baad 300–400ms (aur naye safhe par kai second) tak safhe par
+ * kuch bhi nahi hota — na patti badalti hai, na skeleton aata hai, kyunke navigation
+ * server ka jawab aane par "committed" hoti hai. Us khamoshi mein banda samajhta hai
+ * ke click laga hi nahi, aur dobara dabata hai (aur phir teesri dafa).
+ *
+ * Ab click ke usi lamhe nishan ghoomne lagta hai. Safha utni hi der mein aata hai —
+ * magar ab wo intezar "kuch ho raha hai" wala hai, "kuch hua hi nahi" wala nahi.
+ */
+function NavItemBody({
+  icon,
+  label,
+  collapsed,
+}: {
+  icon: React.ReactNode
+  label: string
+  collapsed: boolean
+}) {
+  const { pending } = useLinkStatus()
+
+  return (
+    <>
+      <span className="shrink-0">{pending ? <Spinner /> : icon}</span>
+      {!collapsed && <span className="truncate">{label}</span>}
+    </>
+  )
+}
+
+function Spinner() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 animate-spin" aria-hidden="true">
+      {/* Poora daira halka, aur ek chauthai numaya — ghoomne ka ehsaas isi farq se banta hai */}
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" opacity="0.25" />
+      <path
+        d="M21 12a9 9 0 0 0-9-9"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
   )
 }
 

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { BRAND } from '@oyebazar/shared'
 import { LanguageToggle } from '@/components/language-toggle'
 import { PortalSidebar } from '@/components/portal-sidebar'
+import { RouteProgress } from '@/components/route-progress'
 import { SupplierLogoutButton } from '@/components/supplier-logout-button'
 import { BoxesIcon, GridIcon, ListIcon, MoneyIcon, ShieldIcon } from '@/components/icons'
 import { getSupplierOrNull } from '@/lib/api/supplier-session'
@@ -37,6 +38,9 @@ export default async function SupplierPortalLayout({ children }: { children: Rea
 
   return (
     <div className="min-h-screen bg-paper">
+      {/* Click ka foran jawab — dekhen RouteProgress */}
+      <RouteProgress />
+
       <header className="sticky top-0 z-30 bg-coal-900 text-white">
         <div className="mx-auto flex max-w-shell items-center justify-between gap-3 px-5 py-3 lg:px-8">
           <Link
