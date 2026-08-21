@@ -1,24 +1,80 @@
 # Logins aur URLs — OyeBazar
 
-Kaun kahan se andar aata hai, aur kis ke paas kitna ikhtiyar hai.
+Kaun kahan se andar aata hai, us ke paas kitna ikhtiyar hai, aur test ke liye kaun sa
+number chalta hai. Production par `http://localhost:3000` ki jagah `https://oyebazar.com`
+lagayen — baqi sab wohi rehta hai.
 
-Production par domain `oyebazar.com` hai; neeche ke raaste wahan bhi wohi hain
-(`http://localhost:3000` ki jagah `https://oyebazar.com`).
-
-> **"Credentials kahan hain?"** — kahin nahi, aur ye jaan boojh kar hai. Kisi ka bhi
-> login us ke **WhatsApp number** se hota hai; wohi us ki pehchan hai. Super admin ka
-> "credential" = wo number jo `OpsUser` mein `SUPER_ADMIN` ke taur par darj hai.
-
-**Poore system mein koi password nahi hai.** Har login WhatsApp OTP se hota hai: number
-daalen, 6 hindson ka code aata hai, andar. Wajah [ARCHITECTURE.md](./ARCHITECTURE.md)
-mein hai — phone kho jaye ya kisi aur ke haath lag jaye to session foran khatam ki ja
-sakti hai, jo password ke sath mumkin nahi.
+> ### Sab se pehle: koi password hai hi nahi
+>
+> Har login WhatsApp OTP se hota hai — number daalen, 6 hindson ka code aata hai, andar.
+> "Credential" ka matlab is nizam mein sirf ek cheez hai: **WhatsApp number**.
+>
+> Wajah: phone kisi aur ke haath lag jaye to session ek click mein khatam ki ja sakti
+> hai. Password ke saath ye mumkin nahi — wo badalna parta hai, aur us ke saath wo har
+> jagah badalna parta hai jahan banday ne wohi password rakha hua ho.
 
 ---
 
-## 0. Saare raaste ek jagah
+## 1. Saare logins — ek hi jadwal
 
-Production par `http://localhost:3000` ki jagah `https://oyebazar.com`.
+Dev machine ke test accounts. **Production par ye numbers mojood nahi.**
+
+Number DB mein E.164 mein rakha jata hai (`923004445566`), magar login par `03004445566`
+likhna kaafi hai — dono ek hi cheez hain.
+
+### Ops team — `/admin/login`
+
+| Naam | Login number | Darja | Kya kar sakta hai |
+|---|---|---|---|
+| Ghulam Rasool | `03004445566` | SUPER_ADMIN | Sab kuch — fee rate, invoice, team |
+| Ops Coordinator | `03004445577` | COORDINATOR | Order aage barhana |
+| Auditor Sahib | `03005556677` | REVIEWER | Sirf dekhna, badalna kuch nahi |
+
+### Reseller — `/login`
+
+| Naam | Login number | Sheher |
+|---|---|---|
+| صادیہ | `03001234567` | Lahore |
+| عائشہ | `03009876543` | Karachi |
+| حرا | `03331112233` | Rawalpindi |
+
+Naya reseller account khud-ba-khud ban jata hai — usi safhe par naya number daalen, naam
+aur sheher poochh kar andar aa jata hai.
+
+### Wholesaler — `/supplier/login`
+
+Saari 13 dukanen VERIFIED aur Bazaar par listed hain.
+
+| Dukan | Login number | Sheher |
+|---|---|---|
+| المدینہ فیبرکس | `03001200000` | Karachi |
+| نور ٹیکسٹائل | `03001200010` | Karachi |
+| شہزاد کلاتھ ہاؤس | `03001200020` | Lahore |
+| گلبرگ کلیکشن | `03001200030` | Lahore |
+| فیصل فیبرکس | `03001200040` | Faisalabad |
+| رحمان ٹریڈرز | `03001200050` | Karachi |
+| خان الیکٹرانکس | `03001200060` | Rawalpindi |
+| Crescent Cosmetics | `03001264508` | Karachi |
+| Metro Home Supplies | `03001222951` | Lahore |
+| Multan Dry Fruits & Spices | `03001299665` | Multan |
+| Peshawar Crockery House | `03001240160` | Peshawar |
+| Sialkot Sports Co. | `03001201884` | Sialkot |
+| Gujranwala Steel House | `03217654321` | Gujranwala |
+
+### Dev par OTP kahan milta hai
+
+Do jagah, dono se kaam chal jata hai:
+
+1. **Safhe par hi** — login screen par ek kaale dabbe mein code likha aata hai aur khana
+   pehle se bhara hota hai.
+2. **Terminal mein** — dev server ke log mein `whatsapp_template_dev` wali line.
+
+🔴 Production mein ye kabhi nahi aata. Do taale lage hain: `NODE_ENV`, aur messaging
+provider — dekhen `apps/web/__tests__/security/dev-otp.test.ts`.
+
+---
+
+## 2. Saare raaste — ek jagah
 
 ### Bina login (koi bhi khol sakta hai)
 
@@ -69,7 +125,7 @@ button nahi chalta (rok service mein hai, UI par nahi — §3).
 
 ---
 
-## 1. Reseller (bahenein jo status par bechti hain)
+## 3. Reseller — us ka portal
 
 | | |
 |---|---|
@@ -90,7 +146,7 @@ ho to ye patti nahi aati (3-tap ka usool).
 
 ---
 
-## 2. Wholesaler (dukan wale)
+## 4. Wholesaler — dukan ka portal
 
 | | |
 |---|---|
@@ -165,7 +221,7 @@ reseller ka retail rate kabhi nahi dikhta (sirf wholesaler ki apni raqam).
 
 ---
 
-## 3. Admin / super admin (ops team)
+## 5. Admin — ops ka portal
 
 | | |
 |---|---|
@@ -242,80 +298,7 @@ darwaza hamesha ke liye band ho jata hai, aur koi bacha hi nahi jo usay wapas kh
 
 ---
 
-## 4. Dev machine par test accounts
-
-Ye sirf local ke hain — production par ye numbers mojood nahi. Koi password nahi; number
-daalen aur screen par aaya hua OTP daal den.
-
-Number DB mein hamesha E.164 mein rakha jata hai (`923004445566`), magar login par
-`03004445566` likhna kaafi hai — dono ek hi cheez hain.
-
-### Ops (seed se)
-
-| Naam | Number | Role | Email |
-|---|---|---|---|
-| Ghulam Rasool | `03004445566` | SUPER_ADMIN | founder@oyebazar.com |
-| Ops Coordinator | `03004445577` | COORDINATOR | coordinator@oyebazar.com |
-| Auditor Sahib | `03005556677` | REVIEWER | audit@oyebazar.com |
-
-Is machine par jaanch ke doran do aur bane the — `Ops Malik` (`03211234567`,
-SUPER_ADMIN) aur `Sana Ops` (`03001119999`, MANAGER, **band**). Naye seed par ye nahi
-aayenge; Sana ka account is liye band hai ke "Disable karte hi sessions khatam" wali baat
-jaanchi ja sake.
-
-### Reseller (seed se)
-
-| Naam | Number | Sheher |
-|---|---|---|
-| صادیہ | `03001234567` | Lahore |
-| عائشہ | `03009876543` | Karachi |
-| حرا | `03331112233` | Rawalpindi |
-
-Reseller ka account khud-ba-khud banta hai, is liye is machine par kuch aur bhi hain jo
-jaanch ke doran `/login` se bane.
-
-### Wholesaler — saari 13 dukanen VERIFIED aur Bazaar par listed hain
-
-| Dukan | Number | Sheher |
-|---|---|---|
-| المدینہ فیبرکس | `03001200000` | Karachi |
-| نور ٹیکسٹائل | `03001200010` | Karachi |
-| شہزاد کلاتھ ہاؤس | `03001200020` | Lahore |
-| گلبرگ کلیکشن | `03001200030` | Lahore |
-| فیصل فیبرکس | `03001200040` | Faisalabad |
-| رحمان ٹریڈرز | `03001200050` | Karachi |
-| خان الیکٹرانکس | `03001200060` | Rawalpindi |
-| Crescent Cosmetics | `03001264508` | Karachi |
-| Metro Home Supplies | `03001222951` | Lahore |
-| Multan Dry Fruits & Spices | `03001299665` | Multan |
-| Peshawar Crockery House | `03001240160` | Peshawar |
-| Sialkot Sports Co. | `03001201884` | Sialkot |
-| Gujranwala Steel House | `03217654321` | Gujranwala |
-
-Dukan ka naam usi zaban mein rehta hai jo us ne khud likha — Bazaar par tarjuma nahi
-hota, kyunke naam pehchan hai.
-
-### Dev par OTP kahan se milta hai
-
-Do jagah, dono se kaam chal jata hai:
-
-1. **Safhe par hi** — dev mein code login screen par ek kaale dabbe mein dikhta hai aur
-   khana pehle se bhara hota hai. Production mein ye kabhi nahi aata (do taale:
-   `NODE_ENV` aur messaging provider — dekhen `apps/web/__tests__/security/dev-otp.test.ts`).
-2. **Terminal mein** — dev server ke log mein `whatsapp_template_dev` line.
-
-### Status pack dev mein render karne ke liye
-
-Dev mein Redis nahi hota, is liye render queue sirf log likhti hai aur Content Studio
-mein "ban raha hai…" ruka rehta hai. Ek dafa chala kar chhor den:
-
-```bash
-pnpm --filter @oyebazar/worker render:watch
-```
-
----
-
-## 5. Teen alag cookies — kyun
+## 6. Teen alag cookies — kyun
 
 `oyebazar_session` (reseller) · `oyebazar_supplier` (wholesaler) · `oyebazar_admin` (ops)
 
@@ -329,7 +312,7 @@ chipka dein to bhi andar nahi jaya ja sakta; jaancha gaya hai.
 
 ---
 
-## 6. Secrets kahan hain
+## 7. Secrets kahan hain
 
 🔴 Is document mein koi asli password ya key nahi hai, aur nahi honi chahiye. Yahan sirf
 ye likha hai ke kaunsi cheez kahan rakhi jati hai.
@@ -359,7 +342,7 @@ production build tootti hai aur session cookie `secure` nahi rehti.
 
 ---
 
-## 7. Local par sab kuch chalane ke liye
+## 8. Local par sab kuch chalane ke liye
 
 Teen cheezen, teen terminal:
 

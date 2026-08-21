@@ -70,8 +70,45 @@ function toHtml(markdown: string): string {
     }
   }
 
+  /*
+   * Blockquote — wo khaana jis mein sab se ahem baat likhi jati hai.
+   *
+   * Pehle converter ise samajhta hi nahi tha: `>` wali lines saada paragraph ban kar
+   * chhap jati thin, `>` ke nishan samet. Yani jo baat sab se numaya honi chahiye thi wo
+   * sab se ganda dikh rahi thi.
+   */
+  let inQuote = false
+  const closeQuote = () => {
+    if (inQuote) {
+      out.push('</blockquote>')
+      inQuote = false
+    }
+  }
+
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i]!
+
+    if (!inCode && line.startsWith('>')) {
+      closeList()
+      closeTable()
+      if (!inQuote) {
+        out.push('<blockquote>')
+        inQuote = true
+      }
+
+      const body = line.replace(/^>\s?/, '')
+      if (!body.trim()) continue
+
+      // Quote ke andar bhi unwan chal sakte hain
+      if (/^#{1,4} /.test(body)) {
+        const level = body.match(/^#+/)![0].length
+        out.push(`<h${level}>${inline(body.replace(/^#+ /, ''))}</h${level}>`)
+      } else {
+        out.push(`<p>${inline(body)}</p>`)
+      }
+      continue
+    }
+    if (inQuote && !line.startsWith('>')) closeQuote()
 
     if (line.startsWith('```')) {
       closeList()
@@ -142,6 +179,7 @@ function toHtml(markdown: string): string {
 
   closeList()
   closeTable()
+  closeQuote()
 
   // Khali line par toote hue paragraph dobara jorna — markdown mein ek jumla
   // kai lines par likha hota hai
@@ -152,46 +190,115 @@ function toHtml(markdown: string): string {
 }
 
 const CSS = `
-  /* Urdu ke liye Windows/Chromium ke apne fonts — koi CDN nahi, PDF har jagah ek jaisa */
+  /*
+   * Urdu ke liye Windows/Chromium ke apne fonts — koi CDN nahi, PDF har jagah ek jaisa.
+   *
+   * Ye kaghaz par parha jata hai, screen par nahi: is liye numbers, jadwal aur unwan
+   * screen wale andaz se alag bartay gaye hain. Chhapne ke baad "kaunsa number kis ka
+   * hai" ek nazar mein pata chalna chahiye.
+   */
   @page { size: A4; margin: 18mm 16mm; }
+
   body {
     font-family: 'Segoe UI', system-ui, sans-serif;
-    color: #191A1D;
-    line-height: 1.65;
+    color: #1B1830;
+    line-height: 1.6;
     font-size: 10.5pt;
   }
-  h1 { font-size: 20pt; margin: 0 0 4mm; color: #AE3F06; }
-  h2 { font-size: 14pt; margin: 8mm 0 3mm; padding-top: 2mm; border-top: 1px solid #eee; }
-  h3 { font-size: 11.5pt; margin: 5mm 0 2mm; }
+
+  /* Pehla unwan — kaghaz ka sarwarq */
+  h1 {
+    font-size: 22pt;
+    margin: 0 0 2mm;
+    color: #AE3F06;
+    letter-spacing: -0.2pt;
+  }
+
+  /*
+   * Har bara unwan naye safhe par.
+   * Kaghaz par section ka aadha hissa pichhle safhe par aur aadha agle par sab se buri
+   * shakl hai — dhoondte waqt banda usay do jagah parhta hai.
+   */
+  h2 {
+    font-size: 14pt;
+    margin: 0 0 4mm;
+    padding: 0 0 2mm;
+    border-bottom: 2px solid #AE3F06;
+    break-before: page;
+    break-after: avoid;
+  }
+  h2:first-of-type { break-before: auto; }
+
+  h3 {
+    font-size: 11.5pt;
+    margin: 6mm 0 2mm;
+    color: #AE3F06;
+    break-after: avoid;
+  }
+
   p { margin: 0 0 2.5mm; }
+
+  /* Number, phone aur code — hamesha ek jaisi chaurai, taake qatar mein mel khayen */
   code {
     font-family: Consolas, monospace;
-    background: #F0EEEA;
-    padding: 0.5mm 1.2mm;
+    background: #FBF1E9;
+    color: #8A3305;
+    padding: 0.4mm 1.4mm;
     border-radius: 1mm;
     font-size: 9.5pt;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
+
   pre {
-    background: #191A1D;
-    color: #f5f5f5;
+    background: #1B1830;
+    color: #F3F1FA;
     padding: 3mm 4mm;
     border-radius: 2mm;
     font-family: Consolas, monospace;
     font-size: 9pt;
     line-height: 1.5;
     white-space: pre-wrap;
+    break-inside: avoid;
   }
-  table { width: 100%; border-collapse: collapse; margin: 2mm 0 4mm; font-size: 9.5pt; }
-  th, td { border: 1px solid #e3e0da; padding: 1.8mm 2.5mm; text-align: start; vertical-align: top; }
-  th { background: #F7F6F4; font-weight: 700; }
-  hr { border: 0; border-top: 1px solid #eee; margin: 6mm 0; }
+  pre code { background: none; color: inherit; padding: 0; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2mm 0 5mm;
+    font-size: 9.5pt;
+    break-inside: avoid;
+  }
+  th, td { padding: 2mm 2.5mm; text-align: start; vertical-align: top; }
+  th {
+    background: #2A1B63;
+    color: #fff;
+    font-weight: 600;
+    font-size: 9pt;
+  }
+  /* Ek qatar chhori, ek rangeen — bees qataron wali jadwal mein aankh nahi phisalti */
+  tbody tr:nth-child(even) { background: #F7F6FB; }
+  td { border-bottom: 1px solid #E7E4EF; }
+
+  /* Nuqta-e-nazar wala khaana (blockquote) — kaghaz par sab se numaya cheez */
+  blockquote {
+    margin: 0 0 5mm;
+    padding: 3.5mm 4mm;
+    background: #FBF1E9;
+    border-inline-start: 3pt solid #AE3F06;
+    border-radius: 0 2mm 2mm 0;
+    break-inside: avoid;
+  }
+  blockquote h3 { margin-top: 0; }
+  blockquote p:last-child { margin-bottom: 0; }
+
+  hr { border: 0; margin: 5mm 0; }
   a { color: #AE3F06; text-decoration: none; }
-  ul { margin: 0 0 3mm; padding-inline-start: 6mm; }
-  li { margin-bottom: 1mm; }
+  ul, ol { margin: 0 0 3mm; padding-inline-start: 6mm; }
+  li { margin-bottom: 1.2mm; }
   strong { font-weight: 700; }
-  /* Table safhe ke beech se na toote */
   tr { break-inside: avoid; }
-  h2, h3 { break-after: avoid; }
 `
 
 async function main(): Promise<void> {
