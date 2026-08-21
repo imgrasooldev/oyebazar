@@ -16,6 +16,14 @@ export const metadata: Metadata = { title: 'Catalogue' }
 export const dynamic = 'force-dynamic'
 
 /**
+ * Is se kam maal bache to card par ginti aati hai.
+ *
+ * 5 is liye ke ek reseller ka ek status aam tor par is se zyada order nahi laata — yani
+ * is hadd se neeche wo waqai "mana karna par sakta hai" wale ilaqe mein hai.
+ */
+const LOW_STOCK = 5
+
+/**
  * Reseller catalogue.
  *
  * Sab se upar "آج کا پیک" — wohi 5 items jo subah 9 baje WhatsApp par gaye. Ye
@@ -343,6 +351,20 @@ export default async function CataloguePage({
                             {t('outOfStock')}
                           </span>
                         )}
+                        {/*
+                          Bacha hua maal SIRF tab jab wo kam ho.
+                          Har card par "47 bache hain" likhna khabar nahi, shor hai — aur
+                          us shor mein wo "3 bache hain" bhi doob jata hai jo asal khabar
+                          hai. Hadd wohi jahan reseller ka faisla waqai badalta hai.
+                        */}
+                        {item.inStock && item.stockLeft > 0 && item.stockLeft <= LOW_STOCK && (
+                          <span className="ms-2 rounded-pill bg-red-50 px-2 py-0.5 font-semibold text-red-700">
+                            <span dir="ltr" className="numeric">
+                              {item.stockLeft}
+                            </span>{' '}
+                            {t('onlyLeft')}
+                          </span>
+                        )}
                       </p>
                     </div>
 
@@ -419,6 +441,15 @@ export default async function CataloguePage({
                     */}
                     <p className="mt-1 text-[0.7rem] text-ink-faint">
                       {timeAgo(locale, item.listedAt, now)}
+                      {item.inStock && item.stockLeft > 0 && item.stockLeft <= LOW_STOCK && (
+                        <span className="ms-1.5 font-semibold text-red-700">
+                          ·{' '}
+                          <span dir="ltr" className="numeric">
+                            {item.stockLeft}
+                          </span>{' '}
+                          {t('onlyLeft')}
+                        </span>
+                      )}
                     </p>
 
                     {/*

@@ -35,6 +35,15 @@ export interface ResellerProductView {
   readonly bajiPrice: Pkr
   readonly suggestedRetail: Pkr
   readonly inStock: boolean
+  /**
+   * Kitna maal bacha hai — reserve shuda nikaal kar.
+   *
+   * 🔴 Reseller ko ye JAAN boojh kar dikhaya jata hai. Pehle sirf haan/na tha ("mojood"
+   * ya "khatam"), aur do piece wala maal poore stock jaisa hi lagta tha: wo us par apna
+   * status lagati, teen customer laati, aur do ko mana karna parta — nuqsan sirf paise
+   * ka nahi, us ki apni sakh ka hota tha, jo is kaam mein us ki asal poonji hai.
+   */
+  readonly stockLeft: number
   readonly media: readonly ProductMediaView[]
   readonly variants: readonly ProductVariantView[]
   readonly listedAt: Date

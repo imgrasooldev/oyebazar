@@ -88,6 +88,14 @@ export const ResellerProductListItemDTO = z
     /** us ka apna set kiya hua retail price (agar set kiya ho) */
     myRetailPrice: PkrSchema.nullable(),
     inStock: z.boolean(),
+    /**
+     * Kitna maal bacha hai.
+     *
+     * Sirf haan/na se do piece wala maal poore stock jaisa lagta tha — reseller us par
+     * status lagati, teen customer laati, aur do ko mana karna parta. Us mein us ki
+     * apni sakh jati hai, jo is kaam ki asal poonji hai.
+     */
+    stockLeft: z.number().int().nonnegative(),
     listedAt: z.coerce.date(),
   })
   .strict()

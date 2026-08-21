@@ -90,6 +90,7 @@ export function toResellerProductListItemDTO(item: CatalogueItem): ResellerProdu
     suggestedRetail: product.suggestedRetail,
     myRetailPrice,
     inStock: product.inStock,
+    stockLeft: product.stockLeft,
     listedAt: product.listedAt,
   })
 }
@@ -107,6 +108,7 @@ export function toResellerProductDetailDTO(item: CatalogueItem): ResellerProduct
     suggestedRetail: product.suggestedRetail,
     myRetailPrice,
     inStock: product.inStock,
+    stockLeft: product.stockLeft,
     listedAt: product.listedAt,
     media: product.media,
     variants: product.variants,

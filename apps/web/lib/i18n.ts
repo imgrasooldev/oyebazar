@@ -576,6 +576,13 @@ const DICTIONARY = {
   trendingWindow: { ur: 'پچھلے 30 دن کے آرڈرز سے', rm: 'Pichhle 30 din ke orders se', en: 'From the last 30 days of orders' },
   ordersShort: { ur: 'آرڈر', rm: 'order', en: 'orders' },
   piecesShort: { ur: 'پیس', rm: 'piece', en: 'pcs' },
+  onlyLeft: { ur: 'ہی باقی', rm: 'hi baqi', en: 'left' },
+  myReturnsLabel: { ur: 'میرا واپسی ریکارڈ', rm: 'Mera wapsi record', en: 'My return rate' },
+  returnsHint: {
+    ur: 'یہی نمبر ہول سیلر کو بھی دکھتا ہے',
+    rm: 'Yehi number wholesaler ko bhi dikhta hai',
+    en: 'Wholesalers see this same number',
+  },
   yourMovers: { ur: 'آپ کا سب سے زیادہ چلنے والا مال', rm: 'Aap ka sab se zyada chalne wala maal', en: 'Your best movers' },
   featuredSuppliers: { ur: 'نمایاں ہول سیلرز', en: 'Featured suppliers', rm: 'Numaya wholesalers' },
   popularProducts: { ur: 'مقبول آئٹمز', en: 'Popular products', rm: 'Maqbool maal' },

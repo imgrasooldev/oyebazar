@@ -32,12 +32,22 @@ export default async function ResellerDashboard() {
   const locale = await getLocale()
   const t = translator(locale)
 
-  const [stats, ordersPage, payouts, payoutTotals] = await Promise.all([
+  const [stats, ordersPage, payouts, payoutTotals, risk] = await Promise.all([
     container.repositories.resellerStats.summary(reseller.id, new Date()),
     container.orders.listForReseller(reseller.id, { limit: 5 }),
     container.payouts.listForReseller(reseller.id),
     container.payouts.totalsForReseller(reseller.id),
+    /*
+     * 🔴 Us ka apna wapsi ka record — wohi ginti jo DUKAN ko dikhti hai jab wo us ka
+     * order qubool karne ka faisla kar rahi hoti hai (dekhen ResellerRtoRecord).
+     *
+     * Ye insaaf ka masla hai: jis number par us ke bare mein faisla hota hai, wo number
+     * usay bhi nazar aana chahiye — warna order kam hone lagen to usay wajah hi pata
+     * nahi chalti, aur wo cheez badal bhi nahi sakti jo usay dikhti hi nahi.
+     */
+    container.payouts.resellerRisk([reseller.id]),
   ])
+  const myRecord = risk[0]
 
   const orders = ordersPage.items.map(toResellerOrderDTO)
 
@@ -153,6 +163,20 @@ export default async function ResellerDashboard() {
           Pack banaye aur pack utaare — do alag ginti, aur farq hi asal khabar hai:
           jo pack ban kar utara hi nahi gaya wo kabhi kisi status par nahi laga.
         */}
+        {/*
+          Wapsi ka record — sirf tab jab kuch MUKAMMAL ho chuka ho.
+          Naye bandey ko "0%" dikhana jhoota tasalli hai: abhi kuch sabit hi nahi hua.
+        */}
+        {myRecord && myRecord.delivered + myRecord.rto > 0 ? (
+          <StatTile
+            icon={<ListIcon className="h-5 w-5" />}
+            label={t('myReturnsLabel')}
+            value={`${myRecord.rtoRate ?? 0}%`}
+            hint={`${myRecord.rto}/${myRecord.delivered + myRecord.rto} · ${t('returnsHint')}`}
+            tone={(myRecord.rtoRate ?? 0) >= 20 ? 'danger' : 'plain'}
+            {...(myRecord.rtoRate !== null ? { progress: myRecord.rtoRate } : {})}
+          />
+        ) : (
         <StatTile
           icon={<SparkIcon className="h-5 w-5" />}
           label={t('packsMade')}
@@ -163,6 +187,7 @@ export default async function ResellerDashboard() {
             : {})}
           href="/catalogue"
         />
+        )}
       </section>
 
       {/*

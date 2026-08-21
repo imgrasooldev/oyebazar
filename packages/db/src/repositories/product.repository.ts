@@ -452,6 +452,8 @@ function toResellerView(row: ResellerRow): ResellerProductView {
     bajiPrice: pkr(row.bajiPrice),
     suggestedRetail: pkr(row.suggestedRetail),
     inStock: row.status === 'LIVE' && row.variants.some((v) => v.stockQty > 0),
+    // Sab jorhon ka jama — jis maal par rang/size na hon us ka bhi ek default variant hota hai
+    stockLeft: row.variants.reduce((sum, v) => sum + Math.max(v.stockQty, 0), 0),
     media: row.media.map((m) => ({
       id: m.id,
       type: m.type,
