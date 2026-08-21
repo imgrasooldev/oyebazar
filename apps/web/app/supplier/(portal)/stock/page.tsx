@@ -33,13 +33,19 @@ export default async function SupplierStockPage() {
   const locale = await getLocale()
   const t = translator(locale)
 
-  const [products, categories, internal, pendingPriceRequests] = await Promise.all([
+  const [products, categories, internal, pendingPriceRequests, trending] = await Promise.all([
     container.supplierCatalogue.listMyProducts(supplier.id),
     // 🔴 findTree, findAll nahi — maal SUB-category par lagta hai aur findAll sirf
     // bari categories deta hai
     container.repositories.categories.findTree(),
     container.repositories.suppliers.findInternal(supplier.id),
     container.priceChanges.listMyPending(supplier.id),
+    /*
+     * Apni dukan ka chalta hua maal — sirf isi dukan ka, aur mare hue order ke baghair.
+     * Ye wohi ginti hai jo reseller apni taraf dekhti hai; dono taraf ek hi hisab hona
+     * chahiye, warna "aap ke haan to kuch aur likha hai" wali baat shuru hoti hai.
+     */
+    container.repositories.products.findTrending({ limit: 6, days: 30, supplierId: supplier.id }),
   ])
 
   // Jis maal par pehle se darkhwast khuli hai us par dobara form kholne ka faida nahi
@@ -57,6 +63,16 @@ export default async function SupplierStockPage() {
     products.filter((product) => product.status !== 'DRAFT').map((product) => product.id),
   )
 
+  /*
+   * Ginti ko maal ke saath jorhna yahin hota hai — trending sirf ids aur ginti deti hai.
+   * Jo maal ab list mein nahi (archived) wo chup chaap gir jata hai.
+   */
+  const productById = new Map(products.map((product) => [product.id, product]))
+  const movers = trending.flatMap((row) => {
+    const product = productById.get(row.productId)
+    return product ? [{ product, orders: row.orders, qty: row.qty }] : []
+  })
+
   return (
     <div className="space-y-6">
       <div>
@@ -71,6 +87,65 @@ export default async function SupplierStockPage() {
         feeRateBps={internal?.feeRateBps ?? 500}
         locale={locale}
       />
+
+      {/*
+        Kya chal raha hai — pichhle 30 din.
+
+        Ye is safhe par is liye hai ke faisla yahin hota hai: maal dobara mangwana hai ya
+        nahi. Ginti ke baghair wo faisla yaadasht se hota tha ("mujhe lagta hai ye chalta
+        hai"), aur yaadasht sab se zyada wohi maal yaad rakhti hai jo haal hi mein bika.
+      */}
+      {movers.length > 0 && (
+        <section className="card p-4">
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-[1rem] font-bold">{t('yourMovers')}</h2>
+            <span className="text-[0.78rem] text-ink-faint">{t('trendingWindow')}</span>
+          </div>
+
+          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {movers.map((row) => (
+              <li
+                key={row.product.id}
+                className="flex items-center gap-3 rounded-card bg-paper-sunken p-2"
+              >
+                <div className="h-11 w-11 shrink-0 overflow-hidden rounded-card bg-paper">
+                  {row.product.imageUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element -- storage URLs
+                    <img
+                      src={row.product.imageUrl}
+                      alt=""
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[0.88rem] font-semibold">
+                    {locale === 'ur' ? row.product.titleUr : row.product.titleEn}
+                  </p>
+                  <p className="text-[0.76rem] text-ink-faint">
+                    <span dir="ltr" className="numeric font-bold text-ink">
+                      {row.orders}
+                    </span>{' '}
+                    {t('ordersShort')}
+                    {' · '}
+                    <span dir="ltr" className="numeric">
+                      {row.qty}
+                    </span>{' '}
+                    {t('piecesShort')}
+                  </p>
+                </div>
+
+                {/* Bacha hua maal saath — "chal raha hai" aur "khatam hone wala hai" ek hi nazar mein */}
+                <span dir="ltr" className="numeric shrink-0 text-[0.78rem] text-ink-soft">
+                  {row.product.stockQty}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {products.length === 0 && (
         <div className="card p-8 text-center text-ink-soft">{t('noSupplierProducts')}</div>

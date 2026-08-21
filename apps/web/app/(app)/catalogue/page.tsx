@@ -66,7 +66,7 @@ export default async function CataloguePage({
   )
   const listView = query.view === 'list'
 
-  const [page, dailyPacks, categories] = await Promise.all([
+  const [page, dailyPacks, categories, trending] = await Promise.all([
     container.catalogue.list(reseller.id, {
       /*
        * 48 — pehle 24 the aur reseller ko roz "aur dikhao" ka intezar karna parta tha.
@@ -86,6 +86,13 @@ export default async function CataloguePage({
     }),
     container.dailyDrops.packsForReseller(reseller.id, DEFAULT_TEMPLATE_KEY),
     container.repositories.categories.findAll(),
+    /*
+     * 30 din — 7 din zyada "abhi wala" hota, magar is bazaar mein har maal par har
+     * hafte order nahi aate, aur khali patti "kuch nahi chal raha" ka ghalat paighaam
+     * deti hai. Jo hadd istemal hui hai wohi patti par likhi bhi hai — warna ye sirf
+     * hamara dawa reh jata.
+     */
+    container.catalogue.trending(reseller.id, { limit: 12, days: 30 }),
   ])
   const items = page.items.map(toResellerProductListItemDTO)
   const readyCount = dailyPacks.filter((pack) => pack.imageUrl).length
@@ -136,6 +143,70 @@ export default async function CataloguePage({
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {/* ------------------------------------------------- ابھی کیا چل رہا ہے */}
+      {/*
+        Filter ya search ke waqt ye patti nahi aati: us waqt reseller kuch DHOOND rahi
+        hai, aur us ke saamne alag maal rakhna sirf raste mein aana hai.
+      */}
+      {trending.length > 0 && !search && !category && (
+        <section>
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-[1.15rem] font-bold tracking-tight">{t('trendingNow')}</h2>
+            <span className="text-[0.78rem] text-ink-faint">{t('trendingWindow')}</span>
+          </div>
+
+          <ScrollRail labels={{ prev: t('stPrev'), next: t('stNext') }}>
+            {trending.map((entry) => {
+              const item = toResellerProductListItemDTO(entry)
+              const title = locale === 'ur' ? item.titleUr : item.titleEn
+              const myPrice = item.myRetailPrice ?? item.suggestedRetail
+              const profit = Math.max(myPrice - item.bajiPrice, 0)
+
+              return (
+                <Link
+                  key={item.id}
+                  href={`/catalogue/${item.id}`}
+                  className="card group w-40 shrink-0 p-2.5 sm:w-44"
+                >
+                  <div className="tile-media-wrap aspect-square rounded-card bg-paper-sunken">
+                    {item.coverImageUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element -- storage URLs
+                      <img
+                        src={item.coverImageUrl}
+                        alt={title}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition duration-500 ease-soft group-hover:scale-105"
+                      />
+                    )}
+
+                    {/*
+                      Ginti tasveer par — yehi is patti ka poora nuqta hai. "Trending"
+                      likh dena hamara dawa hai; "9 آرڈر" ek waqia hai.
+                    */}
+                    <span className="absolute start-2 top-2 rounded-pill bg-coal-900/85 px-2 py-0.5 text-[0.7rem] font-semibold text-white">
+                      <span dir="ltr" className="numeric">
+                        {entry.orders}
+                      </span>{' '}
+                      {t('ordersShort')}
+                    </span>
+                  </div>
+
+                  <p className="mt-2 truncate text-[0.85rem] font-semibold">{title}</p>
+                  <p className="mt-0.5 flex items-baseline justify-between gap-2 text-[0.78rem]">
+                    <span dir="ltr" className="numeric font-bold">
+                      {formatPkr(myPrice)}
+                    </span>
+                    <span dir="ltr" className="numeric font-semibold text-accent-700">
+                      +{formatPkr(profit)}
+                    </span>
+                  </p>
+                </Link>
+              )
+            })}
+          </ScrollRail>
         </section>
       )}
 

@@ -125,6 +125,29 @@ export class PrismaProductRepository implements ProductRepository {
     }
   }
 
+  /**
+   * Kuch mutayyin maal — usi tarteeb mein jis mein ids aayi thin.
+   *
+   * Tarteeb yahin lagti hai kyunke DB `IN (...)` par apni marzi ki tarteeb deta hai,
+   * aur is list ka poora matlab hi tarteeb hai (sab se zyada chalne wala pehle).
+   * Jo maal ab LIVE nahi raha wo chup chaap gir jata hai — chalta hua maal jo khatam
+   * ho gaya, us ko dikhana sirf jhoot hai.
+   */
+  async findResellerByIds(productIds: readonly string[]): Promise<ResellerProductView[]> {
+    if (productIds.length === 0) return []
+
+    const rows = await this.db.product.findMany({
+      where: { id: { in: [...productIds] }, status: 'LIVE' },
+      select: RESELLER_PRODUCT_SELECT,
+    })
+
+    const byId = new Map(rows.map((row) => [row.id, toResellerView(row)]))
+    return productIds.flatMap((id) => {
+      const view = byId.get(id)
+      return view ? [view] : []
+    })
+  }
+
   async findResellerById(productId: string): Promise<ResellerProductView | null> {
     const row = await this.db.product.findFirst({
       where: { id: productId, status: { in: ['LIVE', 'OUT_OF_STOCK'] } },
@@ -212,6 +235,47 @@ export class PrismaProductRepository implements ProductRepository {
    * catalogue mein orders kam hote hain, is liye khali nateeje par naya maal dikhate hain
    * — banawati "popular" tag lagane se behtar hai.
    */
+  /**
+   * Chal raha maal — pichhle `days` din ke order ki ginti se.
+   *
+   * Ginti ORDER ki hai, tukron (qty) ki nahi. Ek banda 20 piece ka ek order kare to
+   * wo "chal raha hai" ki daleel nahi — 20 alag customer hain, wo daleel hai. Qty phir
+   * bhi sath jati hai kyunke dukan ke apne safhe par wo kaam ki cheez hai.
+   *
+   * 🔴 Mare hue order shumar nahi hote (dekhen port ka comment). PENDING_CONFIRM bhi
+   * nahi: us ka customer ne abhi haan hi nahi ki.
+   */
+  async findTrending(input: {
+    limit: number
+    days: number
+    supplierId?: string | undefined
+  }): Promise<readonly { productId: string; orders: number; qty: number }[]> {
+    const since = new Date(Date.now() - input.days * 24 * 60 * 60 * 1000)
+
+    const rows = await this.db.orderItem.groupBy({
+      by: ['productId'],
+      where: {
+        order: {
+          createdAt: { gte: since },
+          status: {
+            notIn: ['PENDING_CONFIRM', 'CANCELLED', 'REJECTED', 'RTO'],
+          },
+          ...(input.supplierId ? { supplierId: input.supplierId } : {}),
+        },
+      },
+      _count: { _all: true },
+      _sum: { qty: true },
+      orderBy: { _count: { productId: 'desc' } },
+      take: input.limit,
+    })
+
+    return rows.map((row) => ({
+      productId: row.productId,
+      orders: row._count._all,
+      qty: row._sum.qty ?? 0,
+    }))
+  }
+
   async findPublicPopular(limit: number): Promise<PublicProductView[]> {
     const ranked = await this.db.orderItem.groupBy({
       by: ['productId'],

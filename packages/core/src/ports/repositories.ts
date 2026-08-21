@@ -70,6 +70,8 @@ export interface ProductRepository {
   deliveryRatesFor(productId: string): Promise<{ city: number; other: number }>
 
   findResellerById(productId: string): Promise<ResellerProductView | null>
+  /** Mutayyin maal, usi tarteeb mein jo di gayi — trending list ke liye. */
+  findResellerByIds(productIds: readonly string[]): Promise<ResellerProductView[]>
 
   /** Content Studio render ke liye. */
   findForRender(productId: string): Promise<RenderProductView | null>
@@ -88,6 +90,25 @@ export interface ProductRepository {
 
   /** "Popular" — jin par sab se zyada orders aaye. Order na hon to naya maal. */
   findPublicPopular(limit: number): Promise<PublicProductView[]>
+
+  /**
+   * Chal raha maal — pichhle kuch dinon mein jis par sab se zyada order aaye.
+   *
+   * 🔴 Ye `findPublicPopular` se do baaton mein alag hai, aur dono baatein ahem hain:
+   *
+   *  · Waqt ki hadd — "kabhi bik chuka" aur "AAJ chal raha hai" ek cheez nahi. Bina
+   *    hadd ke wohi purana maal saal bhar sab se upar chipka rehta hai aur naya maal
+   *    kabhi nazar nahi aata.
+   *  · Mare hue order shumar nahi — mansookh, inkar shuda aur wapas aya maal. Warna
+   *    jo maal sab se zyada WAPAS aata hai wohi sab se upar dikhta, aur reseller usay
+   *    dekh kar apne customer ko wohi bhejti — yani nuqsan ka chakkar.
+   */
+  findTrending(input: {
+    limit: number
+    days: number
+    /** Sirf ek dukan ka maal — wholesaler ke apne safhe ke liye */
+    supplierId?: string | undefined
+  }): Promise<readonly { productId: string; orders: number; qty: number }[]>
 }
 
 /** Mega-menu ke liye — badi category aur us ke neeche wali. */

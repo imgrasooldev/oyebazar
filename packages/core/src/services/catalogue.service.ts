@@ -29,6 +29,37 @@ export class CatalogueService {
     return this.products.deliveryRatesFor(productId)
   }
 
+  /**
+   * "Abhi kya chal raha hai" — pichhle hafte sab se zyada order jis par aaye.
+   *
+   * Reseller ka roz ka sawal yehi hai: aaj status par kya lagaun. Us ka jawab naya maal
+   * nahi hai (naya maal sirf naya hai) — jawab wo maal hai jo doosri behnon ke haan bik
+   * raha hai. Isi liye har card par order ki ginti bhi jati hai: bina ginti ke "trending"
+   * sirf hamara dawa hai, us ke saath wo ek waqia hai.
+   */
+  async trending(
+    resellerId: string,
+    options: { limit: number; days: number },
+  ): Promise<readonly (CatalogueItem & { orders: number })[]> {
+    const ranked = await this.products.findTrending(options)
+    if (ranked.length === 0) return []
+
+    const products = await this.products.findResellerByIds(ranked.map((row) => row.productId))
+    if (products.length === 0) return []
+
+    const prices = await this.pricing.findMany(
+      resellerId,
+      products.map((product) => product.id),
+    )
+    const ordersById = new Map(ranked.map((row) => [row.productId, row.orders]))
+
+    return products.map((product) => ({
+      product,
+      myRetailPrice: prices.get(product.id) ?? null,
+      orders: ordersById.get(product.id) ?? 0,
+    }))
+  }
+
   async list(resellerId: string, filters: CatalogueFilters): Promise<Page<CatalogueItem>> {
     const page = await this.products.findResellerList(filters)
     if (page.items.length === 0) return { items: [], nextCursor: page.nextCursor }
