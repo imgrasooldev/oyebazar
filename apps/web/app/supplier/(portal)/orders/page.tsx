@@ -115,6 +115,13 @@ function Section({
 }) {
   const t = translator(locale)
 
+  // Ek hi jagah — teen button inhi lafzon par chalte hain
+  const actionLabels = {
+    reasonAsk: t('reasonAsk'),
+    confirm: t('confirmAction'),
+    back: t('backOut'),
+  }
+
   return (
     <section>
       <h2 className="mb-4 text-[1.05rem] font-bold">{title}</h2>
@@ -127,29 +134,63 @@ function Section({
               Agla qadam wohi jo ab bana hai — dukan par jaldi mein chunna nahi parta.
               PACKED skip bhi ho sakta hai: chhoti dukan seedha courier ko de deti hai.
             */}
-            {withActions && order.status === 'ACCEPTED' && (
-              <div className="flex flex-wrap gap-2">
-                <SupplierStatusButton
-                  orderNo={order.orderNo}
-                  toStatus="PACKED"
-                  label={t('markPacked')}
-                />
+            {withActions && (order.status === 'ACCEPTED' || order.status === 'PACKED') && (
+              <div className="flex flex-wrap items-start gap-2">
+                {order.status === 'ACCEPTED' && (
+                  <SupplierStatusButton
+                    orderNo={order.orderNo}
+                    toStatus="PACKED"
+                    label={t('markPacked')}
+                    labels={actionLabels}
+                  />
+                )}
                 <SupplierStatusButton
                   orderNo={order.orderNo}
                   toStatus="DISPATCHED"
                   label={t('markDispatched')}
                   tone="primary"
+                  labels={actionLabels}
+                />
+
+                {/*
+                  Mansookhi haan karne ke BAAD ka rasta hai — maal na nikle to isay
+                  chhupana sirf ye karta hai ke order chup chaap qatar mein para rehta
+                  hai aur reseller ka customer intezar karta rehta hai. Dabi hui shakl
+                  is liye ke ye aam qadam nahi hai.
+                */}
+                <SupplierStatusButton
+                  orderNo={order.orderNo}
+                  toStatus="CANCELLED"
+                  label={t('markCancelled')}
+                  tone="quiet"
+                  labels={actionLabels}
                 />
               </div>
             )}
 
-            {withActions && order.status === 'PACKED' && (
-              <SupplierStatusButton
-                orderNo={order.orderNo}
-                toStatus="DISPATCHED"
-                label={t('markDispatched')}
-                tone="primary"
-              />
+            {/*
+              Raste wale order par do hi anjaam hain: pohanch gaya, ya wapas aa gaya.
+              Dono yahan hain kyunke dono ki khabar pehle DUKAN ko milti hai — cash bhi
+              usi ke haath aata hai aur wapas aya maal bhi usi ke darwaze par.
+            */}
+            {withActions && order.status === 'DISPATCHED' && (
+              <div className="flex flex-wrap items-start gap-2">
+                <SupplierStatusButton
+                  orderNo={order.orderNo}
+                  toStatus="DELIVERED"
+                  label={t('markDelivered')}
+                  tone="primary"
+                  note={t('deliveredOpensMoney')}
+                  labels={actionLabels}
+                />
+                <SupplierStatusButton
+                  orderNo={order.orderNo}
+                  toStatus="RTO"
+                  label={t('markRto')}
+                  tone="danger"
+                  labels={actionLabels}
+                />
+              </div>
             )}
           </li>
         ))}

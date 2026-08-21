@@ -414,7 +414,6 @@ describe('confirmation', () => {
     })
 
     const confirmed = await service.confirmByOps(order.id, 'ops_1')
-    expect(confirmed.status).toBe('CONFIRMED')
     expect(confirmed.confirmedBy).toBe('OPS')
     expect(confirmed.confirmedAt).toEqual(NOW)
 
@@ -422,6 +421,14 @@ describe('confirmation', () => {
     expect(fees.rows).toHaveLength(1)
     expect(fees.rows[0]?.amount).toBe(100)
     expect(orders.changes[0]?.to).toBe('CONFIRMED')
+
+    /*
+     * Tasdeeq ke baad order khud dukan ke naam lag jata hai — beech mein kisi ka
+     * intezar nahi. Pehle ye 'CONFIRMED' par ruk jata tha aur ops ke button ka
+     * muntazir rehta tha; raat ke order subah tak wahin parre rehte the.
+     */
+    expect(confirmed.status).toBe('SENT_TO_SUPPLIER')
+    expect(orders.changes[1]?.to).toBe('SENT_TO_SUPPLIER')
   })
 
   it('dobara confirm karna bug nahi — sirf kuch nahi hota (ek hi fee row)', async () => {
@@ -500,11 +507,19 @@ describe('confirmation', () => {
       paymentMethod: 'COD',
     })
 
-    await service.confirmByOps(order.id, 'ops_1')
-    const sentOrder = await service.sendToSupplier(order.id, 'ops_1')
+    const confirmed = await service.confirmByOps(order.id, 'ops_1')
 
-    expect(sentOrder.status).toBe('SENT_TO_SUPPLIER')
+    expect(confirmed.status).toBe('SENT_TO_SUPPLIER')
     expect(sent).toEqual(['baji_new_order'])
+
+    /*
+     * Ops ka purana button ab DOBARA bhejne ka kaam karta hai (dukan ka WhatsApp na
+     * chala ho). Us par ghalti dena ghalat hoga: kaam ho sakta hai aur hona bhi
+     * chahiye — sirf status wahi rehta hai.
+     */
+    const again = await service.sendToSupplier(order.id, 'ops_1')
+    expect(again.status).toBe('SENT_TO_SUPPLIER')
+    expect(sent).toEqual(['baji_new_order', 'baji_new_order'])
   })
 })
 
@@ -518,8 +533,8 @@ describe('wholesaler ka jawab', () => {
       deliveryFee: pkr(200),
       paymentMethod: 'COD',
     })
+    // confirm hi order dukan tak pohancha deta hai — alag qadam ki zaroorat nahi
     await built.service.confirmByOps(order.id, 'ops_1')
-    await built.service.sendToSupplier(order.id, 'ops_1')
     return { ...built, order }
   }
 

@@ -283,7 +283,21 @@ export class OrderService {
     })
 
     this.logger.info('order_confirmed', { orderNo: order.orderNo, confirmedBy })
-    return updated
+
+    /*
+     * 🔴 Tasdeeq ke foran baad order KHUD dukan tak jata hai.
+     *
+     * Pehle beech mein ops ka ek qadam tha. Amal mein wo qadam intezar ban jata tha:
+     * customer WhatsApp par haan keh chuka hota, reseller ka kaam khatam ho chuka hota,
+     * aur order hamari apni qatar mein us waqt tak khara rehta jab tak koi daftar mein
+     * baith kar "bhejo" na dabaye. Raat ke order subah tak, aur chhutti wale din poora
+     * din. Us intezar ka koi karobari faida nahi tha — hum us waqt kuch check nahi kar
+     * rahe hote the, sirf der ho rahi hoti thi.
+     *
+     * Ops ka rasta khatam nahi hua: /ops par wohi button ab dobara bhejne ke kaam aata
+     * hai (dukan ka WhatsApp na chala ho to).
+     */
+    return this.handToSupplier(updated, { actorType: 'system' })
   }
 
   // ------------------------------------------------------------------ fulfilment
@@ -296,21 +310,48 @@ export class OrderService {
     const order = await this.orders.findById(orderId)
     if (!order) throw new NotFoundError('Order', orderId)
 
+    /*
+     * Order ab tasdeeq ke saath hi chala jata hai, is liye ops ka ye button aksar
+     * DOBARA bhejne ke liye dabta hai — dukan ka WhatsApp na chala ho, ya number badal
+     * gaya ho. Us soorat mein status pehle hi SENT_TO_SUPPLIER hota hai; ghalti dena
+     * yahan ghalat jawab hoga, kyunke kaam (paighaam bhejna) ho sakta hai aur hona bhi
+     * chahiye.
+     */
+    if (order.status === 'SENT_TO_SUPPLIER') return this.notifySupplier(order)
+
+    return this.handToSupplier(order, { actorType: 'ops', actorId: opsUserId })
+  }
+
+  /** Order dukan ke naam lagana — tasdeeq ke baad khud, ya ops ke haath se. */
+  private async handToSupplier(
+    order: InternalOrderView,
+    actor: { actorType: 'ops' | 'system'; actorId?: string },
+  ): Promise<InternalOrderView> {
     assertTransition(order.status, 'SENT_TO_SUPPLIER', { confirmedAt: order.confirmedAt })
 
     const updated = await this.orders.applyStatusChange({
-      orderId,
+      orderId: order.id,
       from: order.status,
       to: 'SENT_TO_SUPPLIER',
       at: this.clock.now(),
-      actorType: 'ops',
-      actorId: opsUserId,
+      actorType: actor.actorType,
+      actorId: actor.actorId,
     })
 
+    return this.notifySupplier(updated)
+  }
+
+  /**
+   * Dukan ko khabar — magic link ke saath.
+   *
+   * Token har dafa naya banta hai: dobara bhejne par purana link mar jata hai, warna
+   * kisi purane WhatsApp forward se bhi order chhua ja sakta.
+   */
+  private async notifySupplier(order: InternalOrderView): Promise<InternalOrderView> {
     // 🔴 Magic link — wholesaler isi se order dekh kar accept/reject karta hai.
     // Token har order ka apna hai; ek order ka link doosre order par nahi chalta.
     const token = this.tokens.randomToken(32)
-    await this.orders.setSupplierToken(orderId, token)
+    await this.orders.setSupplierToken(order.id, token)
 
     const supplier = await this.suppliers.findInternal(order.supplierId)
     if (supplier) {
@@ -325,7 +366,7 @@ export class OrderService {
           },
         })
         .catch((error: unknown) => {
-          // Message fail hone se order na ruke — ops console par order phir bhi dikhega
+          // Message fail hone se order na ruke — dukan ko portal par order phir bhi dikhega
           this.logger.error('supplier_notify_failed', {
             orderNo: order.orderNo,
             error: error instanceof Error ? error.message : String(error),
@@ -333,7 +374,7 @@ export class OrderService {
         })
     }
 
-    return updated
+    return order
   }
 
   // ------------------------------------------------------- wholesaler ka jawab
@@ -376,6 +417,110 @@ export class OrderService {
     // Reseller ko foran khabar — us ka customer isi ka intezar kar raha hota hai
     await this.notifyReseller(order, 'baji_order_dispatched', { orderNo: order.orderNo })
     return order
+  }
+
+  /**
+   * "Pohanch gaya, paise mil gaye" — wholesaler ke apne haath se.
+   *
+   * 🔴 Ye qadam pehle sirf ops ke paas tha, halanke haqeeqat mein pata SAB SE PEHLE
+   * wholesaler ko chalta hai: COD ka cash usi ke haath aata hai. Beech mein ops ka
+   * intezar rakhne ka matlab ye tha ke reseller ka hisab (aur us ka paisa) us waqt tak
+   * khulta hi nahi jab tak koi teesra banda aa kar button na dabaye.
+   *
+   * Yahi wo jagah hai jahan paisa banta hai: fee EARNED hoti hai aur reseller ka hissa
+   * dukan ke zimme likha jata hai — dekhen afterDelivered().
+   */
+  async markDeliveredBySupplier(supplierId: string, orderNo: string): Promise<InternalOrderView> {
+    const view = await this.orders.findForSupplier(supplierId, orderNo)
+    if (!view) throw new NotFoundError('Order', orderNo)
+
+    const updated = await this.transition(view.id, 'DELIVERED', {
+      actorType: 'supplier',
+      actorId: supplierId,
+      note: 'Wholesaler: maal pohanch gaya, cash mil gaya',
+    })
+
+    return this.afterDelivered(updated, { actorType: 'supplier', actorId: supplierId })
+  }
+
+  /**
+   * "Maal wapas aa gaya" — RTO, wholesaler ke apne haath se.
+   *
+   * Nuqsan uthane wala wohi hai (dono taraf ka courier kiraya aur maal wapas), is liye
+   * likhne ka haq bhi usi ka hai. Fee WRITTEN_OFF hoti hai — hum us order par bill nahi
+   * karte jo bika hi nahi — aur maal wapas ginti mein chala jata hai.
+   *
+   * Row mit-ti nahi: RTO ka record hi wo cheez hai jis se reseller ka chalan banta hai
+   * (dekhen ResellerRtoRecord).
+   */
+  async markRtoBySupplier(
+    supplierId: string,
+    orderNo: string,
+    reason: string,
+  ): Promise<InternalOrderView> {
+    const view = await this.orders.findForSupplier(supplierId, orderNo)
+    if (!view) throw new NotFoundError('Order', orderNo)
+
+    const updated = await this.transition(view.id, 'RTO', {
+      actorType: 'supplier',
+      actorId: supplierId,
+      note: reason,
+    })
+
+    await this.feeLedger.markWrittenOff(updated.id, `RTO: ${reason}`)
+    await this.releaseStock(updated)
+    await this.notifyReseller(updated, 'baji_order_rto', {
+      orderNo: updated.orderNo,
+      reason,
+    })
+    await this.analytics.track({
+      name: 'order_rto',
+      actorType: 'supplier',
+      actorId: supplierId,
+      properties: { orderNo: updated.orderNo, reason },
+    })
+
+    return updated
+  }
+
+  /**
+   * Haan karne ke BAAD maal na nikle — mansookh.
+   *
+   * Wajah lazmi hai aur reseller ko foran jati hai: us ka customer intezar mein khara
+   * hai, aur khamoshi se mara hua order us ki izzat kharab karta hai. Maal wapas ginti
+   * mein, aur hamari fee bhi khatam — jo bika nahi us par bill nahi banta.
+   *
+   * Ye alag hai `rejectForSupplier` se: wo order lene se PEHLE ka inkar hai, ye qubool
+   * karne ke baad ka.
+   */
+  async cancelBySupplier(
+    supplierId: string,
+    orderNo: string,
+    reason: string,
+  ): Promise<InternalOrderView> {
+    const view = await this.orders.findForSupplier(supplierId, orderNo)
+    if (!view) throw new NotFoundError('Order', orderNo)
+
+    const updated = await this.transition(view.id, 'CANCELLED', {
+      actorType: 'supplier',
+      actorId: supplierId,
+      note: `Wholesaler ne mansookh kiya: ${reason}`,
+    })
+
+    await this.feeLedger.markWrittenOff(updated.id, `Supplier cancelled: ${reason}`)
+    await this.releaseStock(updated)
+    await this.notifyReseller(updated, 'baji_order_rejected', {
+      orderNo: updated.orderNo,
+      reason,
+    })
+    await this.analytics.track({
+      name: 'order_cancelled_by_supplier',
+      actorType: 'supplier',
+      actorId: supplierId,
+      properties: { orderNo: updated.orderNo, reason },
+    })
+
+    return updated
   }
 
   /** Portal ki list — wholesaler ke apne order, naye pehle. */
@@ -430,14 +575,16 @@ export class OrderService {
       from: order.status,
       to: 'ACCEPTED',
       at: this.clock.now(),
-      actorType: 'ops',
-      actorId: `supplier:${order.supplierId}`,
+      // Kaam dukan ne kiya hai — record mein bhi wohi likha jaye, "ops" nahi
+      actorType: 'supplier',
+      actorId: order.supplierId,
       note: via === 'link' ? 'Wholesaler ne link se qubool kiya' : 'Wholesaler ne portal se qubool kiya',
     })
 
     await this.analytics.track({
       name: 'order_accepted_by_supplier',
-      actorType: 'ops',
+      actorType: 'supplier',
+      actorId: order.supplierId,
       properties: { orderNo: order.orderNo, supplierId: order.supplierId, via },
     })
 
@@ -491,8 +638,9 @@ export class OrderService {
       from: order.status,
       to: 'REJECTED',
       at: now,
-      actorType: 'ops',
-      actorId: `supplier:${order.supplierId}`,
+      // Inkar dukan ka hai — record mein us ka apna naam
+      actorType: 'supplier',
+      actorId: order.supplierId,
       note: reason,
       rejectionReason: reason,
     })
@@ -517,7 +665,8 @@ export class OrderService {
 
     await this.analytics.track({
       name: 'order_rejected_by_supplier',
-      actorType: 'ops',
+      actorType: 'supplier',
+      actorId: order.supplierId,
       properties: { orderNo: order.orderNo, supplierId: order.supplierId, reason },
     })
 
@@ -583,8 +732,22 @@ export class OrderService {
    */
   async markDelivered(orderId: string, actorId: string): Promise<InternalOrderView> {
     const updated = await this.transition(orderId, 'DELIVERED', { actorType: 'ops', actorId })
+    return this.afterDelivered(updated, { actorType: 'ops', actorId })
+  }
 
-    await this.feeLedger.markEarned(orderId, this.clock.now())
+  /**
+   * DELIVERED ke baad jo kuch hota hai — ek hi jagah.
+   *
+   * 🔴 Ye alag isliye hai ke ab do raste DELIVERED tak jate hain: ops ka aur khud
+   * wholesaler ka. Agar dono apna apna hisab likhte, to ek raste par fee EARNED hoti
+   * aur doosre par nahi — aur "kuch orders ka paisa kabhi bana hi nahi" jaisi kharabi
+   * mahine baad, statement mein, pakri jati.
+   */
+  private async afterDelivered(
+    updated: InternalOrderView,
+    actor: { actorType: 'ops' | 'supplier'; actorId: string },
+  ): Promise<InternalOrderView> {
+    await this.feeLedger.markEarned(updated.id, this.clock.now())
 
     // Reseller ka hissa ab wholesaler ke zimme — hisab khul gaya
     await this.payouts.openForDeliveredOrder({
@@ -601,8 +764,8 @@ export class OrderService {
     })
     await this.analytics.track({
       name: 'fee_earned',
-      actorType: 'ops',
-      actorId,
+      actorType: actor.actorType,
+      actorId: actor.actorId,
       properties: { orderNo: updated.orderNo, amount: updated.bajiFee },
     })
 
