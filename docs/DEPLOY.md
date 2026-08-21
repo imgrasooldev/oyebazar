@@ -122,6 +122,21 @@ Nameserver waise hi rehne den; sirf teen record daalen:
 | AAAA | `@` | Fly ka IPv6 — usi command se | 300 |
 | CNAME | `www` | `oyebazar-web.fly.dev` | 300 |
 
+**Bhari hui misal** (qadrein farzi hain — asli `flyctl ips list` se aati hain):
+
+| record | naam | qadar | TTL |
+|---|---|---|---|
+| A | `@` | `66.241.125.84` | 300 |
+| AAAA | `@` | `2a09:8280:1::4c:9f21:0` | 300 |
+| CNAME | `www` | `oyebazar-web.fly.dev` | 300 |
+
+Kaun si qadar **pakki** hai aur kaun si badlegi:
+
+* `oyebazar-web.fly.dev` — **pakka**. Ye app ka naam hai (`fly.web.toml`), aur ye badalta nahi.
+* Dono IP — **farzi**. App banne par Fly apne IP deta hai; wohi daalne hain.
+* Naam ka khana (`@`, `www`): kuch registrar `@` ki jagah `oyebazar.com` maangte hain,
+  aur kuch khali khana chhorne ko kehte hain — teenon ka matlab ek hi hai (apex domain).
+
 IPv4 pehli dafa allocate karna parta hai (muft, shared):
 
 ```bash
@@ -154,6 +169,16 @@ dalti hai.
 |---|---|---|---|
 | CNAME | `@` | `oyebazar-web.fly.dev` | 🟠 on |
 | CNAME | `www` | `oyebazar-web.fly.dev` | 🟠 on |
+
+Nameserver ki misal (farzi — Cloudflare aap ko apne do naam deta hai):
+
+```
+adam.ns.cloudflare.com
+bella.ns.cloudflare.com
+```
+
+Ye dono registrar par "Custom nameservers" mein daalte hain, aur purane (registrar ke
+apne) nameserver hata dete hain. Phailne mein 1–24 ghante lag sakte hain.
 
 4. SSL/TLS mode: **Full (strict)**.
 5. Certificate banwate waqt proxy thori der 🌥️ off rakhen (DNS-only), warna Fly ki
