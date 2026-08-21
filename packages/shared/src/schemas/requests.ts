@@ -47,13 +47,33 @@ export const OtpRequestSchema = z.object({
  */
 export const NewProductSchema = z
   .object({
-    titleUr: z.string().trim().min(2, 'مال کا نام لکھیں').max(80),
-    titleEn: z.string().trim().min(2, 'English name').max(80),
+    /**
+     * 🔴 Lazmi sirf teen cheezein: angrezi naam, rate, aur kam az kam ek tasveer.
+     *
+     * Wajah: maal daalne ka rasta jitna lamba hoga, utne hi dukan wale beech mein chhor
+     * kar chale jayenge — aur khali catalogue par koi reseller nahi tikti. Baqi sab baad
+     * mein bhi lag sakta hai (tafseel badalne wala safha DRAFT par khula rehta hai).
+     */
+    titleEn: z.string().trim().min(2, 'Naam likhen').max(80),
+    /**
+     * Urdu naam — ab lazmi nahi.
+     *
+     * Na ho to angrezi naam hi dono jagah chalta hai. Dukan wale ke paas aksar ek hi
+     * naam hota hai; usay do khaanon mein wohi cheez do dafa likhwana sirf bojh tha.
+     */
+    titleUr: z.string().trim().max(80).optional(),
+    /** Tafseel — pehle bhi ikhtiyari thi, ab bhi */
     descriptionUr: z.string().trim().max(300).optional(),
     categorySlug: z.string().trim().min(2),
     supplierPrice: z.number().int().positive('ریٹ لکھیں').max(1_000_000),
-    // Bina stock ke maal order nahi ho sakta — is liye ye khaana lazmi hai
-    stockQty: z.number().int().min(1, 'کتنا مال ہے؟').max(100_000),
+    /**
+     * Ginti ab lazmi nahi — na ho to 10.
+     *
+     * Bina ginti ke maal OUT_OF_STOCK rehta hai aur kisi ko nazar nahi aata, is liye
+     * khali chhorne par usay sifar farz karna sab se bura jawab hota: dukan wala maal
+     * daal kar chala jata aur usay pata bhi na chalta ke wo kahin dikh hi nahi raha.
+     */
+    stockQty: z.number().int().min(0).max(100_000).default(10),
     /**
      * Rang/size ke jorhe — JAAN BOOJH KAR optional.
      *
@@ -97,8 +117,16 @@ export const NewProductSchema = z
           })
           .strict(),
       )
-      .max(MAX_MEDIA_PER_PRODUCT)
-      .optional(),
+      /*
+       * 🔴 Kam az kam EK tasveer lazmi.
+       *
+       * Bina tasveer ka maal is platform par bikta hi nahi: reseller ka poora kaam
+       * WhatsApp status par tasveer lagana hai. Pehle ye optional tha aur bina tasveer
+       * wale maal catalogue mein khali khaane ban kar parre rehte the — na koi unhen
+       * lagati, na dukan wale ko wajah pata chalti.
+       */
+      .min(1, 'Kam az kam ek tasveer lagayen')
+      .max(MAX_MEDIA_PER_PRODUCT),
   })
   .strict()
 

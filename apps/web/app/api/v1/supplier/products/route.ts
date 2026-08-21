@@ -20,7 +20,9 @@ export async function POST(request: Request) {
     const body = await parseBody(request, NewProductSchema)
 
     const result = await container.supplierCatalogue.addProduct(supplier.id, {
-      titleUr: body.titleUr,
+      // Urdu naam na diya ho to angrezi wala hi dono jagah — dukan wale ke paas aksar
+      // ek hi naam hota hai, aur usay do dafa likhwana sirf bojh tha
+      titleUr: body.titleUr?.trim() || body.titleEn,
       titleEn: body.titleEn,
       ...(body.descriptionUr ? { descriptionUr: body.descriptionUr } : {}),
       categorySlug: body.categorySlug,

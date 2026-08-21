@@ -62,7 +62,7 @@ export class PrismaSupplierProductRepository implements SupplierProductRepositor
     return this.db.$transaction(async (tx) => {
       const product = await tx.product.create({
         data: {
-          slug: await this.uniqueSlug(tx, input.titleEn || input.titleUr),
+          slug: await this.uniqueSlug(tx, input.titleEn || input.titleUr, undefined, input.categorySlug),
           supplierId: input.supplierId,
           titleUr: input.titleUr,
           titleEn: input.titleEn,
@@ -144,7 +144,7 @@ export class PrismaSupplierProductRepository implements SupplierProductRepositor
       const nameChanged =
         input.titleEn !== existing.titleEn || input.titleUr !== existing.titleUr
       const slug = nameChanged
-        ? await this.uniqueSlug(tx, input.titleEn || input.titleUr, existing.id)
+        ? await this.uniqueSlug(tx, input.titleEn || input.titleUr, existing.id, input.categorySlug)
         : existing.slug
 
       await tx.product.update({
@@ -190,13 +190,24 @@ export class PrismaSupplierProductRepository implements SupplierProductRepositor
     name: string,
     /** Edit ke waqt: apna hi mojooda slug "taken" nahi ginna chahiye. */
     ignoreProductId?: string,
+    /**
+     * Naam se koi Latin haraf na nikle to slug isi se banta hai.
+     *
+     * 🔴 Angrezi naam optional hone ke baad ye zaroori ho gaya: Urdu naam se slugify
+     * kuch nahi banati (saare haroof gir jate hain), aur har maal `item`, `item-2`,
+     * `item-3` ban jata tha. Aisa URL na parhne wale ke kaam ka hai, na Google ke.
+     * Category ka naam kam az kam ye to batata hai ke cheez kis qism ki hai.
+     */
+    fallback?: string,
   ): Promise<string> {
-    const base =
-      name
+    const slugify = (value: string) =>
+      value
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '')
-        .slice(0, 40) || 'item'
+        .slice(0, 40)
+
+    const base = slugify(name) || slugify(fallback ?? '') || 'item'
 
     for (let attempt = 0; attempt < 50; attempt += 1) {
       const slug = attempt === 0 ? base : `${base}-${attempt + 1}`

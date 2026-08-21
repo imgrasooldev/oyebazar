@@ -57,6 +57,31 @@ export function SupplierAddProduct({
     const data = new FormData(form)
 
     startTransition(async () => {
+      /*
+       * Adhoori variant qatar yahin pakri jati hai.
+       *
+       * Pehle wo chup chaap server tak jati thi aur wahan se "Input theek nahi hai" wapas
+       * aata tha — bina ye bataye ke kis qatar mein kya kami hai. Jo ghalti safhe par
+       * dikh sakti ho, usay server tak bhejna sirf intezar barhana hai.
+       */
+      /*
+       * Tasveer ke baghair maal is platform par bikta hi nahi: reseller ka poora kaam
+       * WhatsApp status par tasveer lagana hai. Rok server par bhi hai; yahan is liye ke
+       * upload ke baad hi pata chalna bekaar intezar hai.
+       */
+      if (media.length === 0) {
+        setError(t('photoRequired'))
+        return
+      }
+
+      const halfFilled = variants.findIndex(
+        (variant) => !variant.colour.trim() && !variant.size.trim() && variant.stockQty > 0,
+      )
+      if (halfFilled >= 0) {
+        setError(t('variantNeedsName'))
+        return
+      }
+
       const res = await fetch('/api/v1/supplier/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -116,10 +141,24 @@ export function SupplierAddProduct({
     <form onSubmit={submit} className="card space-y-4 p-5">
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block">
-          <span className="text-sm font-semibold">{t('productNameUr')}</span>
-          <input name="titleUr" required maxLength={80} className="field mt-2" />
+          <span className="text-sm font-semibold">
+            {t('productNameUr')}{' '}
+            <span className="font-normal text-ink-faint">({t('optional')})</span>
+          </span>
+          <input
+            name="titleUr"
+            maxLength={80}
+            placeholder={t('sameAsEnglish')}
+            className="field mt-2"
+          />
         </label>
 
+        {/*
+          🔴 Lazmi sirf teen: naam, rate, tasveer.
+          Baqi sab ikhtiyari hai — maal daalne ka rasta jitna lamba hoga, utne hi dukan
+          wale beech mein chhor kar chale jayenge, aur khali catalogue par koi reseller
+          nahi tikti. Urdu naam, ginti, rang/size aur tafseel baad mein bhi lag sakte hain.
+        */}
         <label className="block">
           <span className="text-sm font-semibold">{t('productNameEn')}</span>
           <input name="titleEn" required maxLength={80} dir="ltr" className="field mt-2" />
@@ -174,9 +213,8 @@ export function SupplierAddProduct({
         <input
           name="stockQty"
           type="number"
-          min={1}
+          min={0}
           defaultValue={10}
-          required
           dir="ltr"
           className="field mt-2"
         />

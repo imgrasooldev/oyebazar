@@ -28,7 +28,21 @@ const STATUS_BY_CODE: Record<AppErrorCode, number> = {
 
 export function apiError(error: unknown): NextResponse {
   if (error instanceof ZodError) {
-    const validation = new ValidationError('Input theek nahi hai', error.flatten().fieldErrors)
+    /*
+     * 🔴 Paighaam mein wo khaana likha jata hai jo galat hai.
+     *
+     * Pehle sirf "Input theek nahi hai" jata tha. Dukan wala bees khaanon wala form bhar
+     * kar Add dabata, ye ek jumla milta, aur usay pata hi nahi chalta ke kya theek karna
+     * hai — na naam, na qatar ka number. Aksar wo poora form dobara bharta, wohi ghalti
+     * karta, aur teesri baar chhor kar chala jata.
+     *
+     * `issues` ka `path` hi asal khabar hai: `variants.2.size` yani "teesri qatar ka size".
+     */
+    const first = error.issues[0]
+    const where = first?.path.join(' → ')
+    const message = where ? `${where}: ${first?.message}` : 'Input theek nahi hai'
+
+    const validation = new ValidationError(message, error.flatten().fieldErrors)
     return NextResponse.json(validation.toJSON(), { status: 400 })
   }
 

@@ -616,6 +616,18 @@ const DICTIONARY = {
   },
   termPromise: { ur: 'وعدہ', en: 'Promise', rm: 'Waada' },
   // ---- rang / size (variants)
+  sameAsEnglish: { ur: 'خالی چھوڑیں تو انگریزی نام ہی چلے گا', en: 'Leave empty — the English name is used', rm: 'Khali chhoren — angrezi naam hi chalega' },
+  photoRequired: {
+    ur: 'کم از کم ایک تصویر لگائیں — بغیر تصویر کے مال کوئی نہیں لگاتی۔',
+    en: 'Add at least one photo — nothing sells here without one.',
+    rm: 'Kam az kam ek tasveer lagayen — bina tasveer ke maal koi nahi lagati.',
+  },
+  sameAsUrdu: { ur: 'خالی چھوڑیں تو اردو نام ہی چلے گا', en: 'Leave empty — the Urdu name is used', rm: 'Khali chhoren — Urdu naam hi chalega' },
+  variantNeedsName: {
+    ur: 'ایک قطار میں رنگ اور سائز دونوں خالی ہیں — کوئی ایک لکھیں یا وہ قطار ہٹا دیں۔',
+    en: 'One row has neither colour nor size — fill one, or remove that row.',
+    rm: 'Ek qatar mein rang aur size dono khali hain — koi ek likhen ya wo qatar hata den.',
+  },
   optional: { ur: 'اختیاری', en: 'optional', rm: 'ikhtiyari' },
   variantsAddNote: {
     ur: 'اگر ایک ہی قسم ہے تو یہ خالی چھوڑ دیں — اوپر والی گنتی ہی چلے گی۔ بعد میں بھی لگ سکتے ہیں۔',
