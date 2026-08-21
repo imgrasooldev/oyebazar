@@ -79,6 +79,18 @@ export const OPS_PERMISSIONS = {
     needs: 'MANAGER',
     label: 'Suspend and reinstate resellers',
   },
+  /*
+   * Aaj ka drop banana COORDINATOR par hai.
+   *
+   * Ye din ka pehla kaam hai aur subah 9 baje se pehle hona chahiye — MANAGER par
+   * rakhne ka matlab hota ke jis din manager der se aaye, us din poore platform ki
+   * resellers ke paas lagane ko kuch naya hi na ho. Khatra kam hai: drop khud maal
+   * nahi badalta, sirf aaj ki paanch cheezein chunta hai, aur roz naya ban jata hai.
+   */
+  buildDailyDrop: {
+    needs: 'COORDINATOR',
+    label: 'Build today’s drop — the 5 items that go out at 9am',
+  },
   markInvoicePaid: {
     needs: 'MANAGER',
     label: 'Mark an invoice as paid',

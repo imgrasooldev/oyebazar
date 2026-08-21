@@ -13,6 +13,7 @@
  */
 import { NotFoundError, type Pkr } from '@oyebazar/shared'
 import type { DailyDropView, DailyPackItem } from '../domain/daily-drop'
+import type { DropSummary } from '../ports/daily-drop-repositories'
 import type { DailyDropRepository } from '../ports/daily-drop-repositories'
 import type { ProductRepository, ResellerPricingRepository, StatusPackRepository } from '../ports/repositories'
 import type { Clock, Logger } from '../ports/infrastructure'
@@ -83,6 +84,22 @@ export class DailyDropService {
       freshPool: fresh.length,
     })
     return drop
+  }
+
+  /** Haal ke drop — ops ke safhe ke liye (kya gaya, kis din, kitni resellers ko). */
+  recentDrops(limit = 10): Promise<DropSummary[]> {
+    return this.drops.listRecent(limit)
+  }
+
+  /**
+   * Aaj ke drop ka maal — ops ki nazar se.
+   *
+   * Reseller wale `packsForReseller` se alag: us mein har reseller ka apna rate hota hai
+   * (aur wo us ke bina bulaye nahi banta). Ops ko rate ka sawal hi nahi — us ka sawal ye
+   * hai ke aaj kya ja raha hai, aur us ki tasveer theek hai ya nahi.
+   */
+  dropItems(productIds: readonly string[]) {
+    return this.products.findResellerByIds(productIds)
   }
 
   async getTodaysDrop(date?: Date): Promise<DailyDropView | null> {

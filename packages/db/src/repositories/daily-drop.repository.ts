@@ -1,5 +1,5 @@
 import type { PrismaClient } from '@prisma/client'
-import type { DailyDropRepository, DailyDropView } from '@oyebazar/core'
+import type { DailyDropRepository, DailyDropView, DropSummary } from '@oyebazar/core'
 
 const DROP_SELECT = {
   id: true,
@@ -29,6 +29,31 @@ function toView(row: Row): DailyDropView {
 
 export class PrismaDailyDropRepository implements DailyDropRepository {
   constructor(private readonly db: PrismaClient) {}
+
+  async listRecent(limit: number): Promise<DropSummary[]> {
+    const rows = await this.db.dailyDrop.findMany({
+      orderBy: { dropDate: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        dropDate: true,
+        status: true,
+        sentAt: true,
+        sentCount: true,
+        // Poore item na laane ka faida: ye list sirf "gaya ya nahi" ke liye hai
+        _count: { select: { items: true } },
+      },
+    })
+
+    return rows.map((row) => ({
+      id: row.id,
+      dropDate: row.dropDate,
+      status: row.status,
+      sentAt: row.sentAt,
+      sentCount: row.sentCount,
+      itemCount: row._count.items,
+    }))
+  }
 
   async findByDate(date: Date): Promise<DailyDropView | null> {
     const row = await this.db.dailyDrop.findUnique({ where: { dropDate: date }, select: DROP_SELECT })

@@ -11,6 +11,25 @@ export interface DailyDropRepository {
    * "kuch naya nahi aaya" hai, aur wo agle din khol kar bhi nahi dekhti.
    */
   findRecentlyDroppedProductIds(since: Date): Promise<string[]>
+
+  /**
+   * Haal ke drop — ops ke safhe ke liye.
+   *
+   * Ginti saath aati hai (kitne item the, kitni resellers ko gaya) kyunke ops ka sawal
+   * "kya gaya tha" nahi, "gaya bhi tha ya nahi" hota hai — aur wo jawab list gin kar
+   * nahi milna chahiye.
+   */
+  listRecent(limit: number): Promise<DropSummary[]>
+}
+
+/** Ek din ka drop — upar se dekhne wala khulasa. */
+export interface DropSummary {
+  readonly id: string
+  readonly dropDate: Date
+  readonly status: 'DRAFT' | 'SCHEDULED' | 'SENT'
+  readonly sentAt: Date | null
+  readonly sentCount: number
+  readonly itemCount: number
 }
 
 export interface BroadcastAudienceRepository {
