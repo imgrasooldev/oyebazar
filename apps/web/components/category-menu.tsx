@@ -46,7 +46,13 @@ export function CategoryMenu({
               className="flex items-center gap-3 px-5 py-2 text-[0.95rem] text-ink-soft transition group-hover/cat:bg-brand-50 group-hover/cat:text-brand-800"
             >
               <Thumb url={category.coverImageUrl} />
-              <span className="flex-1 truncate">{pickName(locale, category)}</span>
+              {/*
+                🔴 `truncate` nahi — Urdu ke naam lambe hote hain ("الیکٹرانکس اور بجلی
+                کا سامان") aur ek lakeer mein kat kar "…کا س" reh jate the. Kata hua
+                naam pehchana nahi jata, aur banda us par click hi nahi karta.
+                Do lakeeron mein poora naam aa jata hai.
+              */}
+              <span className="line-clamp-2 flex-1 leading-snug">{pickName(locale, category)}</span>
               <ChevronIcon className="h-3.5 w-3.5 shrink-0 text-ink-faint transition group-hover/cat:text-brand-600 rtl:rotate-180" />
             </Link>
 
@@ -69,7 +75,9 @@ export function CategoryMenu({
                           className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-ink-soft transition hover:bg-paper-sunken hover:text-brand-800"
                         >
                           <Thumb url={child.coverImageUrl} size="sm" />
-                          <span className="flex-1 truncate">{pickName(locale, child)}</span>
+                          <span className="line-clamp-2 flex-1 leading-snug">
+                            {pickName(locale, child)}
+                          </span>
                           <span className="numeric shrink-0 text-xs text-ink-faint">
                             {child.productCount}
                           </span>

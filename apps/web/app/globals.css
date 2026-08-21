@@ -62,7 +62,19 @@
   [lang='ur'] {
     font-family: var(--font-urdu);
     line-height: 2.05;
-    font-size: 1.03rem;
+    /*
+     * 🔴 1.03 se 1.14 — kyunke ye "thora bara" kaafi nahi tha.
+     *
+     * Nastaliq ka x-height Latin se kaafi chhota hai: 14px ka Inter aur 14px ka
+     * Nastaliq screen par ek naap ke nahi lagte — Urdu chhoti aur dabi hui lagti hai.
+     * Aur ye us bande ki zaban hai jis ke liye poori app bani hai, yani chhoti wo
+     * cheez ho rahi thi jo sab se zyada parhi jati hai.
+     *
+     * Ye qadar `html` par lagti hai, is liye har `rem` wali naap us ke saath barh
+     * jati hai — ek jagah badalne se poora safha barabar barh jata hai. (RTL par hi:
+     * angrezi safha waise ka waisa rehta hai.)
+     */
+    font-size: 1.14rem;
     letter-spacing: 0;
     /*
      * Bold Nastaliq ki file hum nahi bhejte (158 KB). Ye line browser ko rokti hai ke
@@ -70,6 +82,21 @@
      * dhabba lagta hai, zor nahi. Urdu par zor size aur rang se aata hai.
      */
     font-synthesis-weight: none;
+  }
+
+  /*
+   * Sab se chhote khane (waqt, sheher, chhoti tafseel) — Urdu mein un ki hadd upar.
+   *
+   * 0.7rem Latin mein parha jata hai; usi naap ka Nastaliq dhabba lagta hai. Ye qaida
+   * sirf niche ki hadd lagata hai — jo pehle se bara hai us ko chhoota nahi.
+   */
+  [lang='ur'] .text-\[0\.7rem\],
+  [lang='ur'] .text-\[0\.72rem\],
+  [lang='ur'] .text-\[0\.74rem\],
+  [lang='ur'] .text-\[0\.75rem\],
+  [lang='ur'] .text-\[0\.76rem\],
+  [lang='ur'] .text-xs {
+    font-size: 0.82rem;
   }
 
   [lang='en'] {

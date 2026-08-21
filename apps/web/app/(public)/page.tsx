@@ -303,7 +303,8 @@ export default async function HomePage() {
                     className="flex items-center gap-3 px-5 py-3 transition hover:bg-paper-sunken"
                   >
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[0.9rem]">
+                      {/* Do lakeeren — Urdu ke naam ek lakeer mein kat jate hain */}
+                      <span className="line-clamp-2 block text-[0.9rem] leading-snug">
                         {locale === 'ur' ? item.titleUr : item.titleEn}
                       </span>
                       <span className="mt-0.5 flex items-center justify-between gap-2 text-[0.72rem] text-ink-faint">
@@ -401,7 +402,7 @@ export default async function HomePage() {
                     <div className="flex min-w-0 items-start gap-3">
                       <SupplierLogo name={supplier.businessName} logoUrl={supplier.logoUrl} />
                       <div className="min-w-0">
-                      <h3 className="truncate text-[1.02rem] font-bold">
+                      <h3 className="line-clamp-2 text-[1.02rem] font-bold leading-snug">
                         {supplier.businessName}
                       </h3>
                       <p className="mt-1 flex items-center gap-1 text-[0.8rem] text-ink-faint">
