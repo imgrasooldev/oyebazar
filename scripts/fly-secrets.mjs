@@ -44,6 +44,7 @@ const WEB_KEYS = [
   'R2_PUBLIC_URL',
   'REDIS_URL',
   'OPS_API_KEY',
+  'TRUST_CLOUDFLARE',
 ]
 
 /*

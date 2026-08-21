@@ -85,8 +85,29 @@ export async function parseBody<S extends ZodTypeAny>(
   return schema.parse(raw)
 }
 
-/** Rate limiting ke liye client IP — Fly.io proxy ke peechay. */
+/**
+ * Rate limiting ke liye client IP — proxy ke peechay se asli banda.
+ *
+ * 🔴 Tarteeb ahem hai, aur wo is baat par munhasir hai ke saamne kaun khara hai:
+ *
+ *  · Sirf Fly: `fly-client-ip` mein asli banda hota hai. Theek.
+ *  · Cloudflare + Fly: `fly-client-ip` mein CLOUDFLARE ka IP aata hai — asli banda
+ *    `cf-connecting-ip` mein hota hai. Is soorat mein purani tarteeb sab ko EK hi
+ *    banda samajhti: yani ek reseller poore mulk ki had kha jati, aur OTP par lagi
+ *    brute-force ki rok bhi bemani ho jati.
+ *
+ * `cf-connecting-ip` par bharosa sirf tab jab ops ne saaf kaha ho (TRUST_CLOUDFLARE),
+ * kyunke wo sirf ek header hai — koi bhi usay apni marzi ka bhej kar had se bach sakta
+ * hai. Cloudflare waqai saamne ho to wo header khud likhta hai aur bahar se aaya hua
+ * mita deta hai; na ho to ye jhoot chal jata. Is liye ye ek soch samajh kar dabaya
+ * jane wala switch hai, koi andaza nahi.
+ */
 export function clientIp(request: Request): string {
+  if (process.env.TRUST_CLOUDFLARE === '1') {
+    const viaCloudflare = request.headers.get('cf-connecting-ip')
+    if (viaCloudflare) return viaCloudflare.trim()
+  }
+
   return (
     request.headers.get('fly-client-ip') ??
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??

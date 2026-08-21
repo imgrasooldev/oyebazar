@@ -106,20 +106,78 @@ flyctl certs add -a oyebazar-web www.oyebazar.com
 flyctl ips list -a oyebazar-web     # ye IP domain ke DNS mein daalne hain
 ```
 
-DNS (domain jahan se khareeda, wahan):
+---
 
-| record | naam | qadar |
-|---|---|---|
-| A | `@` | Fly ka IPv4 (`flyctl ips list`) |
-| AAAA | `@` | Fly ka IPv6 |
-| CNAME | `www` | `oyebazar-web.fly.dev` |
+## 4 · Domain — `oyebazar.com`
 
-Certificate khud ba khud ban jata hai — `flyctl certs show -a oyebazar-web oyebazar.com`
-se halat dekhi ja sakti hai.
+Do raste hain. **Nameserver badalna sirf doosre raste mein zaroori hai.**
+
+### Rasta A — jahan domain khareeda, wahin records (saada)
+
+Nameserver waise hi rehne den; sirf teen record daalen:
+
+| record | naam | qadar | TTL |
+|---|---|---|---|
+| A | `@` | Fly ka IPv4 — `flyctl ips list -a oyebazar-web` | 300 |
+| AAAA | `@` | Fly ka IPv6 — usi command se | 300 |
+| CNAME | `www` | `oyebazar-web.fly.dev` | 300 |
+
+IPv4 pehli dafa allocate karna parta hai (muft, shared):
+
+```bash
+flyctl ips allocate-v4 --shared -a oyebazar-web
+flyctl ips allocate-v6 -a oyebazar-web
+flyctl ips list -a oyebazar-web
+```
+
+Phir certificate:
+
+```bash
+flyctl certs add -a oyebazar-web oyebazar.com
+flyctl certs add -a oyebazar-web www.oyebazar.com
+flyctl certs show -a oyebazar-web oyebazar.com   # halat dekhne ke liye
+```
+
+Certificate khud ban jata hai (DNS phailne ke baad, aksar 5–30 minute).
+
+### Rasta B — Cloudflare (nameserver badalte hain)
+
+Faida: Bazaar ke safhe (jo Google se aate hain) Cloudflare ke edge se milte hain, yani
+Pakistan mein foran khulte hain. Ye wohi cheez hai jo raftar par sab se zyada asar
+dalti hai.
+
+1. Cloudflare par domain add karen → wo **do nameserver** deta hai.
+2. Wo dono nameserver domain ke registrar par daal den (yahi "nameserver badalna" hai).
+3. Cloudflare mein:
+
+| type | naam | qadar | proxy |
+|---|---|---|---|
+| CNAME | `@` | `oyebazar-web.fly.dev` | 🟠 on |
+| CNAME | `www` | `oyebazar-web.fly.dev` | 🟠 on |
+
+4. SSL/TLS mode: **Full (strict)**.
+5. Certificate banwate waqt proxy thori der 🌥️ off rakhen (DNS-only), warna Fly ki
+   tasdeeq Cloudflare par ruk jati hai. Ban jane ke baad wapas on.
+
+🔴 **Rasta B ke saath ek secret lazmi hai:** `TRUST_CLOUDFLARE="1"`.
+
+Wajah: Cloudflare ke peechay Fly ko sirf Cloudflare ka IP nazar aata hai. Us ke baghair
+hamari rate limit poore mulk ko **ek hi banda** samajhti hai — ek reseller ki hadd sab
+par lag jati hai, aur OTP par lagi brute-force ki rok bemani ho jati hai. Ye secret
+lagte hi asli banda `cf-connecting-ip` se pehchana jata hai.
+
+Ulta bhi utna hi ahem: **Cloudflare saamne na ho to ye secret na lagayen** — us soorat
+mein koi bhi wo header khud bhej kar hadd se bach sakta hai.
+
+### Kaun sa rasta?
+
+Rasta A se shuru karen — kam purze, aur aaj hi chal jata hai. Cloudflare baad mein
+kabhi bhi lagaya ja sakta hai (nameserver badal kar), aur us waqt sirf ek secret aur
+lagta hai. Ulta karna (Cloudflare se hatana) bhi utna hi aasan hai.
 
 ---
 
-## 4 · Deploy ke baad — teen cheezein foran jaanchen
+## 5 · Deploy ke baad — teen cheezein foran jaanchen
 
 1. **Login chalta hai?** Apne number par OTP mangwayen. Na aaye to WhatsApp ke secrets
    ghalat hain — aur us soorat mein koi bhi andar nahi aa sakta.
@@ -130,7 +188,7 @@ se halat dekhi ja sakti hai.
 
 ---
 
-## 5 · Roz ka kaam
+## 6 · Roz ka kaam
 
 ```bash
 flyctl logs -a oyebazar-web
