@@ -35,6 +35,7 @@ import { createStorage, storageConfigFrom } from '@oyebazar/storage'
 import { BullMqRenderQueue, createRedisConnection } from '@oyebazar/queue'
 import { ConsoleLogger, CryptoTokenGenerator, SystemClock } from './adapters/system'
 import { InMemoryRateLimiter } from './adapters/rate-limiter'
+import { StaticOtpTokens } from './static-otp-tokens'
 import { createMessagingProvider } from '@oyebazar/whatsapp'
 import { PrismaAnalytics } from './adapters/analytics'
 import { LoggingRenderQueue } from './adapters/render-queue'
@@ -94,6 +95,24 @@ function build(): Container {
   const clock = new SystemClock()
   const logger = new ConsoleLogger()
   const tokens = new CryptoTokenGenerator()
+
+  /*
+   * Muqarrar (static) OTP — sirf tab jab STATIC_OTP saaf tor par set kiya gaya ho.
+   *
+   * 🔴 Ye khud ba khud kabhi chalu nahi hota, aur chalu hone par LOG mein chillata hai —
+   * kyunke asal khatra ye nahi ke koi isay lagaye, khatra ye hai ke lagane ke baad koi
+   * usay bhool jaye aur wo asli launch tak chalta rahe.
+   */
+  const staticOtp = process.env.STATIC_OTP?.trim()
+  const loginTokens = staticOtp ? new StaticOtpTokens(tokens, staticOtp) : tokens
+
+  if (staticOtp) {
+    logger.warn('static_otp_enabled', {
+      // Code khud LOG mein nahi jata — log aksar teesre bande dekh lete hain
+      length: staticOtp.length,
+      note: 'Reseller aur dukan ka login muqarrar code par hai. Ops is se bahar hai.',
+    })
+  }
   const analytics = new PrismaAnalytics(logger)
   const rateLimiter = new InMemoryRateLimiter()
   const messaging = createMessagingProvider(process.env, logger)
@@ -186,7 +205,7 @@ function build(): Container {
       repositories.sessions,
       repositories.resellers,
       messaging,
-      tokens,
+      loginTokens,
       clock,
       rateLimiter,
       analytics,
@@ -197,12 +216,20 @@ function build(): Container {
       repositories.sessions,
       repositories.suppliers,
       messaging,
-      tokens,
+      loginTokens,
       clock,
       rateLimiter,
       analytics,
       logger,
     ),
+    /*
+     * 🔴 Ops ko `loginTokens` NAHI diya jata — jaan boojh kar.
+     *
+     * Yahan poora paisa hai, har dukan aur har reseller ka data hai, aur team ka
+     * ikhtiyar bhi. Us darwaze ko muqarrar code par kholna reseller ke darwaze se
+     * bilkul alag darja ka khatra hai. Ops ka code random rehta hai aur logs se parha
+     * jata hai (WhatsApp lagne tak).
+     */
     opsAuth: new OpsAuthService(
       repositories.otpChallenges,
       repositories.sessions,

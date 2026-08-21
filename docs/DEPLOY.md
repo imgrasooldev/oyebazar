@@ -40,6 +40,29 @@ Is liye site chalu to ho jayegi, magar **us ka pata kisi ko na den** jab tak WAT
 Meta na lag jaye. Wo lagte hi `WHATSAPP_PROVIDER` set karen aur dobara deploy — aur kuch
 nahi badalta.
 
+### Beech ka rasta: muqarrar (static) OTP
+
+`STATIC_OTP="112233"` lagane par **reseller aur dukan** us ek code se andar aa sakte hain
+— WhatsApp ke baghair bhi. Soft launch mein maal daalne aur chala kar dekhne ke liye ye
+kaafi hai.
+
+🔴 Us ki qeemat saaf samajh len: jo bhi ye code jaan le, wo **kisi bhi mojood number** se
+andar aa sakta hai, aur code badalta na hone ki wajah se ek dafa leak ho kar hamesha
+khula rehta hai. Ye sirf us arse ke liye hai jab site ka pata girey huay logon tak na
+pohancha ho.
+
+Teen cheezein phir bhi qaim rehti hain — aur inhen halka na samjhen:
+
+* **Ops (admin) is se BAHAR hai.** Wahan poora paisa aur sab ka data hai; us ka code
+  waise hi random rehta hai aur `flyctl logs -a oyebazar-web` se parha jata hai.
+* Challenge asli hai: 5 minute ki mudat, ghalat koshishon ki hadd, aur rate limit — sab
+  lagti hain. Ghalat code ab bhi "Code ghalat hai" deta hai.
+* Session ke token aur dukan ke magic link **kabhi** muqarrar nahi hote — wo hamesha
+  crypto-random hain.
+
+WhatsApp lagte hi `STATIC_OTP` **khali kar ke** dobara deploy karen. Jab tak ye laga hai,
+app har boot par log mein `static_otp_enabled` chillati hai — taake wo bhoola na ja sake.
+
 ---
 
 ## 2 · Secrets — jo Fly par jane hain

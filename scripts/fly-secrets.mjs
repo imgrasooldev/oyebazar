@@ -45,6 +45,7 @@ const WEB_KEYS = [
   'REDIS_URL',
   'OPS_API_KEY',
   'TRUST_CLOUDFLARE',
+  'STATIC_OTP',
 ]
 
 /*
