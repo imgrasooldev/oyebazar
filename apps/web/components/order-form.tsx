@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { formatPkr } from '@oyebazar/shared'
+import { formatPkr, parseOrderText } from '@oyebazar/shared'
 import { translator, type Locale } from '@/lib/i18n'
 
 interface Props {
@@ -73,6 +73,9 @@ export function OrderForm({
   const deliveryFee = outOfCity ? delivery.other : delivery.city
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [locationState, setLocationState] = useState<'idle' | 'getting' | 'failed'>('idle')
+  const [pasted, setPasted] = useState('')
+  // Kitne khaane paste se bhare — reseller ko dikhna chahiye ke kaam waqai hua
+  const [filled, setFilled] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
@@ -137,12 +140,72 @@ export function OrderForm({
     router.replace(`/orders?highlight=${order.orderNo}`)
   }
 
+  /**
+   * Paste hote hi khaane bharna.
+   *
+   * Sirf KHALI khaane bharte hain: reseller ne agar khud kuch likh diya hai, to us ka
+   * likha hua kisi andaze se nahi mit-na chahiye.
+   */
+  function fillFromText(text: string) {
+    setPasted(text)
+
+    const parsed = parseOrderText(text)
+    let count = 0
+
+    if (parsed.name && !name.trim()) {
+      setName(parsed.name)
+      count += 1
+    }
+    if (parsed.phone && !phone.trim()) {
+      setPhone(parsed.phone)
+      count += 1
+    }
+    if (parsed.address && !address.trim()) {
+      setAddress(parsed.address)
+      count += 1
+    }
+    if (parsed.area && !area.trim()) {
+      setArea(parsed.area)
+      count += 1
+    }
+
+    setFilled(count)
+  }
+
   return (
     <form onSubmit={submit} className="card space-y-5 p-4">
       <div>
         <h2 className="text-lg font-bold">{t('placeOrder')}</h2>
         <p className="mt-1 text-sm text-ink-soft">{title}</p>
       </div>
+
+      {/*
+        🔴 Sab se bhaari qadam yehi tha: reseller ke paas ye maloomat PEHLE SE hoti hai
+        (customer ne WhatsApp par likh bheji), aur usay phone ki chhoti screen par wohi
+        cheez dobara type karni parti thi.
+
+        Ab wo message yahan paste karti hai aur neeche wale khaane bhar jate hain — magar
+        order khud ba khud NAHI banta. Wo khaane us ke saamne rehte hain aur wo unhen
+        theek kar sakti hai: ye kisi asli bande ka pata hai aur us par parcel jayega.
+      */}
+      <label className="block rounded-card bg-paper-sunken p-3">
+        <span className="text-sm font-semibold">{t('pasteMessage')}</span>
+        <textarea
+          rows={3}
+          value={pasted}
+          onChange={(event) => fillFromText(event.target.value)}
+          placeholder={t('pasteMessageHint')}
+          className="mt-2 w-full rounded-lg bg-paper-raised px-4 py-3 ring-1 ring-black/10"
+        />
+        {filled > 0 && (
+          <span className="mt-2 block text-[0.78rem] font-semibold text-accent-700">
+            <span dir="ltr" className="numeric">
+              {filled}
+            </span>{' '}
+            {t('pasteFilled')}
+          </span>
+        )}
+      </label>
 
       <label className="block">
         <span className="text-sm font-semibold">{t('customerName')}</span>
@@ -222,7 +285,7 @@ export function OrderForm({
                   // to reseller customer se wo rang waada kar baithti jo hai hi nahi
                   disabled={!variant.inStock}
                   onClick={() => setVariantId(variant.id)}
-                  className={`flex items-center gap-2 rounded-pill py-1.5 pe-4 ps-1.5 text-sm font-semibold transition ${
+                  className={`flex min-h-tap items-center gap-2 rounded-pill pe-4 ps-1.5 text-sm font-semibold transition ${
                     variantId === variant.id
                       ? 'bg-brand-500 text-white'
                       : variant.inStock

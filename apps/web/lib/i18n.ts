@@ -155,6 +155,17 @@ const DICTIONARY = {
    * kaam hai hi nahi.
    */
   seeMyRate: { ur: 'اپنا ریٹ دیکھیں', en: 'See your rate', rm: 'Apna rate dekhen' },
+  pasteMessage: {
+    ur: 'گاہک کا واٹس ایپ میسج یہاں پیسٹ کریں',
+    rm: 'Grahak ka WhatsApp message yahan paste karen',
+    en: "Paste the customer's WhatsApp message here",
+  },
+  pasteMessageHint: {
+    ur: 'نام، نمبر اور پتہ خود بھر جائیں گے — آپ انہیں ٹھیک بھی کر سکتی ہیں',
+    rm: 'Naam, number aur pata khud bhar jayenge — aap unhen theek bhi kar sakti hain',
+    en: 'Name, number and address fill in — you can still correct them',
+  },
+  pasteFilled: { ur: 'خانے بھر گئے', rm: 'khaane bhar gaye', en: 'fields filled' },
   askRateWhatsapp: { ur: 'واٹس ایپ پر ریٹ پوچھیں', en: 'Ask the rate on WhatsApp', rm: 'WhatsApp par rate poochhen' },
   noOrdersHere: {
     ur: 'یہاں سے آرڈر نہیں ہوتا',

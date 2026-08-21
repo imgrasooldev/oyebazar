@@ -57,7 +57,25 @@ async function main(): Promise<void> {
 
     const report = await page.evaluate(() => {
       const doc = document.documentElement
-      const overflow = doc.scrollWidth - doc.clientWidth
+
+      /*
+       * 🔴 Asli sawal ye NAHI ke ginti mein farq hai, balki ye ke safha waqai bagal
+       * mein sarakta hai ya nahi.
+       *
+       * Playwright ki mobile emulation mein `innerWidth` aur `clientWidth` mein 2px ka
+       * farq rehta hai (fixed patti `innerWidth` par banti hai). Us par audit "2px
+       * overflow" chillati thi aur element ki list khali aati thi — yani har dafa waqt
+       * lagta tha ye sabit karne mein ke kuch toota hi nahi. Jhoota alarm dene wali
+       * audit par phir asli alarm par bhi koi nahi uthta.
+       *
+       * Is liye pehle sarka kar dekhte hain: na sarke to koi masla nahi.
+       */
+      const before = window.scrollX
+      window.scrollTo(9999, 0)
+      const reallyScrolls = Math.abs(window.scrollX - before) > 0
+      window.scrollTo(before, 0)
+
+      const overflow = reallyScrolls ? doc.scrollWidth - doc.clientWidth : 0
 
       /*
        * Kaun sa element chaurai se bahar nikal raha hai.

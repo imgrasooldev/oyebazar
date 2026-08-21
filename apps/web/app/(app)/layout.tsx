@@ -100,15 +100,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         `pb-[env(safe-area-inset-bottom)]`: iPhone ke home bar ke peechay na chhupe.
       */}
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-black/[0.06] bg-paper-raised/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
-        <div className="mx-auto grid max-w-shell grid-cols-4">
+        <div className="mx-auto grid max-w-shell grid-cols-5">
           {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="flex min-h-tap flex-col items-center justify-center gap-1 py-2.5 text-[0.72rem] font-semibold text-ink-faint transition hover:bg-brand-50 hover:text-brand-700"
+              className="flex min-h-tap min-w-0 flex-col items-center justify-center gap-1 px-1 py-2.5 text-[0.72rem] font-semibold text-ink-faint transition hover:bg-brand-50 hover:text-brand-700"
             >
-              <item.Icon className="h-5 w-5" />
-              {label(item.key)}
+              <item.Icon className="h-5 w-5 shrink-0" />
+              <span className="w-full truncate text-center">{label(item.key)}</span>
             </Link>
           ))}
         </div>
