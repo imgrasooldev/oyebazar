@@ -146,6 +146,15 @@ export function SearchSuggest({
           onKeyDown={onKeyDown}
           placeholder={placeholder ?? t('searchPlaceholder')}
           aria-label={t('search')}
+          /*
+           * `role="combobox"` — sirf lint chup karane ke liye nahi.
+           *
+           * `aria-expanded` sada input (textbox) par bemani hota hai: screen reader use
+           * karne wali ko ye pata hi nahi chalta ke neeche mashware khul chuke hain.
+           * Combobox wo role hai jo "khaana + neeche list" ke liye bana hai, aur wohi
+           * `aria-expanded` ko maani deta hai.
+           */
+          role="combobox"
           aria-autocomplete="list"
           aria-controls={listId}
           aria-expanded={open}
