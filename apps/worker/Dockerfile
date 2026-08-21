@@ -3,13 +3,18 @@
 # Playwright ki official image use karte hain: Chromium aur us ki saari system
 # dependencies pehle se mojood hain. Apni image banane par Linux par fonts/libs
 # ka masla ghanton kha jata hai.
-FROM mcr.microsoft.com/playwright:v1.49.1-jammy AS base
+#
+# 🔴 Image ka version library ke version (1.62.1) se MILNA chahiye — warna image ka
+# Chromium aur lockfile wali playwright alag alag hote hain, aur render chalte chalte
+# ajeeb tareeqe se toot-ta hai. `noble` is liye ke `jammy` par Node 22.12 hai aur naya
+# pnpm 22.13 maangta hai.
+FROM mcr.microsoft.com/playwright:v1.62.1-noble AS base
 
 ENV NODE_ENV=production \
     PNPM_HOME=/pnpm \
     PATH=/pnpm:$PATH
 
-RUN corepack enable && corepack prepare pnpm@11.22.0 --activate
+RUN npm install -g corepack@latest     && corepack enable     && corepack prepare pnpm@11.22.0 --activate
 
 WORKDIR /app
 
@@ -26,6 +31,7 @@ COPY apps/worker/package.json apps/worker/
 RUN pnpm install --frozen-lockfile --filter @oyebazar/worker...
 
 # --- source ---
+COPY tsconfig.base.json ./
 COPY packages/ packages/
 COPY apps/worker/ apps/worker/
 # 🔴 templates worker ke saath jate hain — inhi se status pack banta hai

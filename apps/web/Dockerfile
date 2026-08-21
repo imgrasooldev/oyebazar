@@ -24,6 +24,7 @@ RUN pnpm install --frozen-lockfile --filter @oyebazar/web...
 
 # --- build ---
 FROM deps AS build
+COPY tsconfig.base.json ./
 COPY packages/ packages/
 COPY apps/web/ apps/web/
 RUN pnpm --filter @oyebazar/db generate
