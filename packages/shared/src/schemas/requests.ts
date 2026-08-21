@@ -64,7 +64,14 @@ export const NewProductSchema = z
     titleUr: z.string().trim().max(80).optional(),
     /** Tafseel — pehle bhi ikhtiyari thi, ab bhi */
     descriptionUr: z.string().trim().max(300).optional(),
-    categorySlug: z.string().trim().min(2),
+    /**
+     * Category — ikhtiyari.
+     *
+     * Na chuni jaye to maal "Baqi maal" mein jata hai, jahan se ops usay theek kar sakti
+     * hai. Lazmi rakhne se maal daalne mein ek qadam barhta tha; bilkul chhor dene se
+     * maal kisi list mein na aata — ye beech ka rasta dono se behtar hai.
+     */
+    categorySlug: z.string().trim().min(2).optional(),
     supplierPrice: z.number().int().positive('ریٹ لکھیں').max(1_000_000),
     /**
      * Ginti ab lazmi nahi — na ho to 10.

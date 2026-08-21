@@ -88,7 +88,11 @@ export function SupplierAddProduct({
         body: JSON.stringify({
           titleUr: String(data.get('titleUr') ?? ''),
           titleEn: String(data.get('titleEn') ?? ''),
-          categorySlug: String(data.get('categorySlug') ?? ''),
+          // Khali chhori gayi to bhejte hi nahi — server usay "Baqi maal" mein daal
+          // deta hai. Khali string bhejne par sirf ek bemani ghalti aati
+          ...(String(data.get('categorySlug') ?? '').trim()
+            ? { categorySlug: String(data.get('categorySlug')) }
+            : {}),
           supplierPrice: Number(data.get('supplierPrice') ?? 0),
           stockQty: Number(data.get('stockQty') ?? 0),
           ...(data.get('descriptionUr') ? { descriptionUr: String(data.get('descriptionUr')) } : {}),
@@ -165,8 +169,15 @@ export function SupplierAddProduct({
         </label>
 
         <label className="block">
-          <span className="text-sm font-semibold">{t('category')}</span>
-          <CategorySelect name="categorySlug" groups={categories} locale={locale} required />
+          <span className="text-sm font-semibold">
+            {t('category')} <span className="font-normal text-ink-faint">{t('optionalHint')}</span>
+          </span>
+          <CategorySelect
+            name="categorySlug"
+            groups={categories}
+            locale={locale}
+            placeholder={t('categoryLater')}
+          />
         </label>
 
         <label className="block">

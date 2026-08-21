@@ -77,7 +77,8 @@ export class SupplierCatalogueService {
       titleUr: string
       titleEn: string
       descriptionUr?: string
-      categorySlug: string
+      /** Ikhtiyari — na ho to "Baqi maal" mein jata hai */
+      categorySlug?: string
       supplierPrice: Pkr
       stockQty: number
       media?: readonly ProductMediaInput[]
@@ -101,7 +102,7 @@ export class SupplierCatalogueService {
       titleUr: input.titleUr,
       titleEn: input.titleEn,
       ...(input.descriptionUr ? { descriptionUr: input.descriptionUr } : {}),
-      categorySlug: input.categorySlug,
+      ...(input.categorySlug ? { categorySlug: input.categorySlug } : {}),
       supplierPrice: input.supplierPrice,
       bajiPrice,
       suggestedRetail,

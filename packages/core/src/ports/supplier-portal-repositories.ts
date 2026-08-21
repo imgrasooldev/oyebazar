@@ -88,7 +88,14 @@ export interface NewSupplierProduct {
   readonly titleUr: string
   readonly titleEn: string
   readonly descriptionUr?: string | undefined
-  readonly categorySlug: string
+  /**
+   * Category — ab ikhtiyari.
+   *
+   * Na di jaye to repository "Baqi maal" (`other`) mein daal deti hai. Us ke baghair maal
+   * kisi list mein nahi aata, is liye "koi category nahi" ka matlab "kahin nahi" nahi
+   * hona chahiye — ops us ginti ko dekh kar usay theek kar sakti hai.
+   */
+  readonly categorySlug?: string | undefined
   /** Wholesaler ka apna rate — hamara rate is par fee lagā kar banta hai */
   readonly supplierPrice: Pkr
   readonly bajiPrice: Pkr

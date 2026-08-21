@@ -35,6 +35,7 @@ export function CategorySelect({
   value,
   locale,
   required,
+  placeholder,
 }: {
   name: string
   groups: readonly CategoryGroup[]
@@ -42,6 +43,14 @@ export function CategorySelect({
   value?: string | undefined
   locale: Locale
   required?: boolean
+  /**
+   * "Koi nahi" wala pehla khaana — sirf tab jab category lazmi na ho.
+   *
+   * Ye khaali option HONA chahiye, warna `<select>` chup chaap pehli category chun
+   * leta hai aur "maine to chhora hi tha" wala maal kisi aur category mein chala jata
+   * hai — bilkul wohi kharabi jo upar edit form mein thi.
+   */
+  placeholder?: string
 }) {
   const label = (category: CategoryOption) => (locale === 'ur' ? category.nameUr : category.nameEn)
 
@@ -50,7 +59,13 @@ export function CategorySelect({
   )
 
   return (
-    <select name={name} required={required} defaultValue={value} className="field mt-2">
+    <select
+      name={name}
+      required={required}
+      defaultValue={value ?? (placeholder ? '' : undefined)}
+      className="field mt-2"
+    >
+      {placeholder && <option value="">{placeholder}</option>}
       {/*
         Mojooda category kisi wajah se list mein na ho (archived, ya darakht badal gaya)
         to usay yahan rakh dete hain. Warna `<select>` pehla option chun leta aur

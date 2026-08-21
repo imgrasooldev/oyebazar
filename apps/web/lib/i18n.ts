@@ -407,6 +407,12 @@ const DICTIONARY = {
   productNameUr: { ur: 'مال کا نام (اردو)', rm: 'Maal ka naam (Urdu)', en: 'Product name (Urdu)' },
   productNameEn: { ur: 'نام (English)', rm: 'Naam (English)', en: 'Name (English)' },
   category: { ur: 'کیٹگری', rm: 'Category', en: 'Category' },
+  optionalHint: { ur: '(اختیاری)', rm: '(ikhtiyari)', en: '(optional)' },
+  categoryLater: {
+    ur: 'ابھی نہیں — بعد میں لگا لیں',
+    rm: 'Abhi nahi — baad mein laga lein',
+    en: 'Skip for now',
+  },
   inStockQty: { ur: 'موجود:', rm: 'Mojood:', en: 'In stock:' },
   save: { ur: 'محفوظ کریں', rm: 'Save karen', en: 'Save' },
   piecesLeft: { ur: 'پیس باقی', rm: 'piece baqi', en: 'left' },

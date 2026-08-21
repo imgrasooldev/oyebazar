@@ -41,6 +41,9 @@ const OPEN_STATUSES = [
   'DISPATCHED',
 ] as const
 
+/** Bina category wale maal ka ghar — ek hi jagah likha hua. */
+const FALLBACK_CATEGORY_SLUG = 'other'
+
 export class PrismaSupplierProductRepository implements SupplierProductRepository {
   constructor(private readonly db: PrismaClient) {}
 
@@ -51,18 +54,57 @@ export class PrismaSupplierProductRepository implements SupplierProductRepositor
    * endpoint ghalti se LIVE bhej deta aur bina dekha hua maal seedha reseller ke
    * catalogue mein aa jata.
    */
-  async create(input: NewSupplierProduct): Promise<{ id: string }> {
-    // Maal sub-category par lagta hai; slug se dhoondte hain
-    const category = await this.db.category.findUnique({
-      where: { slug: input.categorySlug },
-      select: { id: true },
+  /**
+   * Jis maal ki category na chuni gayi ho, us ka ghar.
+   *
+   * 🔴 Category ke baghair maal kisi list mein nahi aata — na patti mein, na filter mein.
+   * Yani wo daal kar bhi gum rehta hai. Is liye "koi category nahi" ka matlab yahan
+   * "kahin nahi" nahi, balki ye ek asli category hai jise ops baad mein theek kar sakti
+   * hai (aur us ki ginti dekh kar usay pata chalta hai ke kitna maal filing maang raha
+   * hai).
+   */
+  private async fallbackCategory(): Promise<{ id: string; slug: string }> {
+    const existing = await this.db.category.findUnique({
+      where: { slug: FALLBACK_CATEGORY_SLUG },
+      select: { id: true, slug: true },
     })
-    if (!category) throw new NotFoundError('Category', input.categorySlug)
+    if (existing) return existing
+
+    const created = await this.db.category.create({
+      data: {
+        slug: FALLBACK_CATEGORY_SLUG,
+        nameUr: 'باقی مال',
+        nameEn: 'Other',
+        // Aakhir mein — ye asli category nahi, ek intezar-gah hai
+        sortOrder: 9_999,
+      },
+      select: { id: true, slug: true },
+    })
+
+    // Apna path khud likhta hai (jarh par hai, is liye sirf apni id)
+    await this.db.category.update({
+      where: { id: created.id },
+      data: { path: `/${created.id}/` },
+    })
+
+    return created
+  }
+
+  async create(input: NewSupplierProduct): Promise<{ id: string }> {
+    // Category na di gayi ho to "Baqi maal" — dekhen fallbackCategory()
+    const category = input.categorySlug
+      ? await this.db.category.findUnique({
+          where: { slug: input.categorySlug },
+          select: { id: true, slug: true },
+        })
+      : await this.fallbackCategory()
+
+    if (!category) throw new NotFoundError('Category', input.categorySlug ?? '')
 
     return this.db.$transaction(async (tx) => {
       const product = await tx.product.create({
         data: {
-          slug: await this.uniqueSlug(tx, input.titleEn || input.titleUr, undefined, input.categorySlug),
+          slug: await this.uniqueSlug(tx, input.titleEn || input.titleUr, undefined, category.slug),
           supplierId: input.supplierId,
           titleUr: input.titleUr,
           titleEn: input.titleEn,
