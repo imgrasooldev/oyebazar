@@ -251,7 +251,7 @@ export function SupplierAddProduct({
                   )
                 }
                 placeholder={t('variantColour')}
-                className="w-28 rounded-card bg-paper-raised px-3 py-1.5 text-sm"
+                className="min-h-tap w-28 rounded-card bg-paper-raised px-3 text-sm"
               />
               <input
                 value={variant.size}
@@ -261,7 +261,7 @@ export function SupplierAddProduct({
                   )
                 }
                 placeholder={t('variantSize')}
-                className="w-24 rounded-card bg-paper-raised px-3 py-1.5 text-sm"
+                className="min-h-tap w-24 rounded-card bg-paper-raised px-3 text-sm"
               />
               <input
                 type="number"
@@ -277,12 +277,12 @@ export function SupplierAddProduct({
                   )
                 }
                 dir="ltr"
-                className="numeric w-20 rounded-card bg-paper-raised px-3 py-1.5 text-center text-sm"
+                className="numeric min-h-tap w-20 rounded-card bg-paper-raised px-3 text-center text-sm"
               />
               <button
                 type="button"
                 onClick={() => setVariants((rows) => rows.filter((_, i) => i !== index))}
-                className="rounded-card px-2 py-1 text-[0.72rem] font-semibold text-red-600 hover:bg-red-50"
+                className="inline-flex min-h-tap items-center rounded-card px-3 text-[0.72rem] font-semibold text-red-600 hover:bg-red-50"
               >
                 {t('variantRemove')}
               </button>

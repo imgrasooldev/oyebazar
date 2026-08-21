@@ -61,7 +61,7 @@ export function SupplierPayoutSend({
         }}
         placeholder={labels.reference}
         dir="ltr"
-        className="min-w-[10rem] flex-1 rounded-card bg-paper-sunken px-3 py-1.5 text-sm"
+        className="min-h-tap min-w-[10rem] flex-1 rounded-card bg-paper-sunken px-3 text-sm"
       />
       <button
         type="button"
@@ -69,7 +69,7 @@ export function SupplierPayoutSend({
         // magar wahan tak jane se pehle rok dena behtar tajurba hai
         disabled={pending || reference.trim().length < 4}
         onClick={() => void submit()}
-        className="rounded-pill bg-brand-500 px-4 py-1.5 text-[0.78rem] font-semibold text-white transition hover:bg-brand-700 disabled:opacity-50"
+        className="inline-flex min-h-tap items-center rounded-pill bg-brand-500 px-5 text-[0.78rem] font-semibold text-white transition hover:bg-brand-700 disabled:opacity-50"
       >
         {pending ? labels.saving : labels.send}
       </button>
@@ -121,20 +121,20 @@ export function ResellerPayoutReply({
             setError(null)
           }}
           placeholder={labels.reason}
-          className="min-w-[11rem] flex-1 rounded-card bg-paper-sunken px-3 py-1.5 text-sm"
+          className="min-h-tap min-w-[11rem] flex-1 rounded-card bg-paper-sunken px-3 text-sm"
         />
         <button
           type="button"
           disabled={pending || note.trim().length < 3}
           onClick={() => void run({ action: 'NOT_RECEIVED', note })}
-          className="rounded-pill bg-red-600 px-4 py-1.5 text-[0.78rem] font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+          className="inline-flex min-h-tap items-center rounded-pill bg-red-600 px-5 text-[0.78rem] font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
         >
           {pending ? labels.saving : labels.send}
         </button>
         <button
           type="button"
           onClick={() => setMode('idle')}
-          className="rounded-pill px-3 py-1.5 text-[0.78rem] text-ink-soft hover:text-ink"
+          className="inline-flex min-h-tap items-center rounded-pill px-4 text-[0.78rem] text-ink-soft hover:text-ink"
         >
           {labels.cancel}
         </button>
@@ -149,7 +149,7 @@ export function ResellerPayoutReply({
         type="button"
         disabled={pending}
         onClick={() => void run({ action: 'RECEIVED' })}
-        className="rounded-pill bg-accent-500 px-4 py-1.5 text-[0.78rem] font-semibold text-white transition hover:bg-accent-700 disabled:opacity-50"
+        className="inline-flex min-h-tap items-center rounded-pill bg-accent-500 px-5 text-[0.78rem] font-semibold text-white transition hover:bg-accent-700 disabled:opacity-50"
       >
         {pending ? labels.saving : labels.received}
       </button>
@@ -160,7 +160,7 @@ export function ResellerPayoutReply({
       <button
         type="button"
         onClick={() => setMode('disputing')}
-        className="rounded-pill px-3 py-1.5 text-[0.78rem] font-semibold text-ink-soft underline-offset-4 hover:text-ink hover:underline"
+        className="inline-flex min-h-tap items-center rounded-pill px-4 text-[0.78rem] font-semibold text-ink-soft underline-offset-4 hover:text-ink hover:underline"
       >
         {labels.notReceived}
       </button>

@@ -63,7 +63,7 @@ export function CatalogueToolbar({
             key={option}
             type="button"
             onClick={() => set('sort', option === 'newest' ? null : option)}
-            className={`rounded-pill px-3.5 py-1.5 text-[0.78rem] font-semibold transition ${
+            className={`inline-flex min-h-tap items-center rounded-pill px-3.5 text-[0.78rem] font-semibold transition ${
               sort === option
                 ? 'bg-coal-900 text-white'
                 : 'bg-paper-sunken text-ink-soft hover:text-ink'
@@ -83,7 +83,7 @@ export function CatalogueToolbar({
           <button
             type="button"
             onClick={() => set('view', null)}
-            className={`px-3 py-1.5 text-[0.78rem] font-semibold transition ${
+            className={`inline-flex min-h-tap items-center px-4 text-[0.78rem] font-semibold transition ${
               view === 'grid' ? 'bg-brand-500 text-white' : 'text-ink-soft hover:text-ink'
             }`}
           >
@@ -92,7 +92,7 @@ export function CatalogueToolbar({
           <button
             type="button"
             onClick={() => set('view', 'list')}
-            className={`px-3 py-1.5 text-[0.78rem] font-semibold transition ${
+            className={`inline-flex min-h-tap items-center px-4 text-[0.78rem] font-semibold transition ${
               view === 'list' ? 'bg-brand-500 text-white' : 'text-ink-soft hover:text-ink'
             }`}
           >

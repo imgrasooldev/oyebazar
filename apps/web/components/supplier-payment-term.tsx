@@ -56,7 +56,7 @@ export function SupplierPaymentTerm({
             type="button"
             disabled={pending}
             onClick={() => void save(choice)}
-            className={`rounded-pill px-3.5 py-1.5 text-[0.8rem] font-semibold transition ${
+            className={`inline-flex min-h-tap items-center rounded-pill px-4 text-[0.8rem] font-semibold transition ${
               days === choice
                 ? 'bg-brand-500 text-white'
                 : 'bg-paper-sunken text-ink-soft hover:text-ink'

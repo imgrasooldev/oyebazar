@@ -121,7 +121,7 @@ export function SupplierVariants({
                     { stockQty: value },
                   )
                 }}
-                className="numeric w-20 rounded-card bg-paper-raised px-3 py-1 text-center text-sm font-bold"
+                className="numeric min-h-tap w-20 rounded-card bg-paper-raised px-3 text-center text-sm font-bold"
               />
 
               {variant.stockQty === 0 && (
@@ -139,7 +139,7 @@ export function SupplierVariants({
                     'DELETE',
                   )
                 }}
-                className="ms-auto rounded-card px-2 py-1 text-[0.72rem] font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                className="ms-auto inline-flex min-h-tap items-center rounded-card px-3 text-[0.72rem] font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
               >
                 {labels.remove}
               </button>
@@ -153,13 +153,13 @@ export function SupplierVariants({
           value={colour}
           onChange={(event) => setColour(event.target.value)}
           placeholder={labels.colour}
-          className="w-28 rounded-card bg-paper-raised px-3 py-1.5 text-sm"
+          className="min-h-tap w-28 rounded-card bg-paper-raised px-3 text-sm"
         />
         <input
           value={size}
           onChange={(event) => setSize(event.target.value)}
           placeholder={labels.size}
-          className="w-24 rounded-card bg-paper-raised px-3 py-1.5 text-sm"
+          className="min-h-tap w-24 rounded-card bg-paper-raised px-3 text-sm"
         />
         <input
           type="number"
@@ -168,7 +168,7 @@ export function SupplierVariants({
           onChange={(event) => setQty(Math.max(0, Number(event.target.value)))}
           dir="ltr"
           placeholder={labels.qty}
-          className="numeric w-20 rounded-card bg-paper-raised px-3 py-1.5 text-center text-sm"
+          className="numeric min-h-tap w-20 rounded-card bg-paper-raised px-3 text-center text-sm"
         />
         <button
           type="button"
@@ -186,7 +186,7 @@ export function SupplierVariants({
               setQty(0)
             })
           }}
-          className="rounded-pill bg-brand-500 px-4 py-1.5 text-[0.78rem] font-semibold text-white transition hover:bg-brand-700 disabled:opacity-50"
+          className="inline-flex min-h-tap items-center rounded-pill bg-brand-500 px-5 text-[0.78rem] font-semibold text-white transition hover:bg-brand-700 disabled:opacity-50"
         >
           {busy ? labels.saving : labels.add}
         </button>

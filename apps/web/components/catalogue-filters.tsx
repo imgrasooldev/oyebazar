@@ -75,7 +75,7 @@ export function CatalogueFilters({
           onKeyDown={(event) => event.key === 'Enter' && apply()}
           placeholder={labels.from}
           dir="ltr"
-          className="numeric w-24 rounded-card bg-paper-sunken px-3 py-1.5 text-center text-sm"
+          className="numeric min-h-tap w-24 rounded-card bg-paper-sunken px-3 text-center text-sm"
         />
         <span className="text-ink-faint">—</span>
         <input
@@ -86,14 +86,14 @@ export function CatalogueFilters({
           onKeyDown={(event) => event.key === 'Enter' && apply()}
           placeholder={labels.to}
           dir="ltr"
-          className="numeric w-24 rounded-card bg-paper-sunken px-3 py-1.5 text-center text-sm"
+          className="numeric min-h-tap w-24 rounded-card bg-paper-sunken px-3 text-center text-sm"
         />
       </div>
 
       <button
         type="button"
         onClick={apply}
-        className="rounded-pill bg-brand-500 px-4 py-1.5 text-[0.78rem] font-semibold text-white transition hover:bg-brand-700"
+        className="inline-flex min-h-tap items-center rounded-pill bg-brand-500 px-5 text-[0.78rem] font-semibold text-white transition hover:bg-brand-700"
       >
         {labels.apply}
       </button>
@@ -108,7 +108,7 @@ export function CatalogueFilters({
       <button
         type="button"
         onClick={toggleStock}
-        className={`rounded-pill px-4 py-1.5 text-[0.78rem] font-semibold transition ${
+        className={`inline-flex min-h-tap items-center rounded-pill px-4 text-[0.78rem] font-semibold transition ${
           inStockOnly
             ? 'bg-accent-500 text-white'
             : 'bg-paper-sunken text-ink-soft hover:text-ink'
@@ -129,7 +129,7 @@ export function CatalogueFilters({
             next.delete('inStockOnly')
             go(next)
           }}
-          className="ms-auto rounded-card px-3 py-1.5 text-[0.78rem] font-semibold text-ink-faint transition hover:text-ink"
+          className="ms-auto inline-flex min-h-tap items-center rounded-card px-3 text-[0.78rem] font-semibold text-ink-faint transition hover:text-ink"
         >
           {labels.clear}
         </button>

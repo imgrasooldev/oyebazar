@@ -131,7 +131,7 @@ export function Widget({
         {action && (
           <Link
             href={action.href}
-            className="shrink-0 rounded-pill bg-paper-sunken px-3 py-1.5 text-[0.78rem] font-semibold text-ink-soft transition hover:text-ink"
+            className="inline-flex min-h-tap shrink-0 items-center rounded-pill bg-paper-sunken px-4 text-[0.78rem] font-semibold text-ink-soft transition hover:text-ink"
           >
             {action.label}
           </Link>

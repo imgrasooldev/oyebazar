@@ -59,13 +59,21 @@ export default async function SupplierPortalLayout({ children }: { children: Rea
           </div>
         </div>
 
-        {/* Chhoti screen par upar — bari par neeche side nav hai */}
-        <nav className="mx-auto flex max-w-shell gap-1 px-5 lg:hidden">
+        {/*
+          Chhoti screen par upar — bari par neeche side nav hai.
+
+          🔴 Ye patti bagal mein SARAKTI hai (`overflow-x-auto`), poore safhe ko nahi
+          sarkati. Pehle ye sada flex row thi: 360px ke phone par paanchwan khana bahar
+          nikal jata tha aur POORA safha side mein khisakne lagta tha — yani har safhe
+          par header ke sath sath maal bhi katta hua nazar aata. Har khana `shrink-0`
+          hai warna naam do lakeeron mein toot jate hain.
+        */}
+        <nav className="mx-auto flex max-w-shell gap-1 overflow-x-auto px-5 lg:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="inline-flex min-h-tap items-center gap-2 rounded-t-card px-4 py-2 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
+              className="inline-flex min-h-tap shrink-0 items-center gap-2 rounded-t-card px-4 py-2 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
             >
               <item.Icon className="h-4 w-4" />
               {t(item.key)}

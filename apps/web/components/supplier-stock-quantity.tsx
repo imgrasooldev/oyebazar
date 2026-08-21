@@ -59,7 +59,7 @@ export function SupplierStockQuantity({
         value={qty}
         onChange={(event) => setQty(Math.max(0, Number(event.target.value)))}
         dir="ltr"
-        className="numeric w-20 rounded-card bg-paper-sunken px-3 py-1.5 text-center text-sm font-bold"
+        className="numeric min-h-tap w-20 rounded-card bg-paper-sunken px-3 text-center text-sm font-bold"
       />
 
       {/* Button sirf tab jab ginti waqai badli ho — warna har row par ek bekar button */}
@@ -68,7 +68,7 @@ export function SupplierStockQuantity({
           type="button"
           disabled={pending}
           onClick={() => void save()}
-          className="rounded-pill bg-brand-500 px-3 py-1.5 text-[0.75rem] font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
+          className="inline-flex min-h-tap items-center rounded-pill bg-brand-500 px-4 text-[0.75rem] font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
         >
           {pending ? '…' : saveLabel}
         </button>

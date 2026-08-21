@@ -360,7 +360,7 @@ export default async function CataloguePage({
 
                     {/* Qatar mein bhi wahi wazan — chhoti goli baqi numbers mein gum ho jati thi */}
                     <span className="inline-flex items-baseline gap-1.5 rounded-card bg-accent-50 px-3 py-1.5 text-accent-700">
-                      <span className="text-[0.7rem] font-semibold uppercase tracking-wide text-accent-700/80">
+                      <span className="text-[0.75rem] font-semibold uppercase tracking-wide text-accent-700/80">
                         {t('yourProfit')}
                       </span>
                       <span dir="ltr" className="numeric text-[1rem] font-bold">
@@ -477,7 +477,7 @@ export default async function CataloguePage({
                           dono toot jate the ("YOUR / PROFIT" aur "+Rs / 350"). Tootа hua
                           number parhne mein sab se buri cheez hai.
                         */}
-                        <span className="block text-[0.68rem] font-semibold text-accent-700/70">
+                        <span className="block text-[0.75rem] font-semibold text-accent-700/70">
                           {t('yourProfit')}
                         </span>
                         <span
