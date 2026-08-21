@@ -6,7 +6,14 @@ import { translator, type Locale } from '@/lib/i18n'
  * Footer gehra hai (kaghaz par nahi) — safha yahan khatam hota hai, aur gehra rang
  * us khatme ko wazan deta hai. Halka footer safhe ko adhoora chhor deta hai.
  */
-export function SiteFooter({ locale }: { locale: Locale }) {
+export function SiteFooter({
+  locale,
+  supplierLoggedIn = false,
+}: {
+  locale: Locale
+  /** Dukan wala pehle se andar ho to usay "login" ka rasta dikhana bemani hai */
+  supplierLoggedIn?: boolean
+}) {
   const t = translator(locale)
 
   return (
@@ -89,8 +96,11 @@ export function SiteFooter({ locale }: { locale: Locale }) {
               </Link>
             </li>
             <li>
-              <Link href="/supplier/login" className="link-tap">
-                {t('wholesalerLogin')}
+              <Link
+                href={supplierLoggedIn ? '/supplier/dashboard' : '/supplier/login'}
+                className="link-tap"
+              >
+                {supplierLoggedIn ? t('wholesalerPortal') : t('wholesalerLogin')}
               </Link>
             </li>
             <li className="flex min-h-tap items-center">{t('wholesalerListFree')}</li>

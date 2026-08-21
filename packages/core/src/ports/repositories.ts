@@ -70,6 +70,15 @@ export interface ProductRepository {
   deliveryRatesFor(productId: string): Promise<{ city: number; other: number }>
 
   findResellerById(productId: string): Promise<ResellerProductView | null>
+  /**
+   * Public slug se andar wali id.
+   *
+   * 🔴 Ye is liye hai ke Bazaar (public) `slug` par chalta hai aur reseller ka catalogue
+   * `id` par. Public view mein `id` DAALNA aasan tha, magar us surface par sirf wohi
+   * cheez honi chahiye jo wahan waqai chahiye — is liye tabdeeli us safhe par nahi,
+   * yahan ek chhoti si khoj par ki gayi hai.
+   */
+  findIdBySlug(slug: string): Promise<string | null>
   /** Mutayyin maal, usi tarteeb mein jo di gayi — trending list ke liye. */
   findResellerByIds(productIds: readonly string[]): Promise<ResellerProductView[]>
 

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { getResellerOrNull } from '@/lib/api/session'
 import { LazyImage } from '@/components/lazy-image'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
@@ -43,6 +44,8 @@ export default async function SupplierPage({ params }: Props) {
 
   const detail = toPublicSupplierDetailDTO(supplier)
   const now = new Date()
+  // Logged-in reseller ke liye rate us ke apne catalogue mein hai — yahan sirf rasta
+  const loggedIn = (await getResellerOrNull()) !== null
   const productPage = await container.bazaar.listSupplierProducts(slug, { limit: 24 })
   const products = productPage.items.map(toPublicProductDTO)
 
@@ -171,6 +174,11 @@ export default async function SupplierPage({ params }: Props) {
               const title = locale === 'ur' ? product.titleUr : product.titleEn
               return (
                 <li key={product.slug} className="tile group transition hover:shadow-lift">
+                  {/*
+                    Logged-in reseller ka poora card us maal ke apne safhe par le jata
+                    hai; baqi sab ke liye card wahi khamosh card hai jo pehle tha.
+                  */}
+                  <ProductShell loggedIn={loggedIn} slug={product.slug}>
                   <div className="tile-media-wrap aspect-square bg-paper-sunken">
                     {product.coverImageUrl && (
                       <LazyImage
@@ -200,9 +208,10 @@ export default async function SupplierPage({ params }: Props) {
 
                     {/* 🔴 قیمت یہاں کبھی نہیں — صرف لاگ اِن کے بعد */}
                     <p className="mt-2 border-t border-paper-sunken pt-2 text-[0.72rem] font-semibold text-brand-700">
-                      {t('askRate')}
+                      {loggedIn ? t('seeMyRate') : t('askRate')}
                     </p>
                   </div>
+                  </ProductShell>
                 </li>
               )
             })}
@@ -210,5 +219,30 @@ export default async function SupplierPage({ params }: Props) {
         )}
       </section>
     </div>
+  )
+}
+
+/**
+ * Card ka khol — logged-in reseller ke liye rasta, baqi ke liye sada khana.
+ *
+ * 🔴 Poore card ko link banane ka faisla sirf logged-in halat mein hai: logged out
+ * safhe par card kahin nahi le jata (wahan rate hai hi nahi), aur usay link bana kar
+ * "kuch milega" ka jhoota wada karna Bazaar ki poori soorat badal deta.
+ */
+function ProductShell({
+  loggedIn,
+  slug,
+  children,
+}: {
+  loggedIn: boolean
+  slug: string
+  children: React.ReactNode
+}) {
+  if (!loggedIn) return <>{children}</>
+
+  return (
+    <Link href={`/catalogue/s/${slug}`} className="block">
+      {children}
+    </Link>
   )
 }

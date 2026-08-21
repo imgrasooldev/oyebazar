@@ -149,6 +149,12 @@ const DICTIONARY = {
   },
   noItemsListed: { ur: 'ابھی کوئی آئٹم لسٹ نہیں ہوا۔', en: 'No items listed yet.', rm: 'Abhi koi maal darj nahi.' },
   askRate: { ur: 'ریٹ کے لیے رابطہ', en: 'Contact for rate', rm: 'Rate ke liye rabta karen' },
+  /*
+   * Jo reseller pehle se logged in hai us ke liye alag jumla: rate us ke apne catalogue
+   * mein mojood hai, us ke liye "rabta karen" likhna usay wahan bhejta hai jahan us ka
+   * kaam hai hi nahi.
+   */
+  seeMyRate: { ur: 'اپنا ریٹ دیکھیں', en: 'See your rate', rm: 'Apna rate dekhen' },
   askRateWhatsapp: { ur: 'واٹس ایپ پر ریٹ پوچھیں', en: 'Ask the rate on WhatsApp', rm: 'WhatsApp par rate poochhen' },
   noOrdersHere: {
     ur: 'یہاں سے آرڈر نہیں ہوتا',

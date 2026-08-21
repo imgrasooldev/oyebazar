@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { BRAND } from '@oyebazar/shared'
 import { LanguageToggle } from '@/components/language-toggle'
+import { Avatar } from '@/components/avatar'
 import { PortalSidebar } from '@/components/portal-sidebar'
 import { RouteProgress } from '@/components/route-progress'
 import { SupplierLogoutButton } from '@/components/supplier-logout-button'
@@ -54,9 +55,21 @@ export default async function SupplierPortalLayout({ children }: { children: Rea
           </Link>
 
           <div className="flex items-center gap-2">
-            <span className="hidden max-w-[12rem] truncate text-sm text-white/75 sm:inline">
-              {session.supplier.businessName}
-            </span>
+            {/* Dukan ka apna logo — DB mein pehle se tha, patti tak kabhi pohancha hi nahi */}
+            <Link
+              href="/supplier/dashboard"
+              className="flex min-h-tap items-center gap-2 rounded-pill px-1.5 transition hover:bg-white/10"
+              title={session.supplier.businessName}
+            >
+              <Avatar
+                name={session.supplier.businessName}
+                imageUrl={session.supplier.logoUrl}
+                size="sm"
+              />
+              <span className="hidden max-w-[12rem] truncate text-sm font-semibold text-white/90 sm:inline">
+                {session.supplier.businessName}
+              </span>
+            </Link>
             <span className="rounded-pill bg-white/10 px-1">
               <LanguageToggle locale={locale} />
             </span>

@@ -18,6 +18,13 @@ export interface SupplierAccountView {
   readonly city: string
   readonly marketName: string | null
   readonly status: 'PENDING' | 'VERIFIED' | 'SUSPENDED'
+  /**
+   * Dukan ka logo — us ke apne portal ki patti aur Bazaar ke header ke liye.
+   *
+   * Ye maloomat pehle se DB mein thi magar khate ke saath nahi aati thi, is liye dukan
+   * wala apne hi portal mein bina pehchan ke baitha rehta tha.
+   */
+  readonly logoUrl: string | null
 }
 
 export interface SupplierApplication {

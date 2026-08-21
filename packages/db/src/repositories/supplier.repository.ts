@@ -32,6 +32,7 @@ const ACCOUNT_SELECT = {
   city: true,
   marketName: true,
   status: true,
+  logoUrl: true,
 } as const
 
 export class PrismaSupplierRepository

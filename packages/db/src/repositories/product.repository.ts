@@ -148,6 +148,16 @@ export class PrismaProductRepository implements ProductRepository {
     })
   }
 
+  async findIdBySlug(slug: string): Promise<string | null> {
+    const row = await this.db.product.findUnique({
+      where: { slug },
+      // Sirf wo maal jo abhi zinda hai — archived ka rasta khula rakhna sirf 404 deta hai
+      select: { id: true, status: true },
+    })
+
+    return row && row.status !== 'ARCHIVED' ? row.id : null
+  }
+
   async findResellerById(productId: string): Promise<ResellerProductView | null> {
     const row = await this.db.product.findFirst({
       where: { id: productId, status: { in: ['LIVE', 'OUT_OF_STOCK'] } },

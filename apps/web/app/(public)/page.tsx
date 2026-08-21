@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { getResellerOrNull } from '@/lib/api/session'
 import { LazyImage } from '@/components/lazy-image'
 import { isFresh } from '@oyebazar/shared'
 import { CategoryMenu } from '@/components/category-menu'
@@ -44,6 +45,16 @@ export default async function HomePage() {
   const locale = await getLocale()
   const t = translator(locale)
   const now = new Date()
+
+  /*
+   * Home par bhi ye jaanna zaroori hai ke banda logged in hai ya nahi.
+   *
+   * Layout ye pehle se poochhta hai (header ke liye), magar safhe ko us ka pata nahi
+   * tha — is liye logged-in reseller ko bhi wohi "rate ke liye rabta karen" dikhta tha
+   * jo anjaan bande ko dikhta hai, halanke rate us ke apne catalogue mein mojood tha.
+   */
+  const actor = await getResellerOrNull()
+  const loggedIn = actor !== null
 
   const [categories, tree, stats, cities, suppliers, activity, popular] = await Promise.all([
     container.repositories.categories.findAll(),
@@ -101,11 +112,15 @@ export default async function HomePage() {
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
+                {/*
+                  Jo pehle se andar hai usay "login karen" kehna us ka waqt zaya karna
+                  hai — us ka agla qadam aaj ka pack banana hai, dobara login nahi.
+                */}
                 <Link
-                  href="/login"
+                  href={loggedIn ? '/catalogue' : '/login'}
                   className="btn bg-white px-8 text-brand-800 shadow-lift hover:bg-accent-50"
                 >
-                  {t('resellerLogin')}
+                  {loggedIn ? t('myCatalogue') : t('resellerLogin')}
                 </Link>
                 <Link href="/bazaar" className="btn bg-white/10 px-8 text-white hover:bg-white/20">
                   {t('seeWholesalers')}
@@ -326,7 +341,14 @@ export default async function HomePage() {
               const title = locale === 'ur' ? product.titleUr : product.titleEn
               return (
                 <li key={product.slug} className="tile group">
-                  <Link href={`/bazaar/${product.supplierSlug}`} className="block">
+                  {/*
+                    Logged-in reseller ko seedha us maal ke apne safhe par — wahan rate
+                    hai. Baqi sab ko dukan ka safha, jahan rate kabhi nahi hota.
+                  */}
+                  <Link
+                    href={loggedIn ? `/catalogue/s/${product.slug}` : `/bazaar/${product.supplierSlug}`}
+                    className="block"
+                  >
                     <div className="tile-media-wrap relative aspect-square bg-paper-sunken">
                       {product.coverImageUrl && (
                         <LazyImage
@@ -338,7 +360,7 @@ export default async function HomePage() {
 
                       {/* Hover par CTA upar aata hai — card "clickable" mehsoos hota hai */}
                       <div className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-brand-900/90 to-transparent p-2.5 text-center text-[0.8rem] font-semibold text-white transition duration-300 ease-soft group-hover:translate-y-0">
-                        {t('askRate')}
+                        {loggedIn ? t('seeMyRate') : t('askRate')}
                       </div>
                     </div>
 

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { BRAND } from '@oyebazar/shared'
 import { getResellerOrNull } from '@/lib/api/session'
 import { LanguageToggle } from '@/components/language-toggle'
+import { Avatar } from '@/components/avatar'
 import { LogoutButton } from '@/components/logout-button'
 import { RouteProgress } from '@/components/route-progress'
 import { PortalSidebar } from '@/components/portal-sidebar'
@@ -54,9 +55,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </Link>
 
           <div className="flex items-center gap-2">
-            <span className="hidden max-w-[10rem] truncate text-sm text-ink-soft sm:inline">
-              {actor.reseller.name}
-            </span>
+            {/*
+              Apna nishan aur naam — shared phone par pehla sawal yehi hota hai ke abhi
+              kaun logged in hai (aur ye 28% ghar hain). Nishan phone par bhi rehta hai,
+              naam sirf bari screen par jahan jagah hai.
+            */}
+            <Link
+              href="/dashboard"
+              className="flex min-h-tap items-center gap-2 rounded-pill px-1.5 transition hover:bg-paper-sunken"
+              title={actor.reseller.name}
+            >
+              <Avatar name={actor.reseller.name} size="sm" />
+              <span className="hidden max-w-[10rem] truncate text-sm font-semibold text-ink sm:inline">
+                {actor.reseller.name}
+              </span>
+            </Link>
             <span className="rounded-pill bg-coal-900 px-1">
               <LanguageToggle locale={locale} />
             </span>
