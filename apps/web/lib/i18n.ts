@@ -521,6 +521,8 @@ const DICTIONARY = {
   supplierOrdersNav: { ur: 'آرڈرز', en: 'Orders', rm: 'Orders' },
   supplierStockNav: { ur: 'مال', en: 'Stock', rm: 'Maal' },
   supplierDashboardNav: { ur: 'ہوم', en: 'Home', rm: 'Home' },
+  navCollapse: { ur: 'پٹی سمیٹیں', rm: 'Patti sameten', en: 'Collapse' },
+  navExpand: { ur: 'پٹی کھولیں', rm: 'Patti kholen', en: 'Expand' },
   supplierDashboardBody: {
     ur: 'آپ کی دکان کا ایک نظر میں حساب — کیا کام رکا ہوا ہے، کس ری سیلر کے کتنے پیسے دینے ہیں، اور کون سا مال چل رہا ہے۔',
     rm: 'Aap ki dukan ka ek nazar mein hisab — kya kaam ruka hua hai, kis reseller ke kitne paise dene hain, aur kaun sa maal chal raha hai.',

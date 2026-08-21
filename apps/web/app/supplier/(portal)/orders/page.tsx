@@ -124,7 +124,16 @@ function Section({
 
   return (
     <section>
-      <h2 className="mb-4 text-[1.05rem] font-bold">{title}</h2>
+      {/* Ginti sar-name ke saath — "kitne hain" ka jawab list gin kar nahi milna chahiye */}
+      <div className="mb-4 flex items-baseline gap-2">
+        <h2 className="text-[1.05rem] font-bold">{title}</h2>
+        <span
+          dir="ltr"
+          className="numeric rounded-pill bg-paper-sunken px-2 py-0.5 text-[0.75rem] font-bold text-ink-soft"
+        >
+          {orders.length}
+        </span>
+      </div>
       <ul className="grid gap-4 lg:grid-cols-2">
         {orders.map((order) => (
           <li key={order.id} className="card space-y-4 p-5">

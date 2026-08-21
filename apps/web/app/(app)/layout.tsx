@@ -4,6 +4,7 @@ import { BRAND } from '@oyebazar/shared'
 import { getResellerOrNull } from '@/lib/api/session'
 import { LanguageToggle } from '@/components/language-toggle'
 import { LogoutButton } from '@/components/logout-button'
+import { PortalSidebar } from '@/components/portal-sidebar'
 import { GridIcon, ListIcon, MoneyIcon, SparkIcon, StoreIcon } from '@/components/icons'
 import { translator } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
@@ -62,19 +63,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       <div className="mx-auto flex max-w-shell gap-8 px-5 py-6 lg:px-8">
         {/* Side nav sirf bari screen par — phone par neeche wali patti kaam karti hai */}
-        <aside className="hidden w-56 shrink-0 lg:block">
-          <nav className="sticky top-24 space-y-1">
-            {NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex min-h-tap items-center gap-3 rounded-card px-4 text-[0.95rem] font-semibold text-ink-soft transition hover:bg-paper-raised hover:text-brand-700 hover:shadow-soft"
-              >
-                <item.Icon className="h-5 w-5" />
-                {label(item.key)}
-              </Link>
-            ))}
-          </nav>
+        <aside className="hidden shrink-0 lg:block">
+          <PortalSidebar
+            storageKey="oyebazar_reseller_nav"
+            items={NAV.map((item) => ({
+              href: item.href,
+              label: label(item.key),
+              icon: <item.Icon className="h-5 w-5" />,
+            }))}
+            labels={{ collapse: t('navCollapse'), expand: t('navExpand') }}
+          />
         </aside>
 
         <main className="min-w-0 flex-1">{children}</main>

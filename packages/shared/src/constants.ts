@@ -61,6 +61,22 @@ export const ORDER_CONFIRMATION = {
   autoCancelAfterMs: 24 * 60 * 60 * 1000,
 } as const
 
+/**
+ * Raste mein khare order — kab poochha jaye ke "kya bana?"
+ *
+ * 🔴 Ye ginti sirf khabar ke liye nahi hai, paise ke liye hai: reseller ka hissa DELIVERED
+ * par khulta hai. Order agar DISPATCHED par khara reh jaye (koi likhna bhool jaye) to
+ * reseller ka paisa kabhi banta hi nahi — aur usay wajah bhi nazar nahi aati.
+ *
+ * 4 din: Pakistan mein sheher se sheher courier 2–3 din leta hai. Is se pehle poochhna
+ * bekar ka nag hai, aur is se kaafi baad poochhne ka matlab ye ke reseller hafta bhar
+ * apne paise ka intezar kar chuki hoti hai.
+ */
+export const ORDER_TRANSIT = {
+  /** Is ke baad dukan se poochha jata hai: pohancha ya wapas aaya? */
+  askSupplierAfterMs: 4 * 24 * 60 * 60 * 1000,
+} as const
+
 /** Pagination — cursor based, offset kabhi nahi (deep pages par slow ho jata hai). */
 export const PAGINATION = {
   defaultLimit: 20,

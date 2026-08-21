@@ -2,6 +2,8 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { formatPkr } from '@oyebazar/shared'
 import { CounterpartyLedger } from '@/components/counterparty-ledger'
+import { StatTile, Widget } from '@/components/dash-kit'
+import { MoneyIcon, CheckBadgeIcon } from '@/components/icons'
 import { ResellerPayoutReply } from '@/components/payout-actions'
 import { PayoutTimeline } from '@/components/payout-timeline'
 import { requireReseller } from '@/lib/api/session'
@@ -49,32 +51,45 @@ export default async function ResellerMoneyPage() {
         </Link>
       </div>
 
-      <section className="grid gap-4 sm:grid-cols-2">
-        <div className="card bg-coal-900 p-5 text-white">
-          <p className="text-[0.72rem] uppercase tracking-wider text-white/50">
+      {/*
+        Baqi raqam kaale khane mein — is safhe par aane ki wajah yehi number hota hai.
+        Mila hua paisa us ke barabar, magar khamosh: wo khabar hai, kaam nahi.
+      */}
+      <section className="grid gap-3 sm:grid-cols-2">
+        <div className="card bg-coal-900 p-4 text-white">
+          <span
+            className="flex h-10 w-10 items-center justify-center rounded-card bg-white/10 text-brand-300"
+            aria-hidden="true"
+          >
+            <MoneyIcon className="h-5 w-5" />
+          </span>
+          <p className="mt-3 text-[0.72rem] font-semibold uppercase tracking-wider text-white/50">
             {t('moneyAwaiting')}
           </p>
-          <p dir="ltr" className="numeric mt-2 text-[1.7rem] font-bold leading-none text-brand-300">
+          <p dir="ltr" className="numeric mt-1 text-[1.5rem] font-bold leading-none text-brand-300">
             {formatPkr(totals.awaiting)}
           </p>
         </div>
-        <div className="card p-5">
-          <p className="text-[0.72rem] uppercase tracking-wider text-ink-faint">
-            {t('moneyReceived')}
-          </p>
-          <p dir="ltr" className="numeric mt-2 text-[1.7rem] font-bold leading-none text-accent-700">
-            {formatPkr(totals.settled)}
-          </p>
-        </div>
+
+        <StatTile
+          icon={<CheckBadgeIcon className="h-5 w-5" />}
+          label={t('moneyReceived')}
+          value={formatPkr(totals.settled)}
+          tone="accent"
+          {...(totals.settled + totals.awaiting > 0
+            ? {
+                progress: Math.round(
+                  (totals.settled / (totals.settled + totals.awaiting)) * 100,
+                ),
+              }
+            : {})}
+        />
       </section>
 
       {/* Pehle wo jis par ISI waqt kuch karna hai, phir poora naqsha */}
       {open.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-[0.78rem] font-bold uppercase tracking-wider text-ink-faint">
-            {t('moneyAwaiting')}
-          </h2>
-          <ul className="card divide-y divide-paper-sunken">
+        <Widget title={t('moneyAwaiting')} subtitle={`${open.length} · ${formatPkr(totals.awaiting)}`}>
+          <ul className="divide-y divide-paper-sunken">
             {open.map((payout) => (
               <li key={payout.id} className="px-5 py-3">
                 <div className="flex flex-wrap items-center gap-3">
@@ -126,13 +141,11 @@ export default async function ResellerMoneyPage() {
               </li>
             ))}
           </ul>
-        </section>
+        </Widget>
       )}
 
-      <section>
-        <h2 className="mb-3 text-[0.78rem] font-bold uppercase tracking-wider text-ink-faint">
-          {t('moneyByWholesaler')}
-        </h2>
+      <Widget title={t('moneyByWholesaler')}>
+        <div className="p-4">
         <CounterpartyLedger
           rows={ledger}
           locale={locale}
@@ -150,7 +163,8 @@ export default async function ResellerMoneyPage() {
             lastOrder: t('lastOrder'),
           }}
         />
-      </section>
+        </div>
+      </Widget>
     </div>
   )
 }

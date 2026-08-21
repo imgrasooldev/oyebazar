@@ -35,7 +35,9 @@ export function CounterpartyLedger({
   }
 }) {
   if (rows.length === 0) {
-    return <p className="card p-6 text-ink-soft">{labels.empty}</p>
+    // Sada jumla, apna card nahi — ye list ab har jagah Widget ke ANDAR chalti hai,
+    // aur card ke andar card do lakeeron wala khaali dabba bana deta tha
+    return <p className="py-2 text-[0.9rem] text-ink-soft">{labels.empty}</p>
   }
 
   return (

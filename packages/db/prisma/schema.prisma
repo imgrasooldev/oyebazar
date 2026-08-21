@@ -414,6 +414,8 @@ model Order {
   confirmSentAt    DateTime?
   /// 6 ghante baad reseller ko yaad dilaya gaya (ek hi baar — roz ka nag nahi)
   reminderSentAt   DateTime?
+  /// Raste mein khare order par dukan se poochha gaya (ek hi baar)
+  transitReminderAt DateTime?
   confirmedAt      DateTime? // 🔴 null = supplier ko ja hi nahi sakta
   // Phase 1 mein reseller khud confirm karti hai (wo customer se baat kar chuki hoti hai).
   // Ye field isliye hai ke baad mein RTO ka moqabla ho sake: reseller-confirmed vs

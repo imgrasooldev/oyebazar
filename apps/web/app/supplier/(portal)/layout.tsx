@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { BRAND } from '@oyebazar/shared'
 import { LanguageToggle } from '@/components/language-toggle'
+import { PortalSidebar } from '@/components/portal-sidebar'
 import { SupplierLogoutButton } from '@/components/supplier-logout-button'
 import { BoxesIcon, GridIcon, ListIcon, MoneyIcon, ShieldIcon } from '@/components/icons'
 import { getSupplierOrNull } from '@/lib/api/supplier-session'
@@ -83,19 +84,17 @@ export default async function SupplierPortalLayout({ children }: { children: Rea
       </header>
 
       <div className="mx-auto flex max-w-shell gap-8 px-5 py-6 lg:px-8">
-        <aside className="hidden w-52 shrink-0 lg:block">
-          <nav className="sticky top-24 space-y-1">
-            {NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex min-h-tap items-center gap-3 rounded-card px-4 text-[0.95rem] font-semibold text-ink-soft transition hover:bg-paper-raised hover:text-brand-700 hover:shadow-soft"
-              >
-                <item.Icon className="h-5 w-5" />
-                {t(item.key)}
-              </Link>
-            ))}
-          </nav>
+        {/* Side nav sirf bari screen par — phone par upar wali sarakti patti kaam karti hai */}
+        <aside className="hidden shrink-0 lg:block">
+          <PortalSidebar
+            storageKey="oyebazar_supplier_nav"
+            items={NAV.map((item) => ({
+              href: item.href,
+              label: t(item.key),
+              icon: <item.Icon className="h-5 w-5" />,
+            }))}
+            labels={{ collapse: t('navCollapse'), expand: t('navExpand') }}
+          />
         </aside>
 
         <main className="min-w-0 flex-1">{children}</main>

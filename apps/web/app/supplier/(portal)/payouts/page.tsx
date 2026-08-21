@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { formatPkr } from '@oyebazar/shared'
+import { StatTile, Widget } from '@/components/dash-kit'
+import { MoneyIcon, ShieldIcon } from '@/components/icons'
 import { isOverdue } from '@oyebazar/core'
 import { CounterpartyLedger } from '@/components/counterparty-ledger'
 import { SupplierPayoutSend } from '@/components/payout-actions'
@@ -38,6 +40,7 @@ export default async function SupplierPayoutsPage() {
   const open = payouts.filter((payout) => payout.status !== 'SETTLED')
   const settled = payouts.filter((payout) => payout.status === 'SETTLED')
   const owed = open.reduce((sum, payout) => sum + payout.amount, 0)
+  const settledTotal = settled.reduce((sum, payout) => sum + payout.amount, 0)
 
   return (
     <div className="space-y-6">
@@ -59,31 +62,29 @@ export default async function SupplierPayoutsPage() {
         aksar aapas mein gaddmadd ho jate hain — aur phir na reseller ko poora milta hai
         na hamein.
       */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="card p-5">
-          <p className="text-[0.78rem] text-ink-faint">{t('moneyOwedToResellers')}</p>
-          <p dir="ltr" className="numeric mt-1 text-2xl font-bold text-brand-700">
-            {formatPkr(owed)}
-          </p>
-        </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <StatTile
+          icon={<MoneyIcon className="h-5 w-5" />}
+          label={t('moneyOwedToResellers')}
+          value={formatPkr(owed)}
+          hint={`${t('payoutSettled')}: ${formatPkr(settledTotal)}`}
+          tone="brand"
+          /*
+           * Lakeer = kitna hisab band ho chuka, kul mein se. Ye asli hissa hai (dono
+           * numbers ek hi cheez ke hain), sajawat nahi — is liye yahan jaiz hai.
+           */
+          {...(owed + settledTotal > 0
+            ? { progress: Math.round((settledTotal / (owed + settledTotal)) * 100) }
+            : {})}
+        />
 
-        <div className="card p-5">
-          <p className="text-[0.78rem] text-ink-faint">{t('platformFee')}</p>
-          <p dir="ltr" className="numeric mt-1 text-2xl font-bold">
-            {formatPkr(platformFee.earned + platformFee.invoiced)}
-          </p>
-          <p className="mt-1 text-[0.74rem] text-ink-faint">
-            {t('feeInvoicedLabel')}{' '}
-            <span dir="ltr" className="numeric">
-              {formatPkr(platformFee.invoiced)}
-            </span>
-            <span className="mx-1.5">·</span>
-            {t('feeCollectedLabel')}{' '}
-            <span dir="ltr" className="numeric">
-              {formatPkr(platformFee.collected)}
-            </span>
-          </p>
-        </div>
+        <StatTile
+          icon={<ShieldIcon className="h-5 w-5" />}
+          label={t('platformFee')}
+          value={formatPkr(platformFee.earned + platformFee.invoiced)}
+          hint={`${t('feeInvoicedLabel')} ${formatPkr(platformFee.invoiced)} · ${t('feeCollectedLabel')} ${formatPkr(platformFee.collected)}`}
+          tone="coal"
+        />
       </div>
 
       {/* Qawaid (delivery ka rate, payment ka waada) apne safhe par — dekhen /supplier/settings */}
@@ -159,10 +160,8 @@ export default async function SupplierPayoutsPage() {
         </ul>
       )}
 
-      <section>
-        <h2 className="mb-3 text-[0.78rem] font-bold uppercase tracking-wider text-ink-faint">
-          {t('moneyByReseller')}
-        </h2>
+      <Widget title={t('moneyByReseller')} subtitle={t('payoutNoteSupplier')}>
+        <div className="p-4">
         <CounterpartyLedger
           rows={ledger}
           locale={locale}
@@ -180,14 +179,15 @@ export default async function SupplierPayoutsPage() {
             lastOrder: t('lastOrder'),
           }}
         />
-      </section>
+        </div>
+      </Widget>
 
       {settled.length > 0 && (
-        <section>
-          <h2 className="mb-2 text-[0.78rem] font-bold uppercase tracking-wider text-ink-faint">
-            {t('payoutSettled')}
-          </h2>
-          <ul className="card divide-y divide-paper-sunken">
+        <Widget
+          title={t('payoutSettled')}
+          subtitle={`${settled.length} · ${formatPkr(settledTotal)}`}
+        >
+          <ul className="divide-y divide-paper-sunken">
             {settled.slice(0, 20).map((payout) => (
               <li key={payout.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
                 <span dir="ltr" className="numeric text-sm">
@@ -199,7 +199,7 @@ export default async function SupplierPayoutsPage() {
               </li>
             ))}
           </ul>
-        </section>
+        </Widget>
       )}
     </div>
   )

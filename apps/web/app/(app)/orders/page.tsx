@@ -80,7 +80,15 @@ export default async function OrdersPage() {
 
       {rest.length > 0 && (
         <section>
-          <h2 className="mb-4 text-[1.05rem] font-bold">{t('otherOrders')}</h2>
+          <div className="mb-4 flex items-baseline gap-2">
+            <h2 className="text-[1.05rem] font-bold">{t('otherOrders')}</h2>
+            <span
+              dir="ltr"
+              className="numeric rounded-pill bg-paper-sunken px-2 py-0.5 text-[0.75rem] font-bold text-ink-soft"
+            >
+              {rest.length}
+            </span>
+          </div>
           <ul className="grid gap-4 lg:grid-cols-2">
             {rest.map((order) => (
               <li key={order.id} className="card p-5">
