@@ -44,14 +44,23 @@ export async function runNightlyPregeneration(container: WorkerContainer): Promi
  * Har aadhe ghante — do kaam ek job mein (dono halke hain, alag queue ka faida nahi).
  *   6 ghante  → reseller ko yaad dilao
  *  24 ghante  → order khud cancel
+ *   4 din     → raste mein khare order par dukan se poochho
  */
 export async function runOrderMaintenance(container: WorkerContainer): Promise<{
   reminded: number
   cancelled: number
+  transitAsked: number
 }> {
   const reminder = await container.reminders.remindStale()
   const cancel = await container.reminders.autoCancelStale()
-  return { reminded: reminder.reminded, cancelled: cancel.cancelled }
+  // 4 din se raste mein khare order — dukan se poochho, warna reseller ka paisa atka rehta hai
+  const transit = await container.reminders.remindStuckInTransit()
+
+  return {
+    reminded: reminder.reminded,
+    cancelled: cancel.cancelled,
+    transitAsked: transit.reminded,
+  }
 }
 
 /** Mahine ki 1 tareekh — pichhle mahine ki fee ka invoice har supplier ke liye. */

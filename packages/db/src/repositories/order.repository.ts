@@ -14,6 +14,7 @@ import type {
   OrderRepository,
   OrderStatusChange,
   PendingConfirmationOrder,
+  StuckInTransitOrder,
   PersistOrderInput,
   SupplierOrderView,
   ResellerOrderView,
@@ -67,6 +68,7 @@ const SUPPLIER_SELECT = {
   total: true,
   createdAt: true,
   acceptedAt: true,
+  dispatchedAt: true,
   items: {
     select: {
       qty: true,
@@ -252,6 +254,7 @@ export class PrismaOrderRepository implements OrderRepository {
       total: pkr(row.total),
       createdAt: row.createdAt,
       acceptedAt: row.acceptedAt,
+      dispatchedAt: row.dispatchedAt,
       items: row.items.map((item) => ({
         titleUr: titles.get(item.productId)?.titleUr ?? '',
         titleEn: titles.get(item.productId)?.titleEn ?? '',
@@ -380,6 +383,53 @@ export class PrismaOrderRepository implements OrderRepository {
 
   async markReminderSent(orderId: string, at: Date): Promise<void> {
     await this.db.order.update({ where: { id: orderId }, data: { reminderSentAt: at } })
+  }
+
+  async findStuckInTransit(options: {
+    olderThan: Date
+    limit: number
+  }): Promise<StuckInTransitOrder[]> {
+    const rows = await this.db.order.findMany({
+      where: {
+        status: 'DISPATCHED',
+        // Ginti bhejne ke din se, order banne ke din se nahi
+        dispatchedAt: { lt: options.olderThan },
+        // Ek hi dafa poochha jata hai — roz ka nag paighaam parhna band karwa deta hai
+        transitReminderAt: null,
+      },
+      select: {
+        id: true,
+        orderNo: true,
+        supplierId: true,
+        customerName: true,
+        dispatchedAt: true,
+        supplier: { select: { phone: true } },
+      },
+      orderBy: { dispatchedAt: 'asc' },
+      take: options.limit,
+    })
+
+    return rows.flatMap((row) =>
+      // `dispatchedAt` schema mein optional hai magar DISPATCHED par hamesha likha jata
+      // hai; TypeScript ko ye pata nahi, aur bina tareekh ke "kitne din" ka jawab hi
+      // nahi banta — is liye aisi qatar chhorh dete hain, farz nahi karte
+      row.dispatchedAt
+        ? [
+            {
+              id: row.id,
+              orderNo: row.orderNo,
+              supplierId: row.supplierId,
+              supplierPhone: row.supplier.phone,
+              customerName: row.customerName,
+              dispatchedAt: row.dispatchedAt,
+            },
+          ]
+        : [],
+    )
+  }
+
+  async markTransitReminderSent(orderId: string, at: Date): Promise<void> {
+    await this.db.order.update({ where: { id: orderId }, data: { transitReminderAt: at } })
   }
 
   async listForOps(filters: {

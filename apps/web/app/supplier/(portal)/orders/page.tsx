@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { formatPkr } from '@oyebazar/shared'
+import { ORDER_TRANSIT, formatPkr } from '@oyebazar/shared'
 import type { ResellerRiskRecord, SupplierOrderView } from '@oyebazar/core'
 import { SupplierOrderActions } from '@/components/supplier-order-actions'
 import { ResellerRtoRecord } from '@/components/reseller-rto-record'
@@ -34,6 +34,8 @@ export default async function SupplierOrdersPage() {
 
   const page = await container.orders.listForSupplier(supplier.id, { limit: 40 })
   const orders = page.items
+  // Ek hi "abhi" poore safhe ke liye — warna har card apna waqt naapta hai
+  const now = new Date()
 
   /*
    * RTO ka record — sirf ISI dukan ke saath ka chalan.
@@ -74,7 +76,7 @@ export default async function SupplierOrdersPage() {
           <ul className="grid gap-4 lg:grid-cols-2">
             {waiting.map((order) => (
               <li key={order.id} className="card space-y-4 p-5 ring-1 ring-brand-200">
-                <OrderCard order={order} locale={locale} risk={riskByReseller} />
+                <OrderCard order={order} locale={locale} risk={riskByReseller} now={now} />
                 <SupplierOrderActions endpoint={`/api/v1/supplier/orders/${order.orderNo}`} />
               </li>
             ))}
@@ -88,11 +90,18 @@ export default async function SupplierOrdersPage() {
           orders={running}
           locale={locale}
           risk={riskByReseller}
+          now={now}
           withActions
         />
       )}
       {done.length > 0 && (
-        <Section title={t('finishedOrders')} orders={done} locale={locale} risk={riskByReseller} />
+        <Section
+          title={t('finishedOrders')}
+          orders={done}
+          locale={locale}
+          risk={riskByReseller}
+          now={now}
+        />
       )}
     </div>
   )
@@ -103,6 +112,7 @@ function Section({
   orders,
   locale,
   risk,
+  now,
   withActions = false,
 }: {
   title: string
@@ -110,6 +120,7 @@ function Section({
   locale: Locale
   /** Reseller ka RTO record — id se */
   risk: Map<string, ResellerRiskRecord>
+  now: Date
   /** Chal rahe orders par agla qadam — mukammal shuda par koi button nahi */
   withActions?: boolean
 }) {
@@ -137,7 +148,7 @@ function Section({
       <ul className="grid gap-4 lg:grid-cols-2">
         {orders.map((order) => (
           <li key={order.id} className="card space-y-4 p-5">
-            <OrderCard order={order} locale={locale} risk={risk} showRecord={withActions} />
+            <OrderCard order={order} locale={locale} risk={risk} now={now} showRecord={withActions} />
 
             {/*
               Agla qadam wohi jo ab bana hai — dukan par jaldi mein chunna nahi parta.
@@ -212,11 +223,14 @@ function OrderCard({
   order,
   locale,
   risk,
+  now,
   showRecord = true,
 }: {
   order: SupplierOrderView
   locale: Locale
   risk: Map<string, ResellerRiskRecord>
+  /** Ek hi "abhi" poori list ke liye — warna har card apna waqt naapta hai */
+  now: Date
   /**
    * RTO ka record sirf wahan jahan us se KUCH badal sakta hai.
    *
@@ -240,6 +254,18 @@ function OrderCard({
         </span>
         <span className={`badge ${orderStatusStyle(order.status)}`}>{label}</span>
       </div>
+
+      {/*
+        Kitne din se raste mein — sirf DISPATCHED par.
+
+        🔴 Ye khabar nahi, PAISA hai: reseller ka hissa 'pohanch gaya' likhne par khulta
+        hai. Parcel ja chuka hota hai aur dukan ka kaam apni nazar mein khatam — is liye
+        likhna reh jata hai, aur reseller ka paisa mahino atka reh sakta hai. Char din ke
+        baad ye nishan laal ho jata hai (WhatsApp par bhi usi din poochha jata hai).
+      */}
+      {order.status === 'DISPATCHED' && order.dispatchedAt && (
+        <TransitAge dispatchedAt={order.dispatchedAt} locale={locale} now={now} />
+      )}
 
       {/*
         RTO ka record — order qubool karne se PEHLE.
@@ -282,5 +308,39 @@ function OrderCard({
         </span>
       </div>
     </div>
+  )
+}
+
+/**
+ * "Char din se raste mein" — dukan ke liye ek chhota sa sawal.
+ *
+ * Char din ki hadd wohi hai jo WhatsApp wale sawal ki hai (ORDER_TRANSIT), taake safhe
+ * ka nishan aur paighaam ek hi baat kahen — do alag hadden rakhna wo cheez hai jis se
+ * log dono par bharosa chhor dete hain.
+ */
+function TransitAge({
+  dispatchedAt,
+  locale,
+  now,
+}: {
+  dispatchedAt: Date
+  locale: Locale
+  now: Date
+}) {
+  const t = translator(locale)
+  const days = Math.floor((now.getTime() - new Date(dispatchedAt).getTime()) / 86_400_000)
+  const late = days * 86_400_000 >= ORDER_TRANSIT.askSupplierAfterMs
+
+  return (
+    <span
+      className={`inline-flex items-baseline gap-1.5 rounded-pill px-2.5 py-1 text-[0.75rem] font-semibold ${
+        late ? 'bg-red-50 text-red-700' : 'bg-paper-sunken text-ink-soft'
+      }`}
+    >
+      <span dir="ltr" className="numeric">
+        {days}
+      </span>
+      {t('daysInTransit')}
+    </span>
   )
 }

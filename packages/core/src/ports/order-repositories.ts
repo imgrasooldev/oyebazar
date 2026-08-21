@@ -55,6 +55,16 @@ export interface PendingConfirmationOrder {
   readonly reminderSentAt: Date | null
 }
 
+/** Raste mein atka hua order — dukan se poochhne ke liye jitna chahiye, utna. */
+export interface StuckInTransitOrder {
+  readonly id: string
+  readonly orderNo: string
+  readonly supplierId: string
+  readonly supplierPhone: string
+  readonly customerName: string
+  readonly dispatchedAt: Date
+}
+
 /** Wholesaler ko dikhne wala order — us ka apna price, customer ka pata, aur kuch nahi. */
 export interface SupplierOrderView {
   readonly id: string
@@ -79,6 +89,13 @@ export interface SupplierOrderView {
   readonly total: Pkr
   readonly createdAt: Date
   readonly acceptedAt: Date | null
+  /**
+   * Kab courier ko diya gaya.
+   *
+   * Safhe par "kitne din se raste mein" isi se banta hai — aur wohi ginti hai jis par
+   * reseller ka paisa atka hota hai (DELIVERED tak us ka hissa khulta hi nahi).
+   */
+  readonly dispatchedAt: Date | null
   readonly items: readonly {
     readonly titleUr: string
     readonly titleEn: string
@@ -128,6 +145,20 @@ export interface OrderRepository {
   }): Promise<PendingConfirmationOrder[]>
 
   markReminderSent(orderId: string, at: Date): Promise<void>
+
+  /**
+   * Raste mein khare order — jin par dukan ne kuch likha hi nahi.
+   *
+   * 🔴 Ye khoj paise ki hai, khabar ki nahi: reseller ka hissa DELIVERED par khulta hai.
+   * Order DISPATCHED par khara reh jaye to us ka paisa kabhi banta hi nahi, aur usay
+   * wajah bhi nazar nahi aati — us ki nazar mein "maal to bhej diya gaya tha".
+   */
+  findStuckInTransit(options: {
+    olderThan: Date
+    limit: number
+  }): Promise<StuckInTransitOrder[]>
+
+  markTransitReminderSent(orderId: string, at: Date): Promise<void>
 
   /** Ops console — filters ke saath. 🔴 Ye internal view deta hai (fee + supplier). */
   listForOps(filters: {

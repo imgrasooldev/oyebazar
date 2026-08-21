@@ -541,6 +541,7 @@ const DICTIONARY = {
     en: 'One bar per day — oldest left, today right',
   },
   daysShort: { ur: 'دن', rm: 'din', en: 'days' },
+  daysInTransit: { ur: 'دن سے راستے میں', rm: 'din se raste mein', en: 'days in transit' },
   rupees: { ur: 'روپے', rm: 'rupay', en: 'rupees' },
   earningsTrend: { ur: 'کمائی کی چال', rm: 'Kamai ki chaal', en: 'Earnings trend' },
   earningsTrendCaption: {
