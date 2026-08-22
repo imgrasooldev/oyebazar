@@ -155,7 +155,7 @@ export type ImageLayer = z.infer<typeof ImageLayerSchema>
  */
 const ShapeLayerSchema = z.object({
   kind: z.literal('shape'),
-  shape: z.enum(['rect', 'circle', 'line']),
+  shape: z.enum(['rect', 'circle', 'line', 'triangle', 'diamond', 'star', 'arrow', 'burst']),
   show: z.boolean(),
   x: z.number().min(0).max(100),
   y: z.number().min(0).max(100),
@@ -170,6 +170,27 @@ const ShapeLayerSchema = z.object({
 })
 
 export type ShapeLayer = z.infer<typeof ShapeLayerSchema>
+
+/**
+ * Har shakl ka apna `clip-path`.
+ *
+ * 🔴 Ye qadrein HAMARI hain, reseller ki nahi — wo sirf ek naam chunti hai (`star`) aur
+ * polygon yahin se aata hai. Reseller ka likha hua kuch bhi CSS mein pohanchne ka
+ * matlab hota `clip-path: url(...)` jaisi cheezein, aur wo darwaza band rehna chahiye.
+ *
+ * `rect`, `circle` aur `line` yahan nahi: un ka kaam `border-radius` se ho jata hai,
+ * aur `clip-path` un par kinare ko dandana bana deta hai.
+ */
+const SHAPE_CLIP: Partial<Record<ShapeLayer['shape'], string>> = {
+  triangle: 'polygon(50% 0%, 100% 100%, 0% 100%)',
+  diamond: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+  star: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
+  /** Teer — "abhi lo" jaisi baat ke saath achha lagta hai. */
+  arrow: 'polygon(0% 25%, 60% 25%, 60% 0%, 100% 50%, 60% 100%, 60% 75%, 0% 75%)',
+  /** Chamak — sale wale badge ke peechay. 12 nokon wala. */
+  burst:
+    'polygon(50% 0%, 58% 18%, 79% 10%, 76% 32%, 97% 32%, 84% 50%, 97% 68%, 76% 68%, 79% 90%, 58% 82%, 50% 100%, 42% 82%, 21% 90%, 24% 68%, 3% 68%, 16% 50%, 3% 32%, 24% 32%, 21% 10%, 42% 18%)',
+}
 
 /** Text, tasveer ya shakl — tarteeb teenon ke liye ek hi list mein. */
 const LayerSchema = z.discriminatedUnion('kind', [
@@ -595,6 +616,8 @@ function layersCss(spec: TemplateSpec): string {
         const cornerRadius =
           layer.shape === 'circle' ? '50%' : layer.shape === 'line' ? '999px' : `${layer.radius ?? 0}%`
 
+        const clip = SHAPE_CLIP[layer.shape]
+
         return `${selector} {
   position: absolute;
   inset-inline-start: ${layer.x}%;
@@ -604,6 +627,7 @@ function layersCss(spec: TemplateSpec): string {
   background: ${layer.colour ?? 'var(--accent)'};
   border-radius: ${cornerRadius};
   z-index: ${layerZ(layer, index)};
+  ${clip ? `clip-path: ${clip};` : ''}
   ${layer.opacity !== undefined ? `opacity: ${layer.opacity / 100};` : ''}
   ${layer.rotate ? `transform: rotate(${layer.rotate}deg);` : ''}
 }`

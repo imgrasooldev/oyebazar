@@ -7,6 +7,7 @@ import {
   formatPkr,
   pkr,
   templateSpecToCss,
+  type ShapeLayer,
   type TemplateSpec,
 } from '@oyebazar/shared'
 import { RedoIcon, UndoIcon } from '@/components/icons'
@@ -164,11 +165,49 @@ function part(spec: TemplateSpec, sel: Sel): PartStyle | null {
   return { ...layer, kind: layer.kind }
 }
 
+/**
+ * Button ke nishan ke liye — wohi polygon jo render istemal karta hai.
+ *
+ * Naqal hone ki wajah `templateSpecToCss` ka andar ka hissa hai (wo CSS ki string
+ * banata hai, alag alag qadrein nahi deta). Ye sirf NISHAN hai — asli shakl hamesha
+ * render ki hai; yahan farq aa bhi jaye to sirf button thora alag dikhega.
+ */
+const SHAPE_PREVIEW_CLIP: Partial<Record<string, string>> = {
+  triangle: 'polygon(50% 0%, 100% 100%, 0% 100%)',
+  diamond: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+  star: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
+  arrow: 'polygon(0% 25%, 60% 25%, 60% 0%, 100% 50%, 60% 100%, 60% 75%, 0% 75%)',
+  burst:
+    'polygon(50% 0%, 58% 18%, 79% 10%, 76% 32%, 97% 32%, 84% 50%, 97% 68%, 76% 68%, 79% 90%, 58% 82%, 50% 100%, 42% 82%, 21% 90%, 24% 68%, 3% 68%, 16% 50%, 3% 32%, 24% 32%, 21% 10%, 42% 18%)',
+}
+
 const SHAPE_LABEL = {
   rect: 'shapeRect',
   circle: 'shapeCircle',
   line: 'shapeLine',
+  triangle: 'shapeTriangle',
+  diamond: 'shapeDiamond',
+  star: 'shapeStar',
+  arrow: 'shapeArrow',
+  burst: 'shapeBurst',
 } as const
+
+/**
+ * Kaun sa handle pakra gaya hai.
+ *
+ * Naam MANTIQI hain, jugrafiyai nahi: `is` = inline-start (Urdu mein daayan kinara,
+ * angrezi mein baayan), `ie` = inline-end, `bs` = block-start (upar), `be` = neeche.
+ *
+ * 🔴 "Left/right" likhna yahan ghalti ki jar banta: pack Urdu (RTL) aur angrezi (LTR)
+ * dono mein banta hai, aur us soorat mein aadhe handle ulti simt kaam karte.
+ */
+export type HandleId = 'move' | 'is' | 'ie' | 'bs' | 'be' | 'is-bs' | 'ie-bs' | 'is-be' | 'ie-be'
+
+/** Kis handle par kaun si simt khinchti hai. */
+const PULLS_INLINE_START = (h: HandleId) => h === 'is' || h === 'is-bs' || h === 'is-be'
+const PULLS_INLINE_END = (h: HandleId) => h === 'ie' || h === 'ie-bs' || h === 'ie-be'
+const PULLS_BLOCK_START = (h: HandleId) => h === 'bs' || h === 'is-bs' || h === 'ie-bs'
+const PULLS_BLOCK_END = (h: HandleId) => h === 'be' || h === 'is-be' || h === 'ie-be'
 
 /** Naap ka khana — tasveer aur shakl par `width`, likhai par `size`. */
 function sizeFieldOf(style: PartStyle): 'size' | 'width' {
@@ -236,7 +275,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
   const [future, setFuture] = useState<TemplateSpec[]>([])
 
   const [selected, setSelected] = useState<Sel | null>(null)
-  const [drag, setDrag] = useState<{ key: Sel; mode: 'move' | 'size' } | null>(null)
+  const [drag, setDrag] = useState<{ key: Sel; mode: HandleId } | null>(null)
   const [guides, setGuides] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] })
   /**
    * Zoom — reseller ka apna, aur wo jo jagah ke mutabiq khud nikalta hai.
@@ -251,6 +290,20 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
    * (+/− buttons). Asal zoom dono ka hasil hai — yani screen chhoti ho ya bari, "fit"
    * hamesha fit rehta hai aur reseller ka chunao us ke upar lagta hai.
    */
+  /**
+   * 🔴 SAADA aur ZIYADA — poore editor ka sab se ahem faisla.
+   *
+   * Hamari reseller design tool nahi chalati; wo WhatsApp par maal bechti hai. Us ke
+   * saamne "opacity", "rotate", "z-index" aur `#F2600C` jaise khaane rakhna us kaam ko
+   * mushkil bana deta hai jo asal mein teen tap ka hai: rang chuno, cheezein jahan
+   * chahiye wahan rakho, mehfooz karo.
+   *
+   * Is liye default SAADA hai — sirf wo cheezein jo har koi pehli nazar mein samajhta
+   * hai. Baqi sab "زیادہ" ke peechay hai: mojood, magar raste mein nahi. Jis ko chahiye
+   * usay ek tap door hai; jis ko nahi chahiye usay kabhi nazar hi nahi aata.
+   */
+  const [advanced, setAdvanced] = useState(false)
+
   const [fitZoom, setFitZoom] = useState(0.28)
   const [zoomMultiplier, setZoomMultiplier] = useState(1)
   const [uploading, setUploading] = useState(false)
@@ -355,7 +408,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
    * tezi se chale to wo element se bahar nikal jati hai, aur capture ke baghair drag
    * wahin chhoot jata hai. Phone par ye har dafa hota hai.
    */
-  function startDrag(key: Sel, mode: 'move' | 'size', event: React.PointerEvent) {
+  function startDrag(key: Sel, mode: HandleId, event: React.PointerEvent) {
     event.preventDefault()
     event.stopPropagation()
     setSelected(key)
@@ -386,26 +439,59 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
     const dragged = part(spec, drag.key)
     if (!dragged) return
 
-    if (drag.mode === 'size') {
-      /*
-       * Naap: kone se jitna door khinchen. Ooper/andar ki taraf chhota, bahar bara.
-       * Naapne ka paimana canvas ki chaurai hai taake zoom se farq na pare.
-       */
-      const dy = ((event.clientY - box.top) / box.height) * 100
-      const pulled = Math.max(0, dy - dragged.y)
+    // Ungli/mouse kahan hai — mantiqi paimane mein (inline = us kinare se jahan se parhna shuru)
+    const pointerInline = ((box.right - event.clientX) / box.width) * 100
+    const pointerBlock = ((event.clientY - box.top) / box.height) * 100
 
-      if (sizeFieldOf(dragged) === 'width') {
-        // Tasveer: kone se jitna neeche khinchen utni chaurai (3–60% canvas)
-        patchPart(drag.key, { width: Math.min(60, Math.max(3, Math.round(3 + pulled * 2))) }, false)
-      } else {
-        patchPart(drag.key, { size: Math.min(160, Math.max(16, Math.round(16 + pulled * 6))) }, false)
+    if (drag.mode !== 'move') {
+      /*
+       * Charon taraf se naap badalna.
+       *
+       * Har handle ke do sawal hain: kaun si simt khinch rahi hai, aur us se kya badalta
+       * hai. Inline-END wala handle sirf chaurai barhata hai (anchor apni jagah), magar
+       * inline-START wala handle chaurai AUR jagah dono badalta hai — kyunke `x` us
+       * kinare ka pata hai. Yehi baat block (upar/neeche) par bhi lagti hai.
+       */
+      const handle = drag.mode
+      const next: Partial<PartStyle> = {}
+
+      if (dragged.width !== undefined) {
+        if (PULLS_INLINE_END(handle)) {
+          next.width = clampSize(pointerInline - dragged.x, 2, 100)
+        } else if (PULLS_INLINE_START(handle)) {
+          const farEdge = dragged.x + dragged.width
+          const start = Math.min(farEdge - 2, Math.max(0, pointerInline))
+          next.x = Math.round(start)
+          next.width = clampSize(farEdge - start, 2, 100)
+        }
       }
+
+      if (dragged.height !== undefined) {
+        if (PULLS_BLOCK_END(handle)) {
+          next.height = clampSize(pointerBlock - dragged.y, 1, 60)
+        } else if (PULLS_BLOCK_START(handle)) {
+          const farEdge = dragged.y + dragged.height
+          const start = Math.min(farEdge - 1, Math.max(0, pointerBlock))
+          next.y = Math.round(start)
+          next.height = clampSize(farEdge - start, 1, 60)
+        }
+      }
+
+      /*
+       * Likhai ka naap font size hai, chaurai nahi — us par sirf neeche wala kona chalta
+       * hai, aur wo jitna neeche khincho utna bara.
+       */
+      if (dragged.width === undefined && PULLS_BLOCK_END(handle)) {
+        const pulled = Math.max(0, pointerBlock - dragged.y)
+        next.size = Math.min(160, Math.max(16, Math.round(16 + pulled * 6)))
+      }
+
+      if (Object.keys(next).length > 0) patchPart(drag.key, next, false)
       return
     }
 
-    // RTL: x us kinare se naapa jata hai jahan se parhna shuru hota hai (daayen)
-    let x = ((box.right - event.clientX) / box.width) * 100
-    let y = ((event.clientY - box.top) / box.height) * 100
+    let x = pointerInline
+    let y = pointerBlock
 
     /*
      * Snap — safhe ke apne guides, aur baqi HAR cheez ke kinare (tay-shuda aur apna
@@ -648,7 +734,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
    * Shuruaati naap har shakl ka apna: patti chauri aur patli (likhai ke peechay lagti
    * hai), daira chokor (warna wo anda ban jata hai), lakeer bohat patli.
    */
-  function addShape(shape: 'rect' | 'circle' | 'line') {
+  function addShape(shape: ShapeLayer['shape']) {
     const layers = [...(spec.layers ?? [])]
     if (layers.length >= 6) return
 
@@ -1094,7 +1180,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                   >
                     {selectedLayer.radius ? '⬤' : '⬛'}
                   </IconButton>
-                ) : (
+                ) : selectedLayer?.kind === 'shape' ? null : (
                   <IconButton
                     label={t('pillToggle')}
                     onClick={() => patchPart(selected, { pill: !isPillOn(spec, selected) })}
@@ -1139,6 +1225,24 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                 />
               )}
 
+              {/* Rang har kisi ke kaam ka hai — wo SAADA mein bhi rehta hai */}
+              {selectedLayer?.kind !== 'image' && (
+                <SwatchRow
+                  label={selectedLayer?.kind === 'shape' ? t('shapeColour') : t('textColour')}
+                  accent={spec.accent}
+                  value={part(spec, selected)?.colour}
+                  onChange={(colour) => patchPart(selected, { colour })}
+                />
+              )}
+
+              {/*
+                🔴 Yahan se aage sirf "زیادہ" par.
+
+                Font, gehra pan, terha pan, oonchai, peechay/aage — ye sab asli qabu
+                hain, magar hamari reseller ka kaam in ke baghair poora ho jata hai.
+                Har khana jo hamesha nazar aata hai, wo us ke faisle ka bojh barhata hai.
+              */}
+              {!advanced ? null : (
               <div className="flex flex-wrap items-end gap-4 border-t border-line pt-3">
                 {/*
                   Likhai aur rang sirf text par — tasveer ka apna rang hota hai, us par
@@ -1217,6 +1321,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                   />
                 </div>
               </div>
+              )}
             </div>
           )}
         </div>
@@ -1245,18 +1350,28 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
               />
             </label>
 
-            <div className="grid grid-cols-2 gap-3">
-              <ColourField
-                label={t('accentColour')}
-                value={spec.accent}
-                onChange={(accent) => patch({ accent })}
-              />
-              <ColourField
-                label={t('accentTextColour')}
-                value={spec.accentText}
-                onChange={(accentText) => patch({ accentText })}
-              />
-            </div>
+            {/* Template ka apna rang — swatches se, hex ka khana sirf "زیادہ" par */}
+            <SwatchRow
+              label={t('accentColour')}
+              accent={spec.accent}
+              value={spec.accent}
+              onChange={(accent) => patch({ accent })}
+            />
+
+            {advanced && (
+              <div className="grid grid-cols-2 gap-3">
+                <ColourField
+                  label={t('accentColour')}
+                  value={spec.accent}
+                  onChange={(accent) => patch({ accent })}
+                />
+                <ColourField
+                  label={t('accentTextColour')}
+                  value={spec.accentText}
+                  onChange={(accentText) => patch({ accentText })}
+                />
+              </div>
+            )}
 
             <div>
               <p className="text-[0.8rem] font-semibold">{t('bottomCard')}</p>
@@ -1278,27 +1393,51 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
               </div>
             </div>
 
-            <SliderField
-              label={t('scrimStrength')}
-              value={spec.scrim}
-              min={0}
-              max={100}
-              onChange={(scrim) => patch({ scrim })}
-            />
-            <SliderField
-              label={t('frameWidth')}
-              value={spec.frame}
-              min={0}
-              max={12}
-              onChange={(frame) => patch({ frame })}
-            />
-            <SliderField
-              label={t('cornerRadius')}
-              value={spec.radius}
-              min={0}
-              max={80}
-              onChange={(radius) => patch({ radius })}
-            />
+            {/*
+              🔴 Dhund, haashiya aur gol-pan — teenon "زیادہ" ke peechay.
+
+              Ye asli qabu hain magar in ka faisla shakl (preset) ke saath aa chuka hota
+              hai. Reseller ko in par sochna nahi chahiye; usay sirf ye dekhna chahiye ke
+              tasveer achhi lag rahi hai ya nahi.
+            */}
+            {advanced && (
+              <>
+                <SliderField
+                  label={t('scrimStrength')}
+                  value={spec.scrim}
+                  min={0}
+                  max={100}
+                  onChange={(scrim) => patch({ scrim })}
+                />
+                <SliderField
+                  label={t('frameWidth')}
+                  value={spec.frame}
+                  min={0}
+                  max={12}
+                  onChange={(frame) => patch({ frame })}
+                />
+                <SliderField
+                  label={t('cornerRadius')}
+                  value={spec.radius}
+                  min={0}
+                  max={80}
+                  onChange={(radius) => patch({ radius })}
+                />
+              </>
+            )}
+
+            {/*
+              Saada / ziyada ka switch — panel ke AAKHIR mein, chhota aur khamosh.
+              Jise chahiye wo dhoond lega; jise nahi chahiye us ki nazar isay chhoo kar
+              guzar jayegi.
+            */}
+            <button
+              type="button"
+              onClick={() => setAdvanced((v) => !v)}
+              className="w-full pt-1 text-[0.76rem] text-ink-faint underline"
+            >
+              {advanced ? t('showSimple') : t('showAdvanced')}
+            </button>
           </div>
 
           {/*
@@ -1389,27 +1528,42 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
             {/* Rang ki shaklen — likhai ke peechay patti lagana sab se aam kaam hai */}
             <div className="mt-3 flex items-center gap-2">
               <span className="text-[0.72rem] font-semibold text-ink-soft">{t('addShape')}</span>
-              {(['rect', 'circle', 'line'] as const).map((shape) => (
-                <button
-                  key={shape}
-                  type="button"
-                  onClick={() => addShape(shape)}
-                  disabled={(spec.layers?.length ?? 0) >= 6}
-                  aria-label={t(SHAPE_LABEL[shape])}
-                  title={t(SHAPE_LABEL[shape])}
-                  className="link-tap flex h-8 flex-1 items-center justify-center rounded-lg bg-paper-sunken disabled:opacity-40"
-                >
-                  <span
-                    className={
-                      shape === 'rect'
-                        ? 'h-3.5 w-6 rounded-[3px] bg-accent-700'
-                        : shape === 'circle'
-                          ? 'h-4 w-4 rounded-full bg-accent-700'
-                          : 'h-[3px] w-6 rounded-full bg-accent-700'
-                    }
-                  />
-                </button>
-              ))}
+              {(['rect', 'circle', 'line', 'triangle', 'diamond', 'star', 'arrow', 'burst'] as const).map(
+                (shape) => (
+                  <button
+                    key={shape}
+                    type="button"
+                    onClick={() => addShape(shape)}
+                    disabled={(spec.layers?.length ?? 0) >= 6}
+                    aria-label={t(SHAPE_LABEL[shape])}
+                    title={t(SHAPE_LABEL[shape])}
+                    className="link-tap flex h-9 w-9 items-center justify-center rounded-lg bg-paper-sunken disabled:opacity-40"
+                  >
+                    {/*
+                      Nishan wohi shakl hai jo banegi — `clip-path` bhi wohi jo render
+                      istemal karta hai (SHAPE_PREVIEW_CLIP). Naam likhne se banda
+                      "ہیرا" parh kar bhi nahi jaanta ke kya banega; shakl dekh kar
+                      jaan jata hai.
+                    */}
+                    <span
+                      className={
+                        shape === 'line'
+                          ? 'h-[3px] w-5 rounded-full bg-accent-700'
+                          : shape === 'rect'
+                            ? 'h-3 w-5 rounded-[2px] bg-accent-700'
+                            : 'h-4 w-4 bg-accent-700'
+                      }
+                      style={
+                        shape === 'circle'
+                          ? { borderRadius: '50%' }
+                          : SHAPE_PREVIEW_CLIP[shape]
+                            ? { clipPath: SHAPE_PREVIEW_CLIP[shape] }
+                            : undefined
+                      }
+                    />
+                  </button>
+                ),
+              )}
             </div>
 
             <div className="mt-2 grid grid-cols-2 gap-2">
@@ -1483,6 +1637,11 @@ function isPillOn(spec: TemplateSpec, key: Sel): boolean {
   return part(spec, key)?.pill ?? (key === 'badge' || key === 'price')
 }
 
+/** Naap ki hadd — aur poora hindsa, kyunke spec integer nahi magar UI saaf rehna chahiye. */
+function clampSize(value: number, min: number, max: number): number {
+  return Math.round(Math.min(max, Math.max(min, value)))
+}
+
 /** 0–96 ke darmiyan — 100 par cheez kinare se bahar nikal jati hai. */
 function clamp(value: number): number {
   return Math.min(96, Math.max(0, value))
@@ -1532,8 +1691,8 @@ function Handle({
   cssClass: string
   spec: TemplateSpec
   selected: Sel | null
-  drag: { key: Sel; mode: 'move' | 'size' } | null
-  startDrag: (key: Sel, mode: 'move' | 'size', event: React.PointerEvent) => void
+  drag: { key: Sel; mode: HandleId } | null
+  startDrag: (key: Sel, mode: HandleId, event: React.PointerEvent) => void
   setSelected: (key: Sel) => void
   children: React.ReactNode
 }) {
@@ -1559,28 +1718,40 @@ function Handle({
     >
       {children}
 
-      {isSelected && (
-        /*
-          Naap ka handle. Canvas 0.28 par simta hua hai, is liye handle ko 1080-paimane
-          par bara banana parta hai — warna asli screen par wo 5px ka nuqta hota hai
-          jise ungli se pakarna namumkin hai.
-        */
-        <div
-          onPointerDown={(event) => startDrag(k, 'size', event)}
-          style={{
-            position: 'absolute',
-            insetInlineEnd: -28,
-            bottom: -28,
-            width: 56,
-            height: 56,
-            borderRadius: 999,
-            background: '#fff',
-            border: '6px solid #C2410C',
-            cursor: 'nwse-resize',
-            touchAction: 'none',
-          }}
-        />
-      )}
+      {/*
+        Naap ke handle — charon kone.
+
+        🔴 Canvas simta hua hota hai (aksar 25–30%), is liye handle ko 1080-paimane par
+        BARA banana parta hai. 56px yahan asli screen par ~15px ban jata hai — ungli ke
+        liye bilkul kaafi. Chhota rakhne par wo ek nuqta ban jata hai jise pakra hi nahi
+        ja sakta, aur reseller samajhti hai ke naap badalta hi nahi.
+
+        Sirf kone (kinare wale nahi): aath handle chhoti shakl par ek doosre par charh
+        jate hain, aur chaar kone har banday ko pehle se samajh aate hain.
+      */}
+      {isSelected &&
+        (['is-bs', 'ie-bs', 'is-be', 'ie-be'] as const).map((handle) => {
+          const top = handle.startsWith('bs') || handle.includes('-bs')
+          const inlineStart = handle.startsWith('is')
+          return (
+            <div
+              key={handle}
+              onPointerDown={(event) => startDrag(k, handle, event)}
+              style={{
+                position: 'absolute',
+                ...(inlineStart ? { insetInlineStart: -26 } : { insetInlineEnd: -26 }),
+                ...(top ? { top: -26 } : { bottom: -26 }),
+                width: 52,
+                height: 52,
+                borderRadius: 999,
+                background: '#fff',
+                border: '6px solid #C2410C',
+                cursor: 'pointer',
+                touchAction: 'none',
+              }}
+            />
+          )
+        })}
     </div>
   )
 }
@@ -1614,6 +1785,66 @@ function IconButton({
     >
       {children}
     </button>
+  )
+}
+
+/**
+ * Rang — tap karne wale khaane, hex ka khana nahi.
+ *
+ * 🔴 `#F2600C` likhna ek hunar hai jo hamari reseller ke paas nahi, aur hona bhi nahi
+ * chahiye. Aath rang jo asal mein chalte hain (safed, kala, aur brand ke rang) us ke
+ * liye kaafi hain, aur har ek ek tap door hai.
+ *
+ * Poora rangon ka pahiya "زیادہ" ke peechay hai — jis ko waqai koi khaas rang chahiye
+ * usay milta hai, magar wo raste mein nahi khara.
+ */
+const SWATCHES = [
+  '#ffffff',
+  '#111827',
+  '#F2600C',
+  '#D4380D',
+  '#FACC15',
+  '#16A34A',
+  '#1D4ED8',
+  '#9F1239',
+] as const
+
+function SwatchRow({
+  label,
+  value,
+  accent,
+  onChange,
+}: {
+  label: string
+  value: string | undefined
+  /** Template ka apna rang — "koi rang nahi chuna" ka matlab yehi hai. */
+  accent: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <div>
+      <p className="text-[0.78rem] font-semibold">{label}</p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {SWATCHES.map((colour) => {
+          const active = (value ?? accent).toLowerCase() === colour.toLowerCase()
+          return (
+            <button
+              key={colour}
+              type="button"
+              onClick={() => onChange(colour)}
+              aria-label={colour}
+              title={colour}
+              className={
+                active
+                  ? 'h-8 w-8 rounded-full ring-2 ring-accent-700 ring-offset-2'
+                  : 'link-tap h-8 w-8 rounded-full ring-1 ring-black/15'
+              }
+              style={{ background: colour }}
+            />
+          )
+        })}
+      </div>
+    </div>
   )
 }
 
