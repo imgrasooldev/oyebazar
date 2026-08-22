@@ -322,6 +322,34 @@ export async function buildStatusPackHtml(
     .filter(Boolean)
     .join(' ')
 
+  /*
+   * Reseller ke apne layers.
+   *
+   * 🔴 Do baatein yahan lazmi hain:
+   *
+   *  1. **Text `escapeHtml` se guzarta hai.** Ye wahid jagah hai jahan is HTML mein
+   *     user ka likha hua kuch aata hai, aur ye HTML Playwright ke page par chalta hai.
+   *     Bina escape ke `<img onerror=...>` jaisi ek line hamare render browser mein
+   *     script chala sakti hai.
+   *
+   *  2. **Tasveer INLINE hoti hai** (baqi sab ki tarah). CDN se aane wali tasveer render
+   *     ko ghair-mustaqil bana deti hai — kabhi tasveer pehle aati hai, kabhi screenshot.
+   *     `photoDataUri` ka apna cache bhi hai, is liye ek hi logo hazaron packs par
+   *     dobara download nahi hota.
+   */
+  const layerHtml = (
+    await Promise.all(
+      (customSpec?.layers ?? []).map(async (layer, index) => {
+        if (!layer.show) return ''
+        if (layer.kind === 'image') {
+          const inlined = await photoDataUri(layer.url)
+          return inlined ? `<img class="layer-${index}" src="${inlined}" alt="" />` : ''
+        }
+        return `<div class="layer-${index}">${escapeHtml(layer.text)}</div>`
+      }),
+    )
+  ).join('')
+
   const replacements: Record<string, string> = {
     formatKey,
     lang,
@@ -349,11 +377,7 @@ export async function buildStatusPackHtml(
      * Playwright ke page par chalta hai; bina escape ke `<img onerror=...>` jaisi ek
      * line hamare render browser mein script chala sakti hai.
      */
-    layers: (customSpec?.layers ?? [])
-      .map((layer, index) =>
-        layer.show ? `<div class="layer-${index}">${escapeHtml(layer.text)}</div>` : '',
-      )
-      .join(''),
+    layers: layerHtml,
   }
 
   return layout.replace(/\{\{(\w+)\}\}/g, (_match, key: string) => replacements[key] ?? '')

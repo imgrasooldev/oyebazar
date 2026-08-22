@@ -121,17 +121,29 @@ const ELEMENT_LABEL: Record<ElementKey, 'elBadge' | 'elTitle' | 'elPrice' | 'elN
  */
 type Sel = ElementKey | `L${number}`
 
-/** Jo khaane dono mein mushtarak hain — toolbar, drag aur keyboard sirf inhen chhute hain. */
+/**
+ * Har cheez ka mushtarak naqsha — toolbar, drag aur keyboard sirf isi ko chhute hain.
+ *
+ * 🔴 `size` aur `width` DO ALAG cheezein hain, aur farq asli hai: likhai ka naap font
+ * size hai, tasveer ka naap us ki chaurai. Dono ko ek khana bana dene par tasveer ka
+ * "naap" font size ban jata, jis ka `<img>` par koi asar hi nahi hota — aur reseller
+ * handle khinchti rehti aur kuch na hota.
+ */
 type PartStyle = {
+  kind: 'element' | 'text' | 'image'
   show: boolean
   x: number
   y: number
-  size: number
+  /** Likhai ka naap — element aur text par. */
+  size?: number | undefined
+  /** Tasveer ki chaurai, canvas ke feesad mein. */
+  width?: number | undefined
   colour?: string | undefined
   opacity?: number | undefined
   rotate?: number | undefined
   font?: 'nastaliq' | 'naskh' | 'latin' | undefined
   pill?: boolean | undefined
+  radius?: number | undefined
 }
 
 function layerIndex(sel: Sel): number | null {
@@ -140,15 +152,26 @@ function layerIndex(sel: Sel): number | null {
 
 function part(spec: TemplateSpec, sel: Sel): PartStyle | null {
   const index = layerIndex(sel)
-  if (index === null) return spec.elements[sel as ElementKey]
-  return spec.layers?.[index] ?? null
+  if (index === null) return { kind: 'element', ...spec.elements[sel as ElementKey] }
+
+  const layer = spec.layers?.[index]
+  if (!layer) return null
+  return { ...layer, kind: layer.kind }
+}
+
+/** Naap ka khana — tasveer par `width`, baqi par `size`. */
+function sizeFieldOf(style: PartStyle): 'size' | 'width' {
+  return style.kind === 'image' ? 'width' : 'size'
 }
 
 /** Canvas par mojood har cheez — snap aur list dono isi se bante hain. */
 function allParts(spec: TemplateSpec): { sel: Sel; style: PartStyle }[] {
   return [
-    ...ELEMENTS.map((key) => ({ sel: key as Sel, style: spec.elements[key] })),
-    ...(spec.layers ?? []).map((layer, index) => ({ sel: `L${index}` as Sel, style: layer })),
+    ...ELEMENTS.map((key) => ({ sel: key as Sel, style: part(spec, key)! })),
+    ...(spec.layers ?? []).map((layer, index) => ({
+      sel: `L${index}` as Sel,
+      style: { ...layer, kind: layer.kind } as PartStyle,
+    })),
   ]
 }
 
@@ -205,6 +228,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
   const [drag, setDrag] = useState<{ key: Sel; mode: 'move' | 'size' } | null>(null)
   const [guides, setGuides] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] })
   const [zoom, setZoom] = useState(0.28)
+  const [uploading, setUploading] = useState(false)
 
   const stageRef = useRef<HTMLDivElement>(null)
 
@@ -243,7 +267,8 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
       const layers = [...(current.layers ?? [])]
       const layer = layers[index]
       if (!layer) return current
-      layers[index] = { ...layer, ...next }
+      // Caller sirf usi qism ke khaane bhejta hai jo ye layer hai (dekhen `sizeFieldOf`)
+      layers[index] = { ...layer, ...next } as typeof layer
       return { ...current, layers }
     }
 
@@ -317,8 +342,14 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
        * Naapne ka paimana canvas ki chaurai hai taake zoom se farq na pare.
        */
       const dy = ((event.clientY - box.top) / box.height) * 100
-      const size = Math.round(16 + Math.max(0, dy - dragged.y) * 6)
-      patchPart(drag.key, { size: Math.min(160, Math.max(16, size)) }, false)
+      const pulled = Math.max(0, dy - dragged.y)
+
+      if (sizeFieldOf(dragged) === 'width') {
+        // Tasveer: kone se jitna neeche khinchen utni chaurai (3–60% canvas)
+        patchPart(drag.key, { width: Math.min(60, Math.max(3, Math.round(3 + pulled * 2))) }, false)
+      } else {
+        patchPart(drag.key, { size: Math.min(160, Math.max(16, Math.round(16 + pulled * 6))) }, false)
+      }
       return
     }
 
@@ -493,7 +524,9 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
   function partLabel(sel: Sel): string {
     const index = layerIndex(sel)
     if (index === null) return t(ELEMENT_LABEL[sel as ElementKey])
-    return spec.layers?.[index]?.text || t('myText')
+    const layer = spec.layers?.[index]
+    if (!layer) return t('myText')
+    return layer.kind === 'image' ? t('myLogo') : layer.text || t('myText')
   }
 
   // ---------------------------------------------------------------- apne text
@@ -515,10 +548,52 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
     setSelected(`L${layers.length - 1}`)
   }
 
+  /**
+   * Logo — pehle upload, phir layer.
+   *
+   * 🔴 URL sirf server se aata hai (upload ka jawab). Reseller kabhi apna pata nahi
+   * likhti — aur save par server dobara jaanchta hai ke ye pata hamari apni storage ka
+   * hai (dekhen lib/api/template-assets.ts).
+   */
+  async function addLogo(file: File) {
+    if ((spec.layers?.length ?? 0) >= 6) return
+
+    setUploading(true)
+    setError(null)
+
+    const form = new FormData()
+    form.append('file', file)
+    const res = await fetch('/api/v1/templates/upload', { method: 'POST', body: form }).catch(
+      () => null,
+    )
+    setUploading(false)
+
+    if (!res?.ok) {
+      const payload = (await res?.json().catch(() => null)) as
+        | { error?: { message?: string } }
+        | undefined
+      setError(payload?.error?.message ?? t('somethingWrong'))
+      return
+    }
+
+    const { url } = (await res.json()) as { url: string }
+    const layers = [...(spec.layers ?? [])]
+    /*
+     * Ulte kone mein — badge (x:4, y:9) ke saamne.
+     *
+     * Pehle ye 6,6 par girta tha aur seedha badge ke upar baith jata tha. Nayi cheez ka
+     * pehla tassur "ye toot gaya" nahi hona chahiye, chahe usay khiskana ek hi ghaseet
+     * ka kaam ho.
+     */
+    layers.push({ kind: 'image', url, show: true, x: 72, y: 5, width: 18 })
+    commit({ ...spec, layers })
+    setSelected(`L${layers.length - 1}`)
+  }
+
   function setLayerText(index: number, text: string) {
     const layers = [...(spec.layers ?? [])]
     const layer = layers[index]
-    if (!layer) return
+    if (layer?.kind !== 'text') return
     layers[index] = { ...layer, text }
     commit({ ...spec, layers })
   }
@@ -547,6 +622,30 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
     commit({ ...spec, layers })
     setSelected(`L${to}`)
   }
+
+  /**
+   * A− / A+ — chuni hui cheez ka naap.
+   *
+   * Tasveer par chaurai badalti hai (3–60% canvas), likhai par font size (16–160px).
+   * Ek hi button dono ke liye, magar paimana apna apna.
+   */
+  function resizeSelected(direction: -1 | 1) {
+    if (!selected) return
+    const style = part(spec, selected)
+    if (!style) return
+
+    if (sizeFieldOf(style) === 'width') {
+      const width = (style.width ?? 18) + direction * 2
+      patchPart(selected, { width: Math.min(60, Math.max(3, width)) })
+    } else {
+      const size = (style.size ?? 40) + direction * 4
+      patchPart(selected, { size: Math.min(160, Math.max(16, size)) })
+    }
+  }
+
+  /** Chuni hui layer ka asal record — toolbar ko us ka `kind` chahiye. */
+  const selectedLayerIndex = selected ? layerIndex(selected) : null
+  const selectedLayer = selectedLayerIndex !== null ? spec.layers?.[selectedLayerIndex] : undefined
 
   const isDefault = Boolean(selectedId && defaultKey?.startsWith(`custom:${selectedId}@`))
   const css = useMemo(() => templateSpecToCss(spec), [spec])
@@ -755,7 +854,12 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                       cssClass={`layer-${index}`}
                       {...{ spec, selected, drag, startDrag, setSelected }}
                     >
-                      {layer.text}
+                      {layer.kind === 'image' ? (
+                        /* eslint-disable-next-line @next/next/no-img-element -- storage se aaya hua logo; naap spec ke CSS se aata hai */
+                        <img src={layer.url} alt="" className="block w-full" />
+                      ) : (
+                        layer.text
+                      )}
                     </Handle>
                   ))}
                 </div>
@@ -789,28 +893,25 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
               <div className="flex flex-wrap items-center gap-3">
                 <span className="text-[0.85rem] font-bold">{partLabel(selected)}</span>
 
+                {/*
+                  Naap — tasveer par chaurai, baqi par font size.
+
+                  Dono ke apne paimane hain (3–60% banaam 16–160px), is liye qadam bhi
+                  alag: tasveer par 2%, likhai par 4px.
+                */}
                 <div className="flex items-center gap-1">
                   <IconButton
                     label={t('smaller')}
-                    onClick={() =>
-                      patchPart(selected, {
-                        size: Math.max(16, (part(spec, selected)?.size ?? 40) - 4),
-                      })
-                    }
+                    onClick={() => resizeSelected(-1)}
                   >
                     A−
                   </IconButton>
                   <span dir="ltr" className="numeric w-8 text-center text-[0.75rem] text-ink-faint">
-                    {(part(spec, selected)?.size ?? 40)}
+                    {selectedLayer?.kind === 'image'
+                      ? `${selectedLayer.width}%`
+                      : (part(spec, selected)?.size ?? 40)}
                   </span>
-                  <IconButton
-                    label={t('bigger')}
-                    onClick={() =>
-                      patchPart(selected, {
-                        size: Math.min(160, (part(spec, selected)?.size ?? 40) + 4),
-                      })
-                    }
-                  >
+                  <IconButton label={t('bigger')} onClick={() => resizeSelected(1)}>
                     A+
                   </IconButton>
                 </div>
@@ -828,15 +929,29 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                   ))}
                 </div>
 
-                {/* Rang bhara dabba — qeemat par pehle se hai, baqi par lagaya ja sakta hai */}
-                <IconButton
-                  label={t('pillToggle')}
-                  onClick={() =>
-                    patchPart(selected, { pill: !isPillOn(spec, selected) })
-                  }
-                >
-                  {isPillOn(spec, selected) ? '▬' : '▭'}
-                </IconButton>
+                {/*
+                  Rang bhara dabba likhai par, aur gol-pan tasveer par.
+
+                  Ye do alag cheezein hain magar ek hi jagah par: dono "is cheez ki
+                  shakl" ka sawal hain, aur ek waqt mein sirf ek hi maani rakhti hai.
+                */}
+                {selectedLayer?.kind === 'image' ? (
+                  <IconButton
+                    label={t('roundLogo')}
+                    onClick={() =>
+                      patchPart(selected, { radius: selectedLayer.radius ? 0 : 50 })
+                    }
+                  >
+                    {selectedLayer.radius ? '⬤' : '⬛'}
+                  </IconButton>
+                ) : (
+                  <IconButton
+                    label={t('pillToggle')}
+                    onClick={() => patchPart(selected, { pill: !isPillOn(spec, selected) })}
+                  >
+                    {isPillOn(spec, selected) ? '▬' : '▭'}
+                  </IconButton>
+                )}
 
                 <button
                   type="button"
@@ -848,9 +963,9 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
               </div>
 
               {/* Apna text — likhne ka khana wahin jahan wo chuna hua hai */}
-              {layerIndex(selected) !== null && (
+              {selectedLayer?.kind === 'text' && (
                 <input
-                  value={spec.layers?.[layerIndex(selected)!]?.text ?? ''}
+                  value={selectedLayer.text}
                   onChange={(e) => setLayerText(layerIndex(selected)!, e.target.value)}
                   maxLength={40}
                   placeholder={t('myTextSample')}
@@ -859,7 +974,12 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
               )}
 
               <div className="flex flex-wrap items-end gap-4 border-t border-line pt-3">
-                {/* Likhai ka mizaj — Urdu design mein sab se bara farq yehi daalta hai */}
+                {/*
+                  Likhai aur rang sirf text par — tasveer ka apna rang hota hai, us par
+                  font ka koi matlab nahi. Ghair-mutalliq qabu dikhana banday ko ye
+                  sochne par majboor karta hai ke shayad us ne kuch ghalat kiya.
+                */}
+                {selectedLayer?.kind !== 'image' && (
                 <div>
                   <p className="text-[0.72rem] font-semibold text-ink-soft">{t('fontLabel')}</p>
                   <div className="rail mt-1">
@@ -883,7 +1003,9 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                     ))}
                   </div>
                 </div>
+                )}
 
+                {selectedLayer?.kind !== 'image' && (
                 <div className="w-28">
                   <ColourField
                     label={t('textColour')}
@@ -891,6 +1013,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                     onChange={(colour) => patchPart(selected, { colour })}
                   />
                 </div>
+                )}
 
                 <div className="w-32">
                   <SliderField
@@ -1070,14 +1193,45 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
               })}
             </div>
 
-            <button
-              type="button"
-              onClick={addLayer}
-              disabled={(spec.layers?.length ?? 0) >= 6}
-              className="btn-secondary mt-3 w-full !py-1.5 text-[0.8rem]"
-            >
-              + {t('addText')}
-            </button>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={addLayer}
+                disabled={(spec.layers?.length ?? 0) >= 6}
+                className="btn-secondary !py-1.5 text-[0.8rem]"
+              >
+                + {t('addText')}
+              </button>
+
+              {/*
+                Logo — `<label>` ke andar chhupa hua file input.
+
+                Ye button jaisa dikhta hai magar hai file chooser, jo phone par gallery
+                seedha khol deta hai. Alag button aur alag input rakhne se ek extra tap
+                barhta hai, aur wo tap kisi kaam ka nahi.
+              */}
+              <label
+                className={
+                  uploading || (spec.layers?.length ?? 0) >= 6
+                    ? 'btn-secondary pointer-events-none !py-1.5 text-center text-[0.8rem] opacity-50'
+                    : 'btn-secondary cursor-pointer !py-1.5 text-center text-[0.8rem]'
+                }
+              >
+                {uploading ? t('uploading') : `+ ${t('addLogo')}`}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    // Input ko khali karna zaroori hai — warna wohi file dobara chunne
+                    // par `change` chalta hi nahi
+                    e.target.value = ''
+                    if (file) void addLogo(file)
+                  }}
+                />
+              </label>
+            </div>
 
             {/*
               🔴 Tanbeeh chhupani nahi chahiye.

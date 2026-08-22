@@ -1,4 +1,5 @@
 import { NotFoundError, TemplateSpecSchema, customTemplateKey } from '@oyebazar/shared'
+import { assertOwnAssets } from '@/lib/api/template-assets'
 import { z } from 'zod'
 import { apiHandler, parseBody } from '@/lib/api/handler'
 import { requireReseller } from '@/lib/api/session'
@@ -24,6 +25,8 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     const { reseller } = await requireReseller()
     const { id } = await context.params
     const body = await parseBody(request, UpdateTemplateSchema)
+    // 🔴 Banane wale raste ki tarah yahan bhi — dekhen assertOwnAssets ka note
+    assertOwnAssets(body.spec, container.mediaBaseUrl)
 
     const template = await container.repositories.resellerTemplates.update(reseller.id, id, {
       name: body.name,

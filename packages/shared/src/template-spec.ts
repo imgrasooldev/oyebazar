@@ -97,6 +97,51 @@ const TextLayerSchema = z.object({
 
 export type TextLayer = z.infer<typeof TextLayerSchema>
 
+/**
+ * Reseller ka apna logo ya koi chhoti tasveer.
+ *
+ * 🔴 `url` HAMARI apni storage ka hona LAZMI hai, aur ye jaanch server par hoti hai
+ * (dekhen `assertOwnAsset`). Bahar ka link qubool karna do darwaze kholta hai:
+ *
+ *  · Hamara render worker us pate par jata hai — yani koi bhi hamare server se
+ *    apni marzi ke pate par request karwa sakta hai (andar wale network samet).
+ *  · Tasveer kal badal sakti hai. Aaj logo, kal kuch aur — aur wo har us pack par
+ *    chhap jayega jo us waqt bana.
+ *
+ * `width` canvas ke FEESAD mein hai, px mein nahi: canvas chaar naap ka hota hai aur
+ * px wala logo chokor pack par tasveer se bahar nikal jata.
+ */
+const ImageLayerSchema = z.object({
+  kind: z.literal('image'),
+  url: z.string().url().max(500),
+  show: z.boolean(),
+  x: z.number().min(0).max(100),
+  y: z.number().min(0).max(100),
+  width: z.number().min(3).max(60),
+  opacity: z.number().int().min(10).max(100).optional(),
+  rotate: z.number().int().min(-20).max(20).optional(),
+  /** Gol logo ke liye — 50 par bilkul daira ban jata hai. */
+  radius: z.number().int().min(0).max(50).optional(),
+})
+
+export type ImageLayer = z.infer<typeof ImageLayerSchema>
+
+/** Text ya tasveer — tarteeb dono ke liye ek hi list mein. */
+const LayerSchema = z.discriminatedUnion('kind', [TextLayerSchema, ImageLayerSchema])
+
+export type Layer = z.infer<typeof LayerSchema>
+
+/**
+ * Kya ye pata hamari apni storage ka hai?
+ *
+ * 🔴 Shuruaat ka mel (`startsWith`) hi kaafi hai magar sirf tab jab `base` poora
+ * prefix ho (protocol + host + path). Us se chhota kuch bhi (misal sirf host) `evil
+ * .com/oyebazar...` jaise pate ko andar aane deta.
+ */
+export function isOwnAssetUrl(url: string, mediaBaseUrl: string): boolean {
+  return mediaBaseUrl.length > 0 && url.startsWith(mediaBaseUrl)
+}
+
 export const TemplateSpecSchema = z.object({
   /** Spec ki shakal badle to purane packs ka cache apne aap alag ho jaye. */
   version: z.literal(1),
@@ -129,7 +174,7 @@ export const TemplateSpecSchema = z.object({
    * Tarteeb hi layer ki tarteeb hai: baad wala upar chhapta hai (z-index list se banta
    * hai) — jaise har design tool mein hota hai.
    */
-  layers: z.array(TextLayerSchema).max(6).optional(),
+  layers: z.array(LayerSchema).max(6).optional(),
 })
 
 export type TemplateSpec = z.infer<typeof TemplateSpecSchema>
@@ -463,6 +508,25 @@ function layersCss(spec: TemplateSpec): string {
     .map((layer, index) => {
       const selector = `.stage.custom .layer-${index}`
       if (!layer.show) return `${selector} { display: none; }`
+
+      if (layer.kind === 'image') {
+        /*
+         * Sirf chaurai di jati hai, oonchai nahi — `height: auto` tasveer ki apni
+         * nisbat qaim rakhta hai. Dono dene ka matlab hota ke reseller ka logo khinch
+         * kar bhadda ho jaye, aur wo aksar khud usay theek nahi kar paati.
+         */
+        return `${selector} {
+  position: absolute;
+  inset-inline-start: ${layer.x}%;
+  top: ${layer.y}%;
+  width: ${layer.width}%;
+  height: auto;
+  z-index: ${2 + index};
+  ${layer.radius ? `border-radius: ${layer.radius}%;` : ''}
+  ${layer.opacity !== undefined ? `opacity: ${layer.opacity / 100};` : ''}
+  ${layer.rotate ? `transform: rotate(${layer.rotate}deg);` : ''}
+}`
+      }
 
       const extra = [
         layer.colour ? `color: ${layer.colour};` : 'color: #ffffff;',

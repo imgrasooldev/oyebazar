@@ -1,10 +1,7 @@
-import {
-  DEFAULT_TEMPLATE_SPEC,
-  TemplateSpecSchema,
-  customTemplateKey,
-} from '@oyebazar/shared'
+import { DEFAULT_TEMPLATE_SPEC, TemplateSpecSchema, customTemplateKey } from '@oyebazar/shared'
 import { z } from 'zod'
 import { apiHandler, parseBody } from '@/lib/api/handler'
+import { assertOwnAssets } from '@/lib/api/template-assets'
 import { requireReseller } from '@/lib/api/session'
 import { container } from '@/lib/container'
 
@@ -42,11 +39,13 @@ export async function POST(request: Request) {
   return apiHandler(async () => {
     const { reseller } = await requireReseller()
     const body = await parseBody(request, CreateTemplateSchema)
+    const spec = body.spec ?? DEFAULT_TEMPLATE_SPEC
+    assertOwnAssets(spec, container.mediaBaseUrl)
 
     const template = await container.repositories.resellerTemplates.create({
       resellerId: reseller.id,
       name: body.name,
-      spec: body.spec ?? DEFAULT_TEMPLATE_SPEC,
+      spec,
     })
 
     return {
