@@ -181,6 +181,23 @@ const SHAPE_PREVIEW_CLIP: Partial<Record<string, string>> = {
     'polygon(50% 0%, 58% 18%, 79% 10%, 76% 32%, 97% 32%, 84% 50%, 97% 68%, 76% 68%, 79% 90%, 58% 82%, 50% 100%, 42% 82%, 21% 90%, 24% 68%, 3% 68%, 16% 50%, 3% 32%, 24% 32%, 21% 10%, 42% 18%)',
 }
 
+/**
+ * Baayen rail ke darwaze — tarteeb kaam ke hisaab se.
+ *
+ * "Design" pehle kyunke har naya template wahin se shuru hota hai, aur "settings"
+ * aakhir mein kyunke wo sab se kam khula jata hai.
+ */
+const TABS = [
+  { id: 'design', icon: '▤', label: 'tabDesign' },
+  { id: 'text', icon: 'T', label: 'tabText' },
+  { id: 'shapes', icon: '◆', label: 'tabShapes' },
+  { id: 'upload', icon: '⬆', label: 'tabUpload' },
+  { id: 'layers', icon: '☰', label: 'tabLayers' },
+  { id: 'settings', icon: '⚙', label: 'tabSettings' },
+] as const
+
+type TabId = (typeof TABS)[number]['id']
+
 const SHAPE_LABEL = {
   rect: 'shapeRect',
   circle: 'shapeCircle',
@@ -302,7 +319,21 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
    * hai. Baqi sab "زیادہ" ke peechay hai: mojood, magar raste mein nahi. Jis ko chahiye
    * usay ek tap door hai; jis ko nahi chahiye usay kabhi nazar hi nahi aata.
    */
-  const [advanced, setAdvanced] = useState(false)
+  /*
+   * Reseller train ho sakti hai — is liye default ab poora qabu hai, chhupa hua nahi.
+   * "کم دکھائیں" phir bhi mojood hai us ke liye jise sirf rang badalna hai.
+   */
+  const [advanced, setAdvanced] = useState(true)
+
+  /**
+   * Kaun sa panel khula hai — Canva wala baayen icon rail.
+   *
+   * 🔴 Sab kuch ek panel mein thoons dene ki jagah CHHE alag darwaze. Wajah ye nahi ke
+   * jagah kam thi; wajah ye hai ke banda ek waqt mein EK kaam karta hai — ya to design
+   * chun raha hai, ya text likh raha hai, ya rang badal raha hai. Sab ek saath dikhane
+   * se har kaam baqi paanch ke shor mein karna parta hai.
+   */
+  const [tab, setTab] = useState<TabId>('design')
 
   const [fitZoom, setFitZoom] = useState(0.28)
   const [zoomMultiplier, setZoomMultiplier] = useState(1)
@@ -905,9 +936,39 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
         wohi `min-h-0` har column ko sifar oonchai par gira deta tha — isi wajah se
         canvas ka naap 0×0 nikla tha.
       */}
-      <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,240px)_minmax(0,1fr)_minmax(0,290px)]">
-        {/* ---------------- Mere template ---------------- */}
-        <div className="card order-2 p-4 lg:order-1 lg:min-h-0 lg:overflow-y-auto">
+      <div className="grid gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[auto_minmax(0,270px)_minmax(0,1fr)]">
+        {/*
+          ---------------- Baayen icon rail ----------------
+
+          Canva ka sab se pehchana hua hissa. Phone par ye neeche ki patti ban jati hai
+          (jahan angootha pohanchta hai), computer par baayen taraf khari.
+        */}
+        <div className="order-2 lg:order-1 lg:min-h-0">
+          <div className="card flex gap-1 p-1.5 lg:h-full lg:flex-col">
+            {TABS.map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                onClick={() => setTab(entry.id)}
+                aria-label={t(entry.label)}
+                title={t(entry.label)}
+                aria-pressed={tab === entry.id}
+                className={
+                  tab === entry.id
+                    ? 'flex min-h-tap flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bg-accent-50 px-2 py-2 text-accent-700 lg:flex-none lg:w-14'
+                    : 'link-tap flex min-h-tap flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-2 text-ink-soft lg:flex-none lg:w-14'
+                }
+              >
+                <span className="text-[1.05rem] leading-none">{entry.icon}</span>
+                <span className="text-[0.62rem] font-semibold leading-tight">{t(entry.label)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ---------------- Khula hua panel ---------------- */}
+        {tab === 'design' && (
+        <div className="card order-3 p-4 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
           <h2 className="text-[0.95rem] font-bold">{t('startFrom')}</h2>
           <p className="mt-1 text-[0.75rem] text-ink-faint">{t('startFromHint')}</p>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -960,9 +1021,10 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
             ))}
           </div>
         </div>
+        )}
 
         {/* ---------------- Canvas ---------------- */}
-        <div className="order-1 flex flex-col lg:order-2 lg:min-h-0">
+        <div className="order-1 flex flex-col lg:order-3 lg:min-h-0">
           <style dangerouslySetInnerHTML={{ __html: PREVIEW_BASE_CSS }} />
           {/*
             🔴 Wohi function jo worker chalata hai. Do jagah alag hisaab likhne ka matlab
@@ -1338,7 +1400,8 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
           Ab bahar ka dabba scroll karta hai aur andar ke hisse sirf lakeeron se juda
           hain — jaisa har design tool ke side panel mein hota hai.
         */}
-        <div className="card order-3 divide-y divide-line lg:order-3 lg:min-h-0 lg:overflow-y-auto">
+        {tab === 'settings' && (
+        <div className="card order-3 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
           <div className="space-y-4 p-4">
             <label className="block">
               <span className="text-[0.8rem] font-semibold">{t('badgeText')}</span>
@@ -1439,7 +1502,11 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
               {advanced ? t('showSimple') : t('showAdvanced')}
             </button>
           </div>
+        </div>
+        )}
 
+        {(tab === 'layers' || tab === 'text' || tab === 'shapes' || tab === 'upload') && (
+        <div className="card order-3 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
           {/*
             Cheezon ki list — Canva ke "layers" wala kaam.
 
@@ -1450,6 +1517,11 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                yani bina is list ke wo hamesha ke liye gum ho jati.
           */}
           <div className="p-4">
+            {/*
+              List har darwaze par dikhti hai — kyunke jo cheez abhi banayi gayi hai,
+              use foran list mein dekhna hi wo jagah hai jahan se usay chuna aur sanwara
+              jata hai. Canva mein bhi layers hamesha haath ki pohanch mein rehti hain.
+            */}
             <p className="text-[0.8rem] font-semibold">{t('elementsTitle')}</p>
             <div className="mt-2 space-y-1">
               {allParts(spec).map(({ sel, style }) => {
@@ -1526,8 +1598,11 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
             </div>
 
             {/* Rang ki shaklen — likhai ke peechay patti lagana sab se aam kaam hai */}
-            <div className="mt-3 flex items-center gap-2">
-              <span className="text-[0.72rem] font-semibold text-ink-soft">{t('addShape')}</span>
+            {tab === 'shapes' && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
+              <span className="w-full text-[0.72rem] font-semibold text-ink-soft">
+                {t('addShape')}
+              </span>
               {(['rect', 'circle', 'line', 'triangle', 'diamond', 'star', 'arrow', 'burst'] as const).map(
                 (shape) => (
                   <button
@@ -1565,8 +1640,10 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                 ),
               )}
             </div>
+            )}
 
-            <div className="mt-2 grid grid-cols-2 gap-2">
+            <div className="mt-3 grid gap-2 border-t border-line pt-3">
+              {tab === 'text' && (
               <button
                 type="button"
                 onClick={addLayer}
@@ -1575,7 +1652,10 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
               >
                 + {t('addText')}
               </button>
+              )}
 
+              {tab === 'upload' && (
+              <>
               {/*
                 Logo — `<label>` ke andar chhupa hua file input.
 
@@ -1604,6 +1684,8 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                   }}
                 />
               </label>
+              </>
+              )}
             </div>
 
             {/*
@@ -1613,11 +1695,14 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
               kabhi khud nahi badlega — reseller slider par rate badalti rahegi aur
               tasveer par purana likha rahega, aur us ka customer usi par order karega.
             */}
-            <p className="mt-2 text-[0.72rem] leading-relaxed text-ink-faint">
-              {t('layerWarning')}
-            </p>
+            {tab === 'text' && (
+              <p className="mt-2 text-[0.72rem] leading-relaxed text-ink-faint">
+                {t('layerWarning')}
+              </p>
+            )}
           </div>
         </div>
+        )}
       </div>
     </div>
   )
