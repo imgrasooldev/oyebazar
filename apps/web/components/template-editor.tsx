@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   DEFAULT_TEMPLATE_SPEC,
   formatPkr,
@@ -13,21 +13,31 @@ import { translator, type Locale } from '@/lib/i18n'
 /**
  * ⭐ Reseller ka apna template banane ka safha.
  *
- * Do usool jo poore design ko chalate hain:
+ * Teen usool jo poore design ko chalate hain:
  *
  *  1. **Jo dikh raha hai wohi banega.** Preview wohi `templateSpecToCss` istemal karta
- *     hai jo worker istemal karta hai — yani rang aur jagah ka hisaab do jagah alag alag
- *     nahi likha gaya. Sirf naap chhota hai (transform: scale).
+ *     hai jo worker istemal karta hai — rang aur jagah ka hisaab do jagah alag nahi
+ *     likha gaya. Sirf naap chhota hai (transform: scale).
  *
- *  2. **Ungli se rakho, form se nahi.** Har cheez ko utha kar jahan chahen rakh den. Ye
- *     wo hunar hai jo har reseller ke paas pehle se hai — usay "top: 62%" samajhne ki
- *     zaroorat nahi honi chahiye.
+ *  2. **Cheez par tap karo, us ka qabu wahin khule.** Door wali list mein "title ka
+ *     naap" dhoondhna seekhna parta hai; tasveer par us cheez ko chhoo kar us ka
+ *     toolbar dekhna nahi parta. Yehi Canva ka asal sabaq hai.
+ *
+ *  3. **Har ghalti wapas ho sakti hai.** Undo ke baghair log darte darte kaam karte
+ *     hain aur azmate hi nahi — aur azmaye baghair koi design achha nahi banta.
+ *
+ * 🔴 JO CHEEZ YAHAN JAAN BOOJH KAR NAHI HAI: apni marzi ke naye text box.
+ *
+ * Chhe cheezein tay hain aur har ek ASLI DATA se bandhi hui hai — qeemat wohi jo
+ * reseller ne slider par tay ki, naam wohi jo us ka hai. Azad text box us bandhan ko
+ * tor deta: reseller "Rs 2,850" haath se likh deti, phir rate badalti, aur tasveer par
+ * purana rate chhapta rehta — aur us ka customer usi purane rate par order karta.
+ * Layers wala editor is se alag cheez hai aur usay alag se socha jana chahiye.
  *
  * 🔴 Preview ka base CSS `templates/base.css` ki naqal hai (neeche `PREVIEW_BASE_CSS`).
  * Wo file worker ke paas hai aur is bundle mein nahi aati. Naqal hone ki wajah se wo
- * asal se hat sakti hai — is liye ye YAAD RAHE: asli faisla hamesha render ka hai,
- * preview taqreeb hai. Jo cheez yahan theek dikhe magar render mein toote, us ka ilaj
- * base.css mein hai, yahan nahi.
+ * asal se hat sakti hai — YAAD RAHE: asli faisla hamesha render ka hai, preview taqreeb
+ * hai. Jo yahan theek dikhe magar render mein toote, us ka ilaj base.css mein hai.
  */
 
 const CANVAS_W = 1080
@@ -75,9 +85,28 @@ const PREVIEW_BASE_CSS = `
 .tpl-stage .cta { line-height: 2.1; color: #fff; opacity: .92; white-space: nowrap; }
 `
 
-/** Har wo cheez jise uthaya ja sakta hai. */
-const DRAGGABLE = ['badge', 'title', 'price', 'name', 'phone', 'cta'] as const
-type ElementKey = (typeof DRAGGABLE)[number]
+const ELEMENTS = ['badge', 'title', 'price', 'name', 'phone', 'cta'] as const
+type ElementKey = (typeof ELEMENTS)[number]
+
+const ELEMENT_LABEL: Record<ElementKey, 'elBadge' | 'elTitle' | 'elPrice' | 'elName' | 'elPhone' | 'elCta'> = {
+  badge: 'elBadge',
+  title: 'elTitle',
+  price: 'elPrice',
+  name: 'elName',
+  phone: 'elPhone',
+  cta: 'elCta',
+}
+
+/**
+ * Snap ki hadd — feesad mein.
+ *
+ * 1.5% taqreeban 16px hai 1080 ke canvas par. Is se kam par snap mehsoos hi nahi hota;
+ * is se zyada par cheez apni jagah se khisak kar chipak jati hai aur banda larne lagta hai.
+ */
+const SNAP_TOLERANCE = 1.5
+
+/** Kinare ka aam faasla — Canva ki tarah safhe ke apne guides. */
+const EDGE_GUIDES = [4, 50, 96]
 
 export interface EditorTemplate {
   id: string
@@ -103,59 +132,230 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const selected = templates.find((template) => template.id === selectedId) ?? null
-  const [name, setName] = useState(selected?.name ?? '')
-  const [spec, setSpec] = useState<TemplateSpec>(selected?.spec ?? DEFAULT_TEMPLATE_SPEC)
+  const first = initial[0]
+  const [name, setName] = useState(first?.name ?? '')
+  const [spec, setSpec] = useState<TemplateSpec>(first?.spec ?? DEFAULT_TEMPLATE_SPEC)
+
+  /*
+   * Undo/redo — poore spec ki tasveerein, chhote chhote patch nahi.
+   *
+   * Spec ek chhota object hai (chand sau bytes), is liye har qadam ki poori naqal
+   * rakhna sasta hai — aur "kya kis se banta hai" wala poora hisaab bach jata hai, jo
+   * asal mein wo jagah hai jahan undo tootta hai.
+   */
+  const [past, setPast] = useState<TemplateSpec[]>([])
+  const [future, setFuture] = useState<TemplateSpec[]>([])
+
+  const [selected, setSelected] = useState<ElementKey | null>(null)
+  const [drag, setDrag] = useState<{ key: ElementKey; mode: 'move' | 'size' } | null>(null)
+  const [guides, setGuides] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] })
+  const [zoom, setZoom] = useState(0.28)
 
   const stageRef = useRef<HTMLDivElement>(null)
-  const [dragging, setDragging] = useState<ElementKey | null>(null)
+
+  /** Har tabdeeli undo ke dhair par — magar drag ke dauran nahi, warna 60 qadam ban jate. */
+  const commit = useCallback((next: TemplateSpec) => {
+    setSpec((current) => {
+      setPast((history) => [...history.slice(-49), current])
+      setFuture([])
+      return next
+    })
+    setSaved(false)
+  }, [])
+
+  /** Drag ke dauran — dhair par nahi, sirf spec badalta hai. */
+  const live = useCallback((next: (current: TemplateSpec) => TemplateSpec) => {
+    setSpec(next)
+    setSaved(false)
+  }, [])
+
+  function patch(next: Partial<TemplateSpec>) {
+    commit({ ...spec, ...next })
+  }
+
+  function patchElement(key: ElementKey, next: Partial<TemplateSpec['elements'][ElementKey]>) {
+    commit({
+      ...spec,
+      elements: { ...spec.elements, [key]: { ...spec.elements[key], ...next } },
+    })
+  }
+
+  function undo() {
+    setPast((history) => {
+      const previous = history.at(-1)
+      if (!previous) return history
+      setFuture((forward) => [spec, ...forward])
+      setSpec(previous)
+      setSaved(false)
+      return history.slice(0, -1)
+    })
+  }
+
+  function redo() {
+    setFuture((forward) => {
+      const next = forward[0]
+      if (!next) return forward
+      setPast((history) => [...history, spec])
+      setSpec(next)
+      setSaved(false)
+      return forward.slice(1)
+    })
+  }
+
+  // ---------------------------------------------------------------- uthana aur rakhna
+
+  /**
+   * Pointer events (mouse aur ungli dono) — aur `setPointerCapture` lazmi hai: ungli
+   * tezi se chale to wo element se bahar nikal jati hai, aur capture ke baghair drag
+   * wahin chhoot jata hai. Phone par ye har dafa hota hai.
+   */
+  function startDrag(key: ElementKey, mode: 'move' | 'size', event: React.PointerEvent) {
+    event.preventDefault()
+    event.stopPropagation()
+    setSelected(key)
+
+    /*
+     * Capture ki nakami se chunao nahi marna chahiye.
+     *
+     * `setPointerCapture` un pointer par phenkta hai jo ab active nahi rahe (ungli
+     * uthate hi ye ho jata hai, aur kuch browsers mein mouse par bhi). Pehle ye line
+     * `setSelected` se PEHLE thi aur us ke phenkne par cheez chunni hi nahi jati thi —
+     * yani drag na chalne par tap bhi kaam karna chhor deta tha.
+     */
+    try {
+      ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
+    } catch {
+      // Capture na mile to drag phir bhi chalta hai, bas ungli bahar nikalne par ruk jayega
+    }
+    // Drag SE PEHLE ki halat dhair par — taake ek undo poore drag ko wapas kare
+    setPast((history) => [...history.slice(-49), spec])
+    setFuture([])
+    setDrag({ key, mode })
+  }
+
+  function onPointerMove(event: React.PointerEvent) {
+    if (!drag || !stageRef.current) return
+    const box = stageRef.current.getBoundingClientRect()
+
+    if (drag.mode === 'size') {
+      /*
+       * Naap: kone se jitna door khinchen. Ooper/andar ki taraf chhota, bahar bara.
+       * Naapne ka paimana canvas ki chaurai hai taake zoom se farq na pare.
+       */
+      const dy = ((event.clientY - box.top) / box.height) * 100
+      const element = spec.elements[drag.key]
+      const size = Math.round(16 + Math.max(0, dy - element.y) * 6)
+      live((current) => ({
+        ...current,
+        elements: {
+          ...current.elements,
+          [drag.key]: { ...element, size: Math.min(160, Math.max(16, size)) },
+        },
+      }))
+      return
+    }
+
+    // RTL: x us kinare se naapa jata hai jahan se parhna shuru hota hai (daayen)
+    let x = ((box.right - event.clientX) / box.width) * 100
+    let y = ((event.clientY - box.top) / box.height) * 100
+
+    // Snap — safhe ke apne guides, aur baqi cheezon ke kinare
+    const others = ELEMENTS.filter((key) => key !== drag.key && spec.elements[key].show)
+    const xCandidates = [...EDGE_GUIDES, ...others.map((key) => spec.elements[key].x)]
+    const yCandidates = [...others.map((key) => spec.elements[key].y)]
+
+    const hitX = nearest(x, xCandidates)
+    const hitY = nearest(y, yCandidates)
+    if (hitX !== null) x = hitX
+    if (hitY !== null) y = hitY
+    setGuides({ x: hitX !== null ? [hitX] : [], y: hitY !== null ? [hitY] : [] })
+
+    live((current) => ({
+      ...current,
+      elements: {
+        ...current.elements,
+        [drag.key]: {
+          ...current.elements[drag.key],
+          x: clamp(Math.round(x)),
+          y: clamp(Math.round(y)),
+        },
+      },
+    }))
+  }
+
+  function endDrag() {
+    setDrag(null)
+    setGuides({ x: [], y: [] })
+  }
+
+  // ---------------------------------------------------------------- keyboard
+
+  /**
+   * Teer se sarkao, Delete se chhupao.
+   *
+   * Ungli se motay motay jagah ban jati hai; aakhri do-teen pixel hamesha keyboard se
+   * theek hote hain. Canva mein bhi yehi hota hai.
+   */
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      const target = event.target as HTMLElement
+      // Text box mein likhte waqt teer ka matlab cursor hai, cheez khiskana nahi
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return
+
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+        event.preventDefault()
+        if (event.shiftKey) redo()
+        else undo()
+        return
+      }
+
+      if (!selected) return
+      const element = spec.elements[selected]
+      const step = event.shiftKey ? 5 : 1
+
+      const moves: Record<string, () => void> = {
+        // RTL: daayen teer nazar ke lehaz se daayen jata hai, yani x kam hota hai
+        ArrowRight: () => patchElement(selected, { x: clamp(element.x - step) }),
+        ArrowLeft: () => patchElement(selected, { x: clamp(element.x + step) }),
+        ArrowUp: () => patchElement(selected, { y: clamp(element.y - step) }),
+        ArrowDown: () => patchElement(selected, { y: clamp(element.y + step) }),
+        Delete: () => patchElement(selected, { show: false }),
+        Backspace: () => patchElement(selected, { show: false }),
+        Escape: () => setSelected(null),
+      }
+
+      const move = moves[event.key]
+      if (move) {
+        event.preventDefault()
+        move()
+      }
+    }
+
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
+  // ---------------------------------------------------------------- server
 
   function choose(template: EditorTemplate) {
     setSelectedId(template.id)
     setName(template.name)
     setSpec(template.spec)
+    setPast([])
+    setFuture([])
+    setSelected(null)
     setSaved(false)
     setError(null)
   }
 
-  function patch(next: Partial<TemplateSpec>) {
-    setSpec((current) => ({ ...current, ...next }))
+  function startNew() {
+    setSelectedId(null)
+    setName('')
+    setSpec(DEFAULT_TEMPLATE_SPEC)
+    setPast([])
+    setFuture([])
+    setSelected(null)
     setSaved(false)
-  }
-
-  function patchElement(key: ElementKey, next: Partial<TemplateSpec['elements'][ElementKey]>) {
-    setSpec((current) => ({
-      ...current,
-      elements: { ...current.elements, [key]: { ...current.elements[key], ...next } },
-    }))
-    setSaved(false)
-  }
-
-  /**
-   * Uthana aur rakhna.
-   *
-   * Pointer events (mouse/touch dono) — aur `setPointerCapture` is liye ke ungli tezi se
-   * chale to wo element se bahar nikal jati hai aur bina capture ke drag beech mein
-   * chhoot jata hai. Phone par ye har dafa hota hai.
-   */
-  function onPointerDown(key: ElementKey, event: React.PointerEvent) {
-    event.preventDefault()
-    ;(event.target as HTMLElement).setPointerCapture(event.pointerId)
-    setDragging(key)
-  }
-
-  function onPointerMove(event: React.PointerEvent) {
-    if (!dragging || !stageRef.current) return
-    const box = stageRef.current.getBoundingClientRect()
-
-    // RTL: x us kinare se naapa jata hai jahan se parhna shuru hota hai (daayen)
-    const xFromStart = ((box.right - event.clientX) / box.width) * 100
-    const y = ((event.clientY - box.top) / box.height) * 100
-
-    patchElement(dragging, {
-      x: Math.min(96, Math.max(0, Math.round(xFromStart))),
-      y: Math.min(96, Math.max(0, Math.round(y))),
-    })
   }
 
   async function save() {
@@ -219,111 +419,74 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
     setBusy(false)
 
     setTemplates((current) => current.filter((item) => item.id !== id))
-    if (selectedId === id) {
-      setSelectedId(null)
-      setSpec(DEFAULT_TEMPLATE_SPEC)
-      setName('')
-    }
-  }
-
-  function startNew() {
-    setSelectedId(null)
-    setName('')
-    setSpec(DEFAULT_TEMPLATE_SPEC)
-    setSaved(false)
+    if (selectedId === id) startNew()
   }
 
   const isDefault = Boolean(selectedId && defaultKey?.startsWith(`custom:${selectedId}@`))
+  const css = useMemo(() => templateSpecToCss(spec), [spec])
+  const stageWidth = CANVAS_W * zoom
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
-      {/* ---------------- Baayen: preview ---------------- */}
-      <div className="lg:order-2">
-        <style dangerouslySetInnerHTML={{ __html: PREVIEW_BASE_CSS }} />
-        {/*
-          🔴 Wohi function jo worker chalata hai. Do jagah alag hisaab likhne ka matlab
-          hota ke preview aur asli tasveer chup chaap ek doosre se hat jayen.
-        */}
-        <style dangerouslySetInnerHTML={{ __html: templateSpecToCss(spec) }} />
-
-        <div className="mx-auto w-full max-w-[320px]">
-          <div
-            className="relative overflow-hidden rounded-card shadow-soft"
-            style={{ aspectRatio: `${CANVAS_W} / ${CANVAS_H}` }}
-          >
-            <div
-              ref={stageRef}
-              onPointerMove={onPointerMove}
-              onPointerUp={() => setDragging(null)}
-              className="tpl-stage stage custom absolute left-0 top-0 origin-top-left"
-              style={{ transform: `scale(${320 / CANVAS_W})` }}
-            >
-              {/*
-                Namoona tasveer ki jagah ek gehra dhalta hua rang.
-                Asli tasveer file rakhne ka matlab hota ek aur asset jo deploy par
-                chhoot sakta hai — aur us ke chhootne par editor khali safed dikhta,
-                jahan safed likhai bilkul nazar na aati.
-              */}
-              <div
-                className="photo"
-                style={{
-                  background:
-                    'linear-gradient(150deg, #7c3f1d 0%, #b45309 35%, #3f3f46 75%, #18181b 100%)',
-                }}
-              />
-              <div className="scrim" />
-
-              <div className="content">
-                <DragBox k="badge" spec={spec} dragging={dragging} onDown={onPointerDown}>
-                  <div className="badge">{spec.badgeText || '—'}</div>
-                </DragBox>
-
-                <div className="bottom">
-                  <DragBox k="title" spec={spec} dragging={dragging} onDown={onPointerDown}>
-                    <div className="title">{t('sampleProductTitle')}</div>
-                  </DragBox>
-
-                  <DragBox k="price" spec={spec} dragging={dragging} onDown={onPointerDown}>
-                    <div className="price-row">
-                      <div className="price">{formatPkr(pkr(2850))}</div>
-                    </div>
-                  </DragBox>
-
-                  <div className="seller">
-                    <DragBox k="name" spec={spec} dragging={dragging} onDown={onPointerDown}>
-                      <div className="seller-name">{t('sampleSellerName')}</div>
-                    </DragBox>
-                    <DragBox k="phone" spec={spec} dragging={dragging} onDown={onPointerDown}>
-                      <div className="seller-phone">0300 1234567</div>
-                    </DragBox>
-                  </div>
-
-                  <DragBox k="cta" spec={spec} dragging={dragging} onDown={onPointerDown}>
-                    <div className="cta">{t('sampleCta')}</div>
-                  </DragBox>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <p className="mt-3 text-center text-[0.78rem] text-ink-faint">{t('dragHint')}</p>
+    <div className="space-y-4">
+      {/* ---------------- Ooper ki patti: undo/redo, zoom, naam, save ---------------- */}
+      <div className="card flex flex-wrap items-center gap-3 p-3">
+        <div className="flex items-center gap-1">
+          <IconButton label={t('undo')} onClick={undo} disabled={past.length === 0}>
+            ↶
+          </IconButton>
+          <IconButton label={t('redo')} onClick={redo} disabled={future.length === 0}>
+            ↷
+          </IconButton>
         </div>
+
+        <div className="flex items-center gap-1">
+          <IconButton label={t('zoomOut')} onClick={() => setZoom((z) => Math.max(0.16, z - 0.06))}>
+            −
+          </IconButton>
+          <span dir="ltr" className="numeric w-12 text-center text-[0.75rem] text-ink-faint">
+            {Math.round(zoom * 100)}%
+          </span>
+          <IconButton label={t('zoomIn')} onClick={() => setZoom((z) => Math.min(0.6, z + 0.06))}>
+            +
+          </IconButton>
+        </div>
+
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={40}
+          placeholder={t('myTemplate')}
+          className="field min-w-0 flex-1 !py-2 text-[0.9rem]"
+        />
+
+        <button type="button" onClick={save} disabled={busy} className="btn-primary !py-2">
+          {saved ? t('savedTick') : t('saveTemplate')}
+        </button>
+        <button
+          type="button"
+          onClick={makeDefault}
+          disabled={busy || !selectedId || isDefault}
+          className="btn-secondary !py-2"
+        >
+          {isDefault ? `★ ${t('isDefault')}` : t('makeDefault')}
+        </button>
       </div>
 
-      {/* ---------------- Daayen: qabu ---------------- */}
-      <div className="space-y-6 lg:order-1">
-        {/* Mere template */}
-        <div className="card p-5">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="font-bold">{t('myTemplates')}</h2>
-            <button type="button" onClick={startNew} className="btn-secondary !py-1.5 text-[0.8rem]">
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,260px)_minmax(0,1fr)_minmax(0,300px)]">
+        {/* ---------------- Mere template ---------------- */}
+        <div className="card p-4 lg:order-1">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-[0.95rem] font-bold">{t('myTemplates')}</h2>
+            <button type="button" onClick={startNew} className="btn-secondary !py-1 text-[0.75rem]">
               {t('newTemplate')}
             </button>
           </div>
 
           <div className="mt-3 space-y-2">
             {templates.length === 0 && (
-              <p className="text-sm text-ink-soft">{t('noTemplatesYet')}</p>
+              <p className="text-[0.85rem] text-ink-soft">{t('noTemplatesYet')}</p>
             )}
             {templates.map((template) => (
               <div
@@ -337,18 +500,18 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                 <button
                   type="button"
                   onClick={() => choose(template)}
-                  className="link-tap flex-1 text-right text-[0.9rem] font-semibold"
+                  className="link-tap flex-1 text-right text-[0.85rem] font-semibold"
                 >
                   {template.name}
                   {defaultKey?.startsWith(`custom:${template.id}@`) && (
-                    <span className="mr-2 text-[0.7rem] text-accent-700">★ {t('isDefault')}</span>
+                    <span className="mr-2 text-[0.68rem] text-accent-700">★</span>
                   )}
                 </button>
                 <button
                   type="button"
                   onClick={() => remove(template.id)}
                   disabled={busy}
-                  className="text-[0.75rem] text-ink-faint underline"
+                  className="text-[0.72rem] text-ink-faint underline"
                 >
                   {t('deleteTemplate')}
                 </button>
@@ -357,171 +520,398 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
           </div>
         </div>
 
-        {/* Naam aur badge */}
-        <div className="card space-y-4 p-5">
-          <label className="block">
-            <span className="text-sm font-semibold">{t('templateName')}</span>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={40}
-              placeholder={t('myTemplate')}
-              className="field mt-2 w-full"
-            />
-          </label>
+        {/* ---------------- Canvas ---------------- */}
+        <div className="lg:order-2">
+          <style dangerouslySetInnerHTML={{ __html: PREVIEW_BASE_CSS }} />
+          {/*
+            🔴 Wohi function jo worker chalata hai. Do jagah alag hisaab likhne ka matlab
+            hota ke preview aur asli tasveer chup chaap ek doosre se hat jayen.
+          */}
+          <style dangerouslySetInnerHTML={{ __html: css }} />
 
-          <label className="block">
-            <span className="text-sm font-semibold">{t('badgeText')}</span>
-            <input
-              value={spec.badgeText}
-              onChange={(e) => patch({ badgeText: e.target.value })}
-              maxLength={24}
-              className="field mt-2 w-full"
-            />
-          </label>
+          <div className="flex justify-center">
+            <div
+              className="relative overflow-hidden rounded-card shadow-soft"
+              style={{ width: stageWidth, height: CANVAS_H * zoom }}
+              // Khali jagah par tap = kuch bhi chuna hua nahi
+              onPointerDown={() => setSelected(null)}
+            >
+              <div
+                ref={stageRef}
+                onPointerMove={onPointerMove}
+                onPointerUp={endDrag}
+                onPointerCancel={endDrag}
+                className="tpl-stage stage custom absolute left-0 top-0 origin-top-left"
+                style={{ transform: `scale(${zoom})` }}
+              >
+                {/*
+                  Namoona tasveer ki jagah gehra dhalta hua rang — ek aur asset rakhne ka
+                  matlab hota ek aur cheez jo deploy par chhoot sakti hai, aur us ke
+                  chhootne par editor safed ho jata jahan safed likhai nazar hi na aati.
+                */}
+                <div
+                  className="photo"
+                  style={{
+                    background:
+                      'linear-gradient(150deg, #7c3f1d 0%, #b45309 35%, #3f3f46 75%, #18181b 100%)',
+                  }}
+                />
+                <div className="scrim" />
 
-          <div className="grid grid-cols-2 gap-3">
-            <ColourField
-              label={t('accentColour')}
-              value={spec.accent}
-              onChange={(accent) => patch({ accent })}
-            />
-            <ColourField
-              label={t('accentTextColour')}
-              value={spec.accentText}
-              onChange={(accentText) => patch({ accentText })}
-            />
-          </div>
+                <div className="content">
+                  <Handle
+                    k="badge"
+                    cssClass="badge"
+                    {...{ spec, selected, drag, startDrag, setSelected }}
+                  >
+                    {spec.badgeText || '—'}
+                  </Handle>
 
-          <div>
-            <p className="text-sm font-semibold">{t('bottomCard')}</p>
-            <div className="rail mt-2">
-              {(['none', 'light', 'dark'] as const).map((card) => (
-                <button
-                  key={card}
-                  type="button"
-                  onClick={() => patch({ card })}
-                  className={spec.card === card ? 'chip chip-active' : 'chip'}
-                >
-                  {card === 'none' ? t('cardNone') : card === 'light' ? t('cardLight') : t('cardDark')}
-                </button>
+                  <div className="bottom">
+                    <Handle
+                      k="title"
+                      cssClass="title"
+                      {...{ spec, selected, drag, startDrag, setSelected }}
+                    >
+                      {t('sampleProductTitle')}
+                    </Handle>
+
+                    <Handle
+                      k="price"
+                      cssClass="price-row"
+                      {...{ spec, selected, drag, startDrag, setSelected }}
+                    >
+                      <div className="price">{formatPkr(pkr(2850))}</div>
+                    </Handle>
+
+                    <div className="seller">
+                      <Handle
+                        k="name"
+                        cssClass="seller-name"
+                        {...{ spec, selected, drag, startDrag, setSelected }}
+                      >
+                        {t('sampleSellerName')}
+                      </Handle>
+                      <Handle
+                        k="phone"
+                        cssClass="seller-phone"
+                        {...{ spec, selected, drag, startDrag, setSelected }}
+                      >
+                        0300 1234567
+                      </Handle>
+                    </div>
+
+                    <Handle
+                      k="cta"
+                      cssClass="cta"
+                      {...{ spec, selected, drag, startDrag, setSelected }}
+                    >
+                      {t('sampleCta')}
+                    </Handle>
+                  </div>
+                </div>
+              </div>
+
+              {/* Snap ki lakeerein — canvas ke UPAR, us ke andar nahi (warna scale inhen bhi patla kar deta) */}
+              {guides.x.map((x) => (
+                <div
+                  key={`x${x}`}
+                  className="pointer-events-none absolute top-0 h-full w-px bg-accent-700"
+                  style={{ right: `${x}%` }}
+                />
+              ))}
+              {guides.y.map((y) => (
+                <div
+                  key={`y${y}`}
+                  className="pointer-events-none absolute left-0 h-px w-full bg-accent-700"
+                  style={{ top: `${y}%` }}
+                />
               ))}
             </div>
           </div>
 
-          <SliderField
-            label={t('scrimStrength')}
-            value={spec.scrim}
-            min={0}
-            max={100}
-            onChange={(scrim) => patch({ scrim })}
-          />
-          <SliderField
-            label={t('frameWidth')}
-            value={spec.frame}
-            min={0}
-            max={12}
-            onChange={(frame) => patch({ frame })}
-          />
-          <SliderField
-            label={t('cornerRadius')}
-            value={spec.radius}
-            min={0}
-            max={80}
-            onChange={(radius) => patch({ radius })}
-          />
-        </div>
+          <p className="mt-3 text-center text-[0.78rem] text-ink-faint">
+            {selected ? t('selectedHint') : t('dragHint')}
+          </p>
 
-        {/* Har cheez ka naap aur dikhna */}
-        <div className="card space-y-3 p-5">
-          <p className="text-sm font-semibold">{t('elementsTitle')}</p>
-          {DRAGGABLE.map((key) => (
-            <div key={key} className="flex items-center gap-3">
+          {/* Chuni hui cheez ka apna toolbar — canvas ke bilkul neeche, nazar wahin hai */}
+          {selected && (
+            <div className="card mt-3 flex flex-wrap items-center gap-3 p-3">
+              <span className="text-[0.85rem] font-bold">{t(ELEMENT_LABEL[selected])}</span>
+
+              <div className="flex items-center gap-1">
+                <IconButton
+                  label={t('smaller')}
+                  onClick={() =>
+                    patchElement(selected, {
+                      size: Math.max(16, spec.elements[selected].size - 4),
+                    })
+                  }
+                >
+                  A−
+                </IconButton>
+                <span dir="ltr" className="numeric w-8 text-center text-[0.75rem] text-ink-faint">
+                  {spec.elements[selected].size}
+                </span>
+                <IconButton
+                  label={t('bigger')}
+                  onClick={() =>
+                    patchElement(selected, {
+                      size: Math.min(160, spec.elements[selected].size + 4),
+                    })
+                  }
+                >
+                  A+
+                </IconButton>
+              </div>
+
+              {/* Kinare par lagana — wo teen jagahen jahan 90% cheezein jati hain */}
+              <div className="flex items-center gap-1">
+                {EDGE_GUIDES.map((x) => (
+                  <IconButton
+                    key={x}
+                    label={x === 4 ? t('alignStart') : x === 50 ? t('alignCentre') : t('alignEnd')}
+                    onClick={() => patchElement(selected, { x })}
+                  >
+                    {x === 4 ? '▤' : x === 50 ? '▥' : '▦'}
+                  </IconButton>
+                ))}
+              </div>
+
               <button
                 type="button"
-                onClick={() => patchElement(key, { show: !spec.elements[key].show })}
-                className={
-                  spec.elements[key].show
-                    ? 'chip chip-active !py-1 text-[0.75rem]'
-                    : 'chip !py-1 text-[0.75rem]'
-                }
+                onClick={() => patchElement(selected, { show: false })}
+                className="ms-auto text-[0.78rem] text-ink-soft underline"
               >
-                {t(ELEMENT_LABEL[key])}
+                {t('hideThis')}
               </button>
-              <input
-                type="range"
-                min={16}
-                max={160}
-                value={spec.elements[key].size}
-                onChange={(e) => patchElement(key, { size: Number(e.target.value) })}
-                disabled={!spec.elements[key].show}
-                className="h-2 flex-1 cursor-pointer appearance-none rounded-pill bg-paper-sunken accent-brand-500"
-              />
-              <span dir="ltr" className="numeric w-10 text-[0.72rem] text-ink-faint">
-                {spec.elements[key].size}
-              </span>
             </div>
-          ))}
+          )}
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {/* ---------------- Poore template ke faislay ---------------- */}
+        <div className="space-y-4 lg:order-3">
+          <div className="card space-y-4 p-4">
+            <label className="block">
+              <span className="text-[0.8rem] font-semibold">{t('badgeText')}</span>
+              <input
+                value={spec.badgeText}
+                onChange={(e) => patch({ badgeText: e.target.value })}
+                maxLength={24}
+                className="field mt-2 w-full text-[0.9rem]"
+              />
+            </label>
 
-        <div className="flex gap-3">
-          <button type="button" onClick={save} disabled={busy} className="btn-primary flex-1">
-            {saved ? t('savedTick') : t('saveTemplate')}
-          </button>
-          <button
-            type="button"
-            onClick={makeDefault}
-            disabled={busy || !selectedId || isDefault}
-            className="btn-secondary flex-1"
-          >
-            {isDefault ? `★ ${t('isDefault')}` : t('makeDefault')}
-          </button>
+            <div className="grid grid-cols-2 gap-3">
+              <ColourField
+                label={t('accentColour')}
+                value={spec.accent}
+                onChange={(accent) => patch({ accent })}
+              />
+              <ColourField
+                label={t('accentTextColour')}
+                value={spec.accentText}
+                onChange={(accentText) => patch({ accentText })}
+              />
+            </div>
+
+            <div>
+              <p className="text-[0.8rem] font-semibold">{t('bottomCard')}</p>
+              <div className="rail mt-2">
+                {(['none', 'light', 'dark'] as const).map((card) => (
+                  <button
+                    key={card}
+                    type="button"
+                    onClick={() => patch({ card })}
+                    className={spec.card === card ? 'chip chip-active' : 'chip'}
+                  >
+                    {card === 'none'
+                      ? t('cardNone')
+                      : card === 'light'
+                        ? t('cardLight')
+                        : t('cardDark')}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <SliderField
+              label={t('scrimStrength')}
+              value={spec.scrim}
+              min={0}
+              max={100}
+              onChange={(scrim) => patch({ scrim })}
+            />
+            <SliderField
+              label={t('frameWidth')}
+              value={spec.frame}
+              min={0}
+              max={12}
+              onChange={(frame) => patch({ frame })}
+            />
+            <SliderField
+              label={t('cornerRadius')}
+              value={spec.radius}
+              min={0}
+              max={80}
+              onChange={(radius) => patch({ radius })}
+            />
+          </div>
+
+          {/* Chhupi hui cheezein wapas lane ka rasta — warna wo hamesha ke liye gum ho jatin */}
+          <div className="card p-4">
+            <p className="text-[0.8rem] font-semibold">{t('elementsTitle')}</p>
+            <div className="rail mt-2">
+              {ELEMENTS.map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => {
+                    patchElement(key, { show: !spec.elements[key].show })
+                    setSelected(key)
+                  }}
+                  className={
+                    spec.elements[key].show
+                      ? 'chip chip-active !py-1 text-[0.75rem]'
+                      : 'chip !py-1 text-[0.75rem]'
+                  }
+                >
+                  {t(ELEMENT_LABEL[key])}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
-const ELEMENT_LABEL: Record<ElementKey, 'elBadge' | 'elTitle' | 'elPrice' | 'elName' | 'elPhone' | 'elCta'> = {
-  badge: 'elBadge',
-  title: 'elTitle',
-  price: 'elPrice',
-  name: 'elName',
-  phone: 'elPhone',
-  cta: 'elCta',
+// ---------------------------------------------------------------- chhote hissay
+
+/** 0–96 ke darmiyan — 100 par cheez kinare se bahar nikal jati hai. */
+function clamp(value: number): number {
+  return Math.min(96, Math.max(0, value))
+}
+
+/** Sab se qareeb guide, agar hadd ke andar ho. */
+function nearest(value: number, candidates: number[]): number | null {
+  let best: number | null = null
+  let bestDistance = SNAP_TOLERANCE
+
+  for (const candidate of candidates) {
+    const distance = Math.abs(candidate - value)
+    if (distance < bestDistance) {
+      bestDistance = distance
+      best = candidate
+    }
+  }
+  return best
 }
 
 /**
- * Uthane wala khaana.
+ * Ek cheez — chunne, uthane aur naap badalne ke saath.
  *
- * Jagah spec ke CSS se aati hai (`templateSpecToCss`), yahan se nahi — warna do jagah
- * hisaab hota aur preview asli render se hat jata. Ye sirf pakarne ka nishan lagata hai.
+ * Jagah aur naap spec ke CSS se aate hain (`templateSpecToCss`), yahan se nahi — warna
+ * do jagah hisaab hota aur preview asli render se hat jata. Ye sirf pakarne ka nishan,
+ * chunne ka haashiya aur kone ka handle lagata hai.
+ *
+ * 🔴 `cssClass` WOHI class honi chahiye jise spec ka CSS position karta hai (`.title`,
+ * `.price-row`, waghera), aur handlers USI element par lagte hain.
+ *
+ * Pehli koshish mein in par ek alag wrapper `<div>` charhaya gaya tha. Wo wrapper
+ * static rehta tha (position spec CSS ne andar wale element ko di thi), is liye chunne
+ * ka haashiya aur kone ka handle dono ghalat jagah lagte the — handle to `.content` ke
+ * kone par chala jata tha. Browser mein aazma kar hi ye pakra gaya.
  */
-function DragBox({
+function Handle({
   k,
+  cssClass,
   spec,
-  dragging,
-  onDown,
+  selected,
+  drag,
+  startDrag,
+  setSelected,
   children,
 }: {
   k: ElementKey
+  cssClass: string
   spec: TemplateSpec
-  dragging: ElementKey | null
-  onDown: (key: ElementKey, event: React.PointerEvent) => void
+  selected: ElementKey | null
+  drag: { key: ElementKey; mode: 'move' | 'size' } | null
+  startDrag: (key: ElementKey, mode: 'move' | 'size', event: React.PointerEvent) => void
+  setSelected: (key: ElementKey) => void
   children: React.ReactNode
 }) {
   if (!spec.elements[k].show) return null
 
+  const isSelected = selected === k
+  const isDragging = drag?.key === k
+
   return (
     <div
-      onPointerDown={(event) => onDown(k, event)}
-      style={{ cursor: 'grab', touchAction: 'none' }}
-      className={dragging === k ? 'opacity-70 outline-dashed outline-8 outline-white/70' : ''}
+      onPointerDown={(event) => startDrag(k, 'move', event)}
+      onClick={(event) => {
+        event.stopPropagation()
+        setSelected(k)
+      }}
+      style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
+      className={`${cssClass} ${
+        isSelected
+          ? 'outline-dashed outline-[6px] outline-offset-[10px] outline-white/80'
+          : 'hover:outline-dashed hover:outline-[4px] hover:outline-offset-[10px] hover:outline-white/35'
+      }`}
     >
       {children}
+
+      {isSelected && (
+        /*
+          Naap ka handle. Canvas 0.28 par simta hua hai, is liye handle ko 1080-paimane
+          par bara banana parta hai — warna asli screen par wo 5px ka nuqta hota hai
+          jise ungli se pakarna namumkin hai.
+        */
+        <div
+          onPointerDown={(event) => startDrag(k, 'size', event)}
+          style={{
+            position: 'absolute',
+            insetInlineEnd: -28,
+            bottom: -28,
+            width: 56,
+            height: 56,
+            borderRadius: 999,
+            background: '#fff',
+            border: '6px solid #C2410C',
+            cursor: 'nwse-resize',
+            touchAction: 'none',
+          }}
+        />
+      )}
     </div>
+  )
+}
+
+function IconButton({
+  children,
+  label,
+  onClick,
+  disabled,
+}: {
+  children: React.ReactNode
+  label: string
+  onClick: () => void
+  disabled?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className="link-tap flex h-9 min-w-9 items-center justify-center rounded-xl bg-paper-sunken px-2 text-[0.85rem] font-semibold disabled:opacity-35"
+    >
+      {children}
+    </button>
   )
 }
 
@@ -536,20 +926,20 @@ function ColourField({
 }) {
   return (
     <label className="block">
-      <span className="text-[0.8rem] font-semibold">{label}</span>
+      <span className="text-[0.78rem] font-semibold">{label}</span>
       <div className="mt-2 flex items-center gap-2">
         <input
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="h-10 w-12 shrink-0 cursor-pointer rounded-lg border border-line bg-transparent"
+          className="h-9 w-11 shrink-0 cursor-pointer rounded-lg border border-line bg-transparent"
         />
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
           dir="ltr"
           maxLength={7}
-          className="field numeric w-full text-[0.8rem]"
+          className="field numeric w-full text-[0.78rem]"
         />
       </div>
     </label>
@@ -572,8 +962,8 @@ function SliderField({
   return (
     <div>
       <div className="flex items-baseline justify-between">
-        <span className="text-[0.8rem] font-semibold">{label}</span>
-        <span dir="ltr" className="numeric text-[0.72rem] text-ink-faint">
+        <span className="text-[0.78rem] font-semibold">{label}</span>
+        <span dir="ltr" className="numeric text-[0.7rem] text-ink-faint">
           {value}
         </span>
       </div>
