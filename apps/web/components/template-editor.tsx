@@ -966,8 +966,108 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
           </div>
         </div>
 
+        {/*
+          ---------------- Chuni hui cheez ke qabu ----------------
+
+          🔴 Ye pehle canvas ke NEECHE the, aur wahi masla tha: font, rang, gehra pan
+          aur terha pan mil kar ~335px le lete the, aur canvas ke liye 60px bachti thi —
+          yani jis cheez ko banane aaye the wohi nazar nahi aati thi.
+
+          Canva mein bhi tasveer ke oopar sirf ek PATLI qatar hoti hai; tafseel panel
+          mein jati hai. Ab wohi hai: qatar mein sirf naap aur jagah wale button, aur
+          baqi sab yahan — jahan panel ka apna scroll pehle se mojood hai.
+        */}
+        {selected && (
+          <div className="card order-3 space-y-3 p-4 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
+            <p className="text-[0.85rem] font-bold">{partLabel(selected)}</p>
+
+            {selectedLayer?.kind === 'text' && (
+              <input
+                value={selectedLayer.text}
+                onChange={(e) => setLayerText(layerIndex(selected)!, e.target.value)}
+                maxLength={40}
+                placeholder={t('myTextSample')}
+                className="field w-full text-[0.95rem]"
+              />
+            )}
+
+            {selectedLayer?.kind !== 'image' && (
+              <SwatchRow
+                label={selectedLayer?.kind === 'shape' ? t('shapeColour') : t('textColour')}
+                accent={spec.accent}
+                value={part(spec, selected)?.colour}
+                onChange={(colour) => patchPart(selected, { colour })}
+              />
+            )}
+
+            {/* Likhai sirf text par — tasveer aur shakl par font ka koi matlab nahi */}
+            {selectedLayer?.kind !== 'image' && selectedLayer?.kind !== 'shape' && (
+              <div>
+                <p className="text-[0.78rem] font-semibold">{t('fontLabel')}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {(['nastaliq', 'naskh', 'latin'] as const).map((font) => (
+                    <button
+                      key={font}
+                      type="button"
+                      onClick={() => patchPart(selected, { font })}
+                      className={
+                        (part(spec, selected)?.font ?? 'nastaliq') === font
+                          ? 'chip chip-active !py-1 text-[0.75rem]'
+                          : 'chip !py-1 text-[0.75rem]'
+                      }
+                    >
+                      {font === 'nastaliq'
+                        ? t('fontNastaliq')
+                        : font === 'naskh'
+                          ? t('fontNaskh')
+                          : t('fontLatin')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedLayer?.kind === 'shape' && (
+              <SliderField
+                label={t('shapeHeight')}
+                value={selectedLayer.height}
+                min={1}
+                max={60}
+                onChange={(height) => patchPart(selected, { height })}
+              />
+            )}
+
+            {advanced && (
+              <>
+                <SliderField
+                  label={t('opacityLabel')}
+                  value={part(spec, selected)?.opacity ?? 100}
+                  min={10}
+                  max={100}
+                  onChange={(opacity) => patchPart(selected, { opacity })}
+                />
+                <SliderField
+                  label={t('rotateLabel')}
+                  value={part(spec, selected)?.rotate ?? 0}
+                  min={-20}
+                  max={20}
+                  onChange={(rotate) => patchPart(selected, { rotate })}
+                />
+              </>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setSelected(null)}
+              className="w-full pt-1 text-[0.76rem] text-ink-faint underline"
+            >
+              {t('doneWithThis')}
+            </button>
+          </div>
+        )}
+
         {/* ---------------- Khula hua panel ---------------- */}
-        {tab === 'design' && (
+        {!selected && tab === 'design' && (
         <div className="card order-3 p-4 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
           <h2 className="text-[0.95rem] font-bold">{t('startFrom')}</h2>
           <p className="mt-1 text-[0.75rem] text-ink-faint">{t('startFromHint')}</p>
@@ -1061,7 +1161,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
              * `max-h` us surat mein bhi dabbe ko bandha rakhta hai; canvas bara hua to
              * scroll ISI dabbe ke andar hoga (`overflow-auto`), safhe ka nahi.
              */
-            className="sticky top-[4.25rem] z-10 flex h-[42vh] items-center justify-center overflow-auto rounded-card bg-coal-900/[0.06] p-3 lg:static lg:h-auto lg:max-h-[calc(100dvh-20rem)] lg:min-h-0 lg:flex-1"
+            className="sticky top-[4.25rem] z-10 flex h-[42vh] items-center justify-center overflow-auto rounded-card bg-coal-900/[0.06] p-3 lg:static lg:h-auto lg:max-h-none lg:min-h-0 lg:flex-1"
           >
             <div
               className="relative shrink-0 overflow-hidden rounded-card shadow-[0_18px_50px_-12px_rgba(0,0,0,0.45)] ring-1 ring-black/10"
@@ -1187,9 +1287,16 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
 
           {/* Chuni hui cheez ka apna toolbar — canvas ke bilkul neeche, nazar wahin hai */}
           {selected && (
-            <div className="card mt-2 max-h-[38vh] shrink-0 space-y-3 overflow-y-auto p-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="text-[0.85rem] font-bold">{partLabel(selected)}</span>
+            <div className="card mt-2 shrink-0 overflow-x-auto p-2">
+              {/*
+                🔴 `flex-nowrap` — wrap NAHI.
+
+                Wrap hone par ye qatar do-teen qatarein ban jati thi aur canvas ki jagah
+                kha jati thi. Ab jagah kam pare to ye khud SCROLL karti hai (dabbe par
+                `overflow-x-auto`) — canvas ki oonchai chhoo hi nahi sakti.
+              */}
+              <div className="flex flex-nowrap items-center gap-2">
+                <span className="shrink-0 text-[0.82rem] font-bold">{partLabel(selected)}</span>
 
                 {/*
                   Naap — tasveer par chaurai, baqi par font size.
@@ -1270,120 +1377,11 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                 <button
                   type="button"
                   onClick={() => patchPart(selected, { show: false })}
-                  className="ms-auto text-[0.78rem] text-ink-soft underline"
+                  className="ms-auto shrink-0 whitespace-nowrap text-[0.78rem] text-ink-soft underline"
                 >
                   {t('hideThis')}
                 </button>
               </div>
-
-              {/* Apna text — likhne ka khana wahin jahan wo chuna hua hai */}
-              {selectedLayer?.kind === 'text' && (
-                <input
-                  value={selectedLayer.text}
-                  onChange={(e) => setLayerText(layerIndex(selected)!, e.target.value)}
-                  maxLength={40}
-                  placeholder={t('myTextSample')}
-                  className="field w-full text-[0.95rem]"
-                />
-              )}
-
-              {/* Rang har kisi ke kaam ka hai — wo SAADA mein bhi rehta hai */}
-              {selectedLayer?.kind !== 'image' && (
-                <SwatchRow
-                  label={selectedLayer?.kind === 'shape' ? t('shapeColour') : t('textColour')}
-                  accent={spec.accent}
-                  value={part(spec, selected)?.colour}
-                  onChange={(colour) => patchPart(selected, { colour })}
-                />
-              )}
-
-              {/*
-                🔴 Yahan se aage sirf "زیادہ" par.
-
-                Font, gehra pan, terha pan, oonchai, peechay/aage — ye sab asli qabu
-                hain, magar hamari reseller ka kaam in ke baghair poora ho jata hai.
-                Har khana jo hamesha nazar aata hai, wo us ke faisle ka bojh barhata hai.
-              */}
-              {!advanced ? null : (
-              <div className="flex flex-wrap items-end gap-4 border-t border-line pt-3">
-                {/*
-                  Likhai aur rang sirf text par — tasveer ka apna rang hota hai, us par
-                  font ka koi matlab nahi. Ghair-mutalliq qabu dikhana banday ko ye
-                  sochne par majboor karta hai ke shayad us ne kuch ghalat kiya.
-                */}
-                {selectedLayer?.kind !== 'image' && (
-                <div>
-                  <p className="text-[0.72rem] font-semibold text-ink-soft">{t('fontLabel')}</p>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    {(['nastaliq', 'naskh', 'latin'] as const).map((font) => (
-                      <button
-                        key={font}
-                        type="button"
-                        onClick={() => patchPart(selected, { font })}
-                        className={
-                          (part(spec, selected)?.font ?? 'nastaliq') === font
-                            ? 'chip chip-active !py-1 text-[0.72rem]'
-                            : 'chip !py-1 text-[0.72rem]'
-                        }
-                      >
-                        {font === 'nastaliq'
-                          ? t('fontNastaliq')
-                          : font === 'naskh'
-                            ? t('fontNaskh')
-                            : t('fontLatin')}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                )}
-
-                {selectedLayer?.kind !== 'image' && (
-                  <div className="w-28">
-                    <ColourField
-                      label={selectedLayer?.kind === 'shape' ? t('shapeColour') : t('textColour')}
-                      value={
-                        part(spec, selected)?.colour ??
-                        (selectedLayer?.kind === 'shape' ? spec.accent : '#ffffff')
-                      }
-                      onChange={(colour) => patchPart(selected, { colour })}
-                    />
-                  </div>
-                )}
-
-                {/* Oonchai sirf shakl par — baqi apni oonchai khud banate hain */}
-                {selectedLayer?.kind === 'shape' && (
-                  <div className="w-32">
-                    <SliderField
-                      label={t('shapeHeight')}
-                      value={selectedLayer.height}
-                      min={1}
-                      max={60}
-                      onChange={(height) => patchPart(selected, { height })}
-                    />
-                  </div>
-                )}
-
-                <div className="w-32">
-                  <SliderField
-                    label={t('opacityLabel')}
-                    value={part(spec, selected)?.opacity ?? 100}
-                    min={10}
-                    max={100}
-                    onChange={(opacity) => patchPart(selected, { opacity })}
-                  />
-                </div>
-
-                <div className="w-32">
-                  <SliderField
-                    label={t('rotateLabel')}
-                    value={part(spec, selected)?.rotate ?? 0}
-                    min={-20}
-                    max={20}
-                    onChange={(rotate) => patchPart(selected, { rotate })}
-                  />
-                </div>
-              </div>
-              )}
             </div>
           )}
         </div>
@@ -1400,7 +1398,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
           Ab bahar ka dabba scroll karta hai aur andar ke hisse sirf lakeeron se juda
           hain — jaisa har design tool ke side panel mein hota hai.
         */}
-        {tab === 'settings' && (
+        {!selected && tab === 'settings' && (
         <div className="card order-3 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
           <div className="space-y-4 p-4">
             <label className="block">
@@ -1505,7 +1503,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
         </div>
         )}
 
-        {(tab === 'layers' || tab === 'text' || tab === 'shapes' || tab === 'upload') && (
+        {!selected && (tab === 'layers' || tab === 'text' || tab === 'shapes' || tab === 'upload') && (
         <div className="card order-3 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
           {/*
             Cheezon ki list — Canva ke "layers" wala kaam.
