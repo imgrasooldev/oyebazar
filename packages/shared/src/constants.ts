@@ -19,6 +19,15 @@ export const BRAND = {
 } as const
 
 /** Status pack templates — har template `templates/<key>/index.html` se map hota hai. */
+/*
+ * Tarteeb wohi hai jo UI par patti mein dikhti hai — pehla wala default bhi hai.
+ *
+ * Pehle aath sab TEHWAR ya mausam ke naam par the (eid, ramadan, shadi, sardi…), yani
+ * chunao "kaun sa din hai" par hota tha. Aakhri chaar MIZAJ ke hain — "maal kaisa hai"
+ * par: safed card halki tasveer ke liye, gehra electronics ke liye, waghera. Dono
+ * qismein ek hi patti mein hain kyunke reseller ke liye ye ek hi sawal hai: "kaun sa
+ * achha lagega?"
+ */
 export const STATUS_PACK_TEMPLATES = [
   'simple',
   'sale',
@@ -28,6 +37,10 @@ export const STATUS_PACK_TEMPLATES = [
   'wedding',
   'winter',
   'summer',
+  'minimal',
+  'bold',
+  'dark',
+  'frame',
 ] as const
 
 export type StatusPackTemplateKey = (typeof STATUS_PACK_TEMPLATES)[number]

@@ -133,11 +133,14 @@ export function toPackKitDTO(result: StatusPackKitResult, key: {
   productId: string
   mediaId?: string | undefined
   templateKey: string
+  /** UI isay polling par wapas bhejta hai — warna purani kit ki halat parhi jati hai. */
+  optionsKey: string
 }): PackKit {
   return PackKitDTO.parse({
     productId: key.productId,
     mediaId: key.mediaId ?? null,
     templateKey: key.templateKey,
+    optionsKey: key.optionsKey,
     priceUsed: result.priceUsed,
     assets: result.assets.map((asset) => ({
       format: asset.format,

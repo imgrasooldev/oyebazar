@@ -224,6 +224,23 @@ export const SetRetailPriceSchema = z.object({
 
 // ---------- Status pack ----------
 
+/**
+ * Pack ke apne faislay — zaban, aur kya kya tasveer par chhape.
+ *
+ * 🔴 `name`/`phone` ki hadd chhoti hai aur ye jaan boojh kar hai: ye qadrein SEEDHA
+ * tasveer par chhapti hain. Lamba naam template ka poora neecha hissa tor deta hai
+ * (Nastaliq lipatta nahi, phailta hai) aur pack bekar ban kar reseller ke paas jata hai.
+ */
+export const PackOptionsSchema = z.object({
+  lang: z.enum(['ur', 'en']).optional(),
+  showName: z.boolean().optional(),
+  showPhone: z.boolean().optional(),
+  showPrice: z.boolean().optional(),
+  /** Khali chhoren to profile ka naam chalta hai. */
+  name: z.string().trim().max(30).optional(),
+  phone: z.string().trim().max(20).optional(),
+})
+
 export const GenerateStatusPackSchema = z.object({
   productId: z.string().min(1),
   /** Kaunsi tasveer — na den to product ki cover. */
@@ -234,6 +251,17 @@ export const GenerateStatusPackSchema = z.object({
    * warna us ka saved retail price (ya suggestedRetail) use hota hai.
    */
   retailPrice: z.number().int().positive().max(1_000_000).optional(),
+  /** Na den to reseller ke profile wale default chalte hain. */
+  options: PackOptionsSchema.optional(),
+})
+
+/** "ہمیشہ کے لیے" — Studio ke mojooda faislay profile par mehfooz kar dena. */
+export const SavePackDefaultsSchema = PackOptionsSchema.extend({
+  /**
+   * Kaun sa template default ho — built-in ki key (`sale`) ya apna (`custom:<id>@<n>`).
+   * `null` = system ka default (`simple`). Na den to jo pehle se hai wohi rehta hai.
+   */
+  templateKey: TemplateKeySchema.nullable().optional(),
 })
 
 // ---------- Orders ----------
@@ -289,4 +317,5 @@ export type CatalogueQuery = z.infer<typeof CatalogueQuerySchema>
 export type BazaarQuery = z.infer<typeof BazaarQuerySchema>
 export type SetRetailPriceInput = z.infer<typeof SetRetailPriceSchema>
 export type GenerateStatusPackInput = z.infer<typeof GenerateStatusPackSchema>
+export type PackOptionsInput = z.infer<typeof PackOptionsSchema>
 export type EditDraftProductInput = z.infer<typeof EditDraftProductSchema>

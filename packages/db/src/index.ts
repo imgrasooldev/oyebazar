@@ -18,6 +18,7 @@ import { PrismaResellerRepository } from './repositories/reseller.repository'
 import { PrismaResellerStatsRepository } from './repositories/reseller-stats.repository'
 import { PrismaResellerPricingRepository } from './repositories/reseller-pricing.repository'
 import { PrismaStatusPackRepository } from './repositories/status-pack.repository'
+import { PrismaResellerTemplateRepository } from './repositories/reseller-template.repository'
 import { PrismaSessionRepository } from './repositories/session.repository'
 import { PrismaOtpChallengeRepository } from './repositories/otp.repository'
 import { PrismaCategoryRepository } from './repositories/category.repository'
@@ -45,6 +46,7 @@ export interface Repositories {
   resellerStats: PrismaResellerStatsRepository
   resellerPricing: PrismaResellerPricingRepository
   statusPacks: PrismaStatusPackRepository
+  resellerTemplates: PrismaResellerTemplateRepository
   sessions: PrismaSessionRepository
   otpChallenges: PrismaOtpChallengeRepository
   categories: PrismaCategoryRepository
@@ -72,6 +74,7 @@ export function createRepositories(client: PrismaClient = prisma): Repositories 
     resellerStats: new PrismaResellerStatsRepository(client),
     resellerPricing: new PrismaResellerPricingRepository(client),
     statusPacks: new PrismaStatusPackRepository(client),
+    resellerTemplates: new PrismaResellerTemplateRepository(client),
     sessions: new PrismaSessionRepository(client),
     otpChallenges: new PrismaOtpChallengeRepository(client),
     categories: new PrismaCategoryRepository(client),
@@ -98,6 +101,7 @@ export * from './repositories/reseller.repository'
 export * from './repositories/reseller-stats.repository'
 export * from './repositories/reseller-pricing.repository'
 export * from './repositories/status-pack.repository'
+export * from './repositories/reseller-template.repository'
 export * from './repositories/session.repository'
 export * from './repositories/otp.repository'
 export * from './repositories/category.repository'

@@ -11,7 +11,13 @@
  *   3. Categories mila kar — 5 mein se 5 lawn bhejna kisi ke kaam nahi aata
  *   4. Tarteeb deterministic — ek hi din do martaba chalane par wohi list bane
  */
-import { NotFoundError, type Pkr } from '@oyebazar/shared'
+import {
+  DEFAULT_PACK_OPTIONS,
+  NotFoundError,
+  packOptionsKey,
+  type PackOptions,
+  type Pkr,
+} from '@oyebazar/shared'
 import type { DailyDropView, DailyPackItem } from '../domain/daily-drop'
 import type { DropSummary } from '../ports/daily-drop-repositories'
 import type { DailyDropRepository } from '../ports/daily-drop-repositories'
@@ -114,6 +120,14 @@ export class DailyDropService {
     resellerId: string,
     templateKey: string,
     date?: Date,
+    /**
+     * Us reseller ke apne pack faislay — raat ki pre-generation inhi par chali thi.
+     *
+     * 🔴 Yahan wohi options aani chahiyen jo `PregenerationService` ne istemal ki thin,
+     * warna cache key mel nahi khati aur har item "abhi ban raha hai" dikhata hai —
+     * halanke tasveer raat ko ban chuki hoti hai.
+     */
+    options: PackOptions = DEFAULT_PACK_OPTIONS,
   ): Promise<DailyPackItem[]> {
     const drop = await this.getTodaysDrop(date)
     if (!drop) return []
@@ -135,6 +149,7 @@ export class DailyDropService {
           priceUsed: myPrice,
           // Rozana ka drop story (9:16) hai — wohi WhatsApp status par jata hai
           format: 'story',
+          optionsKey: packOptionsKey(options),
         })
 
         return {

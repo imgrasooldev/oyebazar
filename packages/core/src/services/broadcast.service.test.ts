@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { DEFAULT_PACK_OPTIONS } from '@oyebazar/shared'
 import { BroadcastService } from './broadcast.service'
 import type { BroadcastRecipient, DailyDropView } from '../domain/daily-drop'
 import type {
@@ -23,6 +24,7 @@ function recipients(count: number): BroadcastRecipient[] {
     id: `res_${i}`,
     name: `ریسیلر ${i}`,
     whatsappPhone: `92300000${String(i).padStart(4, '0')}`,
+    packDefaults: DEFAULT_PACK_OPTIONS,
   }))
 }
 

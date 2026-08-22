@@ -273,11 +273,30 @@ model Reseller {
   lastActiveAt  DateTime?
   createdAt     DateTime       @default(now())
 
+  /// Status pack ke default faislay — Studio har naye pack par yahin se shuru karta hai.
+  ///
+  /// Alag khaane (aur profile ke `name`/`whatsappPhone` ka istemal nahi) is liye ke ye
+  /// DO alag cheezein hain: `whatsappPhone` wo number hai jis par ye LOGIN karti hai aur
+  /// jis par hum isay paighaam bhejte hain; `packPhone` wo hai jo tasveer par duniya ko
+  /// dikhta hai. Bohat si resellers apna zaati number chhupa kar karobar ka number
+  /// chhapwati hain — aur login ka number badal dena us ka bilkul ghalat hal hota.
+  packLang      String         @default("ur")
+  packShowName  Boolean        @default(true)
+  packShowPhone Boolean        @default(true)
+  packShowPrice Boolean        @default(true)
+  /// Khali = profile ka `name` / `whatsappPhone`.
+  packName      String?
+  packPhone     String?
+  /// Kaun sa template default hai — built-in ki key (`sale`) ya apna (`custom:<id>`).
+  /// Khali = system ka default (`simple`). Studio aur raat ki pre-generation dono yahi dekhte hain.
+  packTemplateKey String?
+
   pricing     ResellerPricing[]
   payouts     ResellerPayout[]
   orders      Order[]
   statusPacks StatusPack[]
   sessions    Session[]
+  templates   ResellerTemplate[]
 
   @@index([status, city])
   @@index([lastActiveAt])
@@ -316,6 +335,30 @@ model ResellerPricing {
 
 // ============================================================ STATUS PACKS
 
+/// Reseller ka apna banaya hua template.
+///
+/// 🔴 `spec` mein CSS NAHI hai — ek tay-shuda shakal hai (rang, jagah, naap) jise
+/// `packages/shared/template-spec.ts` CSS mein badalta hai. Wajah wahan likhi hai:
+/// ajnabi ka CSS hamare render HTML mein nahi jana chahiye.
+///
+/// `revision` cache key ka hissa ban kar `templateKey` mein jata hai (`custom:<id>@<n>`).
+/// Iske baghair reseller apna template badalti aur usay purani (pehle wali) tasveer hi
+/// milti rehti — kyunke cache ki nazar mein key wohi purani hoti.
+model ResellerTemplate {
+  id         String   @id @default(cuid())
+  resellerId String
+  name       String
+  spec       Json
+  /// Har save par barhta hai — purani tasveerein apni jagah rehti hain, nayi alag banti hai.
+  revision   Int      @default(1)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  reseller Reseller @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+
+  @@index([resellerId, updatedAt])
+}
+
 model StatusPack {
   id           String    @id @default(cuid())
   resellerId   String
@@ -331,6 +374,25 @@ model StatusPack {
   priceUsed    Int
   // story (9:16) | square (1:1) | portrait (4:5) | wide (1.91:1) — packages/shared/pack-kit.ts
   format       String    @default("story")
+
+  /// Reseller ke apne faislay — zaban, aur kya kya tasveer par chhape.
+  ///
+  /// 🔴 `optionsKey` cache key ka hissa hai; baqi khaane render ke liye hain. Dono
+  /// zaroori hain: key ke baghair "number hata den" wala pack purani (number wali)
+  /// tasveer wapas de deta, aur khaanon ke baghair ruka hua pack dobara render karte
+  /// waqt hum bhool jate ke us par kya chhapna tha.
+  ///
+  /// Default par optionsKey KHALI hai — packages/shared/pack-options.ts. Is se pehle se
+  /// bane hue laakhon packs apni jagah qaim rehte hain aur dobara render nahi hote.
+  optionsKey   String    @default("")
+  packLang     String    @default("ur")
+  showName     Boolean   @default(true)
+  showPhone    Boolean   @default(true)
+  showPrice    Boolean   @default(true)
+  /// Khali = profile ka naam/number.
+  overlayName  String?
+  overlayPhone String?
+
   imageUrl     String? // null = abhi render ho raha hai
   videoUrl     String?
   generatedAt  DateTime?
@@ -343,7 +405,9 @@ model StatusPack {
   // 🔴 CACHE KEY — wohi reseller + product + template + price + naap = wohi image, dobara
   // render nahi. Format is mein shamil hai warna Instagram ka chokor pack WhatsApp ke
   // lambe pack ko cache mein overwrite kar deta.
-  @@unique([resellerId, productId, mediaId, templateKey, priceUsed, format])
+  // `name` client ka accessor hai (repository is se `where` banati hai), `map` Postgres
+  // ka index naam — Postgres khud 63 haroof par kaat deta hai, is liye saaf naam diya hai.
+  @@unique([resellerId, productId, mediaId, templateKey, priceUsed, format, optionsKey], name: "cacheKey", map: "StatusPack_cache_key")
   @@index([resellerId, createdAt])
   @@index([imageUrl, createdAt])
 }

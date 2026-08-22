@@ -8,7 +8,7 @@
  *
  * Yani price leak ko rokne ke liye discipline par bharosa nahi — type system par hai.
  */
-import type { PackFormatKey, Pkr } from '@oyebazar/shared'
+import type { PackFormatKey, PackOptions, Pkr } from '@oyebazar/shared'
 
 /** PUBLIC (Bazaar) — 🔴 koi price field nahi. Ye qanooni requirement hai. */
 export interface PublicProductView {
@@ -188,6 +188,21 @@ export interface ResellerView {
   readonly tier: 'NEW' | 'BRONZE' | 'SILVER' | 'GOLD'
   readonly status: 'ACTIVE' | 'LIMITED' | 'SUSPENDED'
   readonly payoutAccount: string | null
+  /**
+   * Status pack ke default faislay — zaban, aur kya kya tasveer par chhape.
+   *
+   * Ek hi object (chhe alag khaane nahi) is liye ke Studio, service aur cache key —
+   * teenon ko yehi poori shakal chahiye, aur beech mein tootne ki gunjaish kam rehti hai.
+   */
+  readonly packDefaults: PackOptions
+  /**
+   * Default template — built-in ki key (`sale`) ya apna (`custom:<id>@<n>`).
+   *
+   * `packDefaults` se alag rakha hai jaan boojh kar: `PackOptions` wo faislay hain jo
+   * ek hi tasveer ki SHANAKHT badalte hain, aur templateKey pehle se cache key ka apna
+   * hissa hai. Dono ko mila dena us key ko do jagah rakhna hota.
+   */
+  readonly packTemplateKey: string | null
   readonly createdAt: Date
 }
 

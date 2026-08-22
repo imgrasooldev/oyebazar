@@ -7,7 +7,7 @@
  */
 import sharp from 'sharp'
 import type { Logger } from '@oyebazar/core'
-import { PACK_FORMATS, type PackFormatKey } from '@oyebazar/shared'
+import { DEFAULT_PACK_OPTIONS, PACK_FORMATS, type PackFormatKey, type PackOptions } from '@oyebazar/shared'
 import type { RenderPool } from './pool'
 import { buildStatusPackHtml, type TemplateData } from './template'
 
@@ -39,10 +39,11 @@ export class StatusPackRenderer {
     templateKey: string,
     data: TemplateData,
     formatKey: PackFormatKey = 'story',
+    options: PackOptions = DEFAULT_PACK_OPTIONS,
   ): Promise<RenderResult> {
     const startedAt = Date.now()
     const format = PACK_FORMATS[formatKey]
-    const html = await buildStatusPackHtml(templateKey, data, formatKey)
+    const html = await buildStatusPackHtml(templateKey, data, formatKey, options)
     // HTML banane ka waqt (photo download + font inline) alag se — warna pata hi nahi
     // chalta ke dheema render browser hai ya network
     const htmlMs = Date.now() - startedAt
@@ -81,6 +82,7 @@ export class StatusPackRenderer {
     this.logger.info('status_pack_rendered', {
       templateKey,
       formatKey,
+      lang: options.lang,
       bytes: image.byteLength,
       durationMs,
       htmlMs,

@@ -10,7 +10,7 @@
  * 🔴 Idempotent: dobara chalane par pehle se bane hue packs skip ho jate hain (DB ka unique
  * constraint hi cache key hai), isliye retry sasta hai.
  */
-import { pkr } from '@oyebazar/shared'
+import { packOptionsKey, pkr } from '@oyebazar/shared'
 import type { DailyDropView } from '../domain/daily-drop'
 import type { BroadcastAudienceRepository } from '../ports/daily-drop-repositories'
 import type { ProductRepository, ResellerPricingRepository, StatusPackRepository } from '../ports/repositories'
@@ -60,6 +60,10 @@ export class PregenerationService {
       for (const reseller of page.recipients) {
         resellers += 1
         const prices = await this.pricing.findMany(reseller.id, drop.productIds)
+        // Raat ka pack bhi us ke apne faislon par — warna subah 9 baje wala pack us ke
+        // switch ka ulta hota hai, aur wohi pack sab se ziyada dekha jata hai
+        const packOptions = reseller.packDefaults
+        const optionsKey = packOptionsKey(packOptions)
 
         for (const productId of drop.productIds) {
           const priceUsed = prices.get(productId) ?? suggested.get(productId)
@@ -77,6 +81,7 @@ export class PregenerationService {
             // Raat ko sirf story (9:16) — yehi 9 baje broadcast mein jata hai. Baqi naap
             // reseller ke maangne par bante hain, warna har raat chaar guna render.
             format: 'story' as const,
+            optionsKey,
           }
 
           const existing = await this.statusPacks.findByCacheKey(key)
@@ -85,7 +90,9 @@ export class PregenerationService {
             continue
           }
 
-          const pack = existing ?? (await this.statusPacks.create({ ...key, imageUrl: null }))
+          const pack =
+            existing ??
+            (await this.statusPacks.create({ ...key, imageUrl: null, options: packOptions }))
           await this.renderQueue.enqueue({
             statusPackId: pack.id,
             resellerId: reseller.id,
@@ -93,6 +100,7 @@ export class PregenerationService {
             templateKey: options.templateKey,
             priceUsed,
             format: 'story',
+            options: packOptions,
           })
           queued += 1
         }

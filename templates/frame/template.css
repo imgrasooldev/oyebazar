@@ -1,0 +1,69 @@
+/*
+ * فریم — safed haashiya, beech mein tasveer.
+ *
+ * Jewellery, dulhan ke joray aur mehngay kapre: in ka maal "mehnga dikhna" chahiye,
+ * aur haashiya us ka sab se sasta zariya hai — tasveer ko dabbe mein rakh dena usay
+ * nayab bana deta hai.
+ *
+ * `eid` bhi haashiya lagata hai, magar wo tasveer ke UPAR ek lakeer hai. Yahan haashiya
+ * asli hai: safed patti canvas ka hissa hai aur tasveer us ke andar simat jati hai.
+ */
+:root {
+  --accent: #9F1239;
+  --badge-text: #FFF1F2;
+  --paper: #FFFBFA;
+}
+
+/*
+ * Tasveer poore canvas par nahi — haashiye ke andar.
+ *
+ * 🔴 `width`/`height` saaf likhna LAZMI hai. Sirf `inset` dene se <img> apne asli naap
+ * par reh jati hai (replaced element ka box over-constrained ho to browser intrinsic
+ * naap chunta hai) — natija: tasveer ek kone mein simat jati hai aur baqi canvas khali.
+ * Div ke saath ye masla nahi hota, isi liye `.scrim` ko sirf inset kaafi hai.
+ *
+ * Haashiya --scale se guzarta hai: chaure canvas (1200×630) par 56px ka tay-shuda
+ * haashiya poori tasveer kha jata.
+ */
+.photo {
+  inset: calc(56px * var(--scale));
+  width: calc(100% - 112px * var(--scale));
+  height: calc(100% - 112px * var(--scale));
+  border-radius: calc(18px * var(--scale));
+}
+
+.scrim {
+  inset: calc(56px * var(--scale));
+  border-radius: calc(18px * var(--scale));
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.3) 0%,
+    rgba(0, 0, 0, 0) 30%,
+    rgba(0, 0, 0, 0) 48%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+}
+
+/*
+ * Likhai ko haashiye se saans chahiye.
+ *
+ * pad-x (60px) haashiye (56px) se sirf 4px bara hai — yani title bilkul kinare se
+ * chipak jata hai aur kata hua lagta hai. Dono taraf 40px aur de dete hain.
+ */
+.content {
+  inset: var(--safe-top) calc(var(--pad-x) + 40px * var(--scale)) var(--safe-bottom)
+    calc(var(--pad-x) + 40px * var(--scale));
+}
+
+.badge {
+  border-radius: calc(10px * var(--scale));
+  letter-spacing: calc(2px * var(--scale));
+}
+
+.price {
+  border-radius: calc(10px * var(--scale));
+}
+
+.seller {
+  border-top-color: rgba(255, 255, 255, 0.45);
+}

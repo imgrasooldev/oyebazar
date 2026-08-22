@@ -19,6 +19,7 @@ import { ConsoleLogger } from './logger'
 import { TokenBucketPacer } from './pacer'
 import { RenderPool } from './render/pool'
 import { StatusPackRenderer } from './render/render-status-pack'
+import { setCustomTemplateLoader } from './render/template'
 import { createStorage } from '@oyebazar/storage'
 
 /** Analytics DB mein — worker ka koi PostHog client nahi (Phase 2). */
@@ -75,6 +76,18 @@ export async function buildContainer(
 
   const messaging = createMessagingProvider(process.env, logger)
   const renderQueue = new BullMqRenderQueue(connection, logger)
+
+  /*
+   * Reseller ke apne template DB se aate hain.
+   *
+   * Loader is tarah lagaya gaya hai (import se nahi) taake `render:preview` wala rasta
+   * bina database ke chalta rahe — wo template dekhne ka sab se tez zariya hai aur usay
+   * Postgres ki zaroorat nahi honi chahiye.
+   */
+  setCustomTemplateLoader(async (id) => {
+    const template = await repositories.resellerTemplates.findByIdForRender(id)
+    return template?.spec ?? null
+  })
 
   return {
     repositories,

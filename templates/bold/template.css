@@ -1,0 +1,45 @@
+/*
+ * نمایاں — qeemat sab se pehle nazar aati hai.
+ *
+ * WhatsApp status 5 second dekha jata hai, aur us mein bhi nazar sab se pehle sab se
+ * bare hindse par jati hai. Sasta maal aur sale ke liye qeemat hi asal ishtihar hai —
+ * is liye yahan wo baqi har cheez se bari hai, aur title us ke muqable mein chhota.
+ */
+:root {
+  --accent: #FACC15;
+  --badge-text: #1C1917;
+}
+
+.badge {
+  color: #1c1917;
+  transform: rotate(-2deg);
+}
+
+/* Title chhota — warna do bari cheezein aapas mein larti hain aur nazar kahin nahi tikti */
+.title {
+  font-size: calc(50px * var(--scale));
+  line-height: 2;
+  opacity: 0.95;
+}
+
+.price {
+  font-size: calc(118px * var(--scale));
+  line-height: 1.6;
+  border-radius: calc(18px * var(--scale));
+  padding: calc(6px * var(--scale)) calc(38px * var(--scale)) calc(20px * var(--scale));
+  transform: rotate(-1.5deg);
+  box-shadow: 0 calc(14px * var(--scale)) calc(44px * var(--scale)) rgba(0, 0, 0, 0.5);
+}
+
+/*
+ * Chaure canvas (1.91:1) par 118px teen line le kar tasveer se bahar nikal jata hai —
+ * wahan qeemat ko wapas nap mein le aate hain. Baqi teen naap mein badi hi rehti hai.
+ */
+.stage.format-wide .price {
+  font-size: calc(84px * var(--scale));
+}
+
+.seller {
+  border-top-width: calc(4px * var(--scale));
+  border-top-color: rgba(250, 204, 21, 0.6);
+}

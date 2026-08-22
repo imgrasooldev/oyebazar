@@ -9,7 +9,7 @@
  *  · kal Prisma badla ya read-replica/caching layer aayi to core ko haath nahi lagta
  *  · junior ko methods ke naam se pata chalta hai ke kaunsa data kis surface ke liye hai
  */
-import type { Page, PackFormatKey, Pkr } from '@oyebazar/shared'
+import type { Page, PackFormatKey, PackOptions, Pkr, TemplateSpec } from '@oyebazar/shared'
 import type {
   PricingProductView,
   PublicActivityItem,
@@ -182,6 +182,19 @@ export interface ResellerRepository {
   findByPhone(phoneE164: string): Promise<ResellerView | null>
   create(input: { name: string; whatsappPhone: string; city: string; area?: string }): Promise<ResellerView>
   touchLastActive(id: string, at: Date): Promise<void>
+  /**
+   * Status pack ke default faislay mehfooz karta hai — Studio ka "ہمیشہ کے لیے" button.
+   *
+   * 🔴 Ye `name`/`whatsappPhone` ko HAATH NAHI LAGATA. Wo login aur paighaam ka number
+   * hai; tasveer par chhapne wala naam alag khaana hai. Dono ko mila dena us reseller ka
+   * login tor deta jo apna zaati number chhupa kar karobar ka number chhapwana chahti hai.
+   */
+  savePackDefaults(
+    id: string,
+    options: PackOptions,
+    /** `null` = system ka default (`simple`); na den to jo pehle se hai wohi rehta hai. */
+    templateKey?: string | null,
+  ): Promise<ResellerView>
 }
 
 /** Reseller ka apna retail price — har product ke liye alag. */
@@ -207,6 +220,15 @@ export interface StatusPackCacheKey {
   readonly priceUsed: Pkr
   /** Kaun sa naap — kit ka har hissa apni row hai. */
   readonly format: PackFormatKey
+  /**
+   * Reseller ke apne faislon ka nishan — zaban, aur kya kya tasveer par chhape.
+   *
+   * 🔴 `mediaId` ki tarah ye bhi kabhi `undefined` nahi hota: default par KHALI string
+   * (packages/shared/pack-options.ts se `packOptionsKey`). Khali rakhne ki wajah ye hai
+   * ke pehle se bane hue saare packs — jin par ye faislay the hi nahi — apni jagah qaim
+   * rehte hain aur dobara render nahi hote.
+   */
+  readonly optionsKey: string
 }
 
 /**
@@ -234,13 +256,52 @@ export interface ResellerStatsRepository {
 export interface StatusPackRepository {
   /** 🔴 Cache lookup — DB ka unique constraint hi cache key hai. */
   findByCacheKey(key: StatusPackCacheKey): Promise<StatusPackView | null>
-  create(input: StatusPackCacheKey & { imageUrl: string | null }): Promise<StatusPackView>
+  /**
+   * `options` cache key mein nahi hai — `optionsKey` us ka nichor hai. Poore options
+   * yahan is liye jate hain ke ruka hua pack baad mein dobara render karna pare (worker
+   * gir jaye, `render-pending` chale) to hum bhool na jayen ke us par kya chhapna tha.
+   */
+  create(
+    input: StatusPackCacheKey & { imageUrl: string | null; options: PackOptions },
+  ): Promise<StatusPackView>
   markRendered(id: string, imageUrl: string, at: Date): Promise<StatusPackView>
   markDownloaded(id: string, at: Date): Promise<void>
   incrementShared(id: string): Promise<void>
   findRecentByReseller(resellerId: string, query: CursorQuery): Promise<Page<StatusPackView>>
   /** Poori kit ek hi query mein — chaar alag lookup nahi. */
   findKit(key: Omit<StatusPackCacheKey, 'format'>): Promise<StatusPackView[]>
+}
+
+// ------------------------------------------------------- reseller ke apne template
+
+export interface ResellerTemplateView {
+  readonly id: string
+  readonly resellerId: string
+  readonly name: string
+  readonly spec: TemplateSpec
+  /**
+   * Har save par barhta hai aur `templateKey` mein jata hai (`custom:<id>@<n>`).
+   *
+   * 🔴 Iske baghair reseller apna template badalti aur usay purani tasveer hi milti
+   * rehti — cache ki nazar mein key wohi purani hoti.
+   */
+  readonly revision: number
+  readonly updatedAt: Date
+}
+
+export interface ResellerTemplateRepository {
+  listForReseller(resellerId: string): Promise<ResellerTemplateView[]>
+  /** 🔴 resellerId hamesha saath — kisi doosri reseller ka template kabhi na khule. */
+  findById(resellerId: string, id: string): Promise<ResellerTemplateView | null>
+  /** Render ke waqt maalik ka pata nahi hota — job mein sirf key hoti hai. */
+  findByIdForRender(id: string): Promise<ResellerTemplateView | null>
+  create(input: { resellerId: string; name: string; spec: TemplateSpec }): Promise<ResellerTemplateView>
+  update(
+    resellerId: string,
+    id: string,
+    input: { name: string; spec: TemplateSpec },
+  ): Promise<ResellerTemplateView | null>
+  remove(resellerId: string, id: string): Promise<boolean>
 }
 
 // ---------------------------------------------------------------- auth

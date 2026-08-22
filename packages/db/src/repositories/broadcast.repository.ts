@@ -5,6 +5,7 @@ import type {
   MessageLogRepository,
   OutboundMessageLog,
 } from '@oyebazar/core'
+import { packOptionsFrom } from '@oyebazar/shared'
 
 export class PrismaBroadcastAudienceRepository implements BroadcastAudienceRepository {
   constructor(private readonly db: PrismaClient) {}
@@ -26,14 +27,38 @@ export class PrismaBroadcastAudienceRepository implements BroadcastAudienceRepos
             }
           : {}),
       },
-      select: { id: true, name: true, whatsappPhone: true },
+      select: {
+        id: true,
+        name: true,
+        whatsappPhone: true,
+        packLang: true,
+        packShowName: true,
+        packShowPhone: true,
+        packShowPrice: true,
+        packName: true,
+        packPhone: true,
+      },
       orderBy: { id: 'asc' },
       take: options.limit + 1,
       ...(options.cursor ? { cursor: { id: options.cursor }, skip: 1 } : {}),
     })
 
     const hasMore = rows.length > options.limit
-    const recipients = hasMore ? rows.slice(0, options.limit) : rows
+    const recipients: BroadcastRecipient[] = (hasMore ? rows.slice(0, options.limit) : rows).map(
+      (row) => ({
+        id: row.id,
+        name: row.name,
+        whatsappPhone: row.whatsappPhone,
+        packDefaults: packOptionsFrom({
+          lang: row.packLang === 'en' ? 'en' : 'ur',
+          showName: row.packShowName,
+          showPhone: row.packShowPhone,
+          showPrice: row.packShowPrice,
+          ...(row.packName ? { name: row.packName } : {}),
+          ...(row.packPhone ? { phone: row.packPhone } : {}),
+        }),
+      }),
+    )
 
     return {
       recipients,

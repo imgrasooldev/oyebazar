@@ -17,18 +17,19 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/noto-nastaliq-urdu": "^5.1.0",
     "@oyebazar/core": "workspace:*",
     "@oyebazar/db": "workspace:*",
     "@oyebazar/queue": "workspace:*",
     "@oyebazar/shared": "workspace:*",
+    "@oyebazar/storage": "workspace:*",
     "@oyebazar/whatsapp": "workspace:*",
-    "@fontsource/noto-nastaliq-urdu": "^5.1.0",
     "bullmq": "^5.34.6",
     "ioredis": "^5.4.2",
     "playwright": "^1.49.1",
     "sharp": "^0.33.5",
-    "zod": "^3.24.1",
-    "@oyebazar/storage": "workspace:*"
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "dotenv-cli": "^8.0.0",

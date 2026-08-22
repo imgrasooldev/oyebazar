@@ -1,0 +1,73 @@
+/*
+ * سادہ سفید — safed patti, gehri likhawat.
+ *
+ * Baqi templates tasveer ke upar seedha likhte hain aur parhne ke liye kaali dhund
+ * (scrim) daalte hain. Ye us ka ulta hai: dhund halki, aur saara likha hua ek safed
+ * card mein. Faida do jagah hota hai —
+ *
+ *  · Halki ya safed tasveer (lawn, jewellery, crockery) par safed likhai doob jati hai.
+ *    Card us masle ko poori tarah khatam kar deta hai.
+ *  · Kapre ka asli rang saaf nazar aata hai, kyunke us par kaali dhund nahi parti.
+ */
+:root {
+  --accent: #111827;
+  --badge-text: #ffffff;
+}
+
+/*
+ * Badge safed, likhai gehri — card ke jaisa.
+ *
+ * Accent yahan taqreeban kala hai (card ki likhai us se banti hai). Wohi rang badge par
+ * lagaya jaye to gehri tasveer par badge ghayab ho jata hai — aur upar wala kona aksar
+ * gehra hi hota hai.
+ */
+.badge {
+  background: #ffffff;
+  color: #111827;
+  box-shadow: 0 calc(6px * var(--scale)) calc(24px * var(--scale)) rgba(0, 0, 0, 0.25);
+}
+
+/* Dhund sirf itni ke badge upar parha ja sake — tasveer ka rang mara na jaye */
+.scrim {
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.22) 0%,
+    rgba(0, 0, 0, 0) 26%,
+    rgba(0, 0, 0, 0) 60%,
+    rgba(0, 0, 0, 0.22) 100%
+  );
+}
+
+.bottom {
+  background: #ffffff;
+  color: #111827;
+  border-radius: calc(36px * var(--scale));
+  padding: calc(44px * var(--scale));
+  gap: calc(18px * var(--scale));
+  box-shadow: 0 calc(18px * var(--scale)) calc(56px * var(--scale)) rgba(0, 0, 0, 0.3);
+}
+
+/* Card par saaya bekar hai — safed par kali parchhai ganda lagti hai */
+.title {
+  text-shadow: none;
+}
+
+/*
+ * Qeemat ka apna dabba nahi — card khud hi alag nazar aa raha hai. Do dabbe ek doosre
+ * ke andar (card + qeemat ka box) bhare hue lagte hain.
+ */
+.price {
+  background: transparent;
+  color: #111827;
+  padding: 0;
+  font-size: calc(86px * var(--scale));
+  line-height: 1.4;
+}
+
+.seller {
+  border-top-color: rgba(17, 24, 39, 0.14);
+}
+
+.cta {
+  opacity: 0.55;
+}

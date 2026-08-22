@@ -50,7 +50,7 @@ export interface ObjectStorage {
 
 // ---------------------------------------------------------------- rendering
 
-import type { PackFormatKey } from '@oyebazar/shared'
+import type { PackFormatKey, PackOptions } from '@oyebazar/shared'
 
 export interface RenderStatusPackJob {
   readonly statusPackId: string
@@ -67,6 +67,11 @@ export interface RenderStatusPackJob {
   readonly priceUsed: number
   /** Naap — purane job (queue mein pehle se pare hue) ke liye story maan liya jata hai. */
   readonly format?: PackFormatKey
+  /**
+   * Zaban aur overlay ke faislay. Purane job par ye nahi hoti — un sab par default
+   * (Urdu, teenon cheezein dikhti hui) maan liya jata hai, jo unka purana bartao hai.
+   */
+  readonly options?: PackOptions
 }
 
 export interface RenderQueue {

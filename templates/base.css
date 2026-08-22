@@ -24,6 +24,28 @@
   font-display: block;
 }
 
+/*
+ * 🔴 Angrezi ke liye Inter — aur ye bhi INLINE, Nastaliq ki tarah.
+ *
+ * Pehle sirf qeemat aur number angrezi mein the aur wo 'Segoe UI' par chhor diye gaye
+ * the — yani Windows par kuch, Fly ke Linux container par kuch aur. Ek do numbers par
+ * ye farq nazar nahi aata tha. Ab poora pack angrezi mein ban sakta hai, aur us soorat
+ * mein "jo local par dekha wohi bana" ka usool tootta hai.
+ */
+@font-face {
+  font-family: 'Inter';
+  src: url('fonts/inter-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('fonts/inter-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-display: block;
+}
+
 :root {
   --canvas-w: 1080px;
   --canvas-h: 1920px;
@@ -136,7 +158,7 @@ body {
   border-radius: calc(28px * var(--scale));
   /* qeemat hamesha LTR — "Rs 3,000" Urdu ke beech ulta na ho */
   direction: ltr;
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
 .seller {
@@ -156,7 +178,7 @@ body {
 
 .seller-phone {
   direction: ltr;
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   font-size: calc(46px * var(--scale));
   font-weight: 700;
   letter-spacing: 1px;
@@ -198,4 +220,69 @@ body {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/*
+ * ---------------------------------------------------------------- kya kya chhupa hai
+ *
+ * Reseller khud tay karti hai ke tasveer par naam, number aur qeemat chhapen ya nahi.
+ *
+ * `display: none` — `visibility: hidden` nahi. Chhupi hui cheez ki jagah bhi jani
+ * chahiye, warna neeche wali patti bilkul waise hi neeche khisak jati hai jaise us par
+ * kuch likha ho, aur pack ke neeche ek be-maqsad khali khitta reh jata hai.
+ *
+ * 🔴 Har template khud ba khud simat jata hai (flex `gap` khali khaane shumar nahi
+ * karta), is liye `minimal` ka safed card ya `frame` ka haashiya alag se theek nahi
+ * karna parta.
+ */
+.hide-name .seller-name,
+.hide-phone .seller-phone,
+.hide-price .price-row,
+.hide-seller .seller {
+  display: none;
+}
+
+/*
+ * ---------------------------------------------------------------- angrezi pack
+ *
+ * Har cheez ka rukh badalta hai (RTL → LTR), aur line-height bhi.
+ *
+ * 🔴 line-height sab se ahem hai: 2.1 Nastaliq ki majboori hai (us se kam par haroof
+ * ek doosre par charh jate hain). Latin haroof ko itni jagah nahi chahiye — 2.1 par
+ * angrezi title itna bikhar jata hai ke do line ka title teen line le leta hai aur
+ * qeemat ko canvas se bahar dhakel deta hai.
+ */
+.stage.lang-en {
+  direction: ltr;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.stage.lang-en .badge {
+  line-height: 1.35;
+  padding: calc(14px * var(--scale)) calc(32px * var(--scale));
+  letter-spacing: calc(1px * var(--scale));
+  text-transform: uppercase;
+}
+
+.stage.lang-en .title {
+  line-height: 1.25;
+}
+
+.stage.lang-en .price {
+  line-height: 1.3;
+  padding: calc(14px * var(--scale)) calc(40px * var(--scale));
+}
+
+.stage.lang-en .seller-name {
+  line-height: 1.3;
+}
+
+.stage.lang-en .cta {
+  line-height: 1.4;
+}
+
+/* Chaure canvas par angrezi title ek line mein — Latin RTL clamp usi tarah chalta hai */
+.stage.lang-en.format-wide .badge {
+  right: auto;
+  left: 0;
 }

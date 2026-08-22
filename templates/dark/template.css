@@ -1,0 +1,46 @@
+/*
+ * گہرا — kaali patti, chamakta accent.
+ *
+ * Electronics, mobile accessories, ghari, solar — is qism ka maal chamakti hui gehri
+ * tasveer par bikta hai, aur naranji tehwar wala rang us par bhala nahi lagta.
+ *
+ * Neeche ki dhund baqi templates se ziyada gehri hai: is qism ki tasveerein aksar
+ * bhari hui (busy) hoti hain — taar, dabbe, chamak — aur us par halki dhund par
+ * likhai parhi nahi jati.
+ */
+:root {
+  --accent: #22D3EE;
+  --badge-text: #042F35;
+  --paper: #020617;
+}
+
+.scrim {
+  background: linear-gradient(
+    to bottom,
+    rgba(2, 6, 23, 0.6) 0%,
+    rgba(2, 6, 23, 0.05) 32%,
+    rgba(2, 6, 23, 0.8) 74%,
+    rgba(2, 6, 23, 0.97) 100%
+  );
+}
+
+.badge {
+  box-shadow: 0 0 calc(40px * var(--scale)) rgba(34, 211, 238, 0.55);
+}
+
+.price {
+  box-shadow: 0 0 calc(48px * var(--scale)) rgba(34, 211, 238, 0.5);
+}
+
+.seller {
+  border-top-color: rgba(34, 211, 238, 0.4);
+}
+
+/* Naam accent rang mein — kaali patti par safed naam aur safed qeemat ek jaise lagte hain */
+.seller-name {
+  color: #22d3ee;
+}
+
+.cta {
+  opacity: 0.7;
+}

@@ -17,8 +17,11 @@ import {
   PACK_PLATFORM_KEYS,
   buildCaption,
   formatPkr,
+  packOptionsFrom,
+  packOptionsKey,
   type CaptionScript,
   type PackFormatKey,
+  type PackOptions,
   type PackPlatformKey,
   type Pkr,
 } from '@oyebazar/shared'
@@ -45,6 +48,11 @@ export interface GenerateStatusPackCommand {
   readonly retailPrice?: Pkr
   /** Kaun sa naap — na batayen to WhatsApp status (9:16). */
   readonly format?: PackFormatKey
+  /**
+   * Zaban aur overlay ke faislay. Na den to reseller ke profile wale default chalte
+   * hain — Studio har naya pack wahin se shuru karta hai.
+   */
+  readonly options?: PackOptions
 }
 
 /**
@@ -101,6 +109,8 @@ export class StatusPackService {
 
     const image = this.resolveImage(product, cmd.mediaId)
 
+    const options = packOptionsFrom(cmd.options ?? reseller.packDefaults)
+
     const cacheKey = {
       resellerId: cmd.resellerId,
       productId: cmd.productId,
@@ -108,6 +118,7 @@ export class StatusPackService {
       templateKey: cmd.templateKey,
       priceUsed,
       format: cmd.format ?? 'story',
+      optionsKey: packOptionsKey(options),
     }
 
     // 1. Cache — DB ka unique constraint hi cache key hai. Wohi price + wohi template = wohi image.
@@ -123,7 +134,7 @@ export class StatusPackService {
     }
 
     // 2. Cache miss — row pehle banti hai (idempotency), phir render queue par jata hai
-    const pending = cached ?? (await this.packs.create({ ...cacheKey, imageUrl: null }))
+    const pending = cached ?? (await this.packs.create({ ...cacheKey, imageUrl: null, options }))
 
     await this.queue.enqueue({
       statusPackId: pending.id,
@@ -133,6 +144,7 @@ export class StatusPackService {
       templateKey: cmd.templateKey,
       priceUsed,
       format: cacheKey.format,
+      options,
     })
 
     await this.analytics.track({
@@ -176,12 +188,19 @@ export class StatusPackService {
 
     const image = this.resolveImage(product, cmd.mediaId)
 
+    /*
+     * Options do jagah se aa sakte hain: Studio ke switch, ya reseller ke profile ke
+     * default. Dono na hon to system ke default (Urdu, sab kuch dikhta hua).
+     */
+    const options = packOptionsFrom(cmd.options ?? reseller.packDefaults)
+
     const base = {
       resellerId: cmd.resellerId,
       productId: cmd.productId,
       mediaId: image.mediaId,
       templateKey: cmd.templateKey,
       priceUsed,
+      optionsKey: packOptionsKey(options),
     }
 
     // Ek hi query mein poori kit — chaar alag lookup network par chaar chakkar hote
@@ -193,7 +212,8 @@ export class StatusPackService {
         const cached = byFormat.get(format)
         if (cached?.imageUrl) return { format, pack: cached, status: 'READY' as const }
 
-        const pending = cached ?? (await this.packs.create({ ...base, format, imageUrl: null }))
+        const pending =
+          cached ?? (await this.packs.create({ ...base, format, imageUrl: null, options }))
         await this.queue.enqueue({
           statusPackId: pending.id,
           resellerId: cmd.resellerId,
@@ -202,6 +222,7 @@ export class StatusPackService {
           templateKey: cmd.templateKey,
           priceUsed,
           format,
+          options,
         })
         return { format, pack: pending, status: 'RENDERING' as const }
       }),
@@ -232,13 +253,32 @@ export class StatusPackService {
   /** Kit ki halat — UI polling ke liye. Naya render shuru nahi karta. */
   async getKitStatus(
     reseller: ResellerView,
-    key: { productId: string; mediaId?: string; templateKey: string; priceUsed: Pkr },
+    key: {
+      productId: string
+      mediaId?: string
+      templateKey: string
+      priceUsed: Pkr
+      /**
+       * 🔴 Polling par bhi wohi key chahiye jo banate waqt thi.
+       *
+       * Warna UI "number ke baghair" wali kit maangta hai aur polling purani (number
+       * wali) kit ki halat parhti rehti hai — jo pehle se READY hai. Nateeja: naya pack
+       * banta rehta hai aur screen par purana chipka rehta hai.
+       *
+       * Poore options ke bajaye sirf key: lookup ko isi ki zaroorat hai, aur reseller ka
+       * likha hua naam URL (aur server ke log) mein jane se bach jata hai.
+       */
+      optionsKey?: string
+    },
     script: CaptionScript = 'ur',
   ): Promise<StatusPackKitResult | null> {
     const existing = await this.packs.findKit({
       resellerId: reseller.id,
-      ...key,
+      productId: key.productId,
+      templateKey: key.templateKey,
+      priceUsed: key.priceUsed,
       mediaId: key.mediaId ?? '',
+      optionsKey: key.optionsKey ?? packOptionsKey(reseller.packDefaults),
     })
     if (existing.length === 0) return null
 
@@ -292,13 +332,17 @@ export class StatusPackService {
       templateKey: string
       priceUsed: Pkr
       format?: PackFormatKey
+      options?: PackOptions
     },
   ): Promise<StatusPackResult | null> {
     const pack = await this.packs.findByCacheKey({
       resellerId: reseller.id,
-      ...key,
+      productId: key.productId,
+      templateKey: key.templateKey,
+      priceUsed: key.priceUsed,
       mediaId: key.mediaId ?? '',
       format: key.format ?? 'story',
+      optionsKey: packOptionsKey(packOptionsFrom(key.options ?? reseller.packDefaults)),
     })
     if (!pack) return null
 

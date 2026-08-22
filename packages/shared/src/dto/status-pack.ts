@@ -1,7 +1,20 @@
 import { z } from 'zod'
 import { STATUS_PACK_TEMPLATES } from '../constants'
 
-export const TemplateKeySchema = z.enum(STATUS_PACK_TEMPLATES)
+/**
+ * Template ki key — ya to built-in ka naam (`sale`), ya reseller ka apna
+ * (`custom:<id>@<revision>`).
+ *
+ * Dono ek hi khaane mein rehte hain, is liye cache key, queue ka job aur DB ka column —
+ * kisi ko is farq ka pata nahi chalta.
+ *
+ * 🔴 Custom wali shakl sakht hai (sirf harf, hindse, `@`): ye qadar aage chal kar
+ * storage ki file ke naam mein jati hai, aur `/` ya `..` wahan raste badal sakta hai.
+ */
+export const TemplateKeySchema = z.union([
+  z.enum(STATUS_PACK_TEMPLATES),
+  z.string().regex(/^custom:[a-z0-9]{1,40}@\d{1,6}$/i, 'Template ki key theek nahi'),
+])
 
 /**
  * Status pack — hamara asal product.
@@ -48,6 +61,13 @@ export const PackKitDTO = z
     /** Kis tasveer ka kit hai — UI polling isi ko wapas bhejti hai. */
     mediaId: z.string().nullable(),
     templateKey: TemplateKeySchema,
+    /**
+     * Is kit ke faislon ka nishan — UI polling par wapas bhejta hai.
+     *
+     * Default par khali string. Reseller ka likha hua naam is mein aa sakta hai, is liye
+     * ye sirf usi ke apne response mein jata hai — kisi public surface par nahi.
+     */
+    optionsKey: z.string(),
     priceUsed: z.number().int().nonnegative(),
     assets: z.array(PackKitAssetDTO),
     /** platform → us ke kaam ke naap, tarteeb se (pehla sab se aam) */

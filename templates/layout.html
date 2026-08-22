@@ -9,7 +9,7 @@
   Naya template banana = `templates/<key>/template.css` mein CSS variables badalna. Koi deploy nahi.
   Placeholders (`{{...}}`) worker bharta hai — dekhen: apps/worker/src/render/template.ts
 -->
-<html lang="ur" dir="rtl">
+<html lang="{{lang}}" dir="{{dir}}">
   <head>
     <meta charset="utf-8" />
     <style>
@@ -30,7 +30,7 @@
     </style>
   </head>
   <body>
-    <div class="stage format-{{formatKey}}">
+    <div class="stage format-{{formatKey}} lang-{{lang}} {{hiddenClasses}}">
       <img class="photo" src="{{photoUrl}}" alt="" />
       <div class="scrim"></div>
 

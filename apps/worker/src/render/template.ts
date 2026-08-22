@@ -10,14 +10,25 @@ import { readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { PACK_FORMATS, formatPkr, type PackFormatKey, type Pkr } from '@oyebazar/shared'
+import {
+  DEFAULT_PACK_OPTIONS,
+  PACK_FORMATS,
+  formatPkr,
+  customTemplateId,
+  templateSpecToCss,
+  type PackFormatKey,
+  type PackLang,
+  type PackOptions,
+  type Pkr,
+  type TemplateSpec,
+} from '@oyebazar/shared'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 
 /** repo root se `templates/` — worker kahin se bhi chale, path wohi rahe. */
 export const TEMPLATES_DIR = resolve(HERE, '..', '..', '..', '..', 'templates')
 
-const FONT_PACKAGE_DIR = resolve(
+const URDU_FONT_DIR = resolve(
   HERE,
   '..',
   '..',
@@ -27,8 +38,13 @@ const FONT_PACKAGE_DIR = resolve(
   'files',
 )
 
+/** Angrezi pack, qeemat aur phone number — sab Inter par. */
+const LATIN_FONT_DIR = resolve(HERE, '..', '..', 'node_modules', '@fontsource', 'inter', 'files')
+
 export interface TemplateData {
   readonly titleUr: string
+  /** Angrezi pack ke liye. Khali ho to Urdu title hi chalta hai — pack banna zaroori hai. */
+  readonly titleEn?: string
   readonly categoryNameUr: string
   readonly price: Pkr
   readonly resellerName: string
@@ -46,14 +62,38 @@ const BADGE_TEXT_UR: Record<string, string> = {
   wedding: 'شادی کلیکشن',
   winter: 'سردیوں کا',
   summer: 'گرمیوں کا',
+  minimal: 'نیا',
+  bold: 'خاص ریٹ',
+  dark: 'نیا',
+  frame: 'خاص',
+}
+
+const BADGE_TEXT_EN: Record<string, string> = {
+  simple: 'New',
+  sale: 'Sale',
+  eid: 'Eid Mubarak',
+  ramadan: 'Ramadan Offer',
+  'new-arrival': 'New Arrival',
+  wedding: 'Wedding',
+  winter: 'Winter',
+  summer: 'Summer',
+  minimal: 'New',
+  bold: 'Special Rate',
+  dark: 'New',
+  frame: 'Premium',
+}
+
+const CTA_TEXT: Record<PackLang, string> = {
+  ur: 'آرڈر کے لیے میسج کریں',
+  en: 'Message to order',
 }
 
 let cachedBaseCss: string | null = null
 const cachedTemplateCss = new Map<string, string>()
 let cachedLayout: string | null = null
 
-async function fontDataUri(file: string): Promise<string> {
-  const buffer = await readFile(join(FONT_PACKAGE_DIR, file))
+async function fontDataUri(dir: string, file: string): Promise<string> {
+  const buffer = await readFile(join(dir, file))
   return `data:font/woff2;base64,${buffer.toString('base64')}`
 }
 
@@ -61,21 +101,71 @@ async function loadBaseCss(): Promise<string> {
   if (cachedBaseCss) return cachedBaseCss
 
   const css = await readFile(join(TEMPLATES_DIR, 'base.css'), 'utf8')
-  const [regular, bold] = await Promise.all([
-    fontDataUri('noto-nastaliq-urdu-arabic-400-normal.woff2'),
-    fontDataUri('noto-nastaliq-urdu-arabic-700-normal.woff2'),
+  const [urduRegular, urduBold, latinRegular, latinBold] = await Promise.all([
+    fontDataUri(URDU_FONT_DIR, 'noto-nastaliq-urdu-arabic-400-normal.woff2'),
+    fontDataUri(URDU_FONT_DIR, 'noto-nastaliq-urdu-arabic-700-normal.woff2'),
+    fontDataUri(LATIN_FONT_DIR, 'inter-latin-400-normal.woff2'),
+    fontDataUri(LATIN_FONT_DIR, 'inter-latin-700-normal.woff2'),
   ])
 
   cachedBaseCss = css
-    .replace("url('fonts/noto-nastaliq-urdu-arabic-400-normal.woff2')", `url('${regular}')`)
-    .replace("url('fonts/noto-nastaliq-urdu-arabic-700-normal.woff2')", `url('${bold}')`)
+    .replace("url('fonts/noto-nastaliq-urdu-arabic-400-normal.woff2')", `url('${urduRegular}')`)
+    .replace("url('fonts/noto-nastaliq-urdu-arabic-700-normal.woff2')", `url('${urduBold}')`)
+    .replace("url('fonts/inter-latin-400-normal.woff2')", `url('${latinRegular}')`)
+    .replace("url('fonts/inter-latin-700-normal.woff2')", `url('${latinBold}')`)
 
   return cachedBaseCss
+}
+
+/**
+ * Reseller ke apne template kahan se aate hain.
+ *
+ * Worker ko DB ka rasta yahan se milta hai (import se nahi) — `template.ts` ka `render:preview`
+ * wala rasta bina database ke chalta hai aur usay chalte rehna chahiye.
+ */
+export type CustomTemplateLoader = (id: string) => Promise<TemplateSpec | null>
+
+let customTemplateLoader: CustomTemplateLoader | null = null
+
+export function setCustomTemplateLoader(loader: CustomTemplateLoader): void {
+  customTemplateLoader = loader
+}
+
+/** `custom:<id>@<revision>` par spec, warna null (built-in template). */
+const cachedSpecs = new Map<string, TemplateSpec>()
+
+async function loadCustomSpec(templateKey: string): Promise<TemplateSpec | null> {
+  const cached = cachedSpecs.get(templateKey)
+  if (cached) return cached
+
+  const custom = customTemplateId(templateKey)
+  if (!custom) return null
+
+  // `custom:<id>@<revision>` — revision sirf cache key ke liye hai, DB lookup id se hoti hai
+  const id = custom.split('@')[0] ?? custom
+  const spec = await customTemplateLoader?.(id)
+  if (!spec) throw new Error(`Custom template "${id}" nahi mila`)
+
+  cachedSpecs.set(templateKey, spec)
+  return spec
 }
 
 async function loadTemplateCss(templateKey: string): Promise<string> {
   const cached = cachedTemplateCss.get(templateKey)
   if (cached) return cached
+
+  /*
+   * Reseller ka apna template — `custom:<id>@<revision>`.
+   *
+   * Revision key ka hissa hai, is liye cache khud ba khud theek rehta hai: template
+   * badalte hi key badal jati hai aur ye purani entry kabhi dobara nahi maangi jati.
+   */
+  const spec = await loadCustomSpec(templateKey)
+  if (spec) {
+    const css = templateSpecToCss(spec)
+    cachedTemplateCss.set(templateKey, css)
+    return css
+  }
 
   const path = join(TEMPLATES_DIR, templateKey, 'template.css')
   if (!existsSync(path)) {
@@ -164,17 +254,63 @@ export async function buildStatusPackHtml(
   templateKey: string,
   data: TemplateData,
   formatKey: PackFormatKey = 'story',
+  options: PackOptions = DEFAULT_PACK_OPTIONS,
 ): Promise<string> {
   const format = PACK_FORMATS[formatKey]
-  const [layout, baseCss, templateCss, photo] = await Promise.all([
+  const lang = options.lang
+  const [layout, baseCss, templateCss, photo, customSpec] = await Promise.all([
     loadLayout(),
     loadBaseCss(),
     loadTemplateCss(templateKey),
     photoDataUri(data.photoUrl),
+    loadCustomSpec(templateKey),
   ])
+
+  /*
+   * Angrezi title na ho to Urdu wala hi chalta hai (throw nahi karte).
+   *
+   * Purana maal `titleEn` ke baghair DB mein para hai, aur us soorat mein pack ka na
+   * banna reseller ke liye khali jagah chhorta hai — jabke Urdu title wala pack us ke
+   * kaam ka hai. Adhoora pack, na-mojood pack se behtar hai.
+   */
+  const title = lang === 'en' ? (data.titleEn?.trim() || data.titleUr) : data.titleUr
+  /*
+   * Custom template par badge ka text reseller ka apna likha hua hai — dono zabanon
+   * mein wohi. Us ke liye do khaane maangna (Urdu + angrezi) ek aur form field hai jo
+   * zyada tar log khali chhor dete hain, aur khali badge poore pack ko adhoora dikhata hai.
+   */
+  const badge = customSpec
+    ? customSpec.badgeText
+    : lang === 'en'
+      ? (BADGE_TEXT_EN[templateKey] ?? 'New')
+      : (BADGE_TEXT_UR[templateKey] ?? data.categoryNameUr)
+
+  /*
+   * Chhupane ka kaam CSS karta hai, HTML nahi.
+   *
+   * Div ko HTML se nikal dena bhi ho sakta tha, magar phir har template ko us khali
+   * jagah ka alag hisaab lagana parta (misal: `minimal` ka safed card apne aap chhota
+   * ho jata, `frame` ka haashiya waise ka waisa rehta). Class laga dene se har template
+   * apne qawaid ke mutabiq khud simat jata hai.
+   */
+  const hidden = [
+    // Custom template ka apna bahao hai — har cheez wahin jahan reseller ne rakhi
+    customSpec ? 'custom' : '',
+    options.showName ? '' : 'hide-name',
+    options.showPhone ? '' : 'hide-phone',
+    options.showPrice ? '' : 'hide-price',
+    // Dono chhup jayen to us patti ki lakeer bhi jani chahiye — warna tasveer par ek
+    // be-maqsad lakeer reh jati hai
+    options.showName || options.showPhone ? '' : 'hide-seller',
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   const replacements: Record<string, string> = {
     formatKey,
+    lang,
+    dir: lang === 'en' ? 'ltr' : 'rtl',
+    hiddenClasses: hidden,
     canvasWidth: String(format.width),
     canvasHeight: String(format.height),
     safeTop: String(format.safeTop),
@@ -183,13 +319,13 @@ export async function buildStatusPackHtml(
     baseCss,
     templateCss,
     photoUrl: photo,
-    badgeText: escapeHtml(BADGE_TEXT_UR[templateKey] ?? data.categoryNameUr),
-    titleUr: escapeHtml(data.titleUr),
+    badgeText: escapeHtml(badge),
+    titleUr: escapeHtml(title),
     // 🔴 qeemat LTR mein — "Rs 3,000" Urdu ke darmiyan ulta nahi hona chahiye
     priceText: escapeHtml(formatPkr(data.price)),
     resellerName: escapeHtml(data.resellerName),
     resellerPhone: escapeHtml(formatLocalPhone(data.resellerPhone)),
-    ctaText: 'آرڈر کے لیے میسج کریں',
+    ctaText: CTA_TEXT[lang],
   }
 
   return layout.replace(/\{\{(\w+)\}\}/g, (_match, key: string) => replacements[key] ?? '')

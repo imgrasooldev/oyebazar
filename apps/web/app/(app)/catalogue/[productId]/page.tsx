@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { LazyImage } from '@/components/lazy-image'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { STATUS_PACK_TEMPLATES, formatPkr } from '@oyebazar/shared'
+import { STATUS_PACK_TEMPLATES, customTemplateKey, formatPkr } from '@oyebazar/shared'
 import { StatusPackStudio } from '@/components/status-pack-studio'
 import { SupplierPaymentRecord } from '@/components/supplier-payment-record'
 import { ChevronIcon } from '@/components/icons'
@@ -37,11 +37,17 @@ export default async function ProductPage({
   const locale = await getLocale()
   const t = translator(locale)
 
-  const [item, paymentRecord] = await Promise.all([
+  const [item, paymentRecord, ownTemplates] = await Promise.all([
     container.catalogue.getById(reseller.id, productId).catch(() => null),
     container.payouts.paymentRecordForProduct(productId),
+    container.repositories.resellerTemplates.listForReseller(reseller.id),
   ])
   if (!item) notFound()
+
+  const customTemplates = ownTemplates.map((template) => ({
+    key: customTemplateKey(template.id, template.revision),
+    name: template.name,
+  }))
 
   const product = toResellerProductDetailDTO(item)
   const title = locale === 'ur' ? product.titleUr : product.titleEn
@@ -152,6 +158,9 @@ export default async function ProductPage({
           suggestedRetail={product.suggestedRetail}
           myRetailPrice={product.myRetailPrice}
           templates={[...STATUS_PACK_TEMPLATES]}
+          packDefaults={reseller.packDefaults}
+          customTemplates={customTemplates}
+          defaultTemplateKey={reseller.packTemplateKey}
           locale={locale}
         />
       </div>

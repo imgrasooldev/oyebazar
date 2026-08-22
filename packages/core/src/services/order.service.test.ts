@@ -6,7 +6,7 @@
  * confirmation invariant) har PR par check hote hain.
  */
 import { beforeEach, describe, expect, it } from 'vitest'
-import { pkr, type Pkr } from '@oyebazar/shared'
+import { DEFAULT_PACK_OPTIONS, pkr, type Pkr } from '@oyebazar/shared'
 import type { PayoutService } from './payout.service'
 import { OrderService } from './order.service'
 import { UnconfirmedOrderError } from '../domain/order-status'
@@ -228,6 +228,8 @@ const RESELLERS = {
       tier: 'NEW' as const,
       status: 'ACTIVE' as const,
       payoutAccount: null,
+      packDefaults: DEFAULT_PACK_OPTIONS,
+      packTemplateKey: null,
       createdAt: NOW,
     }
   },
@@ -238,6 +240,9 @@ const RESELLERS = {
     throw new Error('not used')
   },
   async touchLastActive() {},
+  async savePackDefaults() {
+    throw new Error('not used')
+  },
 }
 
 /** Magic link ka token — test mein deterministic. */

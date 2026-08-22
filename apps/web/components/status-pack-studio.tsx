@@ -1,7 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import { formatPkr, type PackKit, type PackKitAsset } from '@oyebazar/shared'
+import { formatPkr, type PackKit, type PackKitAsset, type PackOptions } from '@oyebazar/shared'
 import { CopyIcon, DownloadIcon, SparkIcon } from '@/components/icons'
 import { translator, type Locale } from '@/lib/i18n'
 
@@ -14,11 +15,58 @@ const TEMPLATE_NAMES: Record<string, Record<Locale, string>> = {
   wedding: { ur: 'شادی', rm: 'Shadi', en: 'Wedding' },
   winter: { ur: 'سردی', rm: 'Sardi', en: 'Winter' },
   summer: { ur: 'گرمی', rm: 'Garmi', en: 'Summer' },
+  minimal: { ur: 'سادہ سفید', rm: 'Safed', en: 'White card' },
+  bold: { ur: 'نمایاں', rm: 'Numaya', en: 'Bold price' },
+  dark: { ur: 'گہرا', rm: 'Gehra', en: 'Dark' },
+  frame: { ur: 'فریم', rm: 'Frame', en: 'Framed' },
 }
 
 export interface StudioImage {
   id: string
   url: string
+}
+
+/**
+ * Ek switch — bara nishana, poori qatar dabai ja sakti hai.
+ *
+ * `<input type="checkbox">` ka apna chhota murabba 44px ke usool (docs/CONVENTIONS.md)
+ * par poora nahi utarta, aur ye safha phone par chalta hai.
+ */
+function PackToggle({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string
+  checked: boolean
+  onChange: (value: boolean) => void
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="link-tap flex w-full items-center justify-between gap-3 py-1 text-right"
+    >
+      <span className="text-[0.9rem] font-semibold">{label}</span>
+      <span
+        className={
+          checked
+            ? 'flex h-7 w-12 shrink-0 items-center rounded-pill bg-accent-700 px-1'
+            : 'flex h-7 w-12 shrink-0 items-center rounded-pill bg-line px-1'
+        }
+      >
+        <span
+          className={
+            checked
+              ? 'h-5 w-5 translate-x-0 rounded-pill bg-white transition-transform'
+              : 'h-5 w-5 translate-x-5 rounded-pill bg-white transition-transform'
+          }
+        />
+      </span>
+    </button>
+  )
 }
 
 interface Props {
@@ -34,6 +82,12 @@ interface Props {
   suggestedRetail: number
   myRetailPrice: number | null
   templates: string[]
+  /** Reseller ke apne default — Studio har naye pack par yahin se shuru hota hai. */
+  packDefaults: PackOptions
+  /** Us ke apne banaye hue template — built-in walon ke saath usi patti mein. */
+  customTemplates: { key: string; name: string }[]
+  /** Kaun sa default hai (built-in ya apna) — patti yahin se shuru hoti hai. */
+  defaultTemplateKey: string | null
   locale: Locale
 }
 
@@ -61,11 +115,20 @@ export function StatusPackStudio({
   suggestedRetail,
   myRetailPrice,
   templates,
+  packDefaults,
+  customTemplates,
+  defaultTemplateKey,
   locale,
 }: Props) {
   const t = translator(locale)
   const [price, setPrice] = useState<number>(myRetailPrice ?? suggestedRetail)
-  const [templateKey, setTemplateKey] = useState<string>(templates[0] ?? 'simple')
+  /*
+   * Shuruaat reseller ke apne default se — jis ne apna template banaya aur usay default
+   * bana diya, usay har maal par dobara wo chunna nahi parta. Wohi is button ka matlab hai.
+   */
+  const [templateKey, setTemplateKey] = useState<string>(
+    defaultTemplateKey ?? templates[0] ?? 'simple',
+  )
   // Pehli tasveer wohi hai jo wholesaler ne sarwarq banayi — sab se aam soorat mein
   // reseller ko kuch chunna hi nahi parta
   const [mediaId, setMediaId] = useState<string | undefined>(images[0]?.id)
@@ -74,6 +137,23 @@ export function StatusPackStudio({
   const [platform, setPlatform] = useState<string>('whatsapp')
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  /*
+   * Pack ke apne faislay. Shuruaat reseller ke profile wale default se — jis ne ek dafa
+   * "ہمیشہ کے لیے" daba diya, usay har pack par dobara wohi switch nahi dabane parte.
+   */
+  const [options, setOptions] = useState<PackOptions>(packDefaults)
+  const [savingDefaults, setSavingDefaults] = useState(false)
+  const [defaultsSaved, setDefaultsSaved] = useState(false)
+
+  function setOption<K extends keyof PackOptions>(field: K, value: PackOptions[K]) {
+    setOptions((current) => ({ ...current, [field]: value }))
+    // Faisla badal gaya to purani kit ab is se mel nahi khati — usay hata dete hain,
+    // warna screen par purani tasveer aur naye switch ek saath dikhte hain
+    setKit(null)
+    setPhase('idle')
+    setDefaultsSaved(false)
+  }
 
   const maxPrice = useMemo(
     () => Math.max(suggestedRetail * 2, bajiPrice * 2),
@@ -101,6 +181,7 @@ export function StatusPackStudio({
         ...(mediaId ? { mediaId } : {}),
         templateKey,
         retailPrice: price,
+        options,
       }),
     })
 
@@ -117,12 +198,16 @@ export function StatusPackStudio({
     // Jo tayyar hai wo foran dikha dete hain — poore kit ka intezar nahi karwate
     setPhase('ready')
     if (data.assets.some((asset) => asset.status === 'RENDERING')) {
-      await pollUntilReady(data.priceUsed, mediaId)
+      await pollUntilReady(data.priceUsed, mediaId, data.optionsKey)
     }
   }
 
   /** Har 800ms — jaise jaise naap tayyar hote hain, wahin ke wahin nazar aane lagte hain. */
-  async function pollUntilReady(priceUsed: number, forMediaId: string | undefined) {
+  async function pollUntilReady(
+    priceUsed: number,
+    forMediaId: string | undefined,
+    optionsKey: string,
+  ) {
     const deadline = Date.now() + 45_000
 
     while (Date.now() < deadline) {
@@ -136,6 +221,9 @@ export function StatusPackStudio({
         ...(forMediaId ? { mediaId: forMediaId } : {}),
         templateKey,
         priceUsed: String(priceUsed),
+        // 🔴 mediaId ki tarah ye bhi lazmi hai — warna hum purani (mukhtalif faislon
+        // wali) kit poll karte rehte hain jo pehle se READY hai
+        optionsKey,
       })
       const res = await fetch(`/api/v1/status-pack/kit?${params.toString()}`)
       if (!res.ok) continue
@@ -149,6 +237,20 @@ export function StatusPackStudio({
 
     // Jhoothi progress bar nahi — saaf batayen ke der ho gayi
     setError(t('packSlow'))
+  }
+
+  /** "ہمیشہ کے لیے" — mojooda faislay profile par, taake har agla pack inhi se shuru ho. */
+  async function saveAsDefault() {
+    setSavingDefaults(true)
+    const res = await fetch('/api/v1/status-pack/defaults', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(options),
+    }).catch(() => null)
+
+    setSavingDefaults(false)
+    if (res?.ok) setDefaultsSaved(true)
+    else setError(t('somethingWrong'))
   }
 
   async function markDownloaded(packId: string) {
@@ -260,8 +362,25 @@ export function StatusPackStudio({
 
         {/* 2 — ٹیمپلیٹ */}
         <div>
-          <p className="text-sm font-semibold">{t('design')}</p>
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="text-sm font-semibold">{t('design')}</p>
+            {/* Apna banane ka rasta yahin se — wahan jahan reseller design ke baare mein soch rahi hai */}
+            <Link href="/templates" className="text-[0.78rem] text-accent-700 underline">
+              {t('makeYourOwn')}
+            </Link>
+          </div>
           <div className="rail mt-3">
+            {/* Apne banaye hue pehle — mehnat un par lagi hai, wo peechay nahi hone chahiyen */}
+            {customTemplates.map((template) => (
+              <button
+                key={template.key}
+                type="button"
+                onClick={() => setTemplateKey(template.key)}
+                className={template.key === templateKey ? 'chip chip-active' : 'chip'}
+              >
+                ★ {template.name}
+              </button>
+            ))}
             {templates.map((key) => (
               <button
                 key={key}
@@ -275,7 +394,84 @@ export function StatusPackStudio({
           </div>
         </div>
 
-        {/* 3 — بنائیں */}
+        {/*
+          3 — tasveer par kya kya jaye
+
+          Teen switch aur do khaane. Ye patti template ke NEECHE hai, banane ke button se
+          UPAR — kyunke ye faislay tasveer ka hissa hain, us ke baad ki cheez nahi.
+        */}
+        <div>
+          <p className="text-sm font-semibold">{t('whatShowsOnPack')}</p>
+
+          {/* Zaban — pack ki, reseller ke UI ki nahi */}
+          <div className="rail mt-3">
+            {(['ur', 'en'] as const).map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setOption('lang', key)}
+                className={options.lang === key ? 'chip chip-active' : 'chip'}
+              >
+                {key === 'ur' ? t('packUrdu') : t('packEnglish')}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-3 space-y-3 rounded-2xl bg-paper-sunken p-4">
+            <PackToggle
+              label={t('showPriceOnPack')}
+              checked={options.showPrice}
+              onChange={(value) => setOption('showPrice', value)}
+            />
+
+            <PackToggle
+              label={t('showNameOnPack')}
+              checked={options.showName}
+              onChange={(value) => setOption('showName', value)}
+            />
+
+            {options.showName && (
+              <input
+                type="text"
+                maxLength={30}
+                value={options.name ?? ''}
+                onChange={(e) => setOption('name', e.target.value)}
+                placeholder={t('nameOnPackHint')}
+                className="field w-full text-[0.95rem]"
+              />
+            )}
+
+            <PackToggle
+              label={t('showPhoneOnPack')}
+              checked={options.showPhone}
+              onChange={(value) => setOption('showPhone', value)}
+            />
+
+            {options.showPhone && (
+              <input
+                type="tel"
+                inputMode="numeric"
+                dir="ltr"
+                maxLength={20}
+                value={options.phone ?? ''}
+                onChange={(e) => setOption('phone', e.target.value)}
+                placeholder={t('phoneOnPackHint')}
+                className="field w-full text-[0.95rem]"
+              />
+            )}
+
+            <button
+              type="button"
+              onClick={saveAsDefault}
+              disabled={savingDefaults}
+              className="w-full text-[0.82rem] text-ink-soft underline"
+            >
+              {defaultsSaved ? t('savedAsDefault') : t('saveAsDefault')}
+            </button>
+          </div>
+        </div>
+
+        {/* 4 — بنائیں */}
         <button
           type="button"
           onClick={generate}
