@@ -23,11 +23,30 @@ export default async function TemplatesPage() {
   const templates = await container.repositories.resellerTemplates.listForReseller(reseller.id)
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <h1 className="text-2xl font-bold">{t('myTemplates')}</h1>
-      <p className="mt-1 text-sm text-ink-soft">{t('templatesIntro')}</p>
+    /*
+     * 🔴 Ye safha jaan boojh kar POORI screen ka hai — editor ke andar scroll hota hai,
+     * safhe ka nahi.
+     *
+     * Baqi safhe lambe ho kar neeche barhte hain, aur wo un ke liye theek hai. Magar
+     * yahan canvas aur us ke qabu SAATH dikhne chahiyen: reseller ek cheez khiskati hai
+     * aur foran dekhti hai ke kaisi lagi. Agar un ke darmiyan scroll aa jaye to har
+     * chhoti tabdeeli ek safar ban jati hai.
+     *
+     * `100dvh` (`100vh` nahi): phone par address bar chhupti aur khulti hai, aur `vh`
+     * us ko shumar nahi karta — us soorat mein neeche wali patti screen se bahar
+     * chali jati hai.
+     *
+     * 11.5rem = app ka sticky header + main ki padding + is safhe ka apna unwan. Ye
+     * ginti haath se naapi gayi hai: is se kam par safha khud scroll karne lagta hai,
+     * aur us se poora maqsad hi khatam ho jata hai.
+     */
+    <div className="mx-auto flex max-w-7xl flex-col lg:h-[calc(100dvh-11.5rem)]">
+      <div className="mb-3 shrink-0">
+        <h1 className="text-xl font-bold">{t('myTemplates')}</h1>
+        <p className="mt-0.5 line-clamp-1 text-[0.8rem] text-ink-soft">{t('templatesIntro')}</p>
+      </div>
 
-      <div className="mt-6">
+      <div className="lg:min-h-0 lg:flex-1">
         <TemplateEditor
           templates={templates.map((template) => ({
             id: template.id,

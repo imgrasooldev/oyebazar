@@ -265,6 +265,7 @@ const DICTIONARY = {
   undo: { ur: 'واپس', en: 'Undo', rm: 'Wapas' },
   redo: { ur: 'دوبارہ', en: 'Redo', rm: 'Dobara' },
   zoomIn: { ur: 'بڑا کریں', en: 'Zoom in', rm: 'Bara karen' },
+  zoomFit: { ur: 'جتنی جگہ ہے اتنا', en: 'Fit to screen', rm: 'Jitni jagah hai utna' },
   zoomOut: { ur: 'چھوٹا کریں', en: 'Zoom out', rm: 'Chhota karen' },
   smaller: { ur: 'چھوٹا', en: 'Smaller', rm: 'Chhota' },
   bigger: { ur: 'بڑا', en: 'Bigger', rm: 'Bara' },

@@ -227,10 +227,49 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
   const [selected, setSelected] = useState<Sel | null>(null)
   const [drag, setDrag] = useState<{ key: Sel; mode: 'move' | 'size' } | null>(null)
   const [guides, setGuides] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] })
-  const [zoom, setZoom] = useState(0.28)
+  /**
+   * Zoom — reseller ka apna, aur wo jo jagah ke mutabiq khud nikalta hai.
+   *
+   * 🔴 Pehle zoom ek tay-shuda 0.28 tha. 1920 ka canvas us par 538px ka ho jata tha,
+   * aur laptop ki screen par wo top bar aur neeche wale toolbar ke saath mil kar safhe
+   * se bahar nikal jata — reseller ko canvas aur us ke qabu ke darmiyan baar baar upar
+   * neeche jana parta tha. Canva mein poora editor ek hi screen par baithta hai; wohi
+   * yahan bhi hona chahiye.
+   *
+   * `fitZoom` jagah naap kar khud banta hai; `zoomMultiplier` reseller ka apna hai
+   * (+/− buttons). Asal zoom dono ka hasil hai — yani screen chhoti ho ya bari, "fit"
+   * hamesha fit rehta hai aur reseller ka chunao us ke upar lagta hai.
+   */
+  const [fitZoom, setFitZoom] = useState(0.28)
+  const [zoomMultiplier, setZoomMultiplier] = useState(1)
   const [uploading, setUploading] = useState(false)
 
   const stageRef = useRef<HTMLDivElement>(null)
+  const canvasAreaRef = useRef<HTMLDivElement>(null)
+
+  /**
+   * Canvas apni jagah ke mutabiq — har dafa, har naap par.
+   *
+   * `ResizeObserver` is liye ke jagah sirf window resize se nahi badalti: side panel
+   * ka scrollbar aana, phone ka ghoomna, keyboard khulna — sab us dabbe ka naap badalte
+   * hain aur window ka `resize` un mein se kai par chalta hi nahi.
+   */
+  useEffect(() => {
+    const area = canvasAreaRef.current
+    if (!area) return
+
+    const measure = () => {
+      const { width, height } = area.getBoundingClientRect()
+      if (width === 0 || height === 0) return
+      // 0.94 — kinare par thori saans, warna canvas dabbe se bilkul chipak jata hai
+      setFitZoom(Math.min(width / CANVAS_W, height / CANVAS_H) * 0.94)
+    }
+
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(area)
+    return () => observer.disconnect()
+  }, [])
 
   /** Har tabdeeli undo ke dhair par — magar drag ke dauran nahi, warna 60 qadam ban jate. */
   const commit = useCallback((next: TemplateSpec) => {
@@ -649,12 +688,21 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
 
   const isDefault = Boolean(selectedId && defaultKey?.startsWith(`custom:${selectedId}@`))
   const css = useMemo(() => templateSpecToCss(spec), [spec])
-  const stageWidth = CANVAS_W * zoom
+  const zoom = fitZoom * zoomMultiplier
 
   return (
-    <div className="space-y-4">
+    /*
+     * Poora editor EK screen par — safha khud scroll nahi hota.
+     *
+     * `h-full` + har column ka apna `overflow-y-auto`. Iske baghair canvas aur us ke
+     * qabu ek hi lambi qatar ban jate the aur reseller ko un ke darmiyan baar baar upar
+     * neeche jana parta tha. `min-h-0` har us jagah lazmi hai jahan flex ka bachcha
+     * scroll karta hai — us ke baghair flex bachche ko simatne hi nahi deta aur scroll
+     * kahin nahi hota, bas safha lamba hota jata hai.
+     */
+    <div className="flex flex-col gap-3 lg:h-full">
       {/* ---------------- Ooper ki patti: undo/redo, zoom, naam, save ---------------- */}
-      <div className="card flex flex-wrap items-center gap-3 p-3">
+      <div className="card flex shrink-0 flex-wrap items-center gap-3 p-3">
         <div className="flex items-center gap-1">
           <IconButton label={t('undo')} onClick={undo} disabled={past.length === 0}>
             ↶
@@ -664,14 +712,30 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
           </IconButton>
         </div>
 
+        {/*
+          Zoom "fit" ke upar lagta hai, us ki jagah nahi leta. 100% ka matlab "jitna
+          jagah mein aata hai" — reseller ke liye yehi qudrati hai, 28% nahi.
+        */}
         <div className="flex items-center gap-1">
-          <IconButton label={t('zoomOut')} onClick={() => setZoom((z) => Math.max(0.16, z - 0.06))}>
+          <IconButton
+            label={t('zoomOut')}
+            onClick={() => setZoomMultiplier((z) => Math.max(0.5, z - 0.2))}
+          >
             −
           </IconButton>
-          <span dir="ltr" className="numeric w-12 text-center text-[0.75rem] text-ink-faint">
-            {Math.round(zoom * 100)}%
-          </span>
-          <IconButton label={t('zoomIn')} onClick={() => setZoom((z) => Math.min(0.6, z + 0.06))}>
+          <button
+            type="button"
+            onClick={() => setZoomMultiplier(1)}
+            title={t('zoomFit')}
+            className="link-tap numeric w-12 text-center text-[0.75rem] text-ink-faint"
+            dir="ltr"
+          >
+            {Math.round(zoomMultiplier * 100)}%
+          </button>
+          <IconButton
+            label={t('zoomIn')}
+            onClick={() => setZoomMultiplier((z) => Math.min(3, z + 0.2))}
+          >
             +
           </IconButton>
         </div>
@@ -697,11 +761,20 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
         </button>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="shrink-0 text-sm text-red-600">{error}</p>}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,260px)_minmax(0,1fr)_minmax(0,300px)]">
+      {/*
+        🔴 `min-h-0` aur `flex-1` sirf `lg:` par.
+
+        Bari screen par ye teen column hain aur har ek apne andar scroll karta hai —
+        wahan `min-h-0` lazmi hai, warna flex bachche ko simatne hi nahi deta aur scroll
+        kahin nahi hota. Phone par ye ek qatar hai aur safha khud scroll karta hai; wahan
+        wohi `min-h-0` har column ko sifar oonchai par gira deta tha — isi wajah se
+        canvas ka naap 0×0 nikla tha.
+      */}
+      <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,240px)_minmax(0,1fr)_minmax(0,290px)]">
         {/* ---------------- Mere template ---------------- */}
-        <div className="card p-4 lg:order-1">
+        <div className="card order-2 p-4 lg:order-1 lg:min-h-0 lg:overflow-y-auto">
           <h2 className="text-[0.95rem] font-bold">{t('startFrom')}</h2>
           <p className="mt-1 text-[0.75rem] text-ink-faint">{t('startFromHint')}</p>
           <div className="rail mt-2">
@@ -756,7 +829,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
         </div>
 
         {/* ---------------- Canvas ---------------- */}
-        <div className="lg:order-2">
+        <div className="order-1 flex flex-col lg:order-2 lg:min-h-0">
           <style dangerouslySetInnerHTML={{ __html: PREVIEW_BASE_CSS }} />
           {/*
             🔴 Wohi function jo worker chalata hai. Do jagah alag hisaab likhne ka matlab
@@ -764,10 +837,40 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
           */}
           <style dangerouslySetInnerHTML={{ __html: css }} />
 
-          <div className="flex justify-center">
+          {/*
+            Canvas ka apna maidan — `fitZoom` isi dabbe ko naap kar banta hai.
+
+            🔴 Do bilkul alag shaklen, aur dono zaroori hain:
+
+            · **Bari screen (lg+):** jitni jagah bachti hai utni le leta hai, aur safha
+              khud scroll hota hi nahi. Canvas aur us ke qabu saath dikhte hain.
+            · **Phone:** teen column ek qatar mein aa jate hain, is liye safha lamba
+              hona hi hai — us se larne ka faida nahi. Us soorat mein canvas UPAR
+              CHIPKA rehta hai (sticky): reseller neeche qabu tak scroll karti hai magar
+              apna design nazar se ojhal nahi hota. Yehi wo cheez thi jo tang kar rahi
+              thi — tabdeeli karo, phir wapas upar ja kar dekho.
+
+            `top-[4.25rem]`: app ka apna header bhi sticky hai, canvas us ke neeche.
+          */}
+          <div
+            ref={canvasAreaRef}
+            /*
+             * 🔴 `max-h` sirf ek ehtiyat hai, aur wo zaroori hai.
+             *
+             * Aam soorat mein `flex-1` aur `ResizeObserver` mil kar canvas ko theek naap
+             * dete hain. Magar agar kisi wajah se naap 0 aa jaye (dabba abhi bana hi
+             * nahi, tab chhupa hua hai, print), to `fitZoom` apni shuruaati qadar par
+             * atak jata hai — aur us soorat mein canvas apne dabbe se bara ho kar POORE
+             * SAFHE ko lamba kar deta, yani wohi masla jo hum theek kar rahe hain.
+             *
+             * `max-h` us surat mein bhi dabbe ko bandha rakhta hai; canvas bara hua to
+             * scroll ISI dabbe ke andar hoga (`overflow-auto`), safhe ka nahi.
+             */
+            className="sticky top-[4.25rem] z-10 flex h-[42vh] items-center justify-center overflow-auto rounded-card bg-paper py-2 lg:static lg:h-auto lg:max-h-[calc(100dvh-20rem)] lg:min-h-0 lg:flex-1 lg:py-0"
+          >
             <div
-              className="relative overflow-hidden rounded-card shadow-soft"
-              style={{ width: stageWidth, height: CANVAS_H * zoom }}
+              className="relative shrink-0 overflow-hidden rounded-card shadow-soft"
+              style={{ width: CANVAS_W * zoom, height: CANVAS_H * zoom }}
               // Khali jagah par tap = kuch bhi chuna hua nahi
               onPointerDown={() => setSelected(null)}
             >
@@ -883,13 +986,13 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
             </div>
           </div>
 
-          <p className="mt-3 text-center text-[0.78rem] text-ink-faint">
+          <p className="mt-2 shrink-0 text-center text-[0.75rem] text-ink-faint">
             {selected ? t('selectedHint') : t('dragHint')}
           </p>
 
           {/* Chuni hui cheez ka apna toolbar — canvas ke bilkul neeche, nazar wahin hai */}
           {selected && (
-            <div className="card mt-3 space-y-3 p-3">
+            <div className="card mt-2 max-h-[38vh] shrink-0 space-y-3 overflow-y-auto p-3">
               <div className="flex flex-wrap items-center gap-3">
                 <span className="text-[0.85rem] font-bold">{partLabel(selected)}</span>
 
@@ -1040,7 +1143,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
         </div>
 
         {/* ---------------- Poore template ke faislay ---------------- */}
-        <div className="space-y-4 lg:order-3">
+        <div className="order-3 space-y-4 lg:order-3 lg:min-h-0 lg:overflow-y-auto">
           <div className="card space-y-4 p-4">
             <label className="block">
               <span className="text-[0.8rem] font-semibold">{t('badgeText')}</span>
