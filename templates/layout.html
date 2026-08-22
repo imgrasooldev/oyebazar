@@ -46,7 +46,16 @@
 
           <div class="seller">
             <div class="seller-name">{{resellerName}}</div>
-            <div class="seller-phone">{{resellerPhone}}</div>
+            <!--
+              Number andar wale span mein — aur ye zaroori hai.
+
+              🔴 `direction: ltr` us DABBE par nahi lag sakta jise jagah di jati hai:
+              CSS ka `inset-inline-start` element ki APNI direction se naapta hai, is
+              liye RTL pack mein wo dabba daayen ke bajaye baayen kinare se naapne
+              lagta — aur reseller ke apne template mein number ghaseetne par ulti
+              taraf jata tha. Qeemat pehle se isi tarah bani hui hai (.price-row > .price).
+            -->
+            <div class="seller-phone"><span class="ltr">{{resellerPhone}}</span></div>
           </div>
 
           <div class="cta">{{ctaText}}</div>

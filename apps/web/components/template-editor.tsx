@@ -46,8 +46,24 @@ const CANVAS_H = 1920
 
 /** `templates/base.css` ka wo hissa jo preview ke liye chahiye — dekhen upar wala note. */
 const PREVIEW_BASE_CSS = `
+/*
+ * 🔴 \`position: absolute\` aur \`left/top\` YAHIN likhe hain, Tailwind ki class se nahi.
+ *
+ * Pehle class \`absolute left-0 top-0\` thi. Us ki specificity (0,1,0) is rule ke
+ * barabar hai, aur ye <style> Tailwind ki sheet ke BAAD aata hai — is liye jeet is ka
+ * \`position: relative\` gaya. Us soorat mein 1080px chaura stage 302px ke dabbe mein
+ * flow karta tha, aur RTL hone ki wajah se poora canvas dabbe se BAHAR baayen taraf
+ * nikal jata tha (left: -648). Dabbe par \`overflow: hidden\` hai, yani reseller ko
+ * khali canvas dikhta tha — koi error nahi, bas kuch nazar nahi aata tha.
+ *
+ * \`left: 0\` (RTL mein bhi) is liye ke transform-origin bhi 0 0 hai: dono ek hi kone
+ * se naapte hain, to scale ke baad stage theek dabbe mein baith jata hai.
+ */
 .tpl-stage {
-  position: relative;
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
   width: ${CANVAS_W}px;
   height: ${CANVAS_H}px;
   overflow: hidden;
@@ -79,10 +95,8 @@ const PREVIEW_BASE_CSS = `
   display: inline-block; white-space: nowrap;
 }
 .tpl-stage .seller-name { font-weight: 700; line-height: 2.1; color: #fff; white-space: nowrap; }
-.tpl-stage .seller-phone {
-  direction: ltr; font-family: system-ui, sans-serif;
-  font-weight: 700; color: #fff; white-space: nowrap;
-}
+.tpl-stage .seller-phone { font-weight: 700; color: #fff; white-space: nowrap; }
+.tpl-stage .seller-phone .ltr { direction: ltr; font-family: system-ui, sans-serif; display: inline-block; }
 .tpl-stage .cta { line-height: 2.1; color: #fff; opacity: .92; white-space: nowrap; }
 `
 
@@ -558,7 +572,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                 onPointerMove={onPointerMove}
                 onPointerUp={endDrag}
                 onPointerCancel={endDrag}
-                className="tpl-stage stage custom absolute left-0 top-0 origin-top-left"
+                className="tpl-stage stage custom"
                 style={{ transform: `scale(${zoom})` }}
               >
                 {/*
@@ -614,7 +628,8 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                         cssClass="seller-phone"
                         {...{ spec, selected, drag, startDrag, setSelected }}
                       >
-                        0300 1234567
+                        {/* LTR andar wale span par — dekhen templates/layout.html ka note */}
+                        <span className="ltr">0300 1234567</span>
                       </Handle>
                     </div>
 
@@ -842,27 +857,52 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
             />
           </div>
 
-          {/* Chhupi hui cheezein wapas lane ka rasta — warna wo hamesha ke liye gum ho jatin */}
+          {/*
+            Cheezon ki list — Canva ke "layers" wala kaam.
+
+            Do masle ek saath hal karti hai:
+             · Do cheezein ek doosre par charh jayen to tasveer par neeche wali ko tap
+               karna namumkin ho jata hai. Yahan se wo hamesha chuni ja sakti hai.
+             · Chhupi hui cheez tasveer par hai hi nahi — us par tap kar hi nahi sakte,
+               yani bina is list ke wo hamesha ke liye gum ho jati.
+          */}
           <div className="card p-4">
             <p className="text-[0.8rem] font-semibold">{t('elementsTitle')}</p>
-            <div className="rail mt-2">
-              {ELEMENTS.map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => {
-                    patchElement(key, { show: !spec.elements[key].show })
-                    setSelected(key)
-                  }}
-                  className={
-                    spec.elements[key].show
-                      ? 'chip chip-active !py-1 text-[0.75rem]'
-                      : 'chip !py-1 text-[0.75rem]'
-                  }
-                >
-                  {t(ELEMENT_LABEL[key])}
-                </button>
-              ))}
+            <div className="mt-2 space-y-1">
+              {ELEMENTS.map((key) => {
+                const element = spec.elements[key]
+                return (
+                  <div
+                    key={key}
+                    className={
+                      selected === key
+                        ? 'flex items-center gap-2 rounded-xl bg-accent-50 px-2 py-1.5'
+                        : 'flex items-center gap-2 rounded-xl px-2 py-1.5'
+                    }
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setSelected(key)}
+                      className={
+                        element.show
+                          ? 'link-tap flex-1 text-right text-[0.82rem] font-semibold'
+                          : 'link-tap flex-1 text-right text-[0.82rem] font-semibold text-ink-faint line-through'
+                      }
+                    >
+                      {t(ELEMENT_LABEL[key])}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => patchElement(key, { show: !element.show })}
+                      aria-label={element.show ? t('hideThis') : t('showThis')}
+                      title={element.show ? t('hideThis') : t('showThis')}
+                      className="link-tap flex h-8 w-8 items-center justify-center rounded-lg text-[0.9rem] text-ink-soft"
+                    >
+                      {element.show ? '👁' : '🚫'}
+                    </button>
+                  </div>
+                )
+              })}
             </div>
           </div>
         </div>

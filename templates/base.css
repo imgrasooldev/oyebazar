@@ -197,12 +197,24 @@ body {
   line-height: 2.1;
 }
 
+/*
+ * Number ka dabba — is par direction NAHI lagti.
+ *
+ * 🔴 Dekhen layout.html ka note: `inset-inline-start` element ki apni direction se
+ * naapta hai, is liye jis dabbe ko jagah di jati hai wo stage ke rukh par hi rehna
+ * chahiye. LTR sirf andar wale span par hai, jahan us ka asli kaam hai — number ulta
+ * na ho.
+ */
 .seller-phone {
-  direction: ltr;
-  font-family: 'Inter', system-ui, sans-serif;
   font-size: calc(46px * var(--scale));
   font-weight: 700;
   letter-spacing: 1px;
+}
+
+.seller-phone .ltr {
+  direction: ltr;
+  font-family: 'Inter', system-ui, sans-serif;
+  display: inline-block;
 }
 
 .cta {

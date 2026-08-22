@@ -108,8 +108,15 @@ export const DEFAULT_TEMPLATE_SPEC: TemplateSpec = {
     badge: { show: true, x: 4, y: 9, size: 44 },
     title: { show: true, x: 4, y: 62, size: 64 },
     price: { show: true, x: 4, y: 75, size: 78 },
+    /*
+     * Naam aur number ek hi qatar mein, magar 62% ke faasle par.
+     *
+     * Pehle number 55% par tha aur lamba naam ("صادیہ بی بی" jaisa) us par charh jata
+     * tha — dono ka box overlap karta aur editor mein number par tap karne se naam
+     * chun liya jata tha. 62% se pehle naam ko poori jagah mil jati hai.
+     */
     name: { show: true, x: 4, y: 85, size: 46 },
-    phone: { show: true, x: 55, y: 85, size: 46 },
+    phone: { show: true, x: 62, y: 85, size: 46 },
     cta: { show: true, x: 4, y: 91, size: 40 },
   },
 }

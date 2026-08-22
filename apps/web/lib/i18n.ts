@@ -272,6 +272,7 @@ const DICTIONARY = {
   alignCentre: { ur: 'درمیان میں', en: 'Centre', rm: 'Darmiyan mein' },
   alignEnd: { ur: 'دوسرے کنارے پر', en: 'Other edge', rm: 'Doosre kinare par' },
   hideThis: { ur: 'اسے چھپا دیں', en: 'Hide this', rm: 'Isay chhupa den' },
+  showThis: { ur: 'اسے دکھائیں', en: 'Show this', rm: 'Isay dikhayen' },
   selectedHint: {
     ur: 'کھینچ کر رکھیں · کونے سے ناپ بدلیں · تیر سے سرکائیں',
     en: 'Drag to move · corner to resize · arrow keys to nudge',
