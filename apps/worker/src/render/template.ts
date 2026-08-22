@@ -342,6 +342,18 @@ export async function buildStatusPackHtml(
     resellerName: escapeHtml(data.resellerName),
     resellerPhone: escapeHtml(formatLocalPhone(data.resellerPhone)),
     ctaText: CTA_TEXT[lang],
+    /*
+     * 🔴 Reseller ka apna likha hua text — `escapeHtml` se guzarna LAZMI hai.
+     *
+     * Ye wahid jagah hai jahan is HTML mein user ka likha hua kuch aata hai. Ye HTML
+     * Playwright ke page par chalta hai; bina escape ke `<img onerror=...>` jaisi ek
+     * line hamare render browser mein script chala sakti hai.
+     */
+    layers: (customSpec?.layers ?? [])
+      .map((layer, index) =>
+        layer.show ? `<div class="layer-${index}">${escapeHtml(layer.text)}</div>` : '',
+      )
+      .join(''),
   }
 
   return layout.replace(/\{\{(\w+)\}\}/g, (_match, key: string) => replacements[key] ?? '')

@@ -63,6 +63,40 @@ const ElementSpec = z.object({
   pill: z.boolean().optional(),
 })
 
+/**
+ * Reseller ka apna likha hua text.
+ *
+ * 🔴 Ye chhe tay-shuda cheezon se ALAG darja hai, aur farq samajhna zaroori hai:
+ *
+ * Tay-shuda cheezein ASLI DATA se bandhi hui hain — qeemat wohi jo slider par tay hui,
+ * naam wohi jo profile mein hai. Rate badle to tasveer khud badal jati hai.
+ *
+ * Ye layer bandha hua NAHI hai. Ye us kaam ke liye hai jo data se aata hi nahi: "مفت
+ * ڈیلیوری", "صرف 3 دن", "آخری 2 پیس". Wohi cheezein jo reseller aksar tasveer par haath
+ * se likhwati thi.
+ *
+ * Us ki qeemat ye hai ke agar koi yahan RATE likh de to wo rate kabhi khud nahi
+ * badlega — reseller slider par rate badalti rahegi aur tasveer par purana likha rahega.
+ * Is liye UI us ke saath saaf tanbeeh dikhata hai. Rokna mumkin nahi (text to text hai),
+ * magar chhupana nahi chahiye.
+ */
+const TextLayerSchema = z.object({
+  kind: z.literal('text'),
+  /** Jo likha jayega. Hadd chhoti hai: lamba text template ka neecha hissa tor deta hai. */
+  text: z.string().trim().min(1).max(40),
+  show: z.boolean(),
+  x: z.number().min(0).max(100),
+  y: z.number().min(0).max(100),
+  size: z.number().int().min(16).max(160),
+  colour: HexColour.optional(),
+  opacity: z.number().int().min(10).max(100).optional(),
+  rotate: z.number().int().min(-20).max(20).optional(),
+  font: z.enum(['nastaliq', 'naskh', 'latin']).optional(),
+  pill: z.boolean().optional(),
+})
+
+export type TextLayer = z.infer<typeof TextLayerSchema>
+
 export const TemplateSpecSchema = z.object({
   /** Spec ki shakal badle to purane packs ka cache apne aap alag ho jaye. */
   version: z.literal(1),
@@ -84,6 +118,18 @@ export const TemplateSpecSchema = z.object({
     phone: ElementSpec,
     cta: ElementSpec,
   }),
+  /**
+   * Reseller ke apne likhe hue text.
+   *
+   * 🔴 IKHTIYARI — aur `ElementSpec` ke ikhtiyari khaanon wali wajah se: purane template
+   * ke spec mein ye khana hai hi nahi, aur us par `templateSpecToCss` ek lafz bhi
+   * ziyada nahi likhta. Un ka CSS haraf ba haraf wohi rehta hai, aur cache mein pare
+   * hue laakhon packs apni jagah qaim rehte hain.
+   *
+   * Tarteeb hi layer ki tarteeb hai: baad wala upar chhapta hai (z-index list se banta
+   * hai) — jaise har design tool mein hota hai.
+   */
+  layers: z.array(TextLayerSchema).max(6).optional(),
 })
 
 export type TemplateSpec = z.infer<typeof TemplateSpecSchema>
@@ -397,7 +443,51 @@ export function templateSpecToCss(spec: TemplateSpec): string {
 ${spec.frame > 0 ? frameCss(spec.frame) : ''}
 ${cardCss(spec)}
 ${positioned}
+${layersCss(spec)}
 `.trim()
+}
+
+/**
+ * Reseller ke apne text ka CSS.
+ *
+ * 🔴 Layer na hon to KHALI string — purane template ka CSS haraf ba haraf wohi rehta hai.
+ *
+ * `z-index` list ki tarteeb se: baad wala upar. Tay-shuda cheezein 1 par hain, layers 2
+ * se shuru — yani reseller ka apna text hamesha unke upar chhapta hai. Ye jaan boojh kar
+ * hai: wo usay AKHIR mein lagati hai, aur akhir mein lagayi hui cheez upar honi chahiye.
+ */
+function layersCss(spec: TemplateSpec): string {
+  if (!spec.layers?.length) return ''
+
+  return spec.layers
+    .map((layer, index) => {
+      const selector = `.stage.custom .layer-${index}`
+      if (!layer.show) return `${selector} { display: none; }`
+
+      const extra = [
+        layer.colour ? `color: ${layer.colour};` : 'color: #ffffff;',
+        layer.opacity !== undefined ? `opacity: ${layer.opacity / 100};` : '',
+        layer.rotate ? `transform: rotate(${layer.rotate}deg);` : '',
+        `font-family: ${FONT_STACK[layer.font ?? 'nastaliq']};`,
+        layer.pill ? PILL_ON : '',
+      ]
+        .filter(Boolean)
+        .join('\n  ')
+
+      return `${selector} {
+  position: absolute;
+  inset-inline-start: ${layer.x}%;
+  top: ${layer.y}%;
+  font-size: calc(${layer.size}px * var(--scale));
+  font-weight: 700;
+  line-height: ${layer.font === 'nastaliq' || !layer.font ? '2.1' : '1.3'};
+  white-space: nowrap;
+  z-index: ${2 + index};
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+  ${extra}
+}`
+    })
+    .join('\n')
 }
 
 /**

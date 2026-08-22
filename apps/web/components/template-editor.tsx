@@ -113,6 +113,46 @@ const ELEMENT_LABEL: Record<ElementKey, 'elBadge' | 'elTitle' | 'elPrice' | 'elN
 }
 
 /**
+ * Kya chuna hua hai — ya to tay-shuda cheez, ya reseller ka apna text (`L0`, `L1`…).
+ *
+ * Dono ka mizaj (jagah, naap, rang, likhai) bilkul ek jaisa hai, sirf un ka data alag
+ * jagah rehta hai. Is liye poora editor `Sel` par chalta hai aur sirf do function
+ * (`part` / `patchPart`) jaante hain ke qadar kahan se aani hai.
+ */
+type Sel = ElementKey | `L${number}`
+
+/** Jo khaane dono mein mushtarak hain — toolbar, drag aur keyboard sirf inhen chhute hain. */
+type PartStyle = {
+  show: boolean
+  x: number
+  y: number
+  size: number
+  colour?: string | undefined
+  opacity?: number | undefined
+  rotate?: number | undefined
+  font?: 'nastaliq' | 'naskh' | 'latin' | undefined
+  pill?: boolean | undefined
+}
+
+function layerIndex(sel: Sel): number | null {
+  return sel.startsWith('L') ? Number(sel.slice(1)) : null
+}
+
+function part(spec: TemplateSpec, sel: Sel): PartStyle | null {
+  const index = layerIndex(sel)
+  if (index === null) return spec.elements[sel as ElementKey]
+  return spec.layers?.[index] ?? null
+}
+
+/** Canvas par mojood har cheez — snap aur list dono isi se bante hain. */
+function allParts(spec: TemplateSpec): { sel: Sel; style: PartStyle }[] {
+  return [
+    ...ELEMENTS.map((key) => ({ sel: key as Sel, style: spec.elements[key] })),
+    ...(spec.layers ?? []).map((layer, index) => ({ sel: `L${index}` as Sel, style: layer })),
+  ]
+}
+
+/**
  * Snap ki hadd — feesad mein.
  *
  * 1.5% taqreeban 16px hai 1080 ke canvas par. Is se kam par snap mehsoos hi nahi hota;
@@ -161,8 +201,8 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
   const [past, setPast] = useState<TemplateSpec[]>([])
   const [future, setFuture] = useState<TemplateSpec[]>([])
 
-  const [selected, setSelected] = useState<ElementKey | null>(null)
-  const [drag, setDrag] = useState<{ key: ElementKey; mode: 'move' | 'size' } | null>(null)
+  const [selected, setSelected] = useState<Sel | null>(null)
+  const [drag, setDrag] = useState<{ key: Sel; mode: 'move' | 'size' } | null>(null)
   const [guides, setGuides] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] })
   const [zoom, setZoom] = useState(0.28)
 
@@ -188,11 +228,27 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
     commit({ ...spec, ...next })
   }
 
-  function patchElement(key: ElementKey, next: Partial<TemplateSpec['elements'][ElementKey]>) {
-    commit({
-      ...spec,
-      elements: { ...spec.elements, [key]: { ...spec.elements[key], ...next } },
-    })
+  /** Tay-shuda cheez ya apna text — dono ek hi raste se badalte hain. */
+  function patchPart(sel: Sel, next: Partial<PartStyle>, toHistory = true) {
+    const apply = (current: TemplateSpec): TemplateSpec => {
+      const index = layerIndex(sel)
+      if (index === null) {
+        const key = sel as ElementKey
+        return {
+          ...current,
+          elements: { ...current.elements, [key]: { ...current.elements[key], ...next } },
+        }
+      }
+
+      const layers = [...(current.layers ?? [])]
+      const layer = layers[index]
+      if (!layer) return current
+      layers[index] = { ...layer, ...next }
+      return { ...current, layers }
+    }
+
+    if (toHistory) commit(apply(spec))
+    else live(apply)
   }
 
   function undo() {
@@ -224,7 +280,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
    * tezi se chale to wo element se bahar nikal jati hai, aur capture ke baghair drag
    * wahin chhoot jata hai. Phone par ye har dafa hota hai.
    */
-  function startDrag(key: ElementKey, mode: 'move' | 'size', event: React.PointerEvent) {
+  function startDrag(key: Sel, mode: 'move' | 'size', event: React.PointerEvent) {
     event.preventDefault()
     event.stopPropagation()
     setSelected(key)
@@ -252,21 +308,17 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
     if (!drag || !stageRef.current) return
     const box = stageRef.current.getBoundingClientRect()
 
+    const dragged = part(spec, drag.key)
+    if (!dragged) return
+
     if (drag.mode === 'size') {
       /*
        * Naap: kone se jitna door khinchen. Ooper/andar ki taraf chhota, bahar bara.
        * Naapne ka paimana canvas ki chaurai hai taake zoom se farq na pare.
        */
       const dy = ((event.clientY - box.top) / box.height) * 100
-      const element = spec.elements[drag.key]
-      const size = Math.round(16 + Math.max(0, dy - element.y) * 6)
-      live((current) => ({
-        ...current,
-        elements: {
-          ...current.elements,
-          [drag.key]: { ...element, size: Math.min(160, Math.max(16, size)) },
-        },
-      }))
+      const size = Math.round(16 + Math.max(0, dy - dragged.y) * 6)
+      patchPart(drag.key, { size: Math.min(160, Math.max(16, size)) }, false)
       return
     }
 
@@ -274,10 +326,13 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
     let x = ((box.right - event.clientX) / box.width) * 100
     let y = ((event.clientY - box.top) / box.height) * 100
 
-    // Snap — safhe ke apne guides, aur baqi cheezon ke kinare
-    const others = ELEMENTS.filter((key) => key !== drag.key && spec.elements[key].show)
-    const xCandidates = [...EDGE_GUIDES, ...others.map((key) => spec.elements[key].x)]
-    const yCandidates = [...others.map((key) => spec.elements[key].y)]
+    /*
+     * Snap — safhe ke apne guides, aur baqi HAR cheez ke kinare (tay-shuda aur apna
+     * likha hua text, dono). Reseller ke liye ye ek hi cheez hai: "us ke barabar lag jaye".
+     */
+    const others = allParts(spec).filter((entry) => entry.sel !== drag.key && entry.style.show)
+    const xCandidates = [...EDGE_GUIDES, ...others.map((entry) => entry.style.x)]
+    const yCandidates = others.map((entry) => entry.style.y)
 
     const hitX = nearest(x, xCandidates)
     const hitY = nearest(y, yCandidates)
@@ -285,17 +340,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
     if (hitY !== null) y = hitY
     setGuides({ x: hitX !== null ? [hitX] : [], y: hitY !== null ? [hitY] : [] })
 
-    live((current) => ({
-      ...current,
-      elements: {
-        ...current.elements,
-        [drag.key]: {
-          ...current.elements[drag.key],
-          x: clamp(Math.round(x)),
-          y: clamp(Math.round(y)),
-        },
-      },
-    }))
+    patchPart(drag.key, { x: clamp(Math.round(x)), y: clamp(Math.round(y)) }, false)
   }
 
   function endDrag() {
@@ -325,17 +370,18 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
       }
 
       if (!selected) return
-      const element = spec.elements[selected]
+      const element = part(spec, selected)
+      if (!element) return
       const step = event.shiftKey ? 5 : 1
 
       const moves: Record<string, () => void> = {
         // RTL: daayen teer nazar ke lehaz se daayen jata hai, yani x kam hota hai
-        ArrowRight: () => patchElement(selected, { x: clamp(element.x - step) }),
-        ArrowLeft: () => patchElement(selected, { x: clamp(element.x + step) }),
-        ArrowUp: () => patchElement(selected, { y: clamp(element.y - step) }),
-        ArrowDown: () => patchElement(selected, { y: clamp(element.y + step) }),
-        Delete: () => patchElement(selected, { show: false }),
-        Backspace: () => patchElement(selected, { show: false }),
+        ArrowRight: () => patchPart(selected, { x: clamp(element.x - step) }),
+        ArrowLeft: () => patchPart(selected, { x: clamp(element.x + step) }),
+        ArrowUp: () => patchPart(selected, { y: clamp(element.y - step) }),
+        ArrowDown: () => patchPart(selected, { y: clamp(element.y + step) }),
+        Delete: () => patchPart(selected, { show: false }),
+        Backspace: () => patchPart(selected, { show: false }),
         Escape: () => setSelected(null),
       }
 
@@ -441,6 +487,65 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
 
     setTemplates((current) => current.filter((item) => item.id !== id))
     if (selectedId === id) startNew()
+  }
+
+  /** Cheez ka naam — apne likhe hue text ka naam wohi text hai, jo list mein sab se saaf hai. */
+  function partLabel(sel: Sel): string {
+    const index = layerIndex(sel)
+    if (index === null) return t(ELEMENT_LABEL[sel as ElementKey])
+    return spec.layers?.[index]?.text || t('myText')
+  }
+
+  // ---------------------------------------------------------------- apne text
+
+  function addLayer() {
+    const layers = [...(spec.layers ?? [])]
+    if (layers.length >= 6) return
+
+    layers.push({
+      kind: 'text',
+      text: t('myTextSample'),
+      show: true,
+      // Beech mein — wahan jahan nazar pehle jati hai, aur jahan se ghaseetna aasan hai
+      x: 20,
+      y: 30,
+      size: 48,
+    })
+    commit({ ...spec, layers })
+    setSelected(`L${layers.length - 1}`)
+  }
+
+  function setLayerText(index: number, text: string) {
+    const layers = [...(spec.layers ?? [])]
+    const layer = layers[index]
+    if (!layer) return
+    layers[index] = { ...layer, text }
+    commit({ ...spec, layers })
+  }
+
+  function removeLayer(index: number) {
+    const layers = (spec.layers ?? []).filter((_, i) => i !== index)
+    commit({ ...spec, layers })
+    setSelected(null)
+  }
+
+  /**
+   * Aage/peechay — list ki tarteeb hi layer ki tarteeb hai (baad wala upar chhapta hai).
+   *
+   * Chunao bhi saath khiskata hai, warna banda "upar karo" dabata hai aur achanak koi
+   * doosri cheez chuni hui nikalti hai.
+   */
+  function moveLayer(index: number, by: -1 | 1) {
+    const layers = [...(spec.layers ?? [])]
+    const to = index + by
+    const a = layers[index]
+    const b = layers[to]
+    if (!a || !b) return
+
+    layers[index] = b
+    layers[to] = a
+    commit({ ...spec, layers })
+    setSelected(`L${to}`)
   }
 
   const isDefault = Boolean(selectedId && defaultKey?.startsWith(`custom:${selectedId}@`))
@@ -641,6 +746,18 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                       {t('sampleCta')}
                     </Handle>
                   </div>
+
+                  {/* Reseller ka apna likha hua text — baad wala upar (z-index list se) */}
+                  {(spec.layers ?? []).map((layer, index) => (
+                    <Handle
+                      key={index}
+                      k={`L${index}`}
+                      cssClass={`layer-${index}`}
+                      {...{ spec, selected, drag, startDrag, setSelected }}
+                    >
+                      {layer.text}
+                    </Handle>
+                  ))}
                 </div>
               </div>
 
@@ -670,27 +787,27 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
           {selected && (
             <div className="card mt-3 space-y-3 p-3">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-[0.85rem] font-bold">{t(ELEMENT_LABEL[selected])}</span>
+                <span className="text-[0.85rem] font-bold">{partLabel(selected)}</span>
 
                 <div className="flex items-center gap-1">
                   <IconButton
                     label={t('smaller')}
                     onClick={() =>
-                      patchElement(selected, {
-                        size: Math.max(16, spec.elements[selected].size - 4),
+                      patchPart(selected, {
+                        size: Math.max(16, (part(spec, selected)?.size ?? 40) - 4),
                       })
                     }
                   >
                     A−
                   </IconButton>
                   <span dir="ltr" className="numeric w-8 text-center text-[0.75rem] text-ink-faint">
-                    {spec.elements[selected].size}
+                    {(part(spec, selected)?.size ?? 40)}
                   </span>
                   <IconButton
                     label={t('bigger')}
                     onClick={() =>
-                      patchElement(selected, {
-                        size: Math.min(160, spec.elements[selected].size + 4),
+                      patchPart(selected, {
+                        size: Math.min(160, (part(spec, selected)?.size ?? 40) + 4),
                       })
                     }
                   >
@@ -704,7 +821,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                     <IconButton
                       key={x}
                       label={x === 4 ? t('alignStart') : x === 50 ? t('alignCentre') : t('alignEnd')}
-                      onClick={() => patchElement(selected, { x })}
+                      onClick={() => patchPart(selected, { x })}
                     >
                       {x === 4 ? '▤' : x === 50 ? '▥' : '▦'}
                     </IconButton>
@@ -715,7 +832,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                 <IconButton
                   label={t('pillToggle')}
                   onClick={() =>
-                    patchElement(selected, { pill: !isPillOn(spec, selected) })
+                    patchPart(selected, { pill: !isPillOn(spec, selected) })
                   }
                 >
                   {isPillOn(spec, selected) ? '▬' : '▭'}
@@ -723,12 +840,23 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
 
                 <button
                   type="button"
-                  onClick={() => patchElement(selected, { show: false })}
+                  onClick={() => patchPart(selected, { show: false })}
                   className="ms-auto text-[0.78rem] text-ink-soft underline"
                 >
                   {t('hideThis')}
                 </button>
               </div>
+
+              {/* Apna text — likhne ka khana wahin jahan wo chuna hua hai */}
+              {layerIndex(selected) !== null && (
+                <input
+                  value={spec.layers?.[layerIndex(selected)!]?.text ?? ''}
+                  onChange={(e) => setLayerText(layerIndex(selected)!, e.target.value)}
+                  maxLength={40}
+                  placeholder={t('myTextSample')}
+                  className="field w-full text-[0.95rem]"
+                />
+              )}
 
               <div className="flex flex-wrap items-end gap-4 border-t border-line pt-3">
                 {/* Likhai ka mizaj — Urdu design mein sab se bara farq yehi daalta hai */}
@@ -739,9 +867,9 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                       <button
                         key={font}
                         type="button"
-                        onClick={() => patchElement(selected, { font })}
+                        onClick={() => patchPart(selected, { font })}
                         className={
-                          (spec.elements[selected].font ?? 'nastaliq') === font
+                          (part(spec, selected)?.font ?? 'nastaliq') === font
                             ? 'chip chip-active !py-1 text-[0.72rem]'
                             : 'chip !py-1 text-[0.72rem]'
                         }
@@ -759,28 +887,28 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                 <div className="w-28">
                   <ColourField
                     label={t('textColour')}
-                    value={spec.elements[selected].colour ?? '#ffffff'}
-                    onChange={(colour) => patchElement(selected, { colour })}
+                    value={part(spec, selected)?.colour ?? '#ffffff'}
+                    onChange={(colour) => patchPart(selected, { colour })}
                   />
                 </div>
 
                 <div className="w-32">
                   <SliderField
                     label={t('opacityLabel')}
-                    value={spec.elements[selected].opacity ?? 100}
+                    value={part(spec, selected)?.opacity ?? 100}
                     min={10}
                     max={100}
-                    onChange={(opacity) => patchElement(selected, { opacity })}
+                    onChange={(opacity) => patchPart(selected, { opacity })}
                   />
                 </div>
 
                 <div className="w-32">
                   <SliderField
                     label={t('rotateLabel')}
-                    value={spec.elements[selected].rotate ?? 0}
+                    value={part(spec, selected)?.rotate ?? 0}
                     min={-20}
                     max={20}
-                    onChange={(rotate) => patchElement(selected, { rotate })}
+                    onChange={(rotate) => patchPart(selected, { rotate })}
                   />
                 </div>
               </div>
@@ -869,41 +997,98 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
           <div className="card p-4">
             <p className="text-[0.8rem] font-semibold">{t('elementsTitle')}</p>
             <div className="mt-2 space-y-1">
-              {ELEMENTS.map((key) => {
-                const element = spec.elements[key]
+              {allParts(spec).map(({ sel, style }) => {
+                const index = layerIndex(sel)
                 return (
                   <div
-                    key={key}
+                    key={sel}
                     className={
-                      selected === key
-                        ? 'flex items-center gap-2 rounded-xl bg-accent-50 px-2 py-1.5'
-                        : 'flex items-center gap-2 rounded-xl px-2 py-1.5'
+                      selected === sel
+                        ? 'flex items-center gap-1 rounded-xl bg-accent-50 px-2 py-1.5'
+                        : 'flex items-center gap-1 rounded-xl px-2 py-1.5'
                     }
                   >
                     <button
                       type="button"
-                      onClick={() => setSelected(key)}
+                      onClick={() => setSelected(sel)}
                       className={
-                        element.show
-                          ? 'link-tap flex-1 text-right text-[0.82rem] font-semibold'
-                          : 'link-tap flex-1 text-right text-[0.82rem] font-semibold text-ink-faint line-through'
+                        style.show
+                          ? 'link-tap min-w-0 flex-1 truncate text-right text-[0.82rem] font-semibold'
+                          : 'link-tap min-w-0 flex-1 truncate text-right text-[0.82rem] font-semibold text-ink-faint line-through'
                       }
                     >
-                      {t(ELEMENT_LABEL[key])}
+                      {index !== null && <span className="text-accent-700">✎ </span>}
+                      {partLabel(sel)}
                     </button>
+
+                    {/* Aage/peechay sirf apne text par — tay-shuda cheezon ki tarteeb tay hai */}
+                    {index !== null && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => moveLayer(index, 1)}
+                          disabled={index === (spec.layers?.length ?? 0) - 1}
+                          aria-label={t('bringForward')}
+                          title={t('bringForward')}
+                          className="link-tap flex h-7 w-5 items-center justify-center text-[0.75rem] text-ink-soft disabled:opacity-30"
+                        >
+                          ▲
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveLayer(index, -1)}
+                          disabled={index === 0}
+                          aria-label={t('sendBackward')}
+                          title={t('sendBackward')}
+                          className="link-tap flex h-7 w-5 items-center justify-center text-[0.75rem] text-ink-soft disabled:opacity-30"
+                        >
+                          ▼
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeLayer(index)}
+                          aria-label={t('deleteTemplate')}
+                          title={t('deleteTemplate')}
+                          className="link-tap flex h-7 w-5 items-center justify-center text-[0.75rem] text-ink-soft"
+                        >
+                          ✕
+                        </button>
+                      </>
+                    )}
+
                     <button
                       type="button"
-                      onClick={() => patchElement(key, { show: !element.show })}
-                      aria-label={element.show ? t('hideThis') : t('showThis')}
-                      title={element.show ? t('hideThis') : t('showThis')}
-                      className="link-tap flex h-8 w-8 items-center justify-center rounded-lg text-[0.9rem] text-ink-soft"
+                      onClick={() => patchPart(sel, { show: !style.show })}
+                      aria-label={style.show ? t('hideThis') : t('showThis')}
+                      title={style.show ? t('hideThis') : t('showThis')}
+                      className="link-tap flex h-7 w-7 items-center justify-center rounded-lg text-[0.85rem] text-ink-soft"
                     >
-                      {element.show ? '👁' : '🚫'}
+                      {style.show ? '👁' : '🚫'}
                     </button>
                   </div>
                 )
               })}
             </div>
+
+            <button
+              type="button"
+              onClick={addLayer}
+              disabled={(spec.layers?.length ?? 0) >= 6}
+              className="btn-secondary mt-3 w-full !py-1.5 text-[0.8rem]"
+            >
+              + {t('addText')}
+            </button>
+
+            {/*
+              🔴 Tanbeeh chhupani nahi chahiye.
+
+              Apna text kisi data se bandha hua nahi. Koi yahan RATE likh de to wo rate
+              kabhi khud nahi badlega — reseller slider par rate badalti rahegi aur
+              tasveer par purana likha rahega, aur us ka customer usi par order karega.
+            */}
+            <p className="mt-2 text-[0.72rem] leading-relaxed text-ink-faint">
+              {t('layerWarning')}
+            </p>
           </div>
         </div>
       </div>
@@ -920,8 +1105,9 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
  * qeemat par dabba base.css se PEHLE hi laga hota hai, baqi par nahi. Ye farq yahan ek
  * jagah likha hai — warna toolbar ka switch un do par ulta chalta.
  */
-function isPillOn(spec: TemplateSpec, key: ElementKey): boolean {
-  return spec.elements[key].pill ?? (key === 'badge' || key === 'price')
+function isPillOn(spec: TemplateSpec, key: Sel): boolean {
+  // Apne likhe hue text par dabba default OFF hai — wo aksar saada line hoti hai
+  return part(spec, key)?.pill ?? (key === 'badge' || key === 'price')
 }
 
 /** 0–96 ke darmiyan — 100 par cheez kinare se bahar nikal jati hai. */
@@ -969,16 +1155,17 @@ function Handle({
   setSelected,
   children,
 }: {
-  k: ElementKey
+  k: Sel
   cssClass: string
   spec: TemplateSpec
-  selected: ElementKey | null
-  drag: { key: ElementKey; mode: 'move' | 'size' } | null
-  startDrag: (key: ElementKey, mode: 'move' | 'size', event: React.PointerEvent) => void
-  setSelected: (key: ElementKey) => void
+  selected: Sel | null
+  drag: { key: Sel; mode: 'move' | 'size' } | null
+  startDrag: (key: Sel, mode: 'move' | 'size', event: React.PointerEvent) => void
+  setSelected: (key: Sel) => void
   children: React.ReactNode
 }) {
-  if (!spec.elements[k].show) return null
+  const style = part(spec, k)
+  if (!style?.show) return null
 
   const isSelected = selected === k
   const isDragging = drag?.key === k

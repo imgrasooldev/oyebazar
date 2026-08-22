@@ -273,6 +273,16 @@ const DICTIONARY = {
   alignEnd: { ur: 'دوسرے کنارے پر', en: 'Other edge', rm: 'Doosre kinare par' },
   hideThis: { ur: 'اسے چھپا دیں', en: 'Hide this', rm: 'Isay chhupa den' },
   showThis: { ur: 'اسے دکھائیں', en: 'Show this', rm: 'Isay dikhayen' },
+  addText: { ur: 'اپنا متن', en: 'Your own text', rm: 'Apna matn' },
+  myText: { ur: 'میرا متن', en: 'My text', rm: 'Mera matn' },
+  myTextSample: { ur: 'مفت ڈیلیوری', en: 'Free delivery', rm: 'Muft delivery' },
+  bringForward: { ur: 'آگے لائیں', en: 'Bring forward', rm: 'Aage layen' },
+  sendBackward: { ur: 'پیچھے کریں', en: 'Send backward', rm: 'Peechay karen' },
+  layerWarning: {
+    ur: '⚠ اپنا متن کسی چیز سے بندھا ہوا نہیں۔ یہاں ریٹ نہ لکھیں — سلائیڈر پر ریٹ بدلنے سے یہ خود نہیں بدلے گا، اور تصویر پر پرانا ریٹ چھپتا رہے گا۔',
+    en: '⚠ Your own text is not linked to anything. Do not write a price here — changing the price on the slider will not update it, and the image will keep showing the old price.',
+    rm: '⚠ Apna matn kisi cheez se bandha hua nahi. Yahan rate na likhen — slider par rate badalne se ye khud nahi badlega, aur tasveer par purana rate chhapta rahega.',
+  },
   selectedHint: {
     ur: 'کھینچ کر رکھیں · کونے سے ناپ بدلیں · تیر سے سرکائیں',
     en: 'Drag to move · corner to resize · arrow keys to nudge',
