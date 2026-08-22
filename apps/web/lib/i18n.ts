@@ -155,6 +155,16 @@ const DICTIONARY = {
    * kaam hai hi nahi.
    */
   seeMyRate: { ur: 'اپنا ریٹ دیکھیں', en: 'See your rate', rm: 'Apna rate dekhen' },
+  bazaarPriceNote: {
+    ur: 'بازار پر ریٹ نہیں لکھا جاتا۔ لاگ اِن کے بعد آپ کو اپنا ریٹ اور منافع دونوں نظر آتے ہیں۔',
+    rm: 'Bazaar par rate nahi likha jata. Login ke baad aap ko apna rate aur munafa dono nazar aate hain.',
+    en: 'Rates are never shown on the Bazaar. After login you see your cost and your profit.',
+  },
+  moreFromShop: {
+    ur: 'اسی دکان کا اور مال',
+    rm: 'Isi dukan ka aur maal',
+    en: 'More from this shop',
+  },
   pasteMessage: {
     ur: 'گاہک کا واٹس ایپ میسج یہاں پیسٹ کریں',
     rm: 'Grahak ka WhatsApp message yahan paste karen',

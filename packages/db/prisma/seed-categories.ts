@@ -17,6 +17,7 @@
  */
 import { PrismaClient } from '@prisma/client'
 import { CATALOGUE } from './seed-data'
+import { categoryPhoto } from './photos'
 
 const prisma = new PrismaClient()
 
@@ -34,6 +35,9 @@ async function main(): Promise<void> {
           slug: category.slug,
           nameUr: category.nameUr,
           nameEn: category.nameEn,
+          // Tasveer ke baghair category ka khana khali dabba lagta hai — aur khali
+          // dabbon wali patti par koi ungli nahi rukti
+          imageUrl: categoryPhoto(category.slug),
           sortOrder: index,
         },
       }))
@@ -60,6 +64,8 @@ async function main(): Promise<void> {
           slug: child.slug,
           nameUr: child.nameUr,
           nameEn: child.nameEn,
+          // Sub-category ki tasveer apni bari category se — maal wohi hai
+          imageUrl: categoryPhoto(category.slug, 900, 600),
           sortOrder: childIndex,
           parentId: parent.id,
         },
@@ -73,7 +79,37 @@ async function main(): Promise<void> {
     }
   }
 
-  console.log(`categories: ${made} nayi, ${skipped} pehle se mojood`)
+  /*
+   * Pehle se bani hui categories par tasveer bharna.
+   *
+   * Pehla version imageUrl daalta hi nahi tha, aur live par sab khane khali the. Sirf
+   * un par lagti hai jin par abhi koi tasveer nahi — ops ne apni lagai ho to us par
+   * haath nahi parta.
+   */
+  let filled = 0
+  for (const category of CATALOGUE) {
+    const parent = await prisma.category.findUnique({ where: { slug: category.slug } })
+    if (parent && !parent.imageUrl) {
+      await prisma.category.update({
+        where: { id: parent.id },
+        data: { imageUrl: categoryPhoto(category.slug) },
+      })
+      filled += 1
+    }
+
+    for (const child of category.children) {
+      const node = await prisma.category.findUnique({ where: { slug: child.slug } })
+      if (node && !node.imageUrl) {
+        await prisma.category.update({
+          where: { id: node.id },
+          data: { imageUrl: categoryPhoto(category.slug, 900, 600) },
+        })
+        filled += 1
+      }
+    }
+  }
+
+  console.log(`categories: ${made} nayi, ${skipped} pehle se mojood, ${filled} par tasveer lagi`)
   await prisma.$disconnect()
 }
 

@@ -299,7 +299,7 @@ export default async function HomePage() {
               {activity.map((item) => (
                 <li key={item.slug}>
                   <Link
-                    href={`/bazaar/${item.supplierSlug}`}
+                    href={`/bazaar/item/${item.slug}`}
                     className="flex items-center gap-3 px-5 py-3 transition hover:bg-paper-sunken"
                   >
                     <span className="min-w-0 flex-1">
@@ -326,9 +326,14 @@ export default async function HomePage() {
 
         {/* ------------------------------------------------------- popular products */}
         <section>
+          {/*
+            🔴 Pehle ye "/bazaar" par jata tha — jahan DUKANEN hain, maal nahi. Yani
+            "مقبول مال · سب دیکھیں" dabane wala dukanon ki list par pohanchta tha aur
+            samajhta tha ke site ne usay ghalat jagah bhej diya.
+          */}
           <SectionHead
             title={t('popularProducts')}
-            href="/bazaar"
+            href="/bazaar/items"
             linkLabel={t('viewAll')}
           />
 
@@ -346,8 +351,9 @@ export default async function HomePage() {
                     Logged-in reseller ko seedha us maal ke apne safhe par — wahan rate
                     hai. Baqi sab ko dukan ka safha, jahan rate kabhi nahi hota.
                   */}
+                  {/* Ab maal ka apna safha hai — card us par jata hai, dukan par nahi */}
                   <Link
-                    href={loggedIn ? `/catalogue/s/${product.slug}` : `/bazaar/${product.supplierSlug}`}
+                    href={loggedIn ? `/catalogue/s/${product.slug}` : `/bazaar/item/${product.slug}`}
                     className="block"
                   >
                     <div className="tile-media-wrap relative aspect-square bg-paper-sunken">
@@ -500,7 +506,7 @@ function SectionHead({
   linkLabel,
 }: {
   title: string
-  href: '/bazaar'
+  href: '/bazaar' | '/bazaar/items'
   linkLabel: string
 }) {
   return (
