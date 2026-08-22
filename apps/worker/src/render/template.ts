@@ -345,6 +345,8 @@ export async function buildStatusPackHtml(
           const inlined = await photoDataUri(layer.url)
           return inlined ? `<img class="layer-${index}" src="${inlined}" alt="" />` : ''
         }
+        // Shakl: khali dabba — poora rang aur naap CSS se aata hai
+        if (layer.kind === 'shape') return `<div class="layer-${index}"></div>`
         return `<div class="layer-${index}">${escapeHtml(layer.text)}</div>`
       }),
     )

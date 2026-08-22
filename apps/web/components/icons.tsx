@@ -185,6 +185,54 @@ export function SparkIcon({ className = 'h-5 w-5' }: Props) {
   )
 }
 
+/**
+ * Undo / redo.
+ *
+ * 🔴 SVG, `↶`/`↷` nahi. Wo haroof har font mein hote hi nahi — Windows par khali dabba
+ * dikhta tha, yani do sab se ahem button be-nishan reh gaye the.
+ */
+export function UndoIcon({ className = 'h-5 w-5' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M4 9h10.5a4.5 4.5 0 0 1 0 9H9"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M7.5 5.5 4 9l3.5 3.5"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function RedoIcon({ className = 'h-5 w-5' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M20 9H9.5a4.5 4.5 0 0 0 0 9H15"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M16.5 5.5 20 9l-3.5 3.5"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 /** Template — ek canvas jis par cheezein rakhi hui hain. */
 export function TemplateIcon({ className = 'h-5 w-5' }: Props) {
   return (

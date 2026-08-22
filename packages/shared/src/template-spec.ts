@@ -80,6 +80,20 @@ const ElementSpec = z.object({
  * Is liye UI us ke saath saaf tanbeeh dikhata hai. Rokna mumkin nahi (text to text hai),
  * magar chhupana nahi chahiye.
  */
+/**
+ * Ye layer maal ke naam/qeemat ke PEECHAY jaye ya oopar.
+ *
+ * 🔴 Ye khana shapes ki poori wajah hai. Sab se kaam ka istemal ye hai ke likhai ke
+ * peechay rang ki patti daal di jaye — bhari hui tasveer par safed likhai gum ho jati
+ * hai, aur patti us ka sab se seedha hal hai. Layers hamesha upar hon to wohi patti
+ * likhai ko DHAANP leti hai, yani jis kaam ke liye wo lagayi gayi thi wohi namumkin
+ * ho jata hai.
+ *
+ * Ikhtiyari, aur `undefined` ka matlab "oopar" — yani jo layers pehle se bane hue hain
+ * un ka bartao waisa ka waisa rehta hai.
+ */
+const BehindField = z.boolean().optional()
+
 const TextLayerSchema = z.object({
   kind: z.literal('text'),
   /** Jo likha jayega. Hadd chhoti hai: lamba text template ka neecha hissa tor deta hai. */
@@ -93,6 +107,7 @@ const TextLayerSchema = z.object({
   rotate: z.number().int().min(-20).max(20).optional(),
   font: z.enum(['nastaliq', 'naskh', 'latin']).optional(),
   pill: z.boolean().optional(),
+  behind: BehindField,
 })
 
 export type TextLayer = z.infer<typeof TextLayerSchema>
@@ -122,14 +137,59 @@ const ImageLayerSchema = z.object({
   rotate: z.number().int().min(-20).max(20).optional(),
   /** Gol logo ke liye — 50 par bilkul daira ban jata hai. */
   radius: z.number().int().min(0).max(50).optional(),
+  behind: BehindField,
 })
 
 export type ImageLayer = z.infer<typeof ImageLayerSchema>
 
-/** Text ya tasveer — tarteeb dono ke liye ek hi list mein. */
-const LayerSchema = z.discriminatedUnion('kind', [TextLayerSchema, ImageLayerSchema])
+/**
+ * Rang ki shakl — patti, daira, ya lakeer.
+ *
+ * Ye sab se ziyada kaam is liye aati hai ke likhai KO PARHNE LAIQ banati hai: bhari hui
+ * tasveer par safed likhai gum ho jati hai, aur us ke peechay ek rang ki patti daal
+ * dena us masle ka sab se seedha hal hai. Tasveer upload karna is ke liye bhaari kaam
+ * hai — ye sirf CSS hai, na koi file, na koi network.
+ *
+ * `height` sirf yahan hai: text apni likhai se, aur tasveer apni nisbat se oonchai
+ * banate hain, magar shakl ki oonchai us ke apne siwa kisi cheez se nahi aati.
+ */
+const ShapeLayerSchema = z.object({
+  kind: z.literal('shape'),
+  shape: z.enum(['rect', 'circle', 'line']),
+  show: z.boolean(),
+  x: z.number().min(0).max(100),
+  y: z.number().min(0).max(100),
+  /** Canvas ke feesad mein — px nahi, kyunke canvas chaar naap ka hota hai. */
+  width: z.number().min(2).max(100),
+  height: z.number().min(1).max(60),
+  colour: HexColour.optional(),
+  opacity: z.number().int().min(10).max(100).optional(),
+  rotate: z.number().int().min(-20).max(20).optional(),
+  radius: z.number().int().min(0).max(50).optional(),
+  behind: BehindField,
+})
+
+export type ShapeLayer = z.infer<typeof ShapeLayerSchema>
+
+/** Text, tasveer ya shakl — tarteeb teenon ke liye ek hi list mein. */
+const LayerSchema = z.discriminatedUnion('kind', [
+  TextLayerSchema,
+  ImageLayerSchema,
+  ShapeLayerSchema,
+])
 
 export type Layer = z.infer<typeof LayerSchema>
+
+/**
+ * Layer kis darje par baithe.
+ *
+ * Tay-shuda cheezein 5 par hain (dekhen `layersCss`). Peechay wali layers us se neeche
+ * (1–4), aage wali oopar (6+). Peechay wali list ki tarteeb ULTI chalti hai — us se
+ * "sab se pehle wali sab se neeche" ka qudrati bartao milta hai.
+ */
+function layerZ(layer: Layer, index: number): number {
+  return layer.behind ? Math.max(1, 4 - index) : 6 + index
+}
 
 /**
  * Kya ye pata hamari apni storage ka hai?
@@ -504,10 +564,50 @@ ${layersCss(spec)}
 function layersCss(spec: TemplateSpec): string {
   if (!spec.layers?.length) return ''
 
-  return spec.layers
+  /*
+   * 🔴 Tay-shuda cheezon ko z-index SIRF tab milta hai jab layers waqai mojood hon.
+   *
+   * Wajah cache hai: jis template mein layer hai hi nahi, us ka CSS haraf ba haraf wohi
+   * rehna chahiye jo pehle tha. Aur jahan layer nahi, wahan ye line ka koi kaam bhi nahi
+   * — kisi cheez ne kisi doosri par charhna hi nahi.
+   *
+   * 5 beech mein rakha hai: peechay wali layers 1–4 par, aage wali 6 se aage.
+   */
+  const elementLayer = `${Object.values(ELEMENT_SELECTOR)
+    .map((selector) => `.stage.custom ${selector}`)
+    .join(',\n')} {
+  z-index: 5;
+}`
+
+  return (
+    elementLayer +
+    '\n' +
+    spec.layers
     .map((layer, index) => {
       const selector = `.stage.custom .layer-${index}`
       if (!layer.show) return `${selector} { display: none; }`
+
+      if (layer.kind === 'shape') {
+        /*
+         * `circle` par border-radius 50% (chahe naap kuch bhi ho), `line` par apni
+         * oonchai ki nisbat se gol sire, aur `rect` par reseller ka apna gol-pan.
+         */
+        const cornerRadius =
+          layer.shape === 'circle' ? '50%' : layer.shape === 'line' ? '999px' : `${layer.radius ?? 0}%`
+
+        return `${selector} {
+  position: absolute;
+  inset-inline-start: ${layer.x}%;
+  top: ${layer.y}%;
+  width: ${layer.width}%;
+  height: ${layer.height}%;
+  background: ${layer.colour ?? 'var(--accent)'};
+  border-radius: ${cornerRadius};
+  z-index: ${layerZ(layer, index)};
+  ${layer.opacity !== undefined ? `opacity: ${layer.opacity / 100};` : ''}
+  ${layer.rotate ? `transform: rotate(${layer.rotate}deg);` : ''}
+}`
+      }
 
       if (layer.kind === 'image') {
         /*
@@ -521,7 +621,7 @@ function layersCss(spec: TemplateSpec): string {
   top: ${layer.y}%;
   width: ${layer.width}%;
   height: auto;
-  z-index: ${2 + index};
+  z-index: ${layerZ(layer, index)};
   ${layer.radius ? `border-radius: ${layer.radius}%;` : ''}
   ${layer.opacity !== undefined ? `opacity: ${layer.opacity / 100};` : ''}
   ${layer.rotate ? `transform: rotate(${layer.rotate}deg);` : ''}
@@ -546,12 +646,13 @@ function layersCss(spec: TemplateSpec): string {
   font-weight: 700;
   line-height: ${layer.font === 'nastaliq' || !layer.font ? '2.1' : '1.3'};
   white-space: nowrap;
-  z-index: ${2 + index};
+  z-index: ${layerZ(layer, index)};
   text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
   ${extra}
 }`
-    })
-    .join('\n')
+      })
+      .join('\n')
+  )
 }
 
 /**

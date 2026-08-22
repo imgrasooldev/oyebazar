@@ -9,6 +9,7 @@ import {
   templateSpecToCss,
   type TemplateSpec,
 } from '@oyebazar/shared'
+import { RedoIcon, UndoIcon } from '@/components/icons'
 import { translator, type Locale } from '@/lib/i18n'
 
 /**
@@ -130,20 +131,24 @@ type Sel = ElementKey | `L${number}`
  * handle khinchti rehti aur kuch na hota.
  */
 type PartStyle = {
-  kind: 'element' | 'text' | 'image'
+  kind: 'element' | 'text' | 'image' | 'shape'
   show: boolean
   x: number
   y: number
   /** Likhai ka naap — element aur text par. */
   size?: number | undefined
-  /** Tasveer ki chaurai, canvas ke feesad mein. */
+  /** Tasveer aur shakl ki chaurai, canvas ke feesad mein. */
   width?: number | undefined
+  /** Sirf shakl par — text apni likhai se aur tasveer apni nisbat se oonchai banate hain. */
+  height?: number | undefined
   colour?: string | undefined
   opacity?: number | undefined
   rotate?: number | undefined
   font?: 'nastaliq' | 'naskh' | 'latin' | undefined
   pill?: boolean | undefined
   radius?: number | undefined
+  /** Maal ke naam/qeemat ke peechay jaye ya oopar — shapes ki poori wajah yehi hai. */
+  behind?: boolean | undefined
 }
 
 function layerIndex(sel: Sel): number | null {
@@ -159,9 +164,15 @@ function part(spec: TemplateSpec, sel: Sel): PartStyle | null {
   return { ...layer, kind: layer.kind }
 }
 
-/** Naap ka khana — tasveer par `width`, baqi par `size`. */
+const SHAPE_LABEL = {
+  rect: 'shapeRect',
+  circle: 'shapeCircle',
+  line: 'shapeLine',
+} as const
+
+/** Naap ka khana — tasveer aur shakl par `width`, likhai par `size`. */
 function sizeFieldOf(style: PartStyle): 'size' | 'width' {
-  return style.kind === 'image' ? 'width' : 'size'
+  return style.kind === 'image' || style.kind === 'shape' ? 'width' : 'size'
 }
 
 /** Canvas par mojood har cheez — snap aur list dono isi se bante hain. */
@@ -565,7 +576,9 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
     if (index === null) return t(ELEMENT_LABEL[sel as ElementKey])
     const layer = spec.layers?.[index]
     if (!layer) return t('myText')
-    return layer.kind === 'image' ? t('myLogo') : layer.text || t('myText')
+    if (layer.kind === 'image') return t('myLogo')
+    if (layer.kind === 'shape') return t(SHAPE_LABEL[layer.shape])
+    return layer.text || t('myText')
   }
 
   // ---------------------------------------------------------------- apne text
@@ -625,6 +638,28 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
      * ka kaam ho.
      */
     layers.push({ kind: 'image', url, show: true, x: 72, y: 5, width: 18 })
+    commit({ ...spec, layers })
+    setSelected(`L${layers.length - 1}`)
+  }
+
+  /**
+   * Rang ki shakl — patti, daira, ya lakeer.
+   *
+   * Shuruaati naap har shakl ka apna: patti chauri aur patli (likhai ke peechay lagti
+   * hai), daira chokor (warna wo anda ban jata hai), lakeer bohat patli.
+   */
+  function addShape(shape: 'rect' | 'circle' | 'line') {
+    const layers = [...(spec.layers ?? [])]
+    if (layers.length >= 6) return
+
+    const size =
+      shape === 'circle'
+        ? { width: 20, height: 11 }
+        : shape === 'line'
+          ? { width: 40, height: 1 }
+          : { width: 46, height: 7 }
+
+    layers.push({ kind: 'shape', shape, show: true, x: 8, y: 40, ...size })
     commit({ ...spec, layers })
     setSelected(`L${layers.length - 1}`)
   }
@@ -701,14 +736,24 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
      * kahin nahi hota, bas safha lamba hota jata hai.
      */
     <div className="flex flex-col gap-3 lg:h-full">
-      {/* ---------------- Ooper ki patti: undo/redo, zoom, naam, save ---------------- */}
-      <div className="card flex shrink-0 flex-wrap items-center gap-3 p-3">
+      {/*
+        ---------------- Ooper ki patti ----------------
+
+        Gehri patti jaan boojh kar: har design tool ka chehra yehi hai, aur us ki ek
+        amali wajah hai — canvas ke rang chamak kar saamne aate hain jab un ke ird gird
+        ka chehra khamosh ho. Safed patti par naranji badge aur safed card ek doosre se
+        larte hain, aur reseller ko apna design theek se nazar nahi aata.
+
+        Yehi rang Content Studio ke sar par pehle se hai (bg-coal-900) — ye naya mizaj
+        nahi, wohi hai.
+      */}
+      <div className="flex shrink-0 flex-wrap items-center gap-3 rounded-card bg-coal-900 p-3 text-white">
         <div className="flex items-center gap-1">
-          <IconButton label={t('undo')} onClick={undo} disabled={past.length === 0}>
-            ↶
+          <IconButton label={t('undo')} onClick={undo} disabled={past.length === 0} dark>
+            <UndoIcon className="h-4 w-4" />
           </IconButton>
-          <IconButton label={t('redo')} onClick={redo} disabled={future.length === 0}>
-            ↷
+          <IconButton label={t('redo')} onClick={redo} disabled={future.length === 0} dark>
+            <RedoIcon className="h-4 w-4" />
           </IconButton>
         </div>
 
@@ -720,6 +765,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
           <IconButton
             label={t('zoomOut')}
             onClick={() => setZoomMultiplier((z) => Math.max(0.5, z - 0.2))}
+            dark
           >
             −
           </IconButton>
@@ -727,7 +773,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
             type="button"
             onClick={() => setZoomMultiplier(1)}
             title={t('zoomFit')}
-            className="link-tap numeric w-12 text-center text-[0.75rem] text-ink-faint"
+            className="numeric w-12 rounded-lg py-1 text-center text-[0.75rem] text-white/60 transition hover:bg-white/10 hover:text-white"
             dir="ltr"
           >
             {Math.round(zoomMultiplier * 100)}%
@@ -735,6 +781,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
           <IconButton
             label={t('zoomIn')}
             onClick={() => setZoomMultiplier((z) => Math.min(3, z + 0.2))}
+            dark
           >
             +
           </IconButton>
@@ -745,7 +792,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
           onChange={(e) => setName(e.target.value)}
           maxLength={40}
           placeholder={t('myTemplate')}
-          className="field min-w-0 flex-1 !py-2 text-[0.9rem]"
+          className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-[0.9rem] text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none"
         />
 
         <button type="button" onClick={save} disabled={busy} className="btn-primary !py-2">
@@ -755,7 +802,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
           type="button"
           onClick={makeDefault}
           disabled={busy || !selectedId || isDefault}
-          className="btn-secondary !py-2"
+          className="rounded-pill border border-white/25 px-4 py-2 text-[0.85rem] font-semibold text-white transition hover:bg-white/10 disabled:opacity-40"
         >
           {isDefault ? `★ ${t('isDefault')}` : t('makeDefault')}
         </button>
@@ -777,7 +824,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
         <div className="card order-2 p-4 lg:order-1 lg:min-h-0 lg:overflow-y-auto">
           <h2 className="text-[0.95rem] font-bold">{t('startFrom')}</h2>
           <p className="mt-1 text-[0.75rem] text-ink-faint">{t('startFromHint')}</p>
-          <div className="rail mt-2">
+          <div className="mt-2 flex flex-wrap gap-2">
             {TEMPLATE_PRESETS.map((preset) => (
               <button
                 key={preset.key}
@@ -866,10 +913,10 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
              * `max-h` us surat mein bhi dabbe ko bandha rakhta hai; canvas bara hua to
              * scroll ISI dabbe ke andar hoga (`overflow-auto`), safhe ka nahi.
              */
-            className="sticky top-[4.25rem] z-10 flex h-[42vh] items-center justify-center overflow-auto rounded-card bg-paper py-2 lg:static lg:h-auto lg:max-h-[calc(100dvh-20rem)] lg:min-h-0 lg:flex-1 lg:py-0"
+            className="sticky top-[4.25rem] z-10 flex h-[42vh] items-center justify-center overflow-auto rounded-card bg-coal-900/[0.06] p-3 lg:static lg:h-auto lg:max-h-[calc(100dvh-20rem)] lg:min-h-0 lg:flex-1"
           >
             <div
-              className="relative shrink-0 overflow-hidden rounded-card shadow-soft"
+              className="relative shrink-0 overflow-hidden rounded-card shadow-[0_18px_50px_-12px_rgba(0,0,0,0.45)] ring-1 ring-black/10"
               style={{ width: CANVAS_W * zoom, height: CANVAS_H * zoom }}
               // Khali jagah par tap = kuch bhi chuna hua nahi
               onPointerDown={() => setSelected(null)}
@@ -960,7 +1007,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                       {layer.kind === 'image' ? (
                         /* eslint-disable-next-line @next/next/no-img-element -- storage se aaya hua logo; naap spec ke CSS se aata hai */
                         <img src={layer.url} alt="" className="block w-full" />
-                      ) : (
+                      ) : layer.kind === 'shape' ? null : (
                         layer.text
                       )}
                     </Handle>
@@ -1056,6 +1103,22 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                   </IconButton>
                 )}
 
+                {/*
+                  Peechay / aage — sirf apni layers par.
+
+                  🔴 Shapes ki poori wajah yehi switch hai: rang ki patti ka kaam likhai
+                  ko PARHNE LAIQ banana hai, aur agar wo hamesha upar rahe to wo usi
+                  likhai ko dhaanp leti hai jis ke liye lagayi gayi thi.
+                */}
+                {selectedLayer && (
+                  <IconButton
+                    label={selectedLayer.behind ? t('sendFront') : t('sendBehind')}
+                    onClick={() => patchPart(selected, { behind: !selectedLayer.behind })}
+                  >
+                    {selectedLayer.behind ? '▣' : '▤'}
+                  </IconButton>
+                )}
+
                 <button
                   type="button"
                   onClick={() => patchPart(selected, { show: false })}
@@ -1085,7 +1148,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                 {selectedLayer?.kind !== 'image' && (
                 <div>
                   <p className="text-[0.72rem] font-semibold text-ink-soft">{t('fontLabel')}</p>
-                  <div className="rail mt-1">
+                  <div className="mt-1 flex flex-wrap gap-2">
                     {(['nastaliq', 'naskh', 'latin'] as const).map((font) => (
                       <button
                         key={font}
@@ -1109,13 +1172,29 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                 )}
 
                 {selectedLayer?.kind !== 'image' && (
-                <div className="w-28">
-                  <ColourField
-                    label={t('textColour')}
-                    value={part(spec, selected)?.colour ?? '#ffffff'}
-                    onChange={(colour) => patchPart(selected, { colour })}
-                  />
-                </div>
+                  <div className="w-28">
+                    <ColourField
+                      label={selectedLayer?.kind === 'shape' ? t('shapeColour') : t('textColour')}
+                      value={
+                        part(spec, selected)?.colour ??
+                        (selectedLayer?.kind === 'shape' ? spec.accent : '#ffffff')
+                      }
+                      onChange={(colour) => patchPart(selected, { colour })}
+                    />
+                  </div>
+                )}
+
+                {/* Oonchai sirf shakl par — baqi apni oonchai khud banate hain */}
+                {selectedLayer?.kind === 'shape' && (
+                  <div className="w-32">
+                    <SliderField
+                      label={t('shapeHeight')}
+                      value={selectedLayer.height}
+                      min={1}
+                      max={60}
+                      onChange={(height) => patchPart(selected, { height })}
+                    />
+                  </div>
                 )}
 
                 <div className="w-32">
@@ -1143,8 +1222,19 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
         </div>
 
         {/* ---------------- Poore template ke faislay ---------------- */}
-        <div className="order-3 space-y-4 lg:order-3 lg:min-h-0 lg:overflow-y-auto">
-          <div className="card space-y-4 p-4">
+        {/*
+          🔴 EK panel, EK scroll.
+
+          Pehle yahan do alag card the aur DONO apne andar scroll karte the. Screen par
+          us ka natija ye tha ke dono aadhe aadhe kate hue dikhte the, do scrollbar ek
+          doosre ke saath, aur kisi bhi ek cheez ko poora dekhne ke liye pehle ye
+          samajhna parta tha ke kaun sa dabba scroll karna hai.
+
+          Ab bahar ka dabba scroll karta hai aur andar ke hisse sirf lakeeron se juda
+          hain — jaisa har design tool ke side panel mein hota hai.
+        */}
+        <div className="card order-3 divide-y divide-line lg:order-3 lg:min-h-0 lg:overflow-y-auto">
+          <div className="space-y-4 p-4">
             <label className="block">
               <span className="text-[0.8rem] font-semibold">{t('badgeText')}</span>
               <input
@@ -1170,7 +1260,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
 
             <div>
               <p className="text-[0.8rem] font-semibold">{t('bottomCard')}</p>
-              <div className="rail mt-2">
+              <div className="mt-2 flex flex-wrap gap-2">
                 {(['none', 'light', 'dark'] as const).map((card) => (
                   <button
                     key={card}
@@ -1220,7 +1310,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
              · Chhupi hui cheez tasveer par hai hi nahi — us par tap kar hi nahi sakte,
                yani bina is list ke wo hamesha ke liye gum ho jati.
           */}
-          <div className="card p-4">
+          <div className="p-4">
             <p className="text-[0.8rem] font-semibold">{t('elementsTitle')}</p>
             <div className="mt-2 space-y-1">
               {allParts(spec).map(({ sel, style }) => {
@@ -1296,7 +1386,33 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
               })}
             </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-2">
+            {/* Rang ki shaklen — likhai ke peechay patti lagana sab se aam kaam hai */}
+            <div className="mt-3 flex items-center gap-2">
+              <span className="text-[0.72rem] font-semibold text-ink-soft">{t('addShape')}</span>
+              {(['rect', 'circle', 'line'] as const).map((shape) => (
+                <button
+                  key={shape}
+                  type="button"
+                  onClick={() => addShape(shape)}
+                  disabled={(spec.layers?.length ?? 0) >= 6}
+                  aria-label={t(SHAPE_LABEL[shape])}
+                  title={t(SHAPE_LABEL[shape])}
+                  className="link-tap flex h-8 flex-1 items-center justify-center rounded-lg bg-paper-sunken disabled:opacity-40"
+                >
+                  <span
+                    className={
+                      shape === 'rect'
+                        ? 'h-3.5 w-6 rounded-[3px] bg-accent-700'
+                        : shape === 'circle'
+                          ? 'h-4 w-4 rounded-full bg-accent-700'
+                          : 'h-[3px] w-6 rounded-full bg-accent-700'
+                    }
+                  />
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-2 grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={addLayer}
@@ -1474,11 +1590,14 @@ function IconButton({
   label,
   onClick,
   disabled,
+  dark = false,
 }: {
   children: React.ReactNode
   label: string
   onClick: () => void
   disabled?: boolean
+  /** Gehri patti par — wahan `bg-paper-sunken` bilkul nazar nahi aata. */
+  dark?: boolean
 }) {
   return (
     <button
@@ -1487,7 +1606,11 @@ function IconButton({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className="link-tap flex h-9 min-w-9 items-center justify-center rounded-xl bg-paper-sunken px-2 text-[0.85rem] font-semibold disabled:opacity-35"
+      className={
+        dark
+          ? 'flex h-9 min-w-9 items-center justify-center rounded-xl px-2 text-[0.85rem] font-semibold text-white/80 transition hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent'
+          : 'link-tap flex h-9 min-w-9 items-center justify-center rounded-xl bg-paper-sunken px-2 text-[0.85rem] font-semibold disabled:opacity-35'
+      }
     >
       {children}
     </button>
