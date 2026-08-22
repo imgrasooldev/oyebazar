@@ -25,6 +25,18 @@ const HexColour = z
  * x/y canvas ke FEESAD mein hain, px mein nahi — canvas chaar naap ka hota hai (story,
  * chokor, lamba, chaura) aur px wali jagah chokor pack par tasveer se bahar nikal jati.
  */
+/**
+ * Ek cheez ka apna mizaj.
+ *
+ * 🔴 `show`, `x`, `y`, `size` ke baad har khana IKHTIYARI hai — aur ye majboori nahi,
+ * faisla hai.
+ *
+ * Jo template pehle se bane hue hain, un ke spec mein ye khaane hain hi nahi. Ikhtiyari
+ * hone ki wajah se wo waise ke waise parse hote hain, AUR `templateSpecToCss` un par ek
+ * lafz bhi ziyada nahi likhta — yani un ka CSS haraf ba haraf wohi rehta hai jo pehle
+ * tha. Agar in ki koi default qadar hoti (misal `opacity: 100`), to CSS badal jata, aur
+ * us ke saath har wo pack jo cache mein para hai — bina kisi ne kuch badle.
+ */
 const ElementSpec = z.object({
   show: z.boolean(),
   /** 0 = daayen kinara (RTL), 100 = baayen. */
@@ -32,6 +44,23 @@ const ElementSpec = z.object({
   y: z.number().min(0).max(100),
   /** Font ka naap 1080px chaure canvas par; chhote naap par --scale khud chhota kar deta hai. */
   size: z.number().int().min(16).max(160),
+
+  /** Likhai ka apna rang — na ho to template ka aam rang chalta hai. */
+  colour: HexColour.optional(),
+  /** 0–100. Halka karne se cheez tasveer mein ghul jati hai (CTA par aksar achha lagta hai). */
+  opacity: z.number().int().min(10).max(100).optional(),
+  /** Thora sa terha — sale wale badge par jaan daal deta hai. Hadd chhoti hai jaan boojh kar. */
+  rotate: z.number().int().min(-20).max(20).optional(),
+  /**
+   * Kaun si likhai.
+   *
+   * `nastaliq` Urdu ka asal mizaj hai magar us ki line-height 2.1 se kam nahi ho sakti;
+   * `naskh` kam jagah leta hai aur chhoti likhai mein zyada saaf parha jata hai;
+   * `latin` (Inter) angrezi naam aur number ke liye.
+   */
+  font: z.enum(['nastaliq', 'naskh', 'latin']).optional(),
+  /** Rang bhara hua dabba — jaisa qeemat par pehle se hai. */
+  pill: z.boolean().optional(),
 })
 
 export const TemplateSpecSchema = z.object({
@@ -84,6 +113,142 @@ export const DEFAULT_TEMPLATE_SPEC: TemplateSpec = {
     cta: { show: true, x: 4, y: 91, size: 40 },
   },
 }
+
+/**
+ * Likhai ke teen mizaj.
+ *
+ * 🔴 Teenon font worker mein INLINE hote hain (apps/worker/src/render/template.ts).
+ * CDN se aane wala font render ko ghair-mustaqil bana deta hai — kabhi font pehle aata
+ * hai, kabhi screenshot.
+ */
+const FONT_STACK: Record<'nastaliq' | 'naskh' | 'latin', string> = {
+  nastaliq: "'Noto Nastaliq Urdu', serif",
+  naskh: "'Noto Naskh Arabic', serif",
+  latin: "'Inter', system-ui, sans-serif",
+}
+
+/**
+ * Rang bhara dabba — jaisa qeemat par pehle se hai.
+ *
+ * Nastaliq ke liye neeche ki padding upar se zyada hai: haroof ki dumen (ی, ں, ج)
+ * baseline se kaafi neeche jati hain aur barabar padding par wo dabbe se bahar nikal
+ * kar kati hui lagti hain.
+ */
+const PILL_ON = `background: var(--accent);
+  color: var(--badge-text);
+  padding: calc(10px * var(--scale)) calc(40px * var(--scale)) calc(24px * var(--scale));
+  border-radius: 999px;
+  display: inline-block;`
+
+const PILL_OFF = `background: transparent;
+  padding: 0;
+  box-shadow: none;`
+
+/**
+ * Shuru karne ki jagahen.
+ *
+ * 🔴 Khali canvas se shuru karne par zyada tar log pehle hi qadam par chhor dete hain —
+ * "kya banaun" us se kahin bara sawal hai "isay kaisa karun". Har preset ek chalti hui
+ * shakl hai jise reseller pakar kar apna bana leti hai.
+ *
+ * Ye built-in templates ki HOOBAHOO naqal nahi hain (wo CSS files hain, ye spec hai) —
+ * un ka mizaj hai. Nazdeek hona kaafi hai; asal maqsad khali safha na dena hai.
+ */
+export const TEMPLATE_PRESETS: readonly { key: string; nameUr: string; nameEn: string; spec: TemplateSpec }[] = [
+  {
+    key: 'plain',
+    nameUr: 'سادہ',
+    nameEn: 'Simple',
+    spec: DEFAULT_TEMPLATE_SPEC,
+  },
+  {
+    key: 'card',
+    nameUr: 'سفید کارڈ',
+    nameEn: 'White card',
+    spec: {
+      ...DEFAULT_TEMPLATE_SPEC,
+      accent: '#111827',
+      card: 'light',
+      scrim: 25,
+      radius: 36,
+      elements: {
+        ...DEFAULT_TEMPLATE_SPEC.elements,
+        badge: { show: true, x: 4, y: 8, size: 40, pill: true },
+        title: { show: true, x: 8, y: 56, size: 58 },
+        price: { show: true, x: 8, y: 68, size: 84, pill: false },
+        name: { show: true, x: 8, y: 80, size: 42 },
+        phone: { show: true, x: 8, y: 86, size: 40, font: 'latin' },
+        cta: { show: true, x: 8, y: 91, size: 32, opacity: 55 },
+      },
+    },
+  },
+  {
+    key: 'loud',
+    nameUr: 'نمایاں ریٹ',
+    nameEn: 'Bold price',
+    spec: {
+      ...DEFAULT_TEMPLATE_SPEC,
+      accent: '#FACC15',
+      accentText: '#1C1917',
+      scrim: 70,
+      radius: 18,
+      badgeText: 'خاص ریٹ',
+      elements: {
+        ...DEFAULT_TEMPLATE_SPEC.elements,
+        badge: { show: true, x: 4, y: 8, size: 44, rotate: -3 },
+        title: { show: true, x: 4, y: 60, size: 46 },
+        price: { show: true, x: 4, y: 68, size: 118, rotate: -2 },
+        name: { show: true, x: 4, y: 86, size: 44 },
+        phone: { show: true, x: 55, y: 86, size: 44, font: 'latin' },
+        cta: { show: true, x: 4, y: 92, size: 34, opacity: 80 },
+      },
+    },
+  },
+  {
+    key: 'night',
+    nameUr: 'گہرا',
+    nameEn: 'Dark',
+    spec: {
+      ...DEFAULT_TEMPLATE_SPEC,
+      accent: '#22D3EE',
+      accentText: '#042F35',
+      card: 'dark',
+      scrim: 85,
+      elements: {
+        ...DEFAULT_TEMPLATE_SPEC.elements,
+        badge: { show: true, x: 4, y: 8, size: 42 },
+        title: { show: true, x: 6, y: 62, size: 56 },
+        price: { show: true, x: 6, y: 73, size: 80 },
+        name: { show: true, x: 6, y: 84, size: 44, colour: '#22D3EE' },
+        phone: { show: true, x: 6, y: 89, size: 40, font: 'latin' },
+        cta: { show: true, x: 6, y: 93, size: 30, opacity: 65, font: 'naskh' },
+      },
+    },
+  },
+  {
+    key: 'framed',
+    nameUr: 'فریم',
+    nameEn: 'Framed',
+    spec: {
+      ...DEFAULT_TEMPLATE_SPEC,
+      accent: '#9F1239',
+      accentText: '#FFF1F2',
+      frame: 5,
+      scrim: 70,
+      radius: 10,
+      badgeText: 'خاص',
+      elements: {
+        ...DEFAULT_TEMPLATE_SPEC.elements,
+        badge: { show: true, x: 9, y: 11, size: 38 },
+        title: { show: true, x: 10, y: 58, size: 54 },
+        price: { show: true, x: 10, y: 69, size: 76 },
+        name: { show: true, x: 10, y: 81, size: 40 },
+        phone: { show: true, x: 10, y: 86, size: 38, font: 'latin' },
+        cta: { show: true, x: 10, y: 90, size: 30, opacity: 75, font: 'naskh' },
+      },
+    },
+  },
+]
 
 /** Har cheez ka CSS class — spec ki key se DOM tak ek hi naqsha. */
 const ELEMENT_SELECTOR: Record<keyof TemplateSpec['elements'], string> = {
@@ -171,12 +336,28 @@ export function templateSpecToCss(spec: TemplateSpec): string {
        * `right` (LTR par `left`) — kyunke Urdu pack RTL hai aur reseller ke liye "0" ka
        * matlab wahi kinara hai jahan se wo parhna shuru karti hai.
        */
+      /*
+       * Ikhtiyari khaane sirf tab likhe jate hain jab wo waqai mojood hon — dekhen
+       * `ElementSpec` ka note. Purane spec par ye saari lines gayab rehti hain aur CSS
+       * haraf ba haraf wohi banta hai jo pehle tha.
+       */
+      const extra = [
+        element.colour ? `color: ${element.colour};` : '',
+        element.opacity !== undefined ? `opacity: ${element.opacity / 100};` : '',
+        element.rotate ? `transform: rotate(${element.rotate}deg);` : '',
+        element.font ? `font-family: ${FONT_STACK[element.font]};` : '',
+        element.pill === true ? PILL_ON : '',
+        element.pill === false ? PILL_OFF : '',
+      ]
+        .filter(Boolean)
+        .join('\n  ')
+
       return `${selector} {
   position: absolute;
   inset-inline-start: ${element.x}%;
   top: ${element.y}%;
   font-size: calc(${element.size}px * var(--scale));
-  margin: 0;
+  margin: 0;${extra ? `\n  ${extra}` : ''}
 }`
     })
     .join('\n')

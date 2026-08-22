@@ -185,6 +185,30 @@ export function SparkIcon({ className = 'h-5 w-5' }: Props) {
   )
 }
 
+/** Template — ek canvas jis par cheezein rakhi hui hain. */
+export function TemplateIcon({ className = 'h-5 w-5' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <rect
+        x="3.5"
+        y="2.5"
+        width="17"
+        height="19"
+        rx="2.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <rect x="6.5" y="5.5" width="6" height="3" rx="1.5" fill="currentColor" />
+      <path
+        d="M6.5 14h11M6.5 17.5h7"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
 export function ListIcon({ className = 'h-5 w-5' }: Props) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">

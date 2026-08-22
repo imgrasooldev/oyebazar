@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   DEFAULT_TEMPLATE_SPEC,
+  TEMPLATE_PRESETS,
   formatPkr,
   pkr,
   templateSpecToCss,
@@ -348,10 +349,16 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
     setError(null)
   }
 
-  function startNew() {
+  /**
+   * Naya template — hamesha kisi chalti hui shakl se, khali canvas se nahi.
+   *
+   * Khali safha "kya banaun" ka sawal khara karta hai, jo "isay kaisa karun" se kahin
+   * bara hai. Zyada tar log wahin chhor dete hain.
+   */
+  function startNew(preset: TemplateSpec = DEFAULT_TEMPLATE_SPEC) {
     setSelectedId(null)
     setName('')
-    setSpec(DEFAULT_TEMPLATE_SPEC)
+    setSpec(preset)
     setPast([])
     setFuture([])
     setSelected(null)
@@ -477,12 +484,22 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,260px)_minmax(0,1fr)_minmax(0,300px)]">
         {/* ---------------- Mere template ---------------- */}
         <div className="card p-4 lg:order-1">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-[0.95rem] font-bold">{t('myTemplates')}</h2>
-            <button type="button" onClick={startNew} className="btn-secondary !py-1 text-[0.75rem]">
-              {t('newTemplate')}
-            </button>
+          <h2 className="text-[0.95rem] font-bold">{t('startFrom')}</h2>
+          <p className="mt-1 text-[0.75rem] text-ink-faint">{t('startFromHint')}</p>
+          <div className="rail mt-2">
+            {TEMPLATE_PRESETS.map((preset) => (
+              <button
+                key={preset.key}
+                type="button"
+                onClick={() => startNew(preset.spec)}
+                className="chip !py-1 text-[0.75rem]"
+              >
+                {locale === 'ur' ? preset.nameUr : preset.nameEn}
+              </button>
+            ))}
           </div>
+
+          <h2 className="mt-5 text-[0.95rem] font-bold">{t('myTemplates')}</h2>
 
           <div className="mt-3 space-y-2">
             {templates.length === 0 && (
@@ -636,55 +653,122 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
 
           {/* Chuni hui cheez ka apna toolbar — canvas ke bilkul neeche, nazar wahin hai */}
           {selected && (
-            <div className="card mt-3 flex flex-wrap items-center gap-3 p-3">
-              <span className="text-[0.85rem] font-bold">{t(ELEMENT_LABEL[selected])}</span>
+            <div className="card mt-3 space-y-3 p-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-[0.85rem] font-bold">{t(ELEMENT_LABEL[selected])}</span>
 
-              <div className="flex items-center gap-1">
-                <IconButton
-                  label={t('smaller')}
-                  onClick={() =>
-                    patchElement(selected, {
-                      size: Math.max(16, spec.elements[selected].size - 4),
-                    })
-                  }
-                >
-                  A−
-                </IconButton>
-                <span dir="ltr" className="numeric w-8 text-center text-[0.75rem] text-ink-faint">
-                  {spec.elements[selected].size}
-                </span>
-                <IconButton
-                  label={t('bigger')}
-                  onClick={() =>
-                    patchElement(selected, {
-                      size: Math.min(160, spec.elements[selected].size + 4),
-                    })
-                  }
-                >
-                  A+
-                </IconButton>
-              </div>
-
-              {/* Kinare par lagana — wo teen jagahen jahan 90% cheezein jati hain */}
-              <div className="flex items-center gap-1">
-                {EDGE_GUIDES.map((x) => (
+                <div className="flex items-center gap-1">
                   <IconButton
-                    key={x}
-                    label={x === 4 ? t('alignStart') : x === 50 ? t('alignCentre') : t('alignEnd')}
-                    onClick={() => patchElement(selected, { x })}
+                    label={t('smaller')}
+                    onClick={() =>
+                      patchElement(selected, {
+                        size: Math.max(16, spec.elements[selected].size - 4),
+                      })
+                    }
                   >
-                    {x === 4 ? '▤' : x === 50 ? '▥' : '▦'}
+                    A−
                   </IconButton>
-                ))}
+                  <span dir="ltr" className="numeric w-8 text-center text-[0.75rem] text-ink-faint">
+                    {spec.elements[selected].size}
+                  </span>
+                  <IconButton
+                    label={t('bigger')}
+                    onClick={() =>
+                      patchElement(selected, {
+                        size: Math.min(160, spec.elements[selected].size + 4),
+                      })
+                    }
+                  >
+                    A+
+                  </IconButton>
+                </div>
+
+                {/* Kinare par lagana — wo teen jagahen jahan 90% cheezein jati hain */}
+                <div className="flex items-center gap-1">
+                  {EDGE_GUIDES.map((x) => (
+                    <IconButton
+                      key={x}
+                      label={x === 4 ? t('alignStart') : x === 50 ? t('alignCentre') : t('alignEnd')}
+                      onClick={() => patchElement(selected, { x })}
+                    >
+                      {x === 4 ? '▤' : x === 50 ? '▥' : '▦'}
+                    </IconButton>
+                  ))}
+                </div>
+
+                {/* Rang bhara dabba — qeemat par pehle se hai, baqi par lagaya ja sakta hai */}
+                <IconButton
+                  label={t('pillToggle')}
+                  onClick={() =>
+                    patchElement(selected, { pill: !isPillOn(spec, selected) })
+                  }
+                >
+                  {isPillOn(spec, selected) ? '▬' : '▭'}
+                </IconButton>
+
+                <button
+                  type="button"
+                  onClick={() => patchElement(selected, { show: false })}
+                  className="ms-auto text-[0.78rem] text-ink-soft underline"
+                >
+                  {t('hideThis')}
+                </button>
               </div>
 
-              <button
-                type="button"
-                onClick={() => patchElement(selected, { show: false })}
-                className="ms-auto text-[0.78rem] text-ink-soft underline"
-              >
-                {t('hideThis')}
-              </button>
+              <div className="flex flex-wrap items-end gap-4 border-t border-line pt-3">
+                {/* Likhai ka mizaj — Urdu design mein sab se bara farq yehi daalta hai */}
+                <div>
+                  <p className="text-[0.72rem] font-semibold text-ink-soft">{t('fontLabel')}</p>
+                  <div className="rail mt-1">
+                    {(['nastaliq', 'naskh', 'latin'] as const).map((font) => (
+                      <button
+                        key={font}
+                        type="button"
+                        onClick={() => patchElement(selected, { font })}
+                        className={
+                          (spec.elements[selected].font ?? 'nastaliq') === font
+                            ? 'chip chip-active !py-1 text-[0.72rem]'
+                            : 'chip !py-1 text-[0.72rem]'
+                        }
+                      >
+                        {font === 'nastaliq'
+                          ? t('fontNastaliq')
+                          : font === 'naskh'
+                            ? t('fontNaskh')
+                            : t('fontLatin')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="w-28">
+                  <ColourField
+                    label={t('textColour')}
+                    value={spec.elements[selected].colour ?? '#ffffff'}
+                    onChange={(colour) => patchElement(selected, { colour })}
+                  />
+                </div>
+
+                <div className="w-32">
+                  <SliderField
+                    label={t('opacityLabel')}
+                    value={spec.elements[selected].opacity ?? 100}
+                    min={10}
+                    max={100}
+                    onChange={(opacity) => patchElement(selected, { opacity })}
+                  />
+                </div>
+
+                <div className="w-32">
+                  <SliderField
+                    label={t('rotateLabel')}
+                    value={spec.elements[selected].rotate ?? 0}
+                    min={-20}
+                    max={20}
+                    onChange={(rotate) => patchElement(selected, { rotate })}
+                  />
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -788,6 +872,17 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
 }
 
 // ---------------------------------------------------------------- chhote hissay
+
+/**
+ * Rang bhara dabba abhi laga hua hai ya nahi.
+ *
+ * `pill` ikhtiyari hai, aur us ka "na hona" har cheez par ek jaisa nahi hai: badge aur
+ * qeemat par dabba base.css se PEHLE hi laga hota hai, baqi par nahi. Ye farq yahan ek
+ * jagah likha hai — warna toolbar ka switch un do par ulta chalta.
+ */
+function isPillOn(spec: TemplateSpec, key: ElementKey): boolean {
+  return spec.elements[key].pill ?? (key === 'badge' || key === 'price')
+}
 
 /** 0–96 ke darmiyan — 100 par cheez kinare se bahar nikal jati hai. */
 function clamp(value: number): number {

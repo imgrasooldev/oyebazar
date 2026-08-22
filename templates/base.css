@@ -25,6 +25,27 @@
 }
 
 /*
+ * Naskh — reseller ke apne template ke liye teesra mizaj.
+ *
+ * Nastaliq Urdu ka asal husn hai magar us ki line-height 2.1 se kam nahi ho sakti, aur
+ * chhoti likhai mein wo ghul jata hai. Naskh kam jagah leta hai aur chhote naap par
+ * zyada saaf parha jata hai — number, pata, aur choti CTA line ke liye behtar.
+ */
+@font-face {
+  font-family: 'Noto Naskh Arabic';
+  src: url('fonts/noto-naskh-arabic-arabic-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Noto Naskh Arabic';
+  src: url('fonts/noto-naskh-arabic-arabic-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-display: block;
+}
+
+/*
  * 🔴 Angrezi ke liye Inter — aur ye bhi INLINE, Nastaliq ki tarah.
  *
  * Pehle sirf qeemat aur number angrezi mein the aur wo 'Segoe UI' par chhor diye gaye

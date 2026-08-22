@@ -38,6 +38,17 @@ const URDU_FONT_DIR = resolve(
   'files',
 )
 
+/** Naskh — reseller ke apne template ka teesra mizaj (chhoti likhai mein zyada saaf). */
+const NASKH_FONT_DIR = resolve(
+  HERE,
+  '..',
+  '..',
+  'node_modules',
+  '@fontsource',
+  'noto-naskh-arabic',
+  'files',
+)
+
 /** Angrezi pack, qeemat aur phone number — sab Inter par. */
 const LATIN_FONT_DIR = resolve(HERE, '..', '..', 'node_modules', '@fontsource', 'inter', 'files')
 
@@ -101,16 +112,21 @@ async function loadBaseCss(): Promise<string> {
   if (cachedBaseCss) return cachedBaseCss
 
   const css = await readFile(join(TEMPLATES_DIR, 'base.css'), 'utf8')
-  const [urduRegular, urduBold, latinRegular, latinBold] = await Promise.all([
-    fontDataUri(URDU_FONT_DIR, 'noto-nastaliq-urdu-arabic-400-normal.woff2'),
-    fontDataUri(URDU_FONT_DIR, 'noto-nastaliq-urdu-arabic-700-normal.woff2'),
-    fontDataUri(LATIN_FONT_DIR, 'inter-latin-400-normal.woff2'),
-    fontDataUri(LATIN_FONT_DIR, 'inter-latin-700-normal.woff2'),
-  ])
+  const [urduRegular, urduBold, naskhRegular, naskhBold, latinRegular, latinBold] =
+    await Promise.all([
+      fontDataUri(URDU_FONT_DIR, 'noto-nastaliq-urdu-arabic-400-normal.woff2'),
+      fontDataUri(URDU_FONT_DIR, 'noto-nastaliq-urdu-arabic-700-normal.woff2'),
+      fontDataUri(NASKH_FONT_DIR, 'noto-naskh-arabic-arabic-400-normal.woff2'),
+      fontDataUri(NASKH_FONT_DIR, 'noto-naskh-arabic-arabic-700-normal.woff2'),
+      fontDataUri(LATIN_FONT_DIR, 'inter-latin-400-normal.woff2'),
+      fontDataUri(LATIN_FONT_DIR, 'inter-latin-700-normal.woff2'),
+    ])
 
   cachedBaseCss = css
     .replace("url('fonts/noto-nastaliq-urdu-arabic-400-normal.woff2')", `url('${urduRegular}')`)
     .replace("url('fonts/noto-nastaliq-urdu-arabic-700-normal.woff2')", `url('${urduBold}')`)
+    .replace("url('fonts/noto-naskh-arabic-arabic-400-normal.woff2')", `url('${naskhRegular}')`)
+    .replace("url('fonts/noto-naskh-arabic-arabic-700-normal.woff2')", `url('${naskhBold}')`)
     .replace("url('fonts/inter-latin-400-normal.woff2')", `url('${latinRegular}')`)
     .replace("url('fonts/inter-latin-700-normal.woff2')", `url('${latinBold}')`)
 

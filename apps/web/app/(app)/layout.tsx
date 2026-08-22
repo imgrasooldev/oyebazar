@@ -7,7 +7,14 @@ import { Avatar } from '@/components/avatar'
 import { LogoutButton } from '@/components/logout-button'
 import { RouteProgress } from '@/components/route-progress'
 import { PortalSidebar } from '@/components/portal-sidebar'
-import { GridIcon, ListIcon, MoneyIcon, SparkIcon, StoreIcon } from '@/components/icons'
+import {
+  GridIcon,
+  ListIcon,
+  MoneyIcon,
+  SparkIcon,
+  StoreIcon,
+  TemplateIcon,
+} from '@/components/icons'
 import { translator } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
 
@@ -24,9 +31,17 @@ export const dynamic = 'force-dynamic'
  * 🔴 Logout HAR screen par mojood hai — shared phone rule. Ye design choice nahi,
  *    security requirement hai (28% aurtein doosre ka phone use karti hain).
  */
+/*
+ * Tarteeb kaam ke hisaab se hai, safhon ki ginti ke nahi:
+ * roz ka kaam pehle (dashboard → catalogue), phir us ka nateeja (orders → paisa).
+ *
+ * Templates catalogue ke saath hai kyunke design ka faisla wahin hota hai jahan pack
+ * banta hai — halanke ye mahine mein ek dafa ka kaam hai, roz ka nahi.
+ */
 const NAV = [
   { href: '/dashboard', key: 'dashboard', Icon: SparkIcon },
   { href: '/catalogue', key: 'catalogue', Icon: GridIcon },
+  { href: '/templates', key: 'templatesNav', Icon: TemplateIcon },
   { href: '/orders', key: 'orders', Icon: ListIcon },
   { href: '/money', key: 'moneyNav', Icon: MoneyIcon },
   { href: '/bazaar', key: 'bazaar', Icon: StoreIcon },
@@ -96,11 +111,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </div>
 
       {/*
-        Neeche ki patti — mobile app jaisi. Chaar kaam, chaar tap.
+        Neeche ki patti — mobile app jaisi. Har kaam ek tap.
+
+        🔴 `grid-cols-6` ki ginti NAV ke saath badalni parti hai. Tailwind class ka naam
+        chalte waqt nahi bana sakta (wo build par CSS nikalta hai), is liye ye hath se
+        likha hua hai — NAV mein koi cheez daalen ya nikalen to yahan bhi badlen, warna
+        patti do qatar mein toot jati hai aur aakhri item screen se bahar chala jata hai.
+
         `pb-[env(safe-area-inset-bottom)]`: iPhone ke home bar ke peechay na chhupe.
       */}
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-black/[0.06] bg-paper-raised/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
-        <div className="mx-auto grid max-w-shell grid-cols-5">
+        <div className="mx-auto grid max-w-shell grid-cols-6">
           {NAV.map((item) => (
             <Link
               key={item.href}
