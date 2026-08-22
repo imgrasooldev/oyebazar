@@ -1,0 +1,36 @@
+# Kya cheez builder tak JATI HI NAHI.
+#
+# 🔴 Ye file na hone se har deploy poora repo Fly ke builder par bhejta tha — us mein
+# local Postgres ka data (.local, ~67MB) aur render preview ki tasveerein bhi shaamil
+# thin. Us se do nuqsan hote the: har deploy dheema, aur bara context bhejte waqt
+# builder ka connection toot jata tha ("failed to receive status: rpc error ... EOF").
+#
+# Docker khud `COPY` par sirf wohi leta hai jo maanga jaye, magar CONTEXT poora upload
+# hota hai — is liye jo cheez image mein nahi jani, wo yahan likhni parti hai.
+
+# Install image ke andar hota hai (pnpm-lock se), bahar se bhejne ka koi faida nahi
+node_modules
+**/node_modules
+
+.git
+.github
+
+# Local Postgres ka data — `pnpm db:local` banata hai
+.local
+
+# Build ke natije — image ke andar naye sire se bante hain
+**/.next
+**/.next-local
+**/dist
+**/.turbo
+
+# Render preview ki tasveerein (`render:preview`)
+apps/worker/preview-out
+
+# 🔴 Secrets kabhi image mein nahi — live par ye Fly ke secrets se aate hain
+.env
+.env.*
+!.env.example
+.secrets
+
+*.log
