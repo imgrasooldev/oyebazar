@@ -27,22 +27,35 @@ export function LoginForm({ locale }: { locale: Locale }) {
   const [error, setError] = useState<string | null>(null)
   // Dev par server code wapas bhejta hai — safhe par dikhane ke liye (production mein null)
   const [devCode, setDevCode] = useState<string | null>(null)
+  // Soft launch ka muqarrar code — STATIC_OTP laga ho tab hi server bhejta hai
+  const [staticOtp, setStaticOtp] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
   async function post(
     path: string,
     body: unknown,
-  ): Promise<{ ok: boolean; message?: string; code?: string; devCode?: string }> {
+  ): Promise<{
+    ok: boolean
+    message?: string
+    code?: string
+    devCode?: string
+    staticOtp?: string
+  }> {
     const res = await fetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
     const payload = (await res.json().catch(() => null)) as
-      | { devCode?: string; error?: { code?: string; message?: string } }
+      | { devCode?: string; staticOtp?: string; error?: { code?: string; message?: string } }
       | null
 
-    if (res.ok) return { ok: true, ...(payload?.devCode ? { devCode: payload.devCode } : {}) }
+    if (res.ok)
+      return {
+        ok: true,
+        ...(payload?.devCode ? { devCode: payload.devCode } : {}),
+        ...(payload?.staticOtp ? { staticOtp: payload.staticOtp } : {}),
+      }
     return {
       ok: false,
       message: payload?.error?.message ?? t('somethingWrong'),
@@ -60,6 +73,9 @@ export function LoginForm({ locale }: { locale: Locale }) {
         if (result.devCode) {
           setDevCode(result.devCode)
           setCode(result.devCode) // dev par pehle se bhara hua — seedha "andar aayen" daba den
+        } else if (result.staticOtp) {
+          setStaticOtp(result.staticOtp)
+          setCode(result.staticOtp)
         }
       } else setError(result.message ?? null)
     })
@@ -178,6 +194,21 @@ export function LoginForm({ locale }: { locale: Locale }) {
           </p>
           <p dir="ltr" className="numeric mt-1 text-2xl font-bold tracking-[0.35em] text-brand-300">
             {devCode}
+          </p>
+        </div>
+      )}
+
+      {staticOtp && (
+        /*
+          Soft launch ka muqarrar code. Dikhta hai kyunke WhatsApp abhi laga nahi — code
+          kisi tak pohanchta hi nahi. STATIC_OTP khali karte hi ye khud gayab ho jata hai.
+        */
+        <div className="rounded-card bg-coal-900 px-4 py-3 text-center text-white">
+          <p className="text-[0.7rem] uppercase tracking-[0.14em] text-white/50">
+            {t('tempCodeLabel')}
+          </p>
+          <p dir="ltr" className="numeric mt-1 text-2xl font-bold tracking-[0.35em] text-brand-300">
+            {staticOtp}
           </p>
         </div>
       )}

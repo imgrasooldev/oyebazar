@@ -1,6 +1,7 @@
 import { OtpRequestSchema } from '@oyebazar/shared'
 import { apiHandler, clientIp, parseBody } from '@/lib/api/handler'
 import { devOtpFor } from '@/lib/api/dev-otp'
+import { staticOtpHint } from '@/lib/api/static-otp-hint'
 import { container } from '@/lib/container'
 
 export const runtime = 'nodejs'
@@ -17,10 +18,13 @@ export async function POST(request: Request) {
     await container.supplierAuth.requestOtp(phone, clientIp(request))
 
     const devCode = devOtpFor(phone)
+    // Soft launch: STATIC_OTP laga ho to wohi code safhe par — dekhen static-otp-hint.ts
+    const staticOtp = staticOtpHint()
     return {
       ok: true,
       message: 'Code aap ke WhatsApp par bhej diya gaya hai',
       ...(devCode ? { devCode } : {}),
+      ...(staticOtp ? { staticOtp } : {}),
     }
   })
 }

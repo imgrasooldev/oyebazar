@@ -89,3 +89,63 @@ describe('🔴 dev OTP production mein na nikle', () => {
     }
   })
 })
+
+/**
+ * 🔴 MUQARRAR (STATIC) OTP — CI blocking.
+ *
+ * Soft launch mein muqarrar code login ke safhe par dikhaya jata hai (WhatsApp abhi laga
+ * nahi, is liye code kisi tak pohanchta hi nahi). Wo suhoolat jaan boojh kar hai, magar
+ * us ki do hadden hain jo tootni nahi chahiyen — warna ye khamoshi se asli launch tak
+ * chalti rahegi ya ops ka darwaza kholegi.
+ */
+describe('🔴 muqarrar (static) OTP ki hadden', () => {
+  it('STATIC_OTP na laga ho to hint kabhi nahi milta', async () => {
+    vi.stubEnv('STATIC_OTP', '')
+    vi.resetModules()
+
+    try {
+      const { staticOtpHint } = await import('../../lib/api/static-otp-hint')
+      expect(staticOtpHint()).toBeUndefined()
+    } finally {
+      vi.unstubAllEnvs()
+      vi.resetModules()
+    }
+  })
+
+  it('laga ho to wohi code milta hai jo env mein hai', async () => {
+    vi.stubEnv('STATIC_OTP', '112233')
+    vi.resetModules()
+
+    try {
+      const { staticOtpHint } = await import('../../lib/api/static-otp-hint')
+      expect(staticOtpHint()).toBe('112233')
+    } finally {
+      vi.unstubAllEnvs()
+      vi.resetModules()
+    }
+  })
+
+  it('ops (admin) ka koi route ye code kabhi na bheje', () => {
+    const adminRoutes = walk(join(REPO_ROOT, 'apps', 'web', 'app', 'api', 'v1', 'admin'))
+
+    for (const path of adminRoutes) {
+      const source = readFileSync(path, 'utf8')
+      expect(source, `${path} ops ke safhe par muqarrar code bhej raha hai`).not.toContain(
+        'staticOtpHint',
+      )
+    }
+  })
+
+  it('sirf wahi route bheje jo helper istemal karta hai', () => {
+    const routes = walk(join(REPO_ROOT, 'apps', 'web', 'app', 'api'))
+
+    for (const path of routes) {
+      const source = readFileSync(path, 'utf8')
+      if (!source.includes('staticOtp')) continue
+
+      expect(source, `${path} staticOtp bhejta hai magar staticOtpHint use nahi karta`).toContain(
+        'staticOtpHint',
+      )
+    }
+  })
+})
