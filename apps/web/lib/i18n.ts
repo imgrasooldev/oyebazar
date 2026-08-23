@@ -266,7 +266,15 @@ const DICTIONARY = {
    * tool ki zabaan hain; jo banda WhatsApp par maal bechta hai wo ye poochhta hai ke
    * "likhai ka rang" kya ho aur "peechay" kya ho.
    */
-  toolText: { ur: 'متن', en: 'Text', rm: 'Matn' },
+  /*
+   * 🔴 Rail ke "متن" se ALAG naam.
+   *
+   * Dono ka naam "Text" tha: rail wala NAYA text daalta hai, toolbar wala chuni hui
+   * cheez ke ALFAAZ badalta hai. Ek hi lafz do bilkul alag kaam par lagne se banda
+   * andaza lagata hai ke kaun sa kya karega — aur screen reader par to dono bilkul ek
+   * jaise bolay jate hain.
+   */
+  toolText: { ur: 'لکھیں', en: 'Edit', rm: 'Likhen' },
   toolColour: { ur: 'رنگ', en: 'Colour', rm: 'Rang' },
   toolBg: { ur: 'پیچھے', en: 'Behind', rm: 'Peechay' },
   toolFont: { ur: 'لکھائی', en: 'Font', rm: 'Likhai' },
