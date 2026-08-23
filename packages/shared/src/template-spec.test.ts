@@ -82,3 +82,50 @@ describe('🔴 peechay ka rang', () => {
     expect(css).not.toContain('#123456')
   })
 })
+
+/**
+ * 🔴 Reseller ka chuna hua rang pill se HAAR nahi sakta.
+ *
+ * `pillOn` apne saath `color: var(--badge-text)` laata hai. Wo rang se PEHLE likha jaye
+ * to CSS mein baad wali line jeet jati hai aur chunao zaya ho jata hai. Live par chala
+ * kar yehi pakra: qeemat par peela chuna, likhai safed hi rahi.
+ */
+describe('🔴 rang aur pill ek saath', () => {
+  const cssFor = (extra: Record<string, unknown>) =>
+    templateSpecToCss({
+      ...DEFAULT_TEMPLATE_SPEC,
+      elements: {
+        ...DEFAULT_TEMPLATE_SPEC.elements,
+        badge: { ...DEFAULT_TEMPLATE_SPEC.elements.badge, ...extra },
+      },
+    })
+
+  it('pill ke saath chuna hua rang pill ke BAAD likha jata hai', () => {
+    const css = cssFor({ pill: true, colour: '#facc15' })
+    expect(css.indexOf('color: #facc15;')).toBeGreaterThan(css.indexOf('color: var(--badge-text);'))
+  })
+
+  it('bina pill ke rang apni purani jagah par hi rehta hai', () => {
+    const css = cssFor({ colour: '#facc15' })
+    expect(css).toContain('color: #facc15;')
+    expect(css).not.toContain('var(--badge-text)')
+  })
+
+  it('apni layer par bhi wohi usool', () => {
+    const css = templateSpecToCss({
+      ...DEFAULT_TEMPLATE_SPEC,
+      layers: [
+        { kind: 'text', text: 'مفت ڈیلیوری', show: true, x: 8, y: 40, size: 40, pill: true, colour: '#facc15' },
+      ],
+    })
+    expect(css.indexOf('color: #facc15;')).toBeGreaterThan(css.indexOf('color: var(--badge-text);'))
+  })
+
+  it('bina rang wali layer ka CSS haraf ba haraf wohi rehta hai', () => {
+    const css = templateSpecToCss({
+      ...DEFAULT_TEMPLATE_SPEC,
+      layers: [{ kind: 'text', text: 'مفت ڈیلیوری', show: true, x: 8, y: 40, size: 40 }],
+    })
+    expect(css).toContain('color: #ffffff;')
+  })
+})

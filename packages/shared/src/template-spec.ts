@@ -605,24 +605,39 @@ export function templateSpecToCss(spec: TemplateSpec): string {
        */
       const inner = INNER_SELECTOR[key]
 
+      /*
+       * 🔴 Rang pill ke BAAD likha jata hai — warna reseller ka chunao zaya ho jata hai.
+       *
+       * `pillOn` apne saath `color: var(--badge-text)` laata hai (bhare hue dabbe par
+       * safed likhai, taake wo parhi ja sake). Agar reseller ka apna rang us se PEHLE
+       * likha ho to CSS mein baad wali line jeet jati hai aur chuna hua rang kabhi nazar
+       * hi nahi aata. Live par chala kar yehi pakra: peela chuna, likhai safed hi rahi.
+       *
+       * Is liye do khaane hain, ek hi rang ke liye: bina pill ke wo apni purani jagah
+       * par rehta hai (purane spec ka CSS haraf ba haraf wohi), aur pill ke saath wo
+       * pill ke baad jata hai — yani sirf usi soorat mein CSS badalta hai jo pehle TOOTI
+       * hui thi.
+       */
       const extra = [
         // Rang/dabba andar wale par hon to bahar wale par na likhen — dekhen INNER_SELECTOR
-        !inner && element.colour ? `color: ${element.colour};` : '',
+        !inner && element.colour && element.pill !== true ? `color: ${element.colour};` : '',
         element.opacity !== undefined ? `opacity: ${element.opacity / 100};` : '',
         element.rotate ? `transform: rotate(${element.rotate}deg);` : '',
         element.font ? `font-family: ${FONT_STACK[element.font]};` : '',
         !inner && element.pill === true ? pillOn(element.pillColour) : '',
         !inner && element.pill === false ? PILL_OFF : '',
+        !inner && element.colour && element.pill === true ? `color: ${element.colour};` : '',
       ]
         .filter(Boolean)
         .join('\n  ')
 
       const innerExtra = inner
         ? [
-            element.colour ? `color: ${element.colour};` : '',
+            element.colour && element.pill !== true ? `color: ${element.colour};` : '',
             element.pill === true ? pillOn(element.pillColour) : '',
             element.pill === false ? PILL_OFF : '',
             element.font ? `font-family: ${FONT_STACK[element.font]};` : '',
+            element.colour && element.pill === true ? `color: ${element.colour};` : '',
           ]
             .filter(Boolean)
             .join('\n  ')
@@ -750,11 +765,14 @@ function layersCss(spec: TemplateSpec): string {
       }
 
       const extra = [
-        layer.colour ? `color: ${layer.colour};` : 'color: #ffffff;',
+        // Rang pill ke baad — dekhen upar wala note
+        layer.colour && !layer.pill ? `color: ${layer.colour};` : '',
+        layer.colour ? '' : 'color: #ffffff;',
         layer.opacity !== undefined ? `opacity: ${layer.opacity / 100};` : '',
         layer.rotate ? `transform: rotate(${layer.rotate}deg);` : '',
         `font-family: ${FONT_STACK[layer.font ?? 'nastaliq']};`,
         layer.pill ? pillOn(layer.pillColour) : '',
+        layer.colour && layer.pill ? `color: ${layer.colour};` : '',
       ]
         .filter(Boolean)
         .join('\n  ')
