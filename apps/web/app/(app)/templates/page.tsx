@@ -18,7 +18,25 @@ export const dynamic = 'force-dynamic'
 export default async function TemplatesPage() {
   const [{ reseller }, locale] = await Promise.all([requireReseller(), getLocale()])
 
-  const templates = await container.repositories.resellerTemplates.listForReseller(reseller.id)
+  /*
+   * 🔴 Asli maal ki tasveerein — editor mein preview ke liye.
+   *
+   * Pehle canvas par ek banawati dhalta hua rang tha. Us par design achha lagta tha aur
+   * asli pack kuch aur nikalta tha: safed likhai us gradient par saaf thi, magar lawn ki
+   * halki tasveer par gum ho jati thi. Reseller ko wo farq PACK BANANE KE BAAD pata
+   * chalta tha — yani jab wo usay WhatsApp par laga chuki hoti.
+   *
+   * Ab wo apne asli maal par design karti hai. Yehi is safhe ko waqai kaam ka banata hai.
+   */
+  const [templates, catalogue] = await Promise.all([
+    container.repositories.resellerTemplates.listForReseller(reseller.id),
+    container.catalogue.list(reseller.id, { limit: 12, inStockOnly: true }).catch(() => null),
+  ])
+
+  const photos = (catalogue?.items ?? [])
+    .map((item) => item.product.coverImageUrl)
+    .filter((url): url is string => Boolean(url))
+    .slice(0, 8)
 
   return (
     /*
@@ -54,6 +72,7 @@ export default async function TemplatesPage() {
             revision: template.revision,
           }))}
           defaultTemplateKey={reseller.packTemplateKey}
+          photos={photos}
           locale={locale}
         />
       </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   DEFAULT_TEMPLATE_SPEC,
   TEMPLATE_PRESETS,
@@ -265,10 +265,24 @@ interface Props {
   templates: EditorTemplate[]
   /** Abhi kaun sa default hai — `custom:<id>@<n>` ya built-in ki key ya null. */
   defaultTemplateKey: string | null
+  /**
+   * Reseller ke apne maal ki tasveerein — canvas ke peechay lagane ke liye.
+   *
+   * 🔴 Ye spec ka hissa NAHI hain aur na honi chahiyen: template har maal par lagta
+   * hai, aur us mein kisi ek maal ki tasveer baandh dena poore maqsad ke khilaf hai.
+   * Ye sirf DEKHNE ke liye hai — taake reseller andaza laga sake ke us ka design asli
+   * tasveer par kaisa lagega.
+   */
+  photos: string[]
   locale: Locale
 }
 
-export function TemplateEditor({ templates: initial, defaultTemplateKey, locale }: Props) {
+export function TemplateEditor({
+  templates: initial,
+  defaultTemplateKey,
+  photos,
+  locale,
+}: Props) {
   const t = translator(locale)
   const [templates, setTemplates] = useState(initial)
   const [selectedId, setSelectedId] = useState<string | null>(initial[0]?.id ?? null)
@@ -350,6 +364,32 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
    * button dabata aur kuch na hota.
    */
   const [fullscreen, setFullscreen] = useState(false)
+
+  /** Canvas ke peechay konsi tasveer — sirf dekhne ke liye, spec ka hissa nahi. */
+  const [photo, setPhoto] = useState<string | null>(photos[0] ?? null)
+
+  /**
+   * 🔴 Bina mehfooz kiye safha chhorne par tanbeeh.
+   *
+   * Template banane mein pandra bees minute lagte hain, aur wo poora kaam ek ghalat tap
+   * par zaya ho sakta hai — koi nav ka button, ya browser ka "wapas". Us nuqsan ki koi
+   * marammat nahi: undo bhi safha chhorne ke baad kaam nahi aata.
+   *
+   * Browser apna hi paighaam dikhata hai (hum us ka matn nahi badal sakte), magar wo
+   * ruk to jata hai — aur rukna hi asal cheez hai.
+   */
+  useEffect(() => {
+    if (saved || (past.length === 0 && !selectedId)) return
+
+    function onBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault()
+      // Purane browsers ke liye — naye sirf `preventDefault` dekhte hain
+      event.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [saved, past.length, selectedId])
 
   function toggleFullscreen() {
     const next = !fullscreen
@@ -727,6 +767,24 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
       const data = (await res.json()) as { templateKey: string | null }
       setDefaultKey(data.templateKey)
     } else setError(t('somethingWrong'))
+  }
+
+  /**
+   * Naqal — mojooda design se naya banao.
+   *
+   * Server par nahi bhejta: sirf canvas par le aata hai naye naam ke saath, aur reseller
+   * "محفوظ کریں" daba kar tay karti hai ke ye waqai chahiye ya nahi. Foran mehfooz kar
+   * dene se har ghalat tap ek naya template bana deta.
+   */
+  function duplicate(template: EditorTemplate) {
+    setSelectedId(null)
+    setName(`${template.name} ${t('copySuffix')}`)
+    setSpec(template.spec)
+    setPast([])
+    setFuture([])
+    setSelected(null)
+    setSaved(false)
+    setTab('design')
   }
 
   async function remove(id: string) {
@@ -1139,15 +1197,19 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
         <div className="card order-3 p-4 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
           <h2 className="text-[0.95rem] font-bold">{t('startFrom')}</h2>
           <p className="mt-1 text-[0.75rem] text-ink-faint">{t('startFromHint')}</p>
-          <div className="mt-2 flex flex-wrap gap-2">
+          {/* Shakl dekh kar chunen, naam parh kar nahi — dekhen TemplateThumb ka note */}
+          <div className="mt-2 grid grid-cols-3 gap-2">
             {TEMPLATE_PRESETS.map((preset) => (
               <button
                 key={preset.key}
                 type="button"
                 onClick={() => startNew(preset.spec)}
-                className="chip !py-1 text-[0.75rem]"
+                className="link-tap flex flex-col items-center gap-1"
               >
-                {locale === 'ur' ? preset.nameUr : preset.nameEn}
+                <TemplateThumb spec={preset.spec} photo={photo} />
+                <span className="w-full truncate text-center text-[0.68rem] font-semibold">
+                  {locale === 'ur' ? preset.nameUr : preset.nameEn}
+                </span>
               </button>
             ))}
           </div>
@@ -1170,21 +1232,41 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                 <button
                   type="button"
                   onClick={() => choose(template)}
-                  className="link-tap flex-1 text-right text-[0.85rem] font-semibold"
+                  className="link-tap flex min-w-0 flex-1 items-center gap-2 text-right"
                 >
-                  {template.name}
-                  {defaultKey?.startsWith(`custom:${template.id}@`) && (
-                    <span className="mr-2 text-[0.68rem] text-accent-700">★</span>
-                  )}
+                  <TemplateThumb spec={template.spec} photo={photo} />
+                  <span className="min-w-0 flex-1 truncate text-[0.85rem] font-semibold">
+                    {template.name}
+                    {defaultKey?.startsWith(`custom:${template.id}@`) && (
+                      <span className="mr-1 text-[0.68rem] text-accent-700">★</span>
+                    )}
+                  </span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => remove(template.id)}
-                  disabled={busy}
-                  className="text-[0.72rem] text-ink-faint underline"
-                >
-                  {t('deleteTemplate')}
-                </button>
+
+                <div className="flex shrink-0 flex-col gap-1">
+                  {/*
+                    Naqal — sab se aam kaam jo pehle mumkin hi nahi tha.
+                    Reseller ka ek design chal jata hai; agla wo sifar se nahi, USI se
+                    banana chahti hai (Eid wala, phir sale wala). Naqal ke baghair usay
+                    poora kaam dobara karna parta tha.
+                  */}
+                  <button
+                    type="button"
+                    onClick={() => duplicate(template)}
+                    disabled={busy}
+                    className="text-[0.7rem] text-ink-faint underline"
+                  >
+                    {t('duplicateTemplate')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => remove(template.id)}
+                    disabled={busy}
+                    className="text-[0.7rem] text-ink-faint underline"
+                  >
+                    {t('deleteTemplate')}
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -1246,17 +1328,28 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                 style={{ transform: `scale(${zoom})` }}
               >
                 {/*
-                  Namoona tasveer ki jagah gehra dhalta hua rang — ek aur asset rakhne ka
-                  matlab hota ek aur cheez jo deploy par chhoot sakti hai, aur us ke
-                  chhootne par editor safed ho jata jahan safed likhai nazar hi na aati.
+                  🔴 Reseller ke apne maal ki tasveer — banawati rang nahi.
+
+                  Ye is editor ka sab se ahem sudhaar hai. Gradient par safed likhai
+                  hamesha saaf lagti thi, magar lawn ki halki tasveer par wo gum ho jati
+                  hai — aur ye farq reseller ko pack banane ke BAAD pata chalta tha, yani
+                  jab wo usay WhatsApp par laga chuki hoti.
+
+                  Tasveer na ho (naya account, ya catalogue khali) to wohi purana gradient
+                  — kyunke safed canvas par safed likhai bilkul nazar nahi aati.
                 */}
-                <div
-                  className="photo"
-                  style={{
-                    background:
-                      'linear-gradient(150deg, #7c3f1d 0%, #b45309 35%, #3f3f46 75%, #18181b 100%)',
-                  }}
-                />
+                {photo ? (
+                  /* eslint-disable-next-line @next/next/no-img-element -- storage se aayi hui asli tasveer */
+                  <img className="photo" src={photo} alt="" />
+                ) : (
+                  <div
+                    className="photo"
+                    style={{
+                      background:
+                        'linear-gradient(150deg, #7c3f1d 0%, #b45309 35%, #3f3f46 75%, #18181b 100%)',
+                    }}
+                  />
+                )}
                 <div className="scrim" />
 
                 <div className="content">
@@ -1354,6 +1447,36 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
             Chunne ke baad toolbar khud saamne hota hai aur ye qatar sirf oonchai khati
             hai — aur chhoti screen par har qatar canvas se cheeni gayi jagah hai.
           */}
+          {/*
+            Apne maal ki tasveerein — canvas ke neeche, chhoti patti mein.
+
+            Design ka faisla tasveer ke saath badalta hai: jo rang gehri tasveer par
+            chamakta hai wo halki par ghul jata hai. Do-teen tasveerein badal kar dekhna
+            hi wo tareeqa hai jis se banda ek AISA template banata hai jo har maal par
+            chalta hai — sirf us ek par nahi jo abhi saamne hai.
+          */}
+          {photos.length > 1 && (
+            <div className="mt-1.5 flex shrink-0 items-center justify-center gap-1.5">
+              {photos.map((url) => (
+                <button
+                  key={url}
+                  type="button"
+                  onClick={() => setPhoto(url)}
+                  aria-label={t('tryOnPhoto')}
+                  title={t('tryOnPhoto')}
+                  className={
+                    photo === url
+                      ? 'h-8 w-8 shrink-0 overflow-hidden rounded-lg ring-2 ring-accent-700'
+                      : 'link-tap h-8 w-8 shrink-0 overflow-hidden rounded-lg ring-1 ring-black/10'
+                  }
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- storage ki tasveer */}
+                  <img src={url} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+
           {!selected && (
             <p className="mt-1.5 shrink-0 text-center text-[0.72rem] text-ink-faint">
               {t('dragHint')}
@@ -1915,6 +2038,65 @@ function Handle({
     </div>
   )
 }
+
+/**
+ * Template ka chhota namoona — wohi spec, wohi CSS, bas bohat chhota.
+ *
+ * 🔴 Naam se koi nahi jaanta ke "فریم" ya "گہرا" kaisa dikhta hai. Shakl dekh kar
+ * foran pata chal jata hai. Isi liye har design tool apne templates tasveer ke tor par
+ * dikhata hai, list ke tor par nahi.
+ *
+ * `templateSpecToCss` wohi function hai jo asli render chalata hai — namoona aur asli
+ * pack do alag hisaab se nahi bante. Yahan sirf naap chhota hai aur likhai namoona ki.
+ */
+function TemplateThumb({ spec, photo }: { spec: TemplateSpec; photo: string | null }) {
+  /*
+   * Har namoone ka apna class — warna do namoone ek doosre ka CSS le lete (dono
+   * `.stage.custom` par chalte hain). `useId` har namoone ko apni pehchan deta hai.
+   */
+  const id = useId().replace(/[^a-zA-Z0-9]/g, '')
+  const scale = THUMB_W / CANVAS_W
+
+  return (
+    <div
+      className="relative shrink-0 overflow-hidden rounded-lg ring-1 ring-black/10"
+      style={{ width: THUMB_W, height: CANVAS_H * scale }}
+    >
+      <style
+        dangerouslySetInnerHTML={{
+          __html: templateSpecToCss(spec).replace(/\.stage\.custom/g, `.thumb-${id}`),
+        }}
+      />
+      <div
+        className={`tpl-stage stage custom thumb-${id}`}
+        style={{ transform: `scale(${scale})` }}
+      >
+        {photo ? (
+          /* eslint-disable-next-line @next/next/no-img-element -- storage ki tasveer */
+          <img className="photo" src={photo} alt="" />
+        ) : (
+          <div
+            className="photo"
+            style={{ background: 'linear-gradient(150deg, #b45309, #18181b)' }}
+          />
+        )}
+        <div className="scrim" />
+        <div className="content">
+          <div className="badge">{spec.badgeText || '—'}</div>
+          <div className="bottom">
+            <div className="title">اردو</div>
+            <div className="price-row">
+              <div className="price">Rs</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Namoone ki chaurai — is se chhota par shakl pehchani hi nahi jati. */
+const THUMB_W = 54
 
 function IconButton({
   children,
