@@ -48,6 +48,31 @@ async function main(): Promise<void> {
     logger,
   }
 
+  /**
+   * 🔴 Kam khapat wali queues ke liye alag settings — aur ye paison ki baat hai.
+   *
+   * BullMQ ka har Worker Redis par chobees ghante blocking read lagaye rakhta hai aur
+   * `drainDelay` (default 5 second) par usay naya karta hai, saath hi `stalledInterval`
+   * (default 30s) par atke hue job dekhta hai. Ek worker par ye ~15 request/minute
+   * banta hai. Hamare paanch worker the — yani ~108,000 request ROZANA, bina kisi kaam
+   * ke.
+   *
+   * Upstash ke free plan ki hadd 500,000 mahana hai. Wo hadd is tarah 5 din mein khatam
+   * ho jati hai, aur us ke baad pack banna BILKUL ruk jata hai — jo aaj hua.
+   *
+   * In chaar queues mein kaam din mein ek dafa aata hai (ya aadhe ghante mein), is liye
+   * 60 second ka intezar in ke liye bilkul kaafi hai. Render wali queue par ye NAHI
+   * lagti — wahan reseller saamne baithi intezar kar rahi hoti hai.
+   */
+  const RARE_QUEUE_OPTS = {
+    connection: container.connection,
+    concurrency: 1,
+    /** 5s ki jagah 60s — blocking read ka renewal 12 guna kam. */
+    drainDelay: 60,
+    /** 30s ki jagah 5 minute — atke hue job ki jaanch itni jaldi zaroori nahi. */
+    stalledInterval: 300_000,
+  } as const
+
   const workers = [
     new Worker<RenderStatusPackJob>(
       QUEUE_NAMES.renderStatusPack,
@@ -56,30 +81,36 @@ async function main(): Promise<void> {
         connection: container.connection,
         // pool size se zyada concurrency ka faida nahi — contexts hi bottleneck hain
         concurrency: config.renderConcurrency,
+        /*
+         * Yahan `drainDelay` nahi barhaya — reseller "بنائیں" daba kar SAAMNE baithi
+         * hai. Magar stalled ki jaanch 30s se 60s par le gaye: atka hua render itni
+         * jaldi dhoondhne ki koi wajah nahi, aur ye aadhi request bacha deta hai.
+         */
+        stalledInterval: 60_000,
       },
     ),
 
-    new Worker(QUEUE_NAMES.pregenerateDailyPacks, async () => runNightlyPregeneration(container), {
-      connection: container.connection,
-      concurrency: 1,
-    }),
+    new Worker(
+      QUEUE_NAMES.pregenerateDailyPacks,
+      async () => runNightlyPregeneration(container),
+      RARE_QUEUE_OPTS,
+    ),
 
     // 🔴 concurrency 1 — do broadcast ek saath chalein to har reseller ko do messages
-    new Worker(QUEUE_NAMES.dailyBroadcast, async () => runDailyBroadcast(container), {
-      connection: container.connection,
-      concurrency: 1,
-    }),
+    new Worker(QUEUE_NAMES.dailyBroadcast, async () => runDailyBroadcast(container), RARE_QUEUE_OPTS),
 
-    new Worker(QUEUE_NAMES.orderMaintenance, async () => runOrderMaintenance(container), {
-      connection: container.connection,
-      concurrency: 1,
-    }),
+    new Worker(
+      QUEUE_NAMES.orderMaintenance,
+      async () => runOrderMaintenance(container),
+      RARE_QUEUE_OPTS,
+    ),
 
     // 🔴 Paisa — concurrency 1, warna ek supplier ke do invoice ban sakte hain
-    new Worker(QUEUE_NAMES.feeInvoicing, async () => runMonthlyFeeInvoicing(container), {
-      connection: container.connection,
-      concurrency: 1,
-    }),
+    new Worker(
+      QUEUE_NAMES.feeInvoicing,
+      async () => runMonthlyFeeInvoicing(container),
+      RARE_QUEUE_OPTS,
+    ),
   ]
 
   for (const worker of workers) {

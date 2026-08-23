@@ -295,6 +295,7 @@ const DICTIONARY = {
   showAdvanced: { ur: 'مزید سیٹنگز', en: 'More settings', rm: 'Mazeed settings' },
   showSimple: { ur: 'کم دکھائیں', en: 'Show less', rm: 'Kam dikhayen' },
   doneWithThis: { ur: '✓ ہو گیا', en: '✓ Done', rm: '✓ Ho gaya' },
+  customColour: { ur: 'اپنی مرضی کا رنگ', en: 'Custom colour', rm: 'Apni marzi ka rang' },
   tabDesign: { ur: 'ڈیزائن', en: 'Design', rm: 'Design' },
   tabText: { ur: 'متن', en: 'Text', rm: 'Matn' },
   tabShapes: { ur: 'شکلیں', en: 'Shapes', rm: 'Shaklen' },

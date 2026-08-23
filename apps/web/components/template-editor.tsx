@@ -357,7 +357,9 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
       const { width, height } = area.getBoundingClientRect()
       if (width === 0 || height === 0) return
       // 0.94 — kinare par thori saans, warna canvas dabbe se bilkul chipak jata hai
-      setFitZoom(Math.min(width / CANVAS_W, height / CANVAS_H) * 0.94)
+      // 0.99 — kinare par bas itni saans ke saaya kata na lage. Pehle 0.94 tha, aur wo
+      // chhoti screen par canvas ko be-wajah 6%% chhota kar deta tha.
+      setFitZoom(Math.min(width / CANVAS_W, height / CANVAS_H) * 0.99)
     }
 
     measure()
@@ -852,7 +854,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
      * scroll karta hai — us ke baghair flex bachche ko simatne hi nahi deta aur scroll
      * kahin nahi hota, bas safha lamba hota jata hai.
      */
-    <div className="flex flex-col gap-3 lg:h-full">
+    <div className="flex flex-col gap-2 lg:h-full">
       {/*
         ---------------- Ooper ki patti ----------------
 
@@ -864,7 +866,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
         Yehi rang Content Studio ke sar par pehle se hai (bg-coal-900) — ye naya mizaj
         nahi, wohi hai.
       */}
-      <div className="flex shrink-0 flex-wrap items-center gap-3 rounded-card bg-coal-900 p-3 text-white">
+      <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-card bg-coal-900 p-2 text-white">
         <div className="flex items-center gap-1">
           <IconButton label={t('undo')} onClick={undo} disabled={past.length === 0} dark>
             <UndoIcon className="h-4 w-4" />
@@ -909,17 +911,17 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
           onChange={(e) => setName(e.target.value)}
           maxLength={40}
           placeholder={t('myTemplate')}
-          className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-[0.9rem] text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none"
+          className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/10 px-3 py-1.5 text-[0.88rem] text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none"
         />
 
-        <button type="button" onClick={save} disabled={busy} className="btn-primary !py-2">
+        <button type="button" onClick={save} disabled={busy} className="btn-primary !py-1.5">
           {saved ? t('savedTick') : t('saveTemplate')}
         </button>
         <button
           type="button"
           onClick={makeDefault}
           disabled={busy || !selectedId || isDefault}
-          className="rounded-pill border border-white/25 px-4 py-2 text-[0.85rem] font-semibold text-white transition hover:bg-white/10 disabled:opacity-40"
+          className="shrink-0 rounded-pill border border-white/25 px-3 py-1.5 text-[0.82rem] font-semibold text-white transition hover:bg-white/10 disabled:opacity-40"
         >
           {isDefault ? `★ ${t('isDefault')}` : t('makeDefault')}
         </button>
@@ -936,7 +938,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
         wohi `min-h-0` har column ko sifar oonchai par gira deta tha — isi wajah se
         canvas ka naap 0×0 nikla tha.
       */}
-      <div className="grid gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[auto_minmax(0,270px)_minmax(0,1fr)]">
+      <div className="grid gap-2 lg:min-h-0 lg:flex-1 lg:grid-cols-[auto_minmax(0,260px)_minmax(0,1fr)]">
         {/*
           ---------------- Baayen icon rail ----------------
 
@@ -994,6 +996,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
             {selectedLayer?.kind !== 'image' && (
               <SwatchRow
                 label={selectedLayer?.kind === 'shape' ? t('shapeColour') : t('textColour')}
+                customLabel={t('customColour')}
                 accent={spec.accent}
                 value={part(spec, selected)?.colour}
                 onChange={(colour) => patchPart(selected, { colour })}
@@ -1161,7 +1164,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
              * `max-h` us surat mein bhi dabbe ko bandha rakhta hai; canvas bara hua to
              * scroll ISI dabbe ke andar hoga (`overflow-auto`), safhe ka nahi.
              */
-            className="sticky top-[4.25rem] z-10 flex h-[42vh] items-center justify-center overflow-auto rounded-card bg-coal-900/[0.06] p-3 lg:static lg:h-auto lg:max-h-none lg:min-h-0 lg:flex-1"
+            className="sticky top-[4.25rem] z-10 flex h-[55vh] items-center justify-center overflow-auto rounded-card bg-coal-900/[0.06] p-1.5 lg:static lg:h-auto lg:max-h-none lg:min-h-0 lg:flex-1"
           >
             <div
               className="relative shrink-0 overflow-hidden rounded-card shadow-[0_18px_50px_-12px_rgba(0,0,0,0.45)] ring-1 ring-black/10"
@@ -1281,13 +1284,20 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
             </div>
           </div>
 
-          <p className="mt-2 shrink-0 text-center text-[0.75rem] text-ink-faint">
-            {selected ? t('selectedHint') : t('dragHint')}
-          </p>
+          {/*
+            Ishara sirf tab jab kuch chuna hua NA ho.
+            Chunne ke baad toolbar khud saamne hota hai aur ye qatar sirf oonchai khati
+            hai — aur chhoti screen par har qatar canvas se cheeni gayi jagah hai.
+          */}
+          {!selected && (
+            <p className="mt-1.5 shrink-0 text-center text-[0.72rem] text-ink-faint">
+              {t('dragHint')}
+            </p>
+          )}
 
           {/* Chuni hui cheez ka apna toolbar — canvas ke bilkul neeche, nazar wahin hai */}
           {selected && (
-            <div className="card mt-2 shrink-0 overflow-x-auto p-2">
+            <div className="card mt-1.5 shrink-0 overflow-x-auto p-1.5">
               {/*
                 🔴 `flex-nowrap` — wrap NAHI.
 
@@ -1414,6 +1424,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
             {/* Template ka apna rang — swatches se, hex ka khana sirf "زیادہ" par */}
             <SwatchRow
               label={t('accentColour')}
+              customLabel={t('customColour')}
               accent={spec.accent}
               value={spec.accent}
               onChange={(accent) => patch({ accent })}
@@ -1894,11 +1905,14 @@ const SWATCHES = [
 
 function SwatchRow({
   label,
+  customLabel,
   value,
   accent,
   onChange,
 }: {
   label: string
+  /** Picker aur hex ke liye — SwatchRow module ke darje par hai, wahan `t` nahi hota. */
+  customLabel: string
   value: string | undefined
   /** Template ka apna rang — "koi rang nahi chuna" ka matlab yehi hai. */
   accent: string
@@ -1907,7 +1921,7 @@ function SwatchRow({
   return (
     <div>
       <p className="text-[0.78rem] font-semibold">{label}</p>
-      <div className="mt-2 flex flex-wrap gap-2">
+      <div className="mt-2 flex flex-wrap items-center gap-2">
         {SWATCHES.map((colour) => {
           const active = (value ?? accent).toLowerCase() === colour.toLowerCase()
           return (
@@ -1926,6 +1940,43 @@ function SwatchRow({
             />
           )
         })}
+
+        {/*
+          Apni marzi ka rang — Canva ki tarah swatches ke SAATH, un ki jagah nahi.
+
+          Aath khaane 90% kaam kar dete hain aur ek tap door hain; magar jise brand ka
+          apna theek rang chahiye us ke liye poora picker bhi wahin hona chahiye. Ek ko
+          doosre ke peechay chhupana dono qism ke logon mein se ek ko haraa deta hai.
+
+          `<label>` ke andar chhupa hua input: khaana bhi swatches jaisa gol dikhta hai,
+          aur tap par system ka apna rang chunne wala khulta hai (phone par bhi).
+        */}
+        <label
+          className="link-tap relative h-8 w-8 cursor-pointer overflow-hidden rounded-full ring-1 ring-black/15"
+          title={customLabel}
+          style={{
+            background:
+              'conic-gradient(#ef4444, #f59e0b, #facc15, #22c55e, #06b6d4, #3b82f6, #a855f7, #ef4444)',
+          }}
+        >
+          <input
+            type="color"
+            value={value ?? accent}
+            onChange={(e) => onChange(e.target.value)}
+            aria-label={customLabel}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          />
+        </label>
+
+        {/* Hex — un ke liye jin ke paas brand ka rang likha hua hota hai */}
+        <input
+          value={value ?? accent}
+          onChange={(e) => onChange(e.target.value)}
+          dir="ltr"
+          maxLength={7}
+          aria-label={customLabel}
+          className="field numeric h-8 w-20 !py-0 text-[0.72rem]"
+        />
       </div>
     </div>
   )

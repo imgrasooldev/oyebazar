@@ -71,14 +71,38 @@ export class BullMqRenderQueue implements RenderQueue {
     })
   }
 
+  /**
+   * 🔴 Redis ka masla reseller ki screen tak nahi jana chahiye.
+   *
+   * Pehle yahan se error seedha upar jata tha aur poori request 500 de kar marti thi —
+   * reseller ko "kuch gharbar ho gayi" milta tha aur pack ka safha hi toot jata tha.
+   *
+   * Aisa asal mein hua: Upstash ka mahane ka quota khatam hua, har enqueue phenkne
+   * laga, aur pack banana bilkul band ho gaya.
+   *
+   * Ab wo soorat waisi hi hai jaisi REDIS_URL na hone par hoti hai (dekhen
+   * `LoggingRenderQueue`): pack ki row ban chuki hoti hai aur RENDERING par rehti hai,
+   * UI apna "thora waqt lag raha hai" wala paighaam dikhata hai, aur baqi poora safha
+   * — maal, rate, order — chalta rehta hai.
+   *
+   * Log `error` par hai, `warn` par nahi: ye khamoshi se guzar jane wali baat nahi.
+   */
   async enqueue(job: RenderStatusPackJob): Promise<{ jobId: string }> {
-    const added = await this.queue.add(QUEUE_NAMES.renderStatusPack, job, {
-      jobId: job.statusPackId,
-      // reseller intezar kar rahi hai — ye job nightly pre-generation se pehle chale
-      priority: 1,
-    })
-    this.logger?.info('render_job_enqueued', { jobId: added.id, statusPackId: job.statusPackId })
-    return { jobId: added.id ?? job.statusPackId }
+    try {
+      const added = await this.queue.add(QUEUE_NAMES.renderStatusPack, job, {
+        jobId: job.statusPackId,
+        // reseller intezar kar rahi hai — ye job nightly pre-generation se pehle chale
+        priority: 1,
+      })
+      this.logger?.info('render_job_enqueued', { jobId: added.id, statusPackId: job.statusPackId })
+      return { jobId: added.id ?? job.statusPackId }
+    } catch (error) {
+      this.logger?.error('render_job_enqueue_failed', {
+        statusPackId: job.statusPackId,
+        error: error instanceof Error ? error.message : String(error),
+      })
+      return { jobId: job.statusPackId }
+    }
   }
 
   close(): Promise<void> {
