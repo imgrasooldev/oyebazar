@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   DEFAULT_TEMPLATE_SPEC,
+  FONT_KEYS,
   TEMPLATE_PRESETS,
   formatPkr,
   pkr,
   templateSpecToCss,
+  type FontKey,
   type ShapeLayer,
   type TemplateSpec,
 } from '@oyebazar/shared'
@@ -145,7 +147,7 @@ type PartStyle = {
   colour?: string | undefined
   opacity?: number | undefined
   rotate?: number | undefined
-  font?: 'nastaliq' | 'naskh' | 'latin' | undefined
+  font?: FontKey | undefined
   pill?: boolean | undefined
   radius?: number | undefined
   /** Maal ke naam/qeemat ke peechay jaye ya oopar — shapes ki poori wajah yehi hai. */
@@ -197,6 +199,33 @@ const TABS = [
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
+
+const FONT_LABEL = {
+  nastaliq: 'fontNastaliq',
+  naskh: 'fontNaskh',
+  amiri: 'fontAmiri',
+  cairo: 'fontCairo',
+  latin: 'fontLatin',
+  poppins: 'fontPoppins',
+  playfair: 'fontPlayfair',
+} as const
+
+/**
+ * Dropdown mein har naam apni HI likhai mein.
+ *
+ * 🔴 Ye web ke fonts hain, worker ke nahi. Browser mein sirf Nastaliq aur Inter load
+ * hote hain (globals.css); baqi ke liye system ka sab se qareeb font chalta hai. Namoona
+ * taqreeban theek rehta hai — aur asli faisla hamesha render ka hai.
+ */
+const FONT_PREVIEW: Record<string, string> = {
+  nastaliq: "'Noto Nastaliq Urdu', serif",
+  naskh: "'Noto Naskh Arabic', serif",
+  amiri: 'Amiri, serif',
+  cairo: 'Cairo, sans-serif',
+  latin: 'Inter, system-ui, sans-serif',
+  poppins: 'Poppins, system-ui, sans-serif',
+  playfair: "'Playfair Display', Georgia, serif",
+}
 
 const SHAPE_LABEL = {
   rect: 'shapeRect',
@@ -1175,27 +1204,24 @@ export function TemplateEditor({
             {selectedLayer?.kind !== 'image' && selectedLayer?.kind !== 'shape' && (
               <div>
                 <p className="text-[0.78rem] font-semibold">{t('fontLabel')}</p>
-                {/* Grid — teen chips hamesha EK qatar mein, chahe naam kitne bhi lambe hon */}
-                <div className="mt-1.5 grid grid-cols-3 gap-1">
-                  {(['nastaliq', 'naskh', 'latin'] as const).map((font) => (
-                    <button
-                      key={font}
-                      type="button"
-                      onClick={() => patchPart(selected, { font })}
-                      className={
-                        (part(spec, selected)?.font ?? 'nastaliq') === font
-                          ? 'chip chip-active w-full justify-center !px-1 !py-1 text-[0.7rem]'
-                          : 'chip w-full justify-center !px-1 !py-1 text-[0.7rem]'
-                      }
-                    >
-                      {font === 'nastaliq'
-                        ? t('fontNastaliq')
-                        : font === 'naskh'
-                          ? t('fontNaskh')
-                          : t('fontLatin')}
-                    </button>
+                {/*
+                  Dropdown, chips nahi.
+                  Teen chips ek qatar mein aa jate the, magar sat nahin — wo teen qatarein
+                  ban kar panel kha jate. Dropdown chahe kitne bhi font hon, ek qatar mein
+                  rehti hai, aur har naam apni HI likhai mein dikhta hai — yani banda
+                  chunne se PEHLE dekh leta hai ke wo kaisa lagega.
+                */}
+                <select
+                  value={part(spec, selected)?.font ?? 'nastaliq'}
+                  onChange={(e) => patchPart(selected, { font: e.target.value as FontKey })}
+                  className="field mt-1.5 w-full text-[0.85rem]"
+                >
+                  {FONT_KEYS.map((font) => (
+                    <option key={font} value={font} style={{ fontFamily: FONT_PREVIEW[font] }}>
+                      {t(FONT_LABEL[font])}
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
             )}
 
@@ -1766,7 +1792,110 @@ export function TemplateEditor({
               use foran list mein dekhna hi wo jagah hai jahan se usay chuna aur sanwara
               jata hai. Canva mein bhi layers hamesha haath ki pohanch mein rehti hain.
             */}
-            <p className="text-[0.78rem] font-semibold text-ink-soft">{t('elementsTitle')}</p>
+            {tab === 'shapes' && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="w-full text-[0.78rem] font-semibold">{t('addShape')}</span>
+              {(['rect', 'circle', 'line', 'triangle', 'diamond', 'star', 'arrow', 'burst'] as const).map(
+                (shape) => (
+                  <button
+                    key={shape}
+                    type="button"
+                    onClick={() => addShape(shape)}
+                    disabled={(spec.layers?.length ?? 0) >= 6}
+                    aria-label={t(SHAPE_LABEL[shape])}
+                    title={t(SHAPE_LABEL[shape])}
+                    className="link-tap flex h-9 w-9 items-center justify-center rounded-lg bg-paper-sunken disabled:opacity-40"
+                  >
+                    {/*
+                      Nishan wohi shakl hai jo banegi — `clip-path` bhi wohi jo render
+                      istemal karta hai (SHAPE_PREVIEW_CLIP). Naam likhne se banda
+                      "ہیرا" parh kar bhi nahi jaanta ke kya banega; shakl dekh kar
+                      jaan jata hai.
+                    */}
+                    <span
+                      className={
+                        shape === 'line'
+                          ? 'h-[3px] w-5 rounded-full bg-accent-700'
+                          : shape === 'rect'
+                            ? 'h-3 w-5 rounded-[2px] bg-accent-700'
+                            : 'h-4 w-4 bg-accent-700'
+                      }
+                      style={
+                        shape === 'circle'
+                          ? { borderRadius: '50%' }
+                          : SHAPE_PREVIEW_CLIP[shape]
+                            ? { clipPath: SHAPE_PREVIEW_CLIP[shape] }
+                            : undefined
+                      }
+                    />
+                  </button>
+                ),
+              )}
+            </div>
+            )}
+
+            <div className="grid gap-2">
+              {tab === 'text' && (
+              <button
+                type="button"
+                onClick={addLayer}
+                disabled={(spec.layers?.length ?? 0) >= 6}
+                className="btn-secondary !py-1.5 text-[0.8rem]"
+              >
+                + {t('addText')}
+              </button>
+              )}
+
+              {tab === 'upload' && (
+              <>
+              {/*
+                Logo — `<label>` ke andar chhupa hua file input.
+
+                Ye button jaisa dikhta hai magar hai file chooser, jo phone par gallery
+                seedha khol deta hai. Alag button aur alag input rakhne se ek extra tap
+                barhta hai, aur wo tap kisi kaam ka nahi.
+              */}
+              <label
+                className={
+                  uploading || (spec.layers?.length ?? 0) >= 6
+                    ? 'btn-secondary pointer-events-none !py-1.5 text-center text-[0.8rem] opacity-50'
+                    : 'btn-secondary cursor-pointer !py-1.5 text-center text-[0.8rem]'
+                }
+              >
+                {uploading ? t('uploading') : `+ ${t('addLogo')}`}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    // Input ko khali karna zaroori hai — warna wohi file dobara chunne
+                    // par `change` chalta hi nahi
+                    e.target.value = ''
+                    if (file) void addLogo(file)
+                  }}
+                />
+              </label>
+              </>
+              )}
+            </div>
+
+            {/*
+              🔴 Tanbeeh chhupani nahi chahiye.
+
+              Apna text kisi data se bandha hua nahi. Koi yahan RATE likh de to wo rate
+              kabhi khud nahi badlega — reseller slider par rate badalti rahegi aur
+              tasveer par purana likha rahega, aur us ka customer usi par order karega.
+            */}
+            {tab === 'text' && (
+              <p className="mt-2 text-[0.72rem] leading-relaxed text-ink-faint">
+                {t('layerWarning')}
+              </p>
+            )}
+
+            <p className="mt-4 border-t border-line pt-3 text-[0.78rem] font-semibold text-ink-soft">
+              {t('elementsTitle')}
+            </p>
 
             {/*
               Qatarein patli aur nazar ke liye saaf.
@@ -1889,108 +2018,6 @@ export function TemplateEditor({
             </div>
 
             {/* Rang ki shaklen — likhai ke peechay patti lagana sab se aam kaam hai */}
-            {tab === 'shapes' && (
-            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
-              <span className="w-full text-[0.72rem] font-semibold text-ink-soft">
-                {t('addShape')}
-              </span>
-              {(['rect', 'circle', 'line', 'triangle', 'diamond', 'star', 'arrow', 'burst'] as const).map(
-                (shape) => (
-                  <button
-                    key={shape}
-                    type="button"
-                    onClick={() => addShape(shape)}
-                    disabled={(spec.layers?.length ?? 0) >= 6}
-                    aria-label={t(SHAPE_LABEL[shape])}
-                    title={t(SHAPE_LABEL[shape])}
-                    className="link-tap flex h-9 w-9 items-center justify-center rounded-lg bg-paper-sunken disabled:opacity-40"
-                  >
-                    {/*
-                      Nishan wohi shakl hai jo banegi — `clip-path` bhi wohi jo render
-                      istemal karta hai (SHAPE_PREVIEW_CLIP). Naam likhne se banda
-                      "ہیرا" parh kar bhi nahi jaanta ke kya banega; shakl dekh kar
-                      jaan jata hai.
-                    */}
-                    <span
-                      className={
-                        shape === 'line'
-                          ? 'h-[3px] w-5 rounded-full bg-accent-700'
-                          : shape === 'rect'
-                            ? 'h-3 w-5 rounded-[2px] bg-accent-700'
-                            : 'h-4 w-4 bg-accent-700'
-                      }
-                      style={
-                        shape === 'circle'
-                          ? { borderRadius: '50%' }
-                          : SHAPE_PREVIEW_CLIP[shape]
-                            ? { clipPath: SHAPE_PREVIEW_CLIP[shape] }
-                            : undefined
-                      }
-                    />
-                  </button>
-                ),
-              )}
-            </div>
-            )}
-
-            <div className="mt-3 grid gap-2 border-t border-line pt-3">
-              {tab === 'text' && (
-              <button
-                type="button"
-                onClick={addLayer}
-                disabled={(spec.layers?.length ?? 0) >= 6}
-                className="btn-secondary !py-1.5 text-[0.8rem]"
-              >
-                + {t('addText')}
-              </button>
-              )}
-
-              {tab === 'upload' && (
-              <>
-              {/*
-                Logo — `<label>` ke andar chhupa hua file input.
-
-                Ye button jaisa dikhta hai magar hai file chooser, jo phone par gallery
-                seedha khol deta hai. Alag button aur alag input rakhne se ek extra tap
-                barhta hai, aur wo tap kisi kaam ka nahi.
-              */}
-              <label
-                className={
-                  uploading || (spec.layers?.length ?? 0) >= 6
-                    ? 'btn-secondary pointer-events-none !py-1.5 text-center text-[0.8rem] opacity-50'
-                    : 'btn-secondary cursor-pointer !py-1.5 text-center text-[0.8rem]'
-                }
-              >
-                {uploading ? t('uploading') : `+ ${t('addLogo')}`}
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    // Input ko khali karna zaroori hai — warna wohi file dobara chunne
-                    // par `change` chalta hi nahi
-                    e.target.value = ''
-                    if (file) void addLogo(file)
-                  }}
-                />
-              </label>
-              </>
-              )}
-            </div>
-
-            {/*
-              🔴 Tanbeeh chhupani nahi chahiye.
-
-              Apna text kisi data se bandha hua nahi. Koi yahan RATE likh de to wo rate
-              kabhi khud nahi badlega — reseller slider par rate badalti rahegi aur
-              tasveer par purana likha rahega, aur us ka customer usi par order karega.
-            */}
-            {tab === 'text' && (
-              <p className="mt-2 text-[0.72rem] leading-relaxed text-ink-faint">
-                {t('layerWarning')}
-              </p>
-            )}
           </div>
         </div>
         )}

@@ -20,6 +20,45 @@ const HexColour = z
   .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, 'Rang #rrggbb ki shakal mein hona chahiye')
 
 /**
+ * Har likhai ka apna mizaj — teen Urdu/Arabi ke, teen angrezi ke, aur ek nastaliq.
+ *
+ * 🔴 Hadd is baat par hai ke HAR font worker mein inline hota hai: har naya font poore
+ * base CSS ka naap barhata hai, aur wo CSS har render ke HTML mein jata hai. Sat font
+ * kaafi hain — us se aage har ek ka faida kam aur qeemat zyada hai.
+ */
+export const FONT_KEYS = [
+  'nastaliq',
+  'naskh',
+  'amiri',
+  'cairo',
+  'latin',
+  'poppins',
+  'playfair',
+] as const
+
+export type FontKey = (typeof FONT_KEYS)[number]
+
+const FONT_STACK: Record<FontKey, string> = {
+  nastaliq: "'Noto Nastaliq Urdu', serif",
+  naskh: "'Noto Naskh Arabic', serif",
+  amiri: "'Amiri', serif",
+  cairo: "'Cairo', sans-serif",
+  latin: "'Inter', system-ui, sans-serif",
+  poppins: "'Poppins', system-ui, sans-serif",
+  playfair: "'Playfair Display', Georgia, serif",
+}
+
+/**
+ * Kaun sa font Urdu ke liye hai.
+ *
+ * Nastaliq ki line-height 2.1 se kam nahi ho sakti, baqi Arabi fonts (naskh, amiri,
+ * cairo) us se kam mein bhi saaf rehte hain — aur Latin fonts ko us se bhi kam chahiye.
+ */
+export function isNastaliq(font: FontKey | undefined): boolean {
+  return font === undefined || font === 'nastaliq'
+}
+
+/**
  * Ek cheez ki jagah aur naap.
  *
  * x/y canvas ke FEESAD mein hain, px mein nahi — canvas chaar naap ka hota hai (story,
@@ -58,7 +97,7 @@ const ElementSpec = z.object({
    * `naskh` kam jagah leta hai aur chhoti likhai mein zyada saaf parha jata hai;
    * `latin` (Inter) angrezi naam aur number ke liye.
    */
-  font: z.enum(['nastaliq', 'naskh', 'latin']).optional(),
+  font: z.enum(FONT_KEYS).optional(),
   /** Rang bhara hua dabba — jaisa qeemat par pehle se hai. */
   pill: z.boolean().optional(),
 })
@@ -105,7 +144,7 @@ const TextLayerSchema = z.object({
   colour: HexColour.optional(),
   opacity: z.number().int().min(10).max(100).optional(),
   rotate: z.number().int().min(-20).max(20).optional(),
-  font: z.enum(['nastaliq', 'naskh', 'latin']).optional(),
+  font: z.enum(FONT_KEYS).optional(),
   pill: z.boolean().optional(),
   behind: BehindField,
 })
@@ -312,11 +351,6 @@ export const DEFAULT_TEMPLATE_SPEC: TemplateSpec = {
  * CDN se aane wala font render ko ghair-mustaqil bana deta hai — kabhi font pehle aata
  * hai, kabhi screenshot.
  */
-const FONT_STACK: Record<'nastaliq' | 'naskh' | 'latin', string> = {
-  nastaliq: "'Noto Nastaliq Urdu', serif",
-  naskh: "'Noto Naskh Arabic', serif",
-  latin: "'Inter', system-ui, sans-serif",
-}
 
 /**
  * Rang bhara dabba — jaisa qeemat par pehle se hai.
@@ -451,6 +485,23 @@ const ELEMENT_SELECTOR: Record<keyof TemplateSpec['elements'], string> = {
   cta: '.cta',
 }
 
+/**
+ * 🔴 Kuch cheezon ka LIKHNE WALA hissa andar ek aur element hai.
+ *
+ * Qeemat ka dhancha `.price-row > .price` hai: jagah bahar wale ko milti hai, magar
+ * rang aur dabba ANDAR wale par hain (base.css). Rang bahar wale par lagane ka koi
+ * asar nahi hota — andar wala `color: var(--badge-text)` us par charh jata hai.
+ *
+ * Isi wajah se reseller qeemat ka rang badalti thi aur kuch nahi hota tha. Ab rang
+ * andar wale par jata hai, jagah bahar wale par — jahan har ek ka asal kaam hai.
+ *
+ * Number ka dhancha bhi aisa hi hai (`.seller-phone > .ltr`) magar wahan andar wale ka
+ * apna rang nahi, is liye rang wirasat mein utar jata hai aur us ki zaroorat nahi.
+ */
+const INNER_SELECTOR: Partial<Record<keyof TemplateSpec['elements'], string>> = {
+  price: '.price',
+}
+
 /** Neeche wali patti ke andar kaun kaun si cheezein aati hain. */
 const CARD_ELEMENTS = ['title', 'price', 'name', 'phone', 'cta'] as const
 
@@ -532,16 +583,30 @@ export function templateSpecToCss(spec: TemplateSpec): string {
        * `ElementSpec` ka note. Purane spec par ye saari lines gayab rehti hain aur CSS
        * haraf ba haraf wohi banta hai jo pehle tha.
        */
+      const inner = INNER_SELECTOR[key]
+
       const extra = [
-        element.colour ? `color: ${element.colour};` : '',
+        // Rang/dabba andar wale par hon to bahar wale par na likhen — dekhen INNER_SELECTOR
+        !inner && element.colour ? `color: ${element.colour};` : '',
         element.opacity !== undefined ? `opacity: ${element.opacity / 100};` : '',
         element.rotate ? `transform: rotate(${element.rotate}deg);` : '',
         element.font ? `font-family: ${FONT_STACK[element.font]};` : '',
-        element.pill === true ? PILL_ON : '',
-        element.pill === false ? PILL_OFF : '',
+        !inner && element.pill === true ? PILL_ON : '',
+        !inner && element.pill === false ? PILL_OFF : '',
       ]
         .filter(Boolean)
         .join('\n  ')
+
+      const innerExtra = inner
+        ? [
+            element.colour ? `color: ${element.colour};` : '',
+            element.pill === true ? PILL_ON : '',
+            element.pill === false ? PILL_OFF : '',
+            element.font ? `font-family: ${FONT_STACK[element.font]};` : '',
+          ]
+            .filter(Boolean)
+            .join('\n  ')
+        : ''
 
       return `${selector} {
   position: absolute;
@@ -549,7 +614,7 @@ export function templateSpecToCss(spec: TemplateSpec): string {
   top: ${element.y}%;
   font-size: calc(${element.size}px * var(--scale));
   margin: 0;${extra ? `\n  ${extra}` : ''}
-}`
+}${innerExtra ? `\n${selector} ${inner} {\n  ${innerExtra}\n}` : ''}`
     })
     .join('\n')
 
@@ -680,7 +745,7 @@ function layersCss(spec: TemplateSpec): string {
   top: ${layer.y}%;
   font-size: calc(${layer.size}px * var(--scale));
   font-weight: 700;
-  line-height: ${layer.font === 'nastaliq' || !layer.font ? '2.1' : '1.3'};
+  line-height: ${isNastaliq(layer.font) ? '2.1' : '1.3'};
   white-space: nowrap;
   z-index: ${layerZ(layer, index)};
   text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);

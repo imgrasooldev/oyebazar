@@ -25,6 +25,69 @@
 }
 
 /*
+ * Reseller ke apne template ke liye baqi likhaiyan.
+ *
+ * 🔴 Sab INLINE — CDN se aane wala font render ko ghair-mustaqil bana deta hai (kabhi
+ * font pehle, kabhi screenshot). Sirf 400/700 rakhe hain: har wazan poore base CSS ka
+ * naap barhata hai, aur wo CSS har render ke HTML mein jata hai.
+ */
+@font-face {
+  font-family: 'Amiri';
+  src: url('fonts/amiri-arabic-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Amiri';
+  src: url('fonts/amiri-arabic-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Cairo';
+  src: url('fonts/cairo-arabic-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Cairo';
+  src: url('fonts/cairo-arabic-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  src: url('fonts/poppins-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  src: url('fonts/poppins-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('fonts/playfair-display-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('fonts/playfair-display-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-display: block;
+}
+
+/*
  * Naskh — reseller ke apne template ke liye teesra mizaj.
  *
  * Nastaliq Urdu ka asal husn hai magar us ki line-height 2.1 se kam nahi ho sakti, aur

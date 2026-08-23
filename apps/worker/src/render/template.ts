@@ -52,6 +52,15 @@ const NASKH_FONT_DIR = resolve(
 /** Angrezi pack, qeemat aur phone number — sab Inter par. */
 const LATIN_FONT_DIR = resolve(HERE, '..', '..', 'node_modules', '@fontsource', 'inter', 'files')
 
+/** Reseller ke apne template ke liye baqi likhaiyan. */
+const fontDir = (pkg: string) =>
+  resolve(HERE, '..', '..', 'node_modules', '@fontsource', pkg, 'files')
+
+const AMIRI_FONT_DIR = fontDir('amiri')
+const CAIRO_FONT_DIR = fontDir('cairo')
+const POPPINS_FONT_DIR = fontDir('poppins')
+const PLAYFAIR_FONT_DIR = fontDir('playfair-display')
+
 export interface TemplateData {
   readonly titleUr: string
   /** Angrezi pack ke liye. Khali ho to Urdu title hi chalta hai — pack banna zaroori hai. */
@@ -112,23 +121,38 @@ async function loadBaseCss(): Promise<string> {
   if (cachedBaseCss) return cachedBaseCss
 
   const css = await readFile(join(TEMPLATES_DIR, 'base.css'), 'utf8')
-  const [urduRegular, urduBold, naskhRegular, naskhBold, latinRegular, latinBold] =
-    await Promise.all([
-      fontDataUri(URDU_FONT_DIR, 'noto-nastaliq-urdu-arabic-400-normal.woff2'),
-      fontDataUri(URDU_FONT_DIR, 'noto-nastaliq-urdu-arabic-700-normal.woff2'),
-      fontDataUri(NASKH_FONT_DIR, 'noto-naskh-arabic-arabic-400-normal.woff2'),
-      fontDataUri(NASKH_FONT_DIR, 'noto-naskh-arabic-arabic-700-normal.woff2'),
-      fontDataUri(LATIN_FONT_DIR, 'inter-latin-400-normal.woff2'),
-      fontDataUri(LATIN_FONT_DIR, 'inter-latin-700-normal.woff2'),
-    ])
 
-  cachedBaseCss = css
-    .replace("url('fonts/noto-nastaliq-urdu-arabic-400-normal.woff2')", `url('${urduRegular}')`)
-    .replace("url('fonts/noto-nastaliq-urdu-arabic-700-normal.woff2')", `url('${urduBold}')`)
-    .replace("url('fonts/noto-naskh-arabic-arabic-400-normal.woff2')", `url('${naskhRegular}')`)
-    .replace("url('fonts/noto-naskh-arabic-arabic-700-normal.woff2')", `url('${naskhBold}')`)
-    .replace("url('fonts/inter-latin-400-normal.woff2')", `url('${latinRegular}')`)
-    .replace("url('fonts/inter-latin-700-normal.woff2')", `url('${latinBold}')`)
+  /*
+   * 🔴 Naam base.css ke `url(...)` se HOOBAHOO milna chahiye.
+   *
+   * Yahan har font ka file-naam do jagah likha hai — CSS mein aur is list mein. Mel na
+   * khaye to koi error nahi aata: `url('fonts/…')` waise ka waisa reh jata hai, browser
+   * usay dhoondhta hai, nahi milta, aur khamoshi se system ke font par gir jata hai.
+   * Pack ban jata hai — bas likhai wo nahi hoti jo reseller ne chuni thi.
+   */
+  const fonts: [string, string][] = [
+    [URDU_FONT_DIR, 'noto-nastaliq-urdu-arabic-400-normal.woff2'],
+    [URDU_FONT_DIR, 'noto-nastaliq-urdu-arabic-700-normal.woff2'],
+    [NASKH_FONT_DIR, 'noto-naskh-arabic-arabic-400-normal.woff2'],
+    [NASKH_FONT_DIR, 'noto-naskh-arabic-arabic-700-normal.woff2'],
+    [AMIRI_FONT_DIR, 'amiri-arabic-400-normal.woff2'],
+    [AMIRI_FONT_DIR, 'amiri-arabic-700-normal.woff2'],
+    [CAIRO_FONT_DIR, 'cairo-arabic-400-normal.woff2'],
+    [CAIRO_FONT_DIR, 'cairo-arabic-700-normal.woff2'],
+    [LATIN_FONT_DIR, 'inter-latin-400-normal.woff2'],
+    [LATIN_FONT_DIR, 'inter-latin-700-normal.woff2'],
+    [POPPINS_FONT_DIR, 'poppins-latin-400-normal.woff2'],
+    [POPPINS_FONT_DIR, 'poppins-latin-700-normal.woff2'],
+    [PLAYFAIR_FONT_DIR, 'playfair-display-latin-400-normal.woff2'],
+    [PLAYFAIR_FONT_DIR, 'playfair-display-latin-700-normal.woff2'],
+  ]
+
+  const inlined = await Promise.all(fonts.map(([dir, file]) => fontDataUri(dir, file)))
+
+  cachedBaseCss = fonts.reduce(
+    (out, [, file], index) => out.replace(`url('fonts/${file}')`, `url('${inlined[index]}')`),
+    css,
+  )
 
   return cachedBaseCss
 }
