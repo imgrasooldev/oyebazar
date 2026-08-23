@@ -1743,7 +1743,15 @@ export function TemplateEditor({
             wahan lambai bohat kam hai. Reseller ko banane se PEHLE ye dekh lena chahiye,
             bhejne ke baad nahi.
           */}
-          <div className="mt-1.5 flex shrink-0 flex-wrap items-center justify-center gap-1">
+          {/*
+            🔴 `flex-nowrap` + `overflow-x-auto` — wrap NAHI.
+
+            Zaban ke do button daalte hi ye qatar do lines ki ho gayi aur "Facebook post
+            (wide)" neeche gir gaya — yani canvas ki oonchai us ne kha li. Bilkul wohi
+            jo chuni hui cheez ke toolbar ke saath hua tha. Ab jagah kam pare to qatar
+            khud scroll karti hai; canvas ki oonchai ko chhoo hi nahi sakti.
+          */}
+          <div className="mt-1.5 flex shrink-0 flex-nowrap items-center justify-center gap-1 overflow-x-auto">
             {/*
               Zaban — naap ke saath usi qatar mein, aur ek chhoti si lakeer se juda.
 
@@ -1759,15 +1767,15 @@ export function TemplateEditor({
                 aria-pressed={packLang === key}
                 className={
                   packLang === key
-                    ? 'rounded-pill bg-accent-50 px-3 py-1 text-[0.72rem] font-semibold text-accent-700 ring-1 ring-accent-600'
-                    : 'tap rounded-pill px-3 py-1 text-[0.72rem] font-semibold text-ink-soft'
+                    ? 'shrink-0 whitespace-nowrap rounded-pill bg-accent-50 px-3 py-1 text-[0.72rem] font-semibold text-accent-700 ring-1 ring-accent-600'
+                    : 'tap shrink-0 whitespace-nowrap rounded-pill px-3 py-1 text-[0.72rem] font-semibold text-ink-soft'
                 }
               >
                 {key === 'ur' ? t('packLangUrdu') : t('packLangEnglish')}
               </button>
             ))}
 
-            <span aria-hidden="true" className="mx-1 h-4 w-px bg-line" />
+            <span aria-hidden="true" className="mx-1 h-4 w-px shrink-0 bg-line" />
 
             {PACK_FORMAT_KEYS.map((key) => (
               <button
@@ -1777,8 +1785,8 @@ export function TemplateEditor({
                 aria-pressed={formatKey === key}
                 className={
                   formatKey === key
-                    ? 'rounded-pill bg-accent-50 px-3 py-1 text-[0.72rem] font-semibold text-accent-700 ring-1 ring-accent-600'
-                    : 'tap rounded-pill px-3 py-1 text-[0.72rem] font-semibold text-ink-soft'
+                    ? 'shrink-0 whitespace-nowrap rounded-pill bg-accent-50 px-3 py-1 text-[0.72rem] font-semibold text-accent-700 ring-1 ring-accent-600'
+                    : 'tap shrink-0 whitespace-nowrap rounded-pill px-3 py-1 text-[0.72rem] font-semibold text-ink-soft'
                 }
               >
                 {locale === 'ur' ? PACK_FORMATS[key].labelUr : PACK_FORMATS[key].labelEn}
