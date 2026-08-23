@@ -1104,6 +1104,15 @@ export function TemplateEditor({
   async function makeDefault() {
     if (!selectedId) return
     setBusy(true)
+    /*
+     * 🔴 Purana paighaam pehle saaf — warna wo IS kaam ka lagta hai.
+     *
+     * Screen par sirf ek surkh line hai. Agar wo pichhle nakaam kaam se bachi hui ho
+     * aur ye kaam kaamyab ho jaye, to reseller ko ek saath "★ Default" bhi dikhta hai
+     * aur "kuch gharbar ho gayi" bhi. Us soorat mein wo yaqeen nahi kar sakti ke kaam
+     * hua ya nahi — aur ye us se bhi bura hai ke koi paighaam hota hi na.
+     */
+    setError(null)
 
     const template = templates.find((item) => item.id === selectedId)
     const res = await fetch('/api/v1/status-pack/defaults', {
@@ -1167,6 +1176,8 @@ export function TemplateEditor({
     if (!window.confirm(question)) return
 
     setBusy(true)
+    // Upar wali wajah — purana paighaam is kaam ka nahi hai
+    setError(null)
 
     // Pehle default hatao — agar delete kaamyab ho aur ye reh jaye to pack banna ruk jata hai
     if (wasDefault) {
@@ -1526,7 +1537,28 @@ export function TemplateEditor({
         </button>
       </div>
 
-      {error && <p className="shrink-0 text-sm text-red-600">{error}</p>}
+      {/*
+        Ghalti ka paighaam — patti, awara surkh line nahi.
+        
+        Pehle ye do dabbon ke darmiyan ek chhota surkh jumla tha, bina kisi peechay ke
+        rang ke. Wo "screen par para hua text" lagta hai, "aap se baat ki ja rahi hai"
+        nahi — aur wohi ek cheez hai jo reseller ko batati hai ke us ka kaam nahi hua.
+        Hatane ka button bhi saath hai: jo paighaam khud na ja sake wo agle kaam ke waqt
+        bhi wahin khara rehta hai.
+      */}
+      {error && (
+        <div className="flex shrink-0 items-center gap-2 rounded-card bg-red-50 px-3 py-2.5 text-[0.82rem] text-red-700 ring-1 ring-red-200">
+          <span className="flex-1 leading-relaxed">{error}</span>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            aria-label={t('dismiss')}
+            className="tap shrink-0 rounded-lg px-2 font-semibold"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/*
         🔴 `min-h-0` aur `flex-1` sirf `lg:` par.

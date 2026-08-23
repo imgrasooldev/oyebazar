@@ -409,6 +409,7 @@ const DICTIONARY = {
     en: 'Lawn 3-Piece — Floral',
     rm: 'Lawn three piece — phoolon wala',
   },
+  dismiss: { ur: 'بند کریں', en: 'Dismiss', rm: 'Band karen' },
   draftFound: {
     ur: 'پچھلی بار کا کام محفوظ نہیں ہوا تھا۔ واپس لے آئیں؟',
     en: 'Your last work was not saved. Bring it back?',
