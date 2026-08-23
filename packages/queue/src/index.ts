@@ -15,6 +15,7 @@ export const QUEUE_NAMES = {
   orderMaintenance: 'order-maintenance',
   feeInvoicing: 'fee-invoicing',
   processMedia: 'process-media',
+  templateAssetSweep: 'template-asset-sweep',
 } as const
 
 /**
@@ -32,6 +33,16 @@ export const SCHEDULE = {
   orderMaintenance: '*/30 * * * *',
   /** mahine ki 1 tareekh, subah 10 baje — ops ke kaam ke waqt, taake koi dekh sake */
   feeInvoicing: '0 10 1 * *',
+  /*
+   * Itwar raat 2 baje — beykar pari hui template tasveeron ki safai.
+   *
+   * 🔴 03:00 wali pre-generation se PEHLE, us ke saath nahi. Safai poore bucket ki
+   * list maangti hai aur pre-generation us waqt hazaron render chala rahi hoti hai;
+   * dono ek saath chalane ka matlab hai ke safai us kaam ko dheema kare jis par
+   * reseller ki subah khari hai. Ek ghante ka faasla kaafi hai — safai chand second
+   * ki cheez hai.
+   */
+  templateAssetSweep: '0 2 * * 0',
 } as const
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES]
@@ -154,7 +165,29 @@ export async function registerDailySchedules(connection: Redis): Promise<void> {
     { name: QUEUE_NAMES.feeInvoicing, opts: { ...DEFAULT_JOB_OPTIONS, attempts: 2 } },
   )
 
-  await Promise.all([pregenerate.close(), broadcast.close(), maintenance.close(), invoicing.close()])
+  const sweep = new Queue(QUEUE_NAMES.templateAssetSweep, { connection })
+  await sweep.upsertJobScheduler(
+    'template-asset-sweep',
+    { pattern: SCHEDULE.templateAssetSweep, tz: SCHEDULE.timezone },
+    {
+      name: QUEUE_NAMES.templateAssetSweep,
+      /*
+       * 🔴 Retry NAHI. Safai poore bucket ki list maangti hai; aadhe raste mein fail
+       * hone par dobara chalana wohi mehnga kaam dohrata hai, aur us ka koi faida nahi
+       * — agle hafte wohi files phir bhi wahin hongi. Jo mit gayin wo mit chukin, aur
+       * wo faisla har dafa naye sire se hota hai.
+       */
+      opts: { ...DEFAULT_JOB_OPTIONS, attempts: 1 },
+    },
+  )
+
+  await Promise.all([
+    pregenerate.close(),
+    broadcast.close(),
+    maintenance.close(),
+    invoicing.close(),
+    sweep.close(),
+  ])
 }
 
 export type { RenderStatusPackJob }

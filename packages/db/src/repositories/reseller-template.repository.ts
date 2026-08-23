@@ -115,4 +115,29 @@ export class PrismaResellerTemplateRepository implements ResellerTemplateReposit
     const { count } = await this.db.resellerTemplate.deleteMany({ where: { id, resellerId } })
     return count > 0
   }
+
+  /**
+   * Har template ki har tasveer ka pata.
+   *
+   * 🔴 Spec ko yahan Zod se nahi guzarte, aur ye jaan boojh kar hai. Agar kisi purane
+   * ya kharab spec par parse fail ho jaye to wo template list se GIR jayega — aur us ki
+   * tasveerein "kisi ke kaam ki nahi" lagne lagengi. Safai ke liye sab se mehfooz
+   * bartao ye hai ke jo bhi cheez `url` jaisi dikhe usay istemal mein maan liya jaye:
+   * ek zyada pata rakh lena ek zaroori file mitane se hamesha behtar hai.
+   */
+  async allImageUrls(): Promise<readonly string[]> {
+    const rows = await this.db.resellerTemplate.findMany({ select: { spec: true } })
+    const urls: string[] = []
+
+    for (const row of rows) {
+      const layers = (row.spec as { layers?: unknown })?.layers
+      if (!Array.isArray(layers)) continue
+      for (const layer of layers) {
+        const url = (layer as { url?: unknown })?.url
+        if (typeof url === 'string' && url.length > 0) urls.push(url)
+      }
+    }
+
+    return urls
+  }
 }

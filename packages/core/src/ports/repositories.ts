@@ -302,6 +302,18 @@ export interface ResellerTemplateRepository {
     input: { name: string; spec: TemplateSpec },
   ): Promise<ResellerTemplateView | null>
   remove(resellerId: string, id: string): Promise<boolean>
+  /**
+   * HAR template ki har tasveer ka pata — beykar files ki safai ke liye.
+   *
+   * 🔴 `resellerId` yahan jaan boojh kar NAHI hai, aur ye is poore file mein akela
+   * aisa method hai. Safai ka sawal hi ye hai ke "ye file KISI ke bhi kaam ki hai ya
+   * nahi" — ek reseller tak mehdood jaanch us file ko beykar samajh legi jo kisi aur
+   * ke template mein lagi hui hai, aur usay mita degi.
+   *
+   * Aaj key mein reseller ki id hoti hai to ye soorat aati nahi; magar us baat par
+   * safai ki hifazat khari kar dena us din tootega jis din key ki shakl badlegi.
+   */
+  allImageUrls(): Promise<readonly string[]>
 }
 
 // ---------------------------------------------------------------- auth

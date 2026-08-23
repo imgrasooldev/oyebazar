@@ -46,6 +46,22 @@ export interface ObjectStorage {
   upload(key: string, body: Buffer, contentType: string): Promise<StoredObject>
   publicUrl(key: string): string
   remove(key: string): Promise<void>
+  /**
+   * Ek folder ke andar kya kya para hai — beykar files ki safai ke liye.
+   *
+   * 🔴 `createdAt` LAZMI hai, aur ye is method ki asal wajah hai. Safai ka poora
+   * bharosa isi par khara hai: abhi upload hui file kisi template mein hai hi nahi
+   * (template baad mein mehfooz hota hai), aur us ki umar jaane baghair safai usay
+   * reseller ke saamne mita degi. Jo storage tareekh na de sake, us par safai chalani
+   * hi nahi chahiye.
+   */
+  list(prefix: string): Promise<readonly StoredListing[]>
+}
+
+export interface StoredListing {
+  readonly key: string
+  readonly url: string
+  readonly createdAt: Date
 }
 
 // ---------------------------------------------------------------- rendering

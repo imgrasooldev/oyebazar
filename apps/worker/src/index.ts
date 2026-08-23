@@ -13,6 +13,7 @@
  */
 import { createServer } from 'node:http'
 import { QUEUE_NAMES, Worker, registerDailySchedules, type Job } from '@oyebazar/queue'
+import { runTemplateAssetSweep } from './jobs/asset-sweep.job'
 import type { RenderStatusPackJob } from '@oyebazar/core'
 import { prisma } from '@oyebazar/db'
 import { loadConfig } from './config'
@@ -109,6 +110,12 @@ async function main(): Promise<void> {
     new Worker(
       QUEUE_NAMES.feeInvoicing,
       async () => runMonthlyFeeInvoicing(container),
+      RARE_QUEUE_OPTS,
+    ),
+
+    new Worker(
+      QUEUE_NAMES.templateAssetSweep,
+      async () => runTemplateAssetSweep(container),
       RARE_QUEUE_OPTS,
     ),
   ]

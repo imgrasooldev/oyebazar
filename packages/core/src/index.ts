@@ -11,6 +11,7 @@ export * from './ports/price-change-repositories'
 export * from './ports/daily-drop-repositories'
 
 // Services (application layer)
+export * from './services/asset-sweep'
 export * from './services/bazaar.service'
 export * from './services/catalogue.service'
 export * from './services/pricing.service'

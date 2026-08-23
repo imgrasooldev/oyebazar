@@ -12,10 +12,11 @@
  * karne ka raasta khula tha — aur nakal ka anjaam hamesha yehi hota hai ke kal koi
  * bucket ya cache header ek jagah badalta hai aur doosri jagah purana reh jata hai.
  */
-import { mkdir, writeFile, rm } from 'node:fs/promises'
+import { mkdir, writeFile, rm, readdir, stat } from 'node:fs/promises'
+import type { Dirent } from 'node:fs'
 import { dirname, join, normalize, sep } from 'node:path'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import type { ObjectStorage, StoredObject } from '@oyebazar/core'
+import type { ObjectStorage, StoredListing, StoredObject } from '@oyebazar/core'
 
 export { sniffMimeType, resolveMimeType } from './sniff'
 
@@ -42,6 +43,38 @@ export class LocalDiskStorage implements ObjectStorage {
 
   async remove(key: string): Promise<void> {
     await rm(this.resolve(key), { force: true })
+  }
+
+  async list(prefix: string): Promise<readonly StoredListing[]> {
+    const root = this.resolve(prefix)
+    const out: StoredListing[] = []
+
+    const walk = async (dir: string): Promise<void> => {
+      let items: Dirent[]
+      try {
+        items = await readdir(dir, { withFileTypes: true })
+      } catch {
+        // Folder hai hi nahi — kuch para hi nahi hai, ye khata nahi
+        return
+      }
+      for (const item of items) {
+        const path = join(dir, item.name)
+        if (item.isDirectory()) {
+          await walk(path)
+          continue
+        }
+        const info = await stat(path)
+        const key = path
+          .slice(normalize(this.directory).length)
+          .split(sep)
+          .filter(Boolean)
+          .join('/')
+        out.push({ key, url: this.publicUrl(key), createdAt: info.birthtime })
+      }
+    }
+
+    await walk(root)
+    return out
   }
 
   /**
@@ -91,6 +124,47 @@ export class SupabaseStorage implements ObjectStorage {
 
   async remove(key: string): Promise<void> {
     await this.client.storage.from(this.bucket).remove([key])
+  }
+
+  /**
+   * Supabase ka `list` EK folder ka hai, neeche wale folderon ka nahi — is liye khud
+   * utarna parta hai. Aur wo ek dafa mein 100 deta hai, is liye page dar page.
+   */
+  async list(prefix: string): Promise<readonly StoredListing[]> {
+    const out: StoredListing[] = []
+    const bucket = this.client.storage.from(this.bucket)
+
+    const walk = async (folder: string): Promise<void> => {
+      let offset = 0
+      for (;;) {
+        const { data, error } = await bucket.list(folder, { limit: 100, offset })
+        if (error) throw new Error(`Supabase list fail: ${error.message}`)
+        if (!data || data.length === 0) return
+
+        for (const item of data) {
+          const key = folder ? `${folder}/${item.name}` : item.name
+          /*
+           * Folder aur file ka farq: Supabase folder par `id` null deta hai. Ye us ka
+           * apna tareeqa hai (bucket mein folder hote hi nahi, sirf key ke hisse hain).
+           */
+          if (item.id === null) {
+            await walk(key)
+            continue
+          }
+          out.push({
+            key,
+            url: this.publicUrl(key),
+            createdAt: new Date(item.created_at ?? item.updated_at ?? 0),
+          })
+        }
+
+        if (data.length < 100) return
+        offset += data.length
+      }
+    }
+
+    await walk(prefix.replace(/\/$/, ''))
+    return out
   }
 }
 
