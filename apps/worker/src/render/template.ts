@@ -12,6 +12,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   DEFAULT_PACK_OPTIONS,
+  DEFAULT_TEMPLATE_KEY,
   PACK_FORMATS,
   formatPkr,
   customTemplateId,
@@ -184,7 +185,36 @@ async function loadCustomSpec(templateKey: string): Promise<TemplateSpec | null>
   // `custom:<id>@<revision>` — revision sirf cache key ke liye hai, DB lookup id se hoti hai
   const id = custom.split('@')[0] ?? custom
   const spec = await customTemplateLoader?.(id)
-  if (!spec) throw new Error(`Custom template "${id}" nahi mila`)
+
+  /*
+   * 🔴 Gum shuda template pack ko MAARNA nahi chahiye.
+   *
+   * Pehle yahan se error phenka jata tha. Us ka natija ye tha ke agar reseller apna
+   * default template mita deti (aur UI us waqt profile par se us ka key hatata hi nahi
+   * tha), to us ke SAARE pack banna band ho jate — raat ki pre-generation bhi, aur
+   * subah broadcast mein bhejne ko kuch bhi nahi.
+   *
+   * Ek chala hua pack aam design par, ek toote hue pack se hamesha behtar hai. Wajah
+   * `error` par likhi jati hai — ye khamoshi se guzarne wali baat nahi, magar us ki
+   * qeemat reseller ke din ki kamai nahi honi chahiye.
+   */
+  if (!spec) {
+    /*
+     * `console.error` — is module mein logger nahi aata, aur usay yahan tak khinchne ke
+     * liye poori chain badalni parti. Shakl wohi hai jo ConsoleLogger deta hai, taake
+     * Fly ke logs mein ye baqi lines ke saath dhoonda ja sake.
+     */
+    console.error(
+      JSON.stringify({
+        level: 'error',
+        service: 'worker',
+        message: 'custom_template_missing',
+        templateKey,
+        id,
+      }),
+    )
+    return null
+  }
 
   cachedSpecs.set(templateKey, spec)
   return spec
@@ -205,6 +235,21 @@ async function loadTemplateCss(templateKey: string): Promise<string> {
     const css = templateSpecToCss(spec)
     cachedTemplateCss.set(templateKey, css)
     return css
+  }
+
+  /*
+   * Apna template maanga gaya magar mila nahi — aam design par gir jao.
+   *
+   * 🔴 Yahan `templateKey` par aage nahi barh sakte: wo `custom:<id>@<rev>` hai aur
+   * us naam ka koi folder hai hi nahi, yani neeche wali line yaqeenan phenkti. Ye
+   * soorat asli hai — reseller apna default template mita de to yehi hota hai.
+   *
+   * Cache mein bhi NAHI daalte: template wapas aa sakta hai (misal DB thori der ke
+   * liye jawab na de raha ho), aur us soorat mein aam design hamesha ke liye chipak
+   * jata.
+   */
+  if (customTemplateId(templateKey)) {
+    return loadTemplateCss(DEFAULT_TEMPLATE_KEY)
   }
 
   const path = join(TEMPLATES_DIR, templateKey, 'template.css')

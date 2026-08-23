@@ -336,6 +336,24 @@ const DICTIONARY = {
   showAdvanced: { ur: 'مزید سیٹنگز', en: 'More settings', rm: 'Mazeed settings' },
   showSimple: { ur: 'کم دکھائیں', en: 'Show less', rm: 'Kam dikhayen' },
   doneWithThis: { ur: '✓ ہو گیا', en: '✓ Done', rm: '✓ Ho gaya' },
+  deleteLayer: { ur: 'اسے مٹا دیں', en: 'Delete this', rm: 'Isay mita den' },
+  confirmDelete: {
+    ur: '"{name}" مٹا دیں؟ یہ واپس نہیں آ سکتا۔',
+    en: 'Delete "{name}"? This cannot be undone.',
+    rm: '"{name}" mita den? Ye wapas nahi aa sakta.',
+  },
+  /*
+   * 🔴 Default wala paighaam alag hai, aur wo nateeja SAAF likhta hai.
+   *
+   * "Kya aap pakke hain?" us banday ko kuch nahi batata jise ye yaad hi nahi ke yehi
+   * template har pack par lag raha hai. Jo cheez rukni chahiye wo ghalat tap hai, aur
+   * wo tabhi rukta hai jab paighaam qeemat bataye.
+   */
+  confirmDeleteDefault: {
+    ur: '"{name}" ابھی آپ کے ہر پیک پر لگ رہا ہے۔ مٹانے پر پیک واپس عام ڈیزائن پر چلے جائیں گے۔ مٹا دیں؟',
+    en: '"{name}" is on every pack you make right now. Deleting it puts your packs back on the standard design. Delete?',
+    rm: '"{name}" abhi aap ke har pack par lag raha hai. Mitane par pack wapas aam design par chale jayenge. Mita den?',
+  },
   customColour: { ur: 'اپنی مرضی کا رنگ', en: 'Custom colour', rm: 'Apni marzi ka rang' },
   enterFullscreen: { ur: 'پوری اسکرین', en: 'Full screen', rm: 'Poori screen' },
   exitFullscreen: { ur: 'پوری اسکرین سے نکلیں', en: 'Exit full screen', rm: 'Poori screen se niklen' },

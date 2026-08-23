@@ -962,10 +962,59 @@ export function TemplateEditor({
     setTab('design')
   }
 
+  /**
+   * Template mitana — aur us ke saath wo cheez jo us ki taraf ishara karti hai.
+   *
+   * 🔴 Do baatein yahan pehle toot rahi thin, aur dono ka nuqsan reseller par girta tha.
+   *
+   * PEHLI: koi tasdeeq nahi thi. "Delete" ek 0.7rem ka halka sa underline link hai,
+   * "Duplicate" ke bilkul saath, dono ek jaise dikhte hain. Ek ghalat tap aur wo
+   * template hamesha ke liye gaya — undo sirf canvas ka kaam wapas karta hai, mite hue
+   * template ka nahi.
+   *
+   * DOOSRI, aur ye zyada sanjeeda hai: agar mitne wala template DEFAULT tha, to profile
+   * par us ka key waise ka waisa reh jata tha. Worker us key par `Custom template nahi
+   * mila` phenkta hai (koi fallback nahi), yani us reseller ke raat wale saare pack
+   * banna BAND ho jate — aur subah broadcast mein bhejne ko kuch hota hi nahi. Reseller
+   * ko is ka pata tab chalta jab subah kuch na aata.
+   *
+   * Ab mitane se PEHLE default hataya jata hai, aur usi soorat mein tasdeeq bhi saaf
+   * kehti hai ke ye wohi template hai jo abhi har pack par lag raha hai.
+   */
   async function remove(id: string) {
+    const template = templates.find((item) => item.id === id)
+    const wasDefault = Boolean(defaultKey?.startsWith(`custom:${id}@`))
+
+    const question = wasDefault
+      ? t('confirmDeleteDefault').replace('{name}', template?.name ?? '')
+      : t('confirmDelete').replace('{name}', template?.name ?? '')
+    if (!window.confirm(question)) return
+
     setBusy(true)
-    await fetch(`/api/v1/templates/${id}`, { method: 'DELETE' }).catch(() => null)
+
+    // Pehle default hatao — agar delete kaamyab ho aur ye reh jaye to pack banna ruk jata hai
+    if (wasDefault) {
+      const res = await fetch('/api/v1/status-pack/defaults', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateKey: null }),
+      }).catch(() => null)
+
+      if (!res?.ok) {
+        setBusy(false)
+        setError(t('somethingWrong'))
+        return
+      }
+      setDefaultKey(null)
+    }
+
+    const res = await fetch(`/api/v1/templates/${id}`, { method: 'DELETE' }).catch(() => null)
     setBusy(false)
+
+    if (!res?.ok) {
+      setError(t('somethingWrong'))
+      return
+    }
 
     setTemplates((current) => current.filter((item) => item.id !== id))
     if (selectedId === id) startNew()
@@ -2328,8 +2377,17 @@ export function TemplateEditor({
                         >
                           <ArrowDownIcon className="h-4 w-4" />
                         </IconButton>
+                        {/*
+                          🔴 Is ka apna naam — `deleteTemplate` NAHI.
+
+                          Ye button ek LAYER mitata hai, poora template nahi. Naam
+                          "Delete template" tha, yani screen reader par ye do bilkul
+                          alag kaam ek hi naam se bolte the — aur test mein bhi main
+                          khud isi par phisla: template mitane ke liye click kiya aur
+                          layer ka button dab gaya.
+                        */}
                         <IconButton
-                          label={t('deleteTemplate')}
+                          label={t('deleteLayer')}
                           onClick={() => removeLayer(index)}
                         >
                           <TrashIcon className="h-4 w-4" />
