@@ -2169,100 +2169,88 @@ export function TemplateEditor({
             </p>
 
             {/*
-              Qatarein patli aur nazar ke liye saaf.
+              Cheezon ki list — Canva ke "layers" wali.
 
-              🔴 Har qatar par us cheez ka apna NISHAN hai — rang ka gola (jo us ka asal
-              rang dikhata hai), ya shakl, ya `T`. Sirf naam likhne se aankh ko har dafa
-              parhna parta hai; nishan se wo ek nazar mein pehchan leti hai. Yehi wajah
-              hai ke har design tool ki layer list mein nishan hota hai.
+              🔴 Har qatar par us cheez ka apna NAMOONA hai, koi nishan nahi.
 
-              `divide-y` — qatarein lakeeron se judi hain, faaslon se nahi. Faasle
-              (space-y) list ko lamba karte hain aur ye panel pehle se tang hai.
+              Pehle yahan 14px ka ek rang bhara gola tha aur us par `T`. Wo "nishan" to
+              tha magar batata kuch nahi tha: do text layers ka gola bilkul ek jaisa
+              lagta tha, aur banda naam parh kar hi pehchan pata tha. Ab namoona wohi
+              likhai, wohi rang aur wohi shakl dikhata hai jo tasveer par hai — apni
+              likhi hui line ke pehle do harf bhi wahin hain. Ek nazar, aur pata chal
+              jata hai ke kaun si qatar kis cheez ki hai.
+
+              🔴 Tarteeb aur mitane ke button sirf CHUNI HUI qatar par.
+
+              Har qatar par chaar button rakhne se list ek nazar mein shor lagti thi —
+              aur wo chaaron 16px ke the, ungli ke liye chhote. Ab qatar par sirf aankh
+              (jo sab se zyada dabti hai), aur baqi usi qatar par jis par kaam ho raha
+              hai. Nateeja: list saaf, aur button bare.
             */}
-            <div className="mt-1.5 divide-y divide-line/70 overflow-hidden rounded-xl ring-1 ring-line/70">
+            <div className="mt-1.5 space-y-1">
               {allParts(spec).map(({ sel, style }) => {
                 const index = layerIndex(sel)
                 const layer = index !== null ? spec.layers?.[index] : undefined
+                const on = selected === sel
                 return (
                   <div
                     key={sel}
                     className={
-                      selected === sel
-                        ? 'flex items-center gap-1.5 bg-accent-50 px-2 py-1'
-                        : 'flex items-center gap-1.5 px-2 py-1'
+                      on
+                        ? 'flex items-center gap-2 rounded-xl bg-accent-50 p-1.5 ring-1 ring-accent-600'
+                        : 'flex items-center gap-2 rounded-xl p-1.5 ring-1 ring-line/70'
                     }
                   >
                     <button
                       type="button"
                       onClick={() => pick(sel)}
-                      className="link-tap flex min-w-0 flex-1 items-center gap-2 text-right"
+                      className="link-tap flex min-w-0 flex-1 items-center gap-2 text-start"
                     >
-                      {/* Nishan — rang ka gola, shakl, ya likhai ka `T` */}
-                      <span
-                        aria-hidden="true"
-                        className={
-                          layer?.kind === 'shape'
-                            ? 'h-3.5 w-3.5 shrink-0'
-                            : 'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[0.6rem] font-bold text-white'
-                        }
-                        style={
-                          layer?.kind === 'shape'
-                            ? {
-                                background: layer.colour ?? spec.accent,
-                                borderRadius: layer.shape === 'circle' ? '50%' : '3px',
-                                ...(SHAPE_PREVIEW_CLIP[layer.shape]
-                                  ? { clipPath: SHAPE_PREVIEW_CLIP[layer.shape] }
-                                  : {}),
-                              }
-                            : { background: style.colour ?? spec.accent }
-                        }
-                      >
-                        {layer?.kind === 'image' ? '▣' : layer?.kind === 'shape' ? '' : 'T'}
-                      </span>
+                      <LayerThumb sel={sel} style={style} layer={layer} accent={spec.accent} />
 
-                      <span
-                        className={
-                          style.show
-                            ? 'min-w-0 flex-1 truncate text-[0.8rem] font-semibold'
-                            : 'min-w-0 flex-1 truncate text-[0.8rem] font-semibold text-ink-faint line-through'
-                        }
-                      >
-                        {partLabel(sel)}
+                      <span className="min-w-0 flex-1">
+                        <span
+                          className={
+                            style.show
+                              ? 'block truncate text-[0.82rem] font-semibold'
+                              : 'block truncate text-[0.82rem] font-semibold text-ink-faint line-through'
+                          }
+                        >
+                          {partLabel(sel)}
+                        </span>
+                        <span className="block truncate text-[0.66rem] text-ink-faint">
+                          {layer?.kind === 'image'
+                            ? t('addLogo')
+                            : layer?.kind === 'shape'
+                              ? t(SHAPE_LABEL[layer.shape])
+                              : t(FONT_LABEL[style.font ?? 'nastaliq'])}
+                        </span>
                       </span>
                     </button>
 
-                    {/* Aage/peechay sirf apne text par — tay-shuda cheezon ki tarteeb tay hai */}
-                    {index !== null && (
+                    {/* Tarteeb aur mitana — sirf chuni hui qatar par, aur ungli bhar ke */}
+                    {on && index !== null && (
                       <>
-                        <button
-                          type="button"
+                        <IconButton
+                          label={t('bringForward')}
                           onClick={() => moveLayer(index, 1)}
                           disabled={index === (spec.layers?.length ?? 0) - 1}
-                          aria-label={t('bringForward')}
-                          title={t('bringForward')}
-                          className="link-tap flex h-6 w-4 items-center justify-center text-[0.7rem] text-ink-faint disabled:opacity-25"
                         >
                           ▲
-                        </button>
-                        <button
-                          type="button"
+                        </IconButton>
+                        <IconButton
+                          label={t('sendBackward')}
                           onClick={() => moveLayer(index, -1)}
                           disabled={index === 0}
-                          aria-label={t('sendBackward')}
-                          title={t('sendBackward')}
-                          className="link-tap flex h-6 w-4 items-center justify-center text-[0.7rem] text-ink-faint disabled:opacity-25"
                         >
                           ▼
-                        </button>
-                        <button
-                          type="button"
+                        </IconButton>
+                        <IconButton
+                          label={t('deleteTemplate')}
                           onClick={() => removeLayer(index)}
-                          aria-label={t('deleteTemplate')}
-                          title={t('deleteTemplate')}
-                          className="link-tap flex h-6 w-4 items-center justify-center text-[0.72rem] text-ink-faint"
                         >
                           ✕
-                        </button>
+                        </IconButton>
                       </>
                     )}
 
@@ -2273,14 +2261,14 @@ export function TemplateEditor({
                       title={style.show ? t('hideThis') : t('showThis')}
                       className={
                         style.show
-                          ? 'link-tap flex h-6 w-6 items-center justify-center rounded-md text-ink-soft'
-                          : 'link-tap flex h-6 w-6 items-center justify-center rounded-md text-ink-faint'
+                          ? 'link-tap flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-soft'
+                          : 'link-tap flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-paper-sunken text-ink-faint'
                       }
                     >
                       {style.show ? (
-                        <EyeIcon className="h-3.5 w-3.5" />
+                        <EyeIcon className="h-4 w-4" />
                       ) : (
-                        <EyeOffIcon className="h-3.5 w-3.5" />
+                        <EyeOffIcon className="h-4 w-4" />
                       )}
                     </button>
                   </div>
@@ -2483,6 +2471,87 @@ function TemplateThumb({ spec, photo }: { spec: TemplateSpec; photo: string | nu
         </div>
       </div>
     </div>
+  )
+}
+
+/**
+ * Layer list ka chhota namoona — nishan nahi, asal shakl.
+ *
+ * 🔴 Tile GEHRA hai, aur ye zaroori hai.
+ *
+ * Pack ki likhai zyada tar SAFED hoti hai (bhari hui tasveer par wohi parhi jati hai).
+ * Safed tile par safed likhai ka namoona bilkul khali dabba lagta hai — yani jo cheez
+ * dikhane ke liye banaya gaya wo hi nazar nahi aati. Gehra tile wohi kaam karta hai jo
+ * asli pack mein tasveer karti hai.
+ */
+function LayerThumb({
+  sel,
+  style,
+  layer,
+  accent,
+}: {
+  sel: Sel
+  style: PartStyle
+  layer: NonNullable<TemplateSpec['layers']>[number] | undefined
+  accent: string
+}) {
+  const box = 'flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg'
+
+  if (layer?.kind === 'image') {
+    return (
+      <span className={`${box} bg-paper-sunken`}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- storage ki tasveer */}
+        <img src={layer.url} alt="" className="h-full w-full object-cover" />
+      </span>
+    )
+  }
+
+  if (layer?.kind === 'shape') {
+    return (
+      <span className={`${box} bg-coal-900`}>
+        <span
+          className={layer.shape === 'line' ? 'h-[3px] w-5' : 'h-4 w-4'}
+          style={{
+            background: layer.colour ?? accent,
+            borderRadius: layer.shape === 'circle' ? '50%' : '2px',
+            ...(SHAPE_PREVIEW_CLIP[layer.shape]
+              ? { clipPath: SHAPE_PREVIEW_CLIP[layer.shape] }
+              : {}),
+          }}
+        />
+      </span>
+    )
+  }
+
+  /*
+   * Likhai ka namoona — apni likhi hui line ke pehle do harf, aur baqi par "آ".
+   *
+   * Do harf is liye ke poori line 36px mein ghus hi nahi sakti, aur ek harf se font ka
+   * mizaj nazar nahi aata. Tay-shuda cheezon (qeemat, naam, number) ka matn editor ko
+   * pata hi nahi — wo maal aur profile se aata hai — is liye wahan ek Urdu harf.
+   */
+  const sample = layer?.kind === 'text' ? layer.text.slice(0, 2) : sel === 'price' ? '₨' : 'آ'
+  const pillOn = style.pill ?? (sel === 'badge' || sel === 'price')
+
+  return (
+    <span className={`${box} bg-coal-900`}>
+      <span
+        className="max-w-full truncate px-1 text-[0.72rem] font-bold leading-none"
+        style={{
+          fontFamily: FONT_PREVIEW[style.font ?? 'nastaliq'],
+          color: style.colour ?? '#ffffff',
+          ...(pillOn
+            ? {
+                background: style.pillColour ?? accent,
+                borderRadius: 999,
+                padding: '2px 5px',
+              }
+            : {}),
+        }}
+      >
+        {sample}
+      </span>
+    </span>
   )
 }
 
