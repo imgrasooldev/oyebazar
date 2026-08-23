@@ -46,6 +46,7 @@ describe('🔴 gum shuda apna template', () => {
         name: { show: true, x: 4, y: 85, size: 46 },
         phone: { show: true, x: 55, y: 85, size: 46 },
         cta: { show: true, x: 4, y: 91, size: 40 },
+        note: { show: true, x: 4, y: 53, size: 40, pill: true },
       },
     }))
 

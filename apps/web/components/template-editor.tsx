@@ -185,16 +185,20 @@ const PREVIEW_BASE_CSS = `
 .tpl-stage.lang-en.format-wide .badge { right: auto; left: 0; }
 `
 
-const ELEMENTS = ['badge', 'title', 'price', 'name', 'phone', 'cta'] as const
+const ELEMENTS = ['badge', 'title', 'price', 'name', 'phone', 'cta', 'note'] as const
 type ElementKey = (typeof ELEMENTS)[number]
 
-const ELEMENT_LABEL: Record<ElementKey, 'elBadge' | 'elTitle' | 'elPrice' | 'elName' | 'elPhone' | 'elCta'> = {
+const ELEMENT_LABEL: Record<
+  ElementKey,
+  'elBadge' | 'elTitle' | 'elPrice' | 'elName' | 'elPhone' | 'elCta' | 'elNote'
+> = {
   badge: 'elBadge',
   title: 'elTitle',
   price: 'elPrice',
   name: 'elName',
   phone: 'elPhone',
   cta: 'elCta',
+  note: 'elNote',
 }
 
 /**
@@ -625,11 +629,17 @@ export function TemplateEditor({
 
   const sample =
     packLang === 'en'
-      ? { title: 'Lawn 3-Piece — Floral', seller: 'Sadia Bibi', cta: 'Message to order' }
+      ? {
+          title: 'Lawn 3-Piece — Floral',
+          seller: 'Sadia Bibi',
+          cta: 'Message to order',
+          note: 'Today only',
+        }
       : {
           title: 'لان تھری پیس — پھولوں والا',
           seller: 'صادیہ بی بی',
           cta: 'آرڈر کے لیے میسج کریں',
+          note: 'صرف آج',
         }
 
   /**
@@ -1871,6 +1881,26 @@ export function TemplateEditor({
                       {...{ spec, selected, drag, zoom, startDrag, pick }}
                     >
                       {spec.ctaText?.trim() || sample.cta}
+                    </Handle>
+
+                    {/*
+                      Pack ki apni line — editor mein ek namoona.
+
+                      🔴 Ye khana pack banate waqt bharta hai, template mein nahi. Magar
+                      us ki JAGAH template hi deti hai, is liye yahan nazar aana zaroori
+                      hai — warna reseller usay rakh hi nahi sakti aur wo jahan gir jaye
+                      wahin chhap jati hai (yehi hua tha: poore pack ke sar par ek
+                      narangi patti).
+
+                      Namoona hi dikhate hain, khali dabba nahi: khali dabbe ko ungli se
+                      pakarna namumkin hai aur wo dikhta bhi kuch nahi.
+                    */}
+                    <Handle
+                      k="note"
+                      cssClass="note"
+                      {...{ spec, selected, drag, zoom, startDrag, pick }}
+                    >
+                      {sample.note}
                     </Handle>
                   </div>
 

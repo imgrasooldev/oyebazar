@@ -317,6 +317,25 @@ export const TemplateSpecSchema = z.object({
     name: ElementSpec,
     phone: ElementSpec,
     cta: ElementSpec,
+    /**
+     * Pack ki apni line — "صرف آج", "آخری 2 پیس".
+     *
+     * 🔴 `.default(...)` — aur ye ek pakre hue bug ka hal hai.
+     *
+     * Ye khana baad mein aaya, aur jo template pehle se mehfooz hain un ke spec mein ye
+     * hai hi nahi. Sirf `.optional()` rakhne ka natija ye tha ke un templates par is
+     * cheez ki KOI jagah tay na hoti — aur custom template mein `.content` ka bahao
+     * khatam kar diya jata hai (`display: block`), yani wo line poori chaurai par safhe
+     * ke bilkul shuru mein gir jati thi. Reseller ne screenshot bheja: ek narangi patti
+     * poore pack ke sar par.
+     *
+     * `.default()` us soorat mein bhi ek maqool jagah de deta hai (title ke thora upar),
+     * aur reseller usay wahan se hila sakti hai jaisi baqi har cheez.
+     *
+     * Cache par asar nahi: `show: true` hone ke bawajood worker `hide-note` lagata hai
+     * jab line khali ho — yani jin packs par line nahi, un ki tasveer waisi ki waisi.
+     */
+    note: ElementSpec.default({ show: true, x: 4, y: 55, size: 40, pill: true }),
   }),
   /**
    * Reseller ke apne likhe hue text.
@@ -364,6 +383,7 @@ export const DEFAULT_TEMPLATE_SPEC: TemplateSpec = {
     name: { show: true, x: 4, y: 85, size: 46 },
     phone: { show: true, x: 62, y: 85, size: 46 },
     cta: { show: true, x: 4, y: 91, size: 40 },
+    note: { show: true, x: 4, y: 53, size: 40, pill: true },
   },
 }
 
@@ -438,6 +458,7 @@ export const TEMPLATE_PRESETS: readonly { key: string; nameUr: string; nameEn: s
         name: { show: true, x: 8, y: 80, size: 42 },
         phone: { show: true, x: 8, y: 86, size: 40, font: 'latin' },
         cta: { show: true, x: 8, y: 91, size: 32, opacity: 55 },
+        note: { show: true, x: 8, y: 47, size: 40, pill: true },
       },
     },
   },
@@ -460,6 +481,7 @@ export const TEMPLATE_PRESETS: readonly { key: string; nameUr: string; nameEn: s
         name: { show: true, x: 4, y: 86, size: 44 },
         phone: { show: true, x: 55, y: 86, size: 44, font: 'latin' },
         cta: { show: true, x: 4, y: 92, size: 34, opacity: 80 },
+        note: { show: true, x: 4, y: 51, size: 40, pill: true },
       },
     },
   },
@@ -481,6 +503,7 @@ export const TEMPLATE_PRESETS: readonly { key: string; nameUr: string; nameEn: s
         name: { show: true, x: 6, y: 84, size: 44, colour: '#22D3EE' },
         phone: { show: true, x: 6, y: 89, size: 40, font: 'latin' },
         cta: { show: true, x: 6, y: 93, size: 30, opacity: 65, font: 'naskh' },
+        note: { show: true, x: 6, y: 53, size: 40, pill: true },
       },
     },
   },
@@ -504,6 +527,7 @@ export const TEMPLATE_PRESETS: readonly { key: string; nameUr: string; nameEn: s
         name: { show: true, x: 10, y: 81, size: 40 },
         phone: { show: true, x: 10, y: 86, size: 38, font: 'latin' },
         cta: { show: true, x: 10, y: 90, size: 30, opacity: 75, font: 'naskh' },
+        note: { show: true, x: 10, y: 49, size: 40, pill: true },
       },
     },
   },
@@ -517,6 +541,7 @@ const ELEMENT_SELECTOR: Record<keyof TemplateSpec['elements'], string> = {
   name: '.seller-name',
   phone: '.seller-phone',
   cta: '.cta',
+  note: '.note',
 }
 
 /**

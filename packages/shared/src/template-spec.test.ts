@@ -65,10 +65,31 @@ describe('🔴 peechay ka rang', () => {
     expect(withPill({})).toContain('background: var(--accent);')
   })
 
+  /*
+   * 🔴 Dawa us RULE par, poore CSS par nahi.
+   *
+   * Ye test pehle poore CSS mein `var(--accent)` dhoondhta tha. Jis din `note` naam ka
+   * ek aur element aaya (jis par pill default hai), us din test toot gaya — jabke jo
+   * baat wo saabit kar raha tha wo bilkul theek thi. Behad chaura dawa apne aap ko
+   * ghalat saabit karta hai, aur us ka natija ye hota hai ke banda test badalna seekh
+   * jata hai bajaye code dekhne ke.
+   */
+  const badgeRule = (css: string) => {
+    /*
+     * 🔴 `.badge` ka rule EK se ziyada hai — pehla gol-pan (radius) ka hai.
+     *
+     * Jagah dene wala rule wohi hai jis mein `inset-inline-start` hai. Pehla milne wala
+     * utha lena bilkul ghalat block deta hai, aur us se test "toota hua" lagta hai
+     * jabke code theek hota.
+     */
+    const rules = css.split('}').filter((r) => r.includes('.stage.custom .badge {'))
+    return rules.find((r) => r.includes('inset-inline-start')) ?? ''
+  }
+
   it('rang dene par wohi rang lagta hai', () => {
-    const css = withPill({ pillColour: '#123456' })
-    expect(css).toContain('background: #123456;')
-    expect(css).not.toContain('background: var(--accent);')
+    const rule = badgeRule(withPill({ pillColour: '#123456' }))
+    expect(rule).toContain('background: #123456;')
+    expect(rule).not.toContain('background: var(--accent);')
   })
 
   it('dabba band ho to rang CSS mein aata hi nahi', () => {
@@ -107,8 +128,11 @@ describe('🔴 rang aur pill ek saath', () => {
 
   it('bina pill ke rang apni purani jagah par hi rehta hai', () => {
     const css = cssFor({ colour: '#facc15' })
-    expect(css).toContain('color: #facc15;')
-    expect(css).not.toContain('var(--badge-text)')
+    const rule = (css.split('}').filter((r) => r.includes('.stage.custom .badge {')).find((r) =>
+      r.includes('inset-inline-start'),
+    ) ?? '')
+    expect(rule).toContain('color: #facc15;')
+    expect(rule).not.toContain('var(--badge-text)')
   })
 
   it('apni layer par bhi wohi usool', () => {

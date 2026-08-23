@@ -240,6 +240,7 @@ const DICTIONARY = {
   elPrice: { ur: 'ریٹ', en: 'Price', rm: 'Rate' },
   elName: { ur: 'آپ کا نام', en: 'Your name', rm: 'Apka naam' },
   elPhone: { ur: 'نمبر', en: 'Number', rm: 'Number' },
+  elNote: { ur: 'پیک کی اپنی لائن', en: 'Pack line', rm: 'Pack ki apni line' },
   elCta: { ur: 'آرڈر والی لائن', en: 'Order line', rm: 'Order wali line' },
   saveTemplate: { ur: 'محفوظ کریں', en: 'Save', rm: 'Mehfooz karen' },
   savedTick: { ur: '✓ محفوظ ہو گیا', en: '✓ Saved', rm: '✓ Mehfooz ho gaya' },
