@@ -5,7 +5,15 @@
  * (3G par LCP <3s). Yahan char icons chahiyen, wo bas itne hi hain.
  */
 
-type Props = { className?: string }
+type Props = {
+  className?: string
+  /**
+   * Nishan ka apna rang — sirf un icons par jo reseller ka chuna hua rang KHUD
+   * dikhate hain (likhai ka rang, peechay ka rang). Baqi har jagah rang `currentColor`
+   * se aata hai, aur wohi theek hai.
+   */
+  style?: React.CSSProperties
+}
 
 export function SearchIcon({ className = 'h-5 w-5' }: Props) {
   return (
@@ -370,6 +378,334 @@ export function MoneyIcon({ className = 'h-5 w-5' }: Props) {
       <rect x="2.5" y="6" width="19" height="12" rx="2.5" stroke="currentColor" strokeWidth="1.8" />
       <circle cx="12" cy="12" r="2.8" stroke="currentColor" strokeWidth="1.8" />
       <path d="M6 9.5v5M18 9.5v5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/* ---------------------------------------------------------------- template editor
+ *
+ * 🔴 SVG, Unicode glyph nahi — aur ye ek pehle se seekha hua sabaq hai.
+ *
+ * Editor ke saare nishan `▤ ◆ ⬆ ☰ ⚙ ⋯ ⤢ ✎` jaise haroof the. Do masle: (1) ye haroof
+ * har font mein hote hi nahi, aur jis system par na hon wahan khali dabba dikhta hai —
+ * bilkul wohi jo `↶`/`↷` ke saath Windows par hua tha; (2) jahan hote bhi hain wahan
+ * har ek ka apna wazan aur naap hota hai, is liye qatar mein rakh kar wo bhare hue,
+ * halke, chhote, bare — sab mila jula lagta hai. Baqi poori app asli icons par hai;
+ * sirf editor haroof par tha, aur wohi wajah thi ke wo "sasta" lagta tha.
+ */
+
+export function TextIcon({ className = 'h-5 w-5' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M5 6.5V5h14v1.5M12 5v14M9 19h6"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function ShapesIcon({ className = 'h-5 w-5' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <circle cx="8" cy="8" r="4.5" stroke="currentColor" strokeWidth="1.6" />
+      <rect x="12" y="12" width="8.5" height="8.5" rx="1.5" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  )
+}
+
+export function UploadIcon({ className = 'h-5 w-5' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M12 16V4m0 0L8 8m4-4 4 4"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+export function LayersIcon({ className = 'h-5 w-5' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="m12 3 8.5 4.5L12 12 3.5 7.5 12 3Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path
+        d="m4 12 8 4.2 8-4.2M4 16.5l8 4.2 8-4.2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function GearIcon({ className = 'h-5 w-5' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8m15-6.2-1.7 1.7M7.9 16.1l-1.7 1.7m0-12 1.7 1.7m8.2 8.7 1.7 1.7"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+/** Likhai ka rang — `A` aur us ke neeche rang ki patti (Canva ka pehchana hua nishan). */
+export function TextColourIcon({ className = 'h-5 w-5', style }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} style={style} aria-hidden="true">
+      <path
+        d="M5.5 15 10 5h1.6l4.6 10M7.4 12h7.2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <rect x="4" y="18" width="16" height="3" rx="1.5" fill="currentColor" />
+    </svg>
+  )
+}
+
+/** Peechay ka rang — bhara hua dabba. */
+export function FillIcon({ className = 'h-5 w-5', style }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} style={style} aria-hidden="true">
+      <rect x="3" y="7.5" width="18" height="9" rx="4.5" fill="currentColor" opacity="0.25" />
+      <rect x="3" y="7.5" width="18" height="9" rx="4.5" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  )
+}
+
+export function FontIcon({ className = 'h-5 w-5' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M3 18 8 6h1.4l5 12M4.8 14h6.9"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M15.5 18 18.6 10h1l3.1 8m-6.1-2.6h4.2"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function SizeIcon({ className = 'h-5 w-5' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M4 10V4h6M20 14v6h-6"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M4 4l6.5 6.5M20 20l-6.5-6.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function AlignIcon({ className = 'h-5 w-5' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path d="M12 3v18" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <rect x="4" y="6" width="16" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.6" />
+      <rect x="7" y="14" width="10" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  )
+}
+
+export function MoreIcon({ className = 'h-5 w-5' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <circle cx="5.5" cy="12" r="1.6" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.6" fill="currentColor" />
+      <circle cx="18.5" cy="12" r="1.6" fill="currentColor" />
+    </svg>
+  )
+}
+
+export function TrashIcon({ className = 'h-4 w-4' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M4.5 6.5h15M9.5 6.5V4.8A1.3 1.3 0 0 1 10.8 3.5h2.4a1.3 1.3 0 0 1 1.3 1.3v1.7M6.5 6.5l.8 12a1.5 1.5 0 0 0 1.5 1.4h6.4a1.5 1.5 0 0 0 1.5-1.4l.8-12"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function ArrowUpIcon({ className = 'h-4 w-4' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M12 20V5m0 0-6 6m6-6 6 6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function ArrowDownIcon({ className = 'h-4 w-4' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M12 4v15m0 0 6-6m-6 6-6-6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function ExpandIcon({ className = 'h-5 w-5' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M9 4H4v5M15 20h5v-5M20 9V4h-5M4 15v5h5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function ShrinkIcon({ className = 'h-5 w-5' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M4 9h5V4m11 5h-5V4M4 15h5v5m11-5h-5v5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+/**
+ * Kinare par lagana — teenon nishan ek doosre se SAAF alag hone chahiyen.
+ *
+ * Ek hi shakl ko ghuma dene se (misal `▤ ▥ ▦`) nishan qatar mein bilkul ek jaise lagte
+ * hain aur banda teenon ko tap kar ke dekhta hai ke kaun sa kya karta hai. Yahan har
+ * nishan mein lakeer wahin hai jahan cheez jayegi, aur pattiyan usi taraf simti hui.
+ */
+export function AlignStartIcon({ className = 'h-4 w-4' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path d="M4 3v18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <rect x="7.5" y="6" width="12" height="4" rx="1.5" fill="currentColor" />
+      <rect x="7.5" y="14" width="7" height="4" rx="1.5" fill="currentColor" opacity="0.45" />
+    </svg>
+  )
+}
+
+export function AlignCentreIcon({ className = 'h-4 w-4' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path d="M12 3v18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <rect x="3" y="6" width="18" height="4" rx="1.5" fill="currentColor" />
+      <rect x="6.5" y="14" width="11" height="4" rx="1.5" fill="currentColor" opacity="0.45" />
+    </svg>
+  )
+}
+
+export function AlignEndIcon({ className = 'h-4 w-4' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path d="M20 3v18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <rect x="4.5" y="6" width="12" height="4" rx="1.5" fill="currentColor" />
+      <rect x="9.5" y="14" width="7" height="4" rx="1.5" fill="currentColor" opacity="0.45" />
+    </svg>
+  )
+}
+
+/** Likhai ke peechay / oopar — do parat, aur bhari hui parat batati hai kaun aage hai. */
+export function SendBehindIcon({ className = 'h-4 w-4' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <rect x="3.5" y="3.5" width="12" height="12" rx="2" fill="currentColor" opacity="0.3" />
+      <rect x="8.5" y="8.5" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  )
+}
+
+export function BringFrontIcon({ className = 'h-4 w-4' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <rect x="3.5" y="3.5" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.6" />
+      <rect x="8.5" y="8.5" width="12" height="12" rx="2" fill="currentColor" />
+    </svg>
+  )
+}
+
+/** Naap chhota / bara — `A−` aur `A+` ki jagah, taake har button ka wazan ek jaisa rahe. */
+export function TextSmallerIcon({ className = 'h-4 w-4' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M3 18 7.5 8h1.2L13 18M4.6 14.6h6.8"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M16 13h5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function TextBiggerIcon({ className = 'h-4 w-4' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M3 18 7.5 8h1.2L13 18M4.6 14.6h6.8"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M16 13h5M18.5 10.5v5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
     </svg>
   )
 }

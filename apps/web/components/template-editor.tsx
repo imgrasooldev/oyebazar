@@ -12,7 +12,36 @@ import {
   type ShapeLayer,
   type TemplateSpec,
 } from '@oyebazar/shared'
-import { EyeIcon, EyeOffIcon, RedoIcon, UndoIcon } from '@/components/icons'
+import {
+  AlignCentreIcon,
+  AlignEndIcon,
+  AlignIcon,
+  AlignStartIcon,
+  ArrowDownIcon,
+  ArrowUpIcon,
+  BringFrontIcon,
+  ExpandIcon,
+  EyeIcon,
+  EyeOffIcon,
+  FillIcon,
+  FontIcon,
+  GearIcon,
+  LayersIcon,
+  MoreIcon,
+  RedoIcon,
+  ShapesIcon,
+  SendBehindIcon,
+  ShrinkIcon,
+  SizeIcon,
+  TextBiggerIcon,
+  TextSmallerIcon,
+  TemplateIcon,
+  TextColourIcon,
+  TextIcon,
+  TrashIcon,
+  UndoIcon,
+  UploadIcon,
+} from '@/components/icons'
 import { translator, type Locale } from '@/lib/i18n'
 
 /**
@@ -192,12 +221,12 @@ const SHAPE_PREVIEW_CLIP: Partial<Record<string, string>> = {
  * aakhir mein kyunke wo sab se kam khula jata hai.
  */
 const TABS = [
-  { id: 'design', icon: '▤', label: 'tabDesign' },
-  { id: 'text', icon: 'T', label: 'tabText' },
-  { id: 'shapes', icon: '◆', label: 'tabShapes' },
-  { id: 'upload', icon: '⬆', label: 'tabUpload' },
-  { id: 'layers', icon: '☰', label: 'tabLayers' },
-  { id: 'settings', icon: '⚙', label: 'tabSettings' },
+  { id: 'design', Icon: TemplateIcon, label: 'tabDesign' },
+  { id: 'text', Icon: TextIcon, label: 'tabText' },
+  { id: 'shapes', Icon: ShapesIcon, label: 'tabShapes' },
+  { id: 'upload', Icon: UploadIcon, label: 'tabUpload' },
+  { id: 'layers', Icon: LayersIcon, label: 'tabLayers' },
+  { id: 'settings', Icon: GearIcon, label: 'tabSettings' },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
@@ -1192,7 +1221,7 @@ export function TemplateEditor({
             onClick={toggleFullscreen}
             dark
           >
-            {fullscreen ? '⤡' : '⤢'}
+            {fullscreen ? <ShrinkIcon className="h-4 w-4" /> : <ExpandIcon className="h-4 w-4" />}
           </IconButton>
         </div>
 
@@ -1254,10 +1283,10 @@ export function TemplateEditor({
                 className={
                   tab === entry.id
                     ? 'flex min-h-tap flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bg-accent-50 px-2 py-2 text-accent-700 lg:flex-none lg:w-14'
-                    : 'link-tap flex min-h-tap flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-2 text-ink-soft lg:flex-none lg:w-14'
+                    : 'tap flex min-h-tap flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-2 text-ink-soft lg:flex-none lg:w-14'
                 }
               >
-                <span className="text-[1.05rem] leading-none">{entry.icon}</span>
+                <entry.Icon className="h-[1.15rem] w-[1.15rem]" />
                 <span className="text-[0.62rem] font-semibold leading-tight">{t(entry.label)}</span>
               </button>
             ))}
@@ -1277,7 +1306,7 @@ export function TemplateEditor({
                 key={preset.key}
                 type="button"
                 onClick={() => startNew(preset.spec)}
-                className="link-tap flex flex-col items-center gap-1"
+                className="tap flex flex-col items-center gap-1"
               >
                 <TemplateThumb spec={preset.spec} photo={photo} />
                 <span className="w-full truncate text-center text-[0.68rem] font-semibold">
@@ -1305,7 +1334,7 @@ export function TemplateEditor({
                 <button
                   type="button"
                   onClick={() => choose(template)}
-                  className="link-tap flex min-w-0 flex-1 items-center gap-2 text-right"
+                  className="tap flex min-w-0 flex-1 items-center gap-2 text-right"
                 >
                   <TemplateThumb spec={template.spec} photo={photo} />
                   <span className="min-w-0 flex-1 truncate text-[0.85rem] font-semibold">
@@ -1540,7 +1569,7 @@ export function TemplateEditor({
                   className={
                     photo === url
                       ? 'h-8 w-8 shrink-0 overflow-hidden rounded-lg ring-2 ring-accent-700'
-                      : 'link-tap h-8 w-8 shrink-0 overflow-hidden rounded-lg ring-1 ring-black/10'
+                      : 'tap h-8 w-8 shrink-0 overflow-hidden rounded-lg ring-1 ring-black/10'
                   }
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element -- storage ki tasveer */}
@@ -1582,7 +1611,7 @@ export function TemplateEditor({
                 {/* Likhai khud — sirf jab wo waqai badli ja sakti ho */}
                 {editableText !== null && (
                   <ToolButton id="text" active={tool} onPick={setTool} label={t('toolText')}>
-                    <span className="text-[1.05rem] leading-none">✎</span>
+                    <TextIcon className="h-[1.15rem] w-[1.15rem]" />
                   </ToolButton>
                 )}
 
@@ -1594,12 +1623,11 @@ export function TemplateEditor({
                 */}
                 {selectedLayer?.kind !== 'image' && (
                   <ToolButton id="colour" active={tool} onPick={setTool} label={t('toolColour')}>
-                    <span className="flex flex-col items-center gap-0.5 leading-none">
-                      <span className="text-[0.85rem] font-black">A</span>
-                      <span
-                        className="h-1.5 w-5 rounded-pill ring-1 ring-black/20"
-                        style={{ background: part(spec, selected)?.colour ?? '#ffffff' }}
-                      />
+                    <span
+                      className="flex flex-col items-center leading-none"
+                      style={{ color: part(spec, selected)?.colour ?? undefined }}
+                    >
+                      <TextColourIcon className="h-[1.15rem] w-[1.15rem]" />
                     </span>
                   </ToolButton>
                 )}
@@ -1607,38 +1635,33 @@ export function TemplateEditor({
                 {/* Peechay ka rang — yehi wo cheez thi jo pehle THI hi nahi */}
                 {isTextish && (
                   <ToolButton id="bg" active={tool} onPick={setTool} label={t('toolBg')}>
-                    <span
-                      className="block h-4 w-5 rounded-md ring-1 ring-black/25"
-                      style={{
-                        background: isPillOn(spec, selected)
-                          ? (part(spec, selected)?.pillColour ?? spec.accent)
-                          : 'repeating-linear-gradient(45deg,#fff,#fff 3px,#e5e7eb 3px,#e5e7eb 6px)',
-                      }}
+                    <FillIcon
+                      className="h-[1.15rem] w-[1.15rem]"
+                      style={
+                        isPillOn(spec, selected)
+                          ? { color: part(spec, selected)?.pillColour ?? spec.accent }
+                          : undefined
+                      }
                     />
                   </ToolButton>
                 )}
 
                 {isTextish && (
                   <ToolButton id="font" active={tool} onPick={setTool} label={t('toolFont')}>
-                    <span
-                      className="text-[1rem] leading-none"
-                      style={{ fontFamily: FONT_PREVIEW[part(spec, selected)?.font ?? 'nastaliq'] }}
-                    >
-                      Aa
-                    </span>
+                    <FontIcon className="h-[1.15rem] w-[1.15rem]" />
                   </ToolButton>
                 )}
 
                 <ToolButton id="size" active={tool} onPick={setTool} label={t('toolSize')}>
-                  <span className="text-[1rem] leading-none">⤢</span>
+                  <SizeIcon className="h-[1.15rem] w-[1.15rem]" />
                 </ToolButton>
 
                 <ToolButton id="place" active={tool} onPick={setTool} label={t('toolPlace')}>
-                  <span className="text-[1rem] leading-none">▥</span>
+                  <AlignIcon className="h-[1.15rem] w-[1.15rem]" />
                 </ToolButton>
 
                 <ToolButton id="more" active={tool} onPick={setTool} label={t('toolMore')}>
-                  <span className="text-[1rem] leading-none">⋯</span>
+                  <MoreIcon className="h-[1.15rem] w-[1.15rem]" />
                 </ToolButton>
 
                 <button
@@ -1721,7 +1744,7 @@ export function TemplateEditor({
                         onClick={() => patchPart(selected, { pill: false })}
                         className={
                           isPillOn(spec, selected)
-                            ? 'link-tap w-full rounded-xl border border-line py-2 text-[0.8rem] font-semibold'
+                            ? 'tap w-full rounded-xl border border-line py-2 text-[0.8rem] font-semibold'
                             : 'w-full rounded-xl bg-accent-50 py-2 text-[0.8rem] font-semibold text-accent-700'
                         }
                       >
@@ -1748,7 +1771,7 @@ export function TemplateEditor({
                             className={
                               on
                                 ? 'rounded-xl bg-accent-50 px-2 py-2 text-[0.95rem] text-accent-700 ring-1 ring-accent-600'
-                                : 'link-tap rounded-xl px-2 py-2 text-[0.95rem] ring-1 ring-line'
+                                : 'tap rounded-xl px-2 py-2 text-[0.95rem] ring-1 ring-line'
                             }
                             style={{ fontFamily: FONT_PREVIEW[font] }}
                           >
@@ -1762,7 +1785,7 @@ export function TemplateEditor({
                   {tool === 'size' && (
                     <div className="flex items-center gap-3">
                       <IconButton label={t('smaller')} onClick={() => resizeSelected(-1)}>
-                        A−
+                        <TextSmallerIcon className="h-4 w-4" />
                       </IconButton>
                       <div className="flex-1">
                         {selectedLayer?.kind === 'image' ? (
@@ -1784,7 +1807,7 @@ export function TemplateEditor({
                         )}
                       </div>
                       <IconButton label={t('bigger')} onClick={() => resizeSelected(1)}>
-                        A+
+                        <TextBiggerIcon className="h-4 w-4" />
                       </IconButton>
                     </div>
                   )}
@@ -1799,7 +1822,13 @@ export function TemplateEditor({
                           }
                           onClick={() => patchPart(selected, { x })}
                         >
-                          {x === 4 ? '▤' : x === 50 ? '▥' : '▦'}
+                          {x === 4 ? (
+                            <AlignStartIcon className="h-4 w-4" />
+                          ) : x === 50 ? (
+                            <AlignCentreIcon className="h-4 w-4" />
+                          ) : (
+                            <AlignEndIcon className="h-4 w-4" />
+                          )}
                         </IconButton>
                       ))}
                       <span className="w-2" />
@@ -1809,7 +1838,7 @@ export function TemplateEditor({
                           patchPart(selected, { y: clamp((part(spec, selected)?.y ?? 0) - 2) })
                         }
                       >
-                        ↑
+                        <ArrowUpIcon className="h-4 w-4" />
                       </IconButton>
                       <IconButton
                         label={t('nudgeDown')}
@@ -1817,7 +1846,7 @@ export function TemplateEditor({
                           patchPart(selected, { y: clamp((part(spec, selected)?.y ?? 0) + 2) })
                         }
                       >
-                        ↓
+                        <ArrowDownIcon className="h-4 w-4" />
                       </IconButton>
                       {/*
                         Peechay / aage — sirf apni layers par.
@@ -1831,7 +1860,11 @@ export function TemplateEditor({
                           label={selectedLayer.behind ? t('sendFront') : t('sendBehind')}
                           onClick={() => patchPart(selected, { behind: !selectedLayer.behind })}
                         >
-                          {selectedLayer.behind ? '▣' : '▤'}
+                          {selectedLayer.behind ? (
+                            <BringFrontIcon className="h-4 w-4" />
+                          ) : (
+                            <SendBehindIcon className="h-4 w-4" />
+                          )}
                         </IconButton>
                       )}
                     </div>
@@ -1868,7 +1901,7 @@ export function TemplateEditor({
                           onClick={() =>
                             patchPart(selected, { radius: selectedLayer.radius ? 0 : 50 })
                           }
-                          className="link-tap w-full rounded-xl border border-line py-2 text-[0.8rem] font-semibold"
+                          className="tap w-full rounded-xl border border-line py-2 text-[0.8rem] font-semibold"
                         >
                           {t('roundLogo')}
                         </button>
@@ -2072,7 +2105,7 @@ export function TemplateEditor({
                       type="button"
                       onClick={() => addShape(shape)}
                       disabled={(spec.layers?.length ?? 0) >= 6}
-                      className="link-tap flex flex-col items-center gap-1.5 rounded-xl bg-paper-sunken px-1 py-3 disabled:opacity-40"
+                      className="tap flex flex-col items-center gap-1.5 rounded-xl bg-paper-sunken px-1 py-3 disabled:opacity-40"
                     >
                       {/*
                         Nishan wohi shakl hai jo banegi — `clip-path` bhi wohi jo asli
@@ -2204,7 +2237,7 @@ export function TemplateEditor({
                     <button
                       type="button"
                       onClick={() => pick(sel)}
-                      className="link-tap flex min-w-0 flex-1 items-center gap-2 text-start"
+                      className="tap flex min-w-0 flex-1 items-center gap-2 text-start"
                     >
                       <LayerThumb sel={sel} style={style} layer={layer} accent={spec.accent} />
 
@@ -2236,20 +2269,20 @@ export function TemplateEditor({
                           onClick={() => moveLayer(index, 1)}
                           disabled={index === (spec.layers?.length ?? 0) - 1}
                         >
-                          ▲
+                          <ArrowUpIcon className="h-4 w-4" />
                         </IconButton>
                         <IconButton
                           label={t('sendBackward')}
                           onClick={() => moveLayer(index, -1)}
                           disabled={index === 0}
                         >
-                          ▼
+                          <ArrowDownIcon className="h-4 w-4" />
                         </IconButton>
                         <IconButton
                           label={t('deleteTemplate')}
                           onClick={() => removeLayer(index)}
                         >
-                          ✕
+                          <TrashIcon className="h-4 w-4" />
                         </IconButton>
                       </>
                     )}
@@ -2261,8 +2294,8 @@ export function TemplateEditor({
                       title={style.show ? t('hideThis') : t('showThis')}
                       className={
                         style.show
-                          ? 'link-tap flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-ink-soft'
-                          : 'link-tap flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-paper-sunken text-ink-faint'
+                          ? 'tap flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-ink-soft'
+                          : 'tap flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-paper-sunken text-ink-faint'
                       }
                     >
                       {style.show ? (
@@ -2594,7 +2627,7 @@ function ToolButton({
       className={
         on
           ? 'flex min-h-tap w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-accent-50 px-1 py-1.5 text-accent-700 ring-1 ring-accent-600'
-          : 'link-tap flex min-h-tap w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-ink'
+          : 'tap flex min-h-tap w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-ink'
       }
     >
       {children}
@@ -2629,7 +2662,7 @@ function IconButton({
       className={
         dark
           ? 'flex h-9 min-w-9 items-center justify-center rounded-xl px-2 text-[0.85rem] font-semibold text-white/80 transition hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent'
-          : 'link-tap flex h-9 min-w-9 items-center justify-center rounded-xl bg-paper-sunken px-2 text-[0.85rem] font-semibold disabled:opacity-35'
+          : 'tap flex h-9 min-w-9 items-center justify-center rounded-xl bg-paper-sunken px-2 text-[0.85rem] font-semibold disabled:opacity-35'
       }
     >
       {children}
@@ -2707,7 +2740,7 @@ function SwatchRow({
               className={
                 active
                   ? 'aspect-square w-full self-center rounded-full ring-2 ring-accent-700 ring-offset-1'
-                  : 'link-tap aspect-square w-full self-center rounded-full ring-1 ring-black/15'
+                  : 'tap aspect-square w-full self-center rounded-full ring-1 ring-black/15'
               }
               style={{ background: colour }}
             />
@@ -2725,7 +2758,7 @@ function SwatchRow({
           aur tap par system ka apna rang chunne wala khulta hai (phone par bhi).
         */}
         <label
-          className="link-tap relative aspect-square w-full self-center cursor-pointer overflow-hidden rounded-full ring-1 ring-black/15"
+          className="tap relative aspect-square w-full self-center cursor-pointer overflow-hidden rounded-full ring-1 ring-black/15"
           title={customLabel}
           style={{
             background:

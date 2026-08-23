@@ -355,9 +355,27 @@
            transition duration-200 ease-soft hover:-translate-y-0.5 hover:text-brand-700 hover:shadow-lift;
   }
 
-  /* Footer/nav ke text links — tap ke liye poori bulandi */
+  /*
+   * Footer/nav ke text links — tap ke liye poori bulandi.
+   *
+   * 🔴 `hover:text-white` ka matlab hai ke ye SIRF gehre background par chalta hai.
+   * Safed card par hover karte hi likhai gayab ho jati hai. Halke background wale
+   * qabu ke liye `.tap` hai, ye nahi.
+   */
   .link-tap {
     @apply inline-flex min-h-tap items-center transition hover:text-white;
+  }
+
+  /*
+   * Halke background par tappable qabu — editor ke button, swatch, layer ki qatar.
+   *
+   * Hover par rang NAHI badalta, sirf neeche halki si rangat aati hai. Wajah: yahan
+   * har cheez ka apna rang maani rakhta hai (swatch ka rang, layer ke namoone ki
+   * likhai), aur hover par us rang ko chhoona ghalat maloomat deta hai — banda samajhta
+   * hai ke cheez badal gayi.
+   */
+  .tap {
+    @apply inline-flex min-h-tap items-center transition hover:bg-black/[0.045];
   }
 
   .chip-active {
