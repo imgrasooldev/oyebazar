@@ -4,7 +4,6 @@ import {
   useCallback,
   useEffect,
   useId,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -600,42 +599,50 @@ export function TemplateEditor({
   const [uploading, setUploading] = useState(false)
 
   const stageRef = useRef<HTMLDivElement>(null)
-  const canvasAreaRef = useRef<HTMLDivElement>(null)
 
   /**
    * Canvas apni jagah ke mutabiq — har dafa, har naap par.
    *
-   * `ResizeObserver` is liye ke jagah sirf window resize se nahi badalti: side panel
-   * ka scrollbar aana, phone ka ghoomna, keyboard khulna — sab us dabbe ka naap badalte
-   * hain aur window ka `resize` un mein se kai par chalta hi nahi.
-   */
-  /*
-   * 🔴 `useLayoutEffect` — `useEffect` nahi.
+   * `ResizeObserver` is liye ke jagah sirf window resize se nahi badalti: side panel ka
+   * scrollbar aana, phone ka ghoomna, keyboard khulna, poori screen mein jana — sab us
+   * dabbe ka naap badalte hain aur window ka `resize` un mein se kai par chalta hi nahi.
    *
-   * `useEffect` paint ke BAAD chalta hai. Yani pehla frame us shuruaati zoom par bana
-   * jata tha jo asal jagah se koi taalluq nahi rakhta, aur reseller ko ek lamhe ke liye
-   * canvas apne dabbe se bahar nikla hua nazar aata tha — jaise kuch toot gaya ho.
-   * Layout effect paint se pehle naapta hai, is liye pehla frame hi theek banta hai.
+   * 🔴 Callback ref, `useRef` + `useEffect` NAHI — aur ye ek pakre hue bug ka hal hai.
+   *
+   * Pehle observer ek effect mein lagta tha jis ke deps mein sirf naap tha. "Poori
+   * screen" dabane par React is dabbe ko dobara banata hai (poora editor `fixed
+   * inset-0` wale dabbe mein chala jata hai), yani ref naye node par chala jata aur
+   * observer PURANE, alag ho chuke node ko dekhta reh jata. Nateeja: canvas ka khaana
+   * 267 se 321px ho jata magar canvas 238 par ATKA rehta — reseller "poori screen"
+   * dabati aur kuch bara hota hi nahi.
+   *
+   * Callback ref har dafa chalta hai jab node BADALTA hai, is liye observer hamesha usi
+   * dabbe par hota hai jo is waqt screen par hai. Ye poori qism ke bug ka hal hai, sirf
+   * poori screen ka nahi.
    */
-  useLayoutEffect(() => {
-    const area = canvasAreaRef.current
-    if (!area) return
+  const observerRef = useRef<ResizeObserver | null>(null)
 
-    const measure = () => {
-      const { width, height } = area.getBoundingClientRect()
-      if (width === 0 || height === 0) return
-      // 0.94 — kinare par thori saans, warna canvas dabbe se bilkul chipak jata hai
-      // 0.99 — kinare par bas itni saans ke saaya kata na lage. Pehle 0.94 tha, aur wo
-      // chhoti screen par canvas ko be-wajah 6%% chhota kar deta tha.
-      setFitZoom(Math.min(width / fmt.width, height / fmt.height) * 0.99)
-    }
+  const canvasAreaRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      observerRef.current?.disconnect()
+      observerRef.current = null
+      if (!node) return
 
-    measure()
-    const observer = new ResizeObserver(measure)
-    observer.observe(area)
-    return () => observer.disconnect()
-    // Naap badle to canvas dobara fit hona chahiye
-  }, [fmt.width, fmt.height])
+      const measure = () => {
+        const { width, height } = node.getBoundingClientRect()
+        if (width === 0 || height === 0) return
+        // 0.99 — kinare par bas itni saans ke saaya kata na lage. Pehle 0.94 tha, aur wo
+        // chhoti screen par canvas ko be-wajah 6% chhota kar deta tha.
+        setFitZoom(Math.min(width / fmt.width, height / fmt.height) * 0.99)
+      }
+
+      measure()
+      const observer = new ResizeObserver(measure)
+      observer.observe(node)
+      observerRef.current = observer
+    },
+    [fmt.width, fmt.height],
+  )
 
   /** Har tabdeeli undo ke dhair par — magar drag ke dauran nahi, warna 60 qadam ban jate. */
   const commit = useCallback((next: TemplateSpec) => {
