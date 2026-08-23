@@ -91,3 +91,23 @@ describe('🔴 template ka logo sirf hamari apni storage se', () => {
     }
   })
 })
+
+/**
+ * 🔴 Ek pack ki apni line "hamesha ke liye" mein na chali jaye.
+ *
+ * `note` ek dafa ki baat hai ("صرف آج", "آخری 2 پیس"). Agar wo profile ke defaults mein
+ * mehfooz ho jaye to raat ki pre-generation aur subah ke broadcast samet HAR aane wale
+ * pack par chhapti rahegi — aur reseller ko yaad bhi nahi rahega ke usay hatana hai.
+ *
+ * Ye test us shart ko us jagah pakarta hai jahan wo waqai lagti hai: `packOptionsFrom`
+ * se guzarne wale us object mein `note` hona hi nahi chahiye jo defaults par jata hai.
+ */
+describe('🔴 pack ki apni line defaults mein na jaye', () => {
+  it('defaults ka route `note` ko nikaal deta hai', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/api/v1/status-pack/defaults/route.ts'),
+      'utf8',
+    )
+    expect(source).toMatch(/const \{ templateKey, note: _note, \.\.\.options \} = body/)
+  })
+})

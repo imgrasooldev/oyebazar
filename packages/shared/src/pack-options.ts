@@ -33,6 +33,17 @@ export interface PackOptions {
   readonly name?: string | undefined
   /** Khali = profile wala WhatsApp number. Dukan ka doosra number dene ke liye. */
   readonly phone?: string | undefined
+  /**
+   * Is pack ki apni ek line — "صرف آج", "آخری 2 پیس", "فری ڈیلیوری".
+   *
+   * 🔴 Ye template ke apne text layer se ALAG cheez hai, aur farq samajhna zaroori hai:
+   * layer HAR pack par wohi rehti hai (wo template ka hissa hai), jabke ye line SIRF is
+   * pack par hai. Reseller ka asal kaam yehi hai — aaj wali baat aaj ke pack par.
+   *
+   * Layer par ye likhna kaam nahi deta: kal wo "صرف آج" har naye pack par bhi chhapta
+   * rehta, aur reseller ko yaad hi na rehta ke usay hatana hai.
+   */
+  readonly note?: string | undefined
 }
 
 export const DEFAULT_PACK_OPTIONS: PackOptions = {
@@ -51,8 +62,18 @@ export function packOptionsFrom(partial?: Partial<PackOptions> | null): PackOpti
     showPrice: partial?.showPrice ?? true,
     ...(partial?.name?.trim() ? { name: partial.name.trim() } : {}),
     ...(partial?.phone?.trim() ? { phone: partial.phone.trim() } : {}),
+    ...(partial?.note?.trim() ? { note: partial.note.trim().slice(0, NOTE_MAX) } : {}),
   }
 }
+
+/**
+ * Is line ki hadd.
+ *
+ * 40 haroof — utne hi jitne template ke apne text layer par hain, aur wajah bhi wohi:
+ * is se lambi line pack ke neeche wale hisse ko tor deti hai. Hadd yahan lagti hai (na
+ * ke sirf UI par), kyunke ye qadar cache key mein jati hai aur API se bhi aa sakti hai.
+ */
+export const NOTE_MAX = 40
 
 /**
  * Cache key ka wo hissa jo in faislon se banta hai.
@@ -77,6 +98,12 @@ export function packOptionsKey(options: PackOptions): string {
   // tasveer par nahi, aur usay key mein daalna wohi tasveer do dafa bana deta hai
   if (options.showName && options.name) parts.push(`N:${options.name}`)
   if (options.showPhone && options.phone) parts.push(`P:${options.phone}`)
+  /*
+   * 🔴 Ye line cache key mein LAZMI hai. Do pack jin mein sirf ye line alag ho, wo do
+   * alag tasveerein hain — aur is ke baghair reseller ko doosri dafa pehli wali (purani
+   * line wali) tasveer milti, bina kisi wajah ke.
+   */
+  if (options.note) parts.push(`T:${options.note}`)
 
   return parts.join('|')
 }

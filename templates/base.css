@@ -304,6 +304,33 @@ body {
 }
 
 /*
+ * Pack ki apni line — "صرف آج", "آخری 2 پیس".
+ *
+ * 🔴 Ye template ke text layer se ALAG hai: layer har pack par wohi rehti hai, ye line
+ * sirf USI pack par hai jis ke liye reseller ne likhi. Isi liye ye `title`/`price` ki
+ * tarah ek tay-shuda cheez hai (jagah template deti hai) magar us ka matn har pack ke
+ * saath aata hai.
+ *
+ * Default shakl badge jaisi hai — kyunke is ka kaam bhi wohi hai: ek nazar mein aankh
+ * pakar lena.
+ */
+.note {
+  align-self: flex-start;
+  background: var(--accent);
+  color: var(--badge-text);
+  font-size: calc(40px * var(--scale));
+  font-weight: 700;
+  line-height: 2.2;
+  padding: calc(6px * var(--scale)) calc(30px * var(--scale)) calc(18px * var(--scale));
+  border-radius: 999px;
+}
+
+.stage.lang-en .note {
+  line-height: 1.35;
+  padding: calc(12px * var(--scale)) calc(28px * var(--scale));
+}
+
+/*
  * Chaura canvas (1.91:1) — yahan lambai bohat kam hai. Title do line se zyada le le to
  * price neeche dhakel kar kat jata hai, is liye yahan title ek hi line mein rakhte hain
  * aur photo ke saath content ko neeche se upar chipka dete hain.
@@ -348,6 +375,7 @@ body {
  * karta), is liye `minimal` ka safed card ya `frame` ka haashiya alag se theek nahi
  * karna parta.
  */
+.hide-note .note,
 .hide-name .seller-name,
 .hide-phone .seller-phone,
 .hide-price .price-row,

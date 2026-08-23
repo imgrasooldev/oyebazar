@@ -411,6 +411,13 @@ const DICTIONARY = {
   },
   padXLabel: { ur: 'دائیں بائیں جگہ', en: 'Space at the sides', rm: 'Daayen baayen jagah' },
   padYLabel: { ur: 'اوپر نیچے جگہ', en: 'Space above and below', rm: 'Oopar neeche jagah' },
+  packNote: { ur: 'اس پیک کی اپنی لائن', en: 'A line for this pack', rm: 'Is pack ki apni line' },
+  packNoteHint: {
+    ur: 'صرف اسی پیک پر چھپے گی — ٹیمپلیٹ پر نہیں۔ اگلے پیک پر یہ خود ہی نہیں آئے گی۔',
+    en: 'Prints on this pack only — not on the template. It will not carry over to the next pack.',
+    rm: 'Sirf isi pack par chhapegi — template par nahi. Agle pack par ye khud nahi aayegi.',
+  },
+  packNotePlaceholder: { ur: 'مثلاً: صرف آج · آخری 2 پیس', en: 'e.g. Today only · Last 2 pieces', rm: 'Misal: صرف آج · آخری 2 پیس' },
   dismiss: { ur: 'بند کریں', en: 'Dismiss', rm: 'Band karen' },
   draftFound: {
     ur: 'پچھلی بار کا کام محفوظ نہیں ہوا تھا۔ واپس لے آئیں؟',

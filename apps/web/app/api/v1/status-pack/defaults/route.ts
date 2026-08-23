@@ -23,7 +23,16 @@ export async function PUT(request: Request) {
     const { reseller } = await requireReseller()
     const body = await parseBody(request, SavePackDefaultsSchema)
 
-    const { templateKey, ...options } = body
+    /*
+     * 🔴 `note` yahan se NIKAL jata hai — chahe client kuch bhi bheje.
+     *
+     * Wo ek pack ki apni line hai ("صرف آج", "آخری 2 پیس"), hamesha ki baat nahi. Default
+     * ban jane ka matlab hai ke wo raat ki pre-generation aur subah ke broadcast samet
+     * HAR aane wale pack par chhapti rahegi — aur reseller ko yaad bhi nahi rahega ke
+     * usay hatana hai. Client bhi ise bhejta nahi, magar asli deewar yahan honi chahiye:
+     * ye endpoint hai jo profile par likhta hai.
+     */
+    const { templateKey, note: _note, ...options } = body
 
     const saved = await container.repositories.resellers.savePackDefaults(
       reseller.id,

@@ -387,6 +387,14 @@ export async function buildStatusPackHtml(
     // Dono chhup jayen to us patti ki lakeer bhi jani chahiye — warna tasveer par ek
     // be-maqsad lakeer reh jati hai
     options.showName || options.showPhone ? '' : 'hide-seller',
+    /*
+     * Pack ki apni line — na ho to us ka dabba bhi na ho.
+     *
+     * 🔴 Ye 99% packs par khali hoti hai, is liye default CHHUPA HUA hai. Khali dabba
+     * chhorna `flex gap` ke saath ek be-maqsad khitta bana deta hai — bilkul wohi masla
+     * jis ke liye `hide-*` ka poora tareeqa mojood hai.
+     */
+    options.note ? '' : 'hide-note',
   ]
     .filter(Boolean)
     .join(' ')
@@ -439,6 +447,8 @@ export async function buildStatusPackHtml(
     // 🔴 qeemat LTR mein — "Rs 3,000" Urdu ke darmiyan ulta nahi hona chahiye
     priceText: escapeHtml(formatPkr(data.price)),
     resellerName: escapeHtml(data.resellerName),
+    // Reseller ka apna likha hua — escape LAZMI, ye seedha us ke haath se aata hai
+    noteText: escapeHtml(options.note ?? ''),
     resellerPhone: escapeHtml(formatLocalPhone(data.resellerPhone)),
     /*
      * Reseller ka apna likha hua — warna zaban ke hisaab se hamara.

@@ -4,6 +4,7 @@
  */
 import { z } from 'zod'
 import { MAX_MEDIA_PER_PRODUCT } from '../media'
+import { NOTE_MAX } from '../pack-options'
 import { PAGINATION } from '../constants'
 import { TemplateKeySchema } from '../dto/status-pack'
 
@@ -239,6 +240,14 @@ export const PackOptionsSchema = z.object({
   /** Khali chhoren to profile ka naam chalta hai. */
   name: z.string().trim().max(30).optional(),
   phone: z.string().trim().max(20).optional(),
+  /**
+   * Is pack ki apni line — "صرف آج", "آخری 2 پیس".
+   *
+   * 🔴 Hadd yahan bhi lagti hai, sirf UI par nahi: ye qadar cache key mein jati hai aur
+   * SEEDHA tasveer par chhapti hai. Lambi line pack ka neecha hissa tor deti hai
+   * (Nastaliq lipatta nahi, phailta hai).
+   */
+  note: z.string().trim().max(NOTE_MAX).optional(),
 })
 
 export const GenerateStatusPackSchema = z.object({

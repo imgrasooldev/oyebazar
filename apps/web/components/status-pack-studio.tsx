@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import { formatPkr, type PackKit, type PackKitAsset, type PackOptions } from '@oyebazar/shared'
+import { NOTE_MAX, formatPkr, type PackKit, type PackKitAsset, type PackOptions } from '@oyebazar/shared'
 import { CopyIcon, DownloadIcon, SparkIcon } from '@/components/icons'
 import { translator, type Locale } from '@/lib/i18n'
 
@@ -242,10 +242,23 @@ export function StatusPackStudio({
   /** "ہمیشہ کے لیے" — mojooda faislay profile par, taake har agla pack inhi se shuru ho. */
   async function saveAsDefault() {
     setSavingDefaults(true)
+
+    /*
+     * 🔴 Is pack ki apni line "hamesha ke liye" mein NAHI jati.
+     *
+     * Wo ek dafa ki baat hai — "صرف آج", "آخری 2 پیس". Usay default bana dene ka matlab
+     * hai ke wo raat ki pre-generation aur subah ke broadcast samet HAR aane wale pack
+     * par chhapti rahegi, aur reseller ko yaad bhi nahi rahega ke usay hatana hai. Yani
+     * theek wohi masla jis se bachne ke liye ye line alag banayi gayi thi.
+     *
+     * Server par bhi yehi shart hai (dekhen defaults route) — ye sirf pehli deewar hai.
+     */
+    const { note: _note, ...forever } = options
+
     const res = await fetch('/api/v1/status-pack/defaults', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(options),
+      body: JSON.stringify(forever),
     }).catch(() => null)
 
     setSavingDefaults(false)
@@ -459,6 +472,34 @@ export function StatusPackStudio({
                 className="field w-full text-[0.95rem]"
               />
             )}
+
+            {/*
+              Is pack ki apni line — "صرف آج", "آخری 2 پیس".
+
+              🔴 Ye template ke apne text se ALAG hai, aur ishare mein wohi farq likha
+              hai. Template ka text HAR pack par chhapta hai; ye line sirf isi pack par.
+              Reseller ka asal kaam yehi hai — aaj wali baat aaj ke pack par. Agar wo ye
+              template mein likh de to kal "صرف آج" har naye pack par bhi chhapta rahega
+              aur usay yaad hi na rahega ke hatana hai.
+
+              Ye "ہمیشہ کے لیے محفوظ" wale button se PEHLE hai magar us mein jati NAHI
+              (dekhen `saveAsDefault`) — ek dafa ki baat ko hamesha ke liye mehfooz karna
+              theek us masle ko wapas le aata jis se bachne ke liye ye line banayi gayi.
+            */}
+            <div>
+              <label className="block text-[0.85rem] font-semibold">{t('packNote')}</label>
+              <p className="mt-1 text-[0.75rem] leading-relaxed text-ink-faint">
+                {t('packNoteHint')}
+              </p>
+              <input
+                type="text"
+                maxLength={NOTE_MAX}
+                value={options.note ?? ''}
+                onChange={(e) => setOption('note', e.target.value)}
+                placeholder={t('packNotePlaceholder')}
+                className="field mt-2 w-full text-[0.95rem]"
+              />
+            </div>
 
             <button
               type="button"

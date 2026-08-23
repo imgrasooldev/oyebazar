@@ -10,7 +10,7 @@
  *     purani (number wali) tasveer wapas milti hai.
  */
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_PACK_OPTIONS, packOptionsFrom, packOptionsKey } from './pack-options'
+import { DEFAULT_PACK_OPTIONS, NOTE_MAX, packOptionsFrom, packOptionsKey } from './pack-options'
 
 describe('packOptionsKey', () => {
   it('🔴 default par khali — purane packs ki key nahi badalti', () => {
@@ -55,5 +55,38 @@ describe('packOptionsKey', () => {
   it('khali/space wala naam profile ke naam jaisa hi hai', () => {
     expect(packOptionsKey(packOptionsFrom({ name: '   ' }))).toBe('')
     expect(packOptionsFrom({ name: '  صادیہ  ' }).name).toBe('صادیہ')
+  })
+})
+
+/**
+ * 🔴 Pack ki apni line — aur us ka cache par asar.
+ *
+ * Sab se ahem test wo hai jo ye saabit kare ke ye line na hone par key WAISI KI WAISI
+ * rehti hai: har bana hua pack us par khara hai.
+ */
+describe('pack ki apni line', () => {
+  it('line na ho to key bilkul nahi badalti', () => {
+    expect(packOptionsKey(packOptionsFrom({}))).toBe('')
+    expect(packOptionsKey(packOptionsFrom({ note: '' }))).toBe('')
+    expect(packOptionsKey(packOptionsFrom({ note: '   ' }))).toBe('')
+  })
+
+  it('line dene par key mein aati hai — warna purani tasveer wapas milti', () => {
+    expect(packOptionsKey(packOptionsFrom({ note: 'صرف آج' }))).toBe('T:صرف آج')
+  })
+
+  it('do alag line = do alag key', () => {
+    const a = packOptionsKey(packOptionsFrom({ note: 'صرف آج' }))
+    const b = packOptionsKey(packOptionsFrom({ note: 'آخری 2 پیس' }))
+    expect(a).not.toBe(b)
+  })
+
+  it('aage peechay ki khali jagah key ka hissa nahi banti', () => {
+    expect(packOptionsKey(packOptionsFrom({ note: '  صرف آج  ' }))).toBe('T:صرف آج')
+  })
+
+  it('hadd se lambi line kaat di jati hai — API se bhi aa sakti hai', () => {
+    const long = 'ا'.repeat(80)
+    expect(packOptionsFrom({ note: long }).note).toHaveLength(NOTE_MAX)
   })
 })
