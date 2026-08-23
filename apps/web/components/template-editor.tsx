@@ -335,6 +335,23 @@ export function TemplateEditor({
   const [future, setFuture] = useState<TemplateSpec[]>([])
 
   const [selected, setSelected] = useState<Sel | null>(null)
+  /**
+   * Chuni hui cheez ke qabu khule hain ya nahi — chunao se ALAG.
+   *
+   * 🔴 Ye do baaten ek nahi hain, aur inhen ek samajhna hi wo bug tha jis ki reseller
+   * ne shikayat ki: "design, text, shapes per click kerne per kuch nahi ho raha".
+   *
+   * Pehle har darwaza `!selected` par bandha tha. Yani tasveer par kisi cheez ko tap
+   * karte hi baayen rail ke chhe ke chhe button MURDA ho jate the — dabao, halka sa
+   * rang badalta, aur panel wahin ka wahin. Nikalne ka rasta sirf ek chhoti si
+   * "ho gaya" wali line thi jo neeche scroll mein chhupi hui thi.
+   *
+   * Canva mein chuni hui cheez chuni rehti hai chahe aap baayen kuch bhi kholen. Ab
+   * yahan bhi wohi hai: rail ka koi bhi button panel badalta hai, chunao ko haath nahi
+   * lagata — handles tasveer par qayam rehte hain, aur wapas aane ke liye rail mein
+   * cheez ke apne naam ka button mojood hai.
+   */
+  const [showSelection, setShowSelection] = useState(false)
   const [drag, setDrag] = useState<{ key: Sel; mode: HandleId } | null>(null)
   const [guides, setGuides] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] })
   /**
@@ -377,6 +394,21 @@ export function TemplateEditor({
    * se har kaam baqi paanch ke shor mein karna parta hai.
    */
   const [tab, setTab] = useState<TabId>('design')
+
+  /** Is waqt panel mein kya khula hai — rail ka darwaza, ya chuni hui cheez ke qabu. */
+  const panel: TabId | 'select' = showSelection && selected ? 'select' : tab
+
+  /** Tasveer par (ya list mein) kisi cheez par tap — chuno AUR us ke qabu kholo. */
+  function pick(key: Sel) {
+    setSelected(key)
+    setShowSelection(true)
+  }
+
+  /** Kaam khatam — chunao chhoro aur wapas usi darwaze par jahan se aaye the. */
+  function unpick() {
+    setSelected(null)
+    setShowSelection(false)
+  }
 
   /**
    * Poori screen — editor safhe ke upar aa jata hai.
@@ -551,14 +583,14 @@ export function TemplateEditor({
   function startDrag(key: Sel, mode: HandleId, event: React.PointerEvent) {
     event.preventDefault()
     event.stopPropagation()
-    setSelected(key)
+    pick(key)
 
     /*
      * Capture ki nakami se chunao nahi marna chahiye.
      *
      * `setPointerCapture` un pointer par phenkta hai jo ab active nahi rahe (ungli
      * uthate hi ye ho jata hai, aur kuch browsers mein mouse par bhi). Pehle ye line
-     * `setSelected` se PEHLE thi aur us ke phenkne par cheez chunni hi nahi jati thi —
+     * `pick` se PEHLE thi aur us ke phenkne par cheez chunni hi nahi jati thi —
      * yani drag na chalne par tap bhi kaam karna chhor deta tha.
      */
     try {
@@ -700,7 +732,7 @@ export function TemplateEditor({
         ArrowDown: () => patchPart(selected, { y: clamp(element.y + step) }),
         Delete: () => patchPart(selected, { show: false }),
         Backspace: () => patchPart(selected, { show: false }),
-        Escape: () => setSelected(null),
+        Escape: () => unpick(),
       }
 
       const move = moves[event.key]
@@ -722,7 +754,7 @@ export function TemplateEditor({
     setSpec(template.spec)
     setPast([])
     setFuture([])
-    setSelected(null)
+    unpick()
     setSaved(false)
     setError(null)
   }
@@ -739,7 +771,7 @@ export function TemplateEditor({
     setSpec(preset)
     setPast([])
     setFuture([])
-    setSelected(null)
+    unpick()
     setSaved(false)
   }
 
@@ -811,7 +843,7 @@ export function TemplateEditor({
     setSpec(template.spec)
     setPast([])
     setFuture([])
-    setSelected(null)
+    unpick()
     setSaved(false)
     setTab('design')
   }
@@ -852,7 +884,7 @@ export function TemplateEditor({
       size: 48,
     })
     commit({ ...spec, layers })
-    setSelected(`L${layers.length - 1}`)
+    pick(`L${layers.length - 1}`)
   }
 
   /**
@@ -894,7 +926,7 @@ export function TemplateEditor({
      */
     layers.push({ kind: 'image', url, show: true, x: 72, y: 5, width: 18 })
     commit({ ...spec, layers })
-    setSelected(`L${layers.length - 1}`)
+    pick(`L${layers.length - 1}`)
   }
 
   /**
@@ -916,7 +948,7 @@ export function TemplateEditor({
 
     layers.push({ kind: 'shape', shape, show: true, x: 8, y: 40, ...size })
     commit({ ...spec, layers })
-    setSelected(`L${layers.length - 1}`)
+    pick(`L${layers.length - 1}`)
   }
 
   function setLayerText(index: number, text: string) {
@@ -930,7 +962,7 @@ export function TemplateEditor({
   function removeLayer(index: number) {
     const layers = (spec.layers ?? []).filter((_, i) => i !== index)
     commit({ ...spec, layers })
-    setSelected(null)
+    unpick()
   }
 
   /**
@@ -1097,16 +1129,57 @@ export function TemplateEditor({
         */}
         <div className="order-2 lg:order-1 lg:min-h-0">
           <div className="card flex gap-1 p-1.5 lg:h-full lg:flex-col">
+            {/*
+              Chuni hui cheez ka apna darwaza — sirf jab koi cheez chuni ho.
+
+              🔴 Ye rail ka pehla button hai, aakhri nahi. Chuni hui cheez ke qabu wahi
+              cheez hain jinhen banda abhi dhoondh raha hota hai, aur phone par rail
+              neeche ki patti hai jahan pehla khana angoothe ke sab se qareeb hai.
+
+              Iske baghair rail ka koi bhi darwaza kholte hi chuni hui cheez ke rang,
+              font aur naap tak wapas jane ka koi rasta nahi bachta — sirf tasveer par
+              dobara tap karna, jo chhoti cheezon par mushkil hai.
+            */}
+            {selected && (
+              <button
+                type="button"
+                onClick={() => setShowSelection(true)}
+                aria-label={partLabel(selected)}
+                title={partLabel(selected)}
+                aria-pressed={panel === 'select'}
+                className={
+                  panel === 'select'
+                    ? 'flex min-h-tap flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bg-accent-600 px-2 py-2 text-white lg:flex-none lg:w-14'
+                    : 'link-tap flex min-h-tap flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bg-accent-50 px-2 py-2 text-accent-700 lg:flex-none lg:w-14'
+                }
+              >
+                <span className="text-[1.05rem] leading-none">✥</span>
+                <span className="w-full truncate text-[0.62rem] font-semibold leading-tight">
+                  {partLabel(selected)}
+                </span>
+              </button>
+            )}
+
             {TABS.map((entry) => (
               <button
                 key={entry.id}
                 type="button"
-                onClick={() => setTab(entry.id)}
+                /*
+                  🔴 Chunao ko haath NAHI lagta — sirf panel badalta hai.
+
+                  Canva mein bhi cheez chuni rehti hai chahe aap baayen "Elements" khol
+                  len. Yahan bhi handles tasveer par qayam rehte hain, teer se hilana
+                  chalta rehta hai, aur upar wale button se qabu wapas aa jate hain.
+                */
+                onClick={() => {
+                  setTab(entry.id)
+                  setShowSelection(false)
+                }}
                 aria-label={t(entry.label)}
                 title={t(entry.label)}
-                aria-pressed={tab === entry.id}
+                aria-pressed={panel === entry.id}
                 className={
-                  tab === entry.id
+                  panel === entry.id
                     ? 'flex min-h-tap flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bg-accent-50 px-2 py-2 text-accent-700 lg:flex-none lg:w-14'
                     : 'link-tap flex min-h-tap flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-2 text-ink-soft lg:flex-none lg:w-14'
                 }
@@ -1129,7 +1202,7 @@ export function TemplateEditor({
           mein jati hai. Ab wohi hai: qatar mein sirf naap aur jagah wale button, aur
           baqi sab yahan — jahan panel ka apna scroll pehle se mojood hai.
         */}
-        {selected && (
+        {panel === 'select' && selected && (
           <div className="card order-3 space-y-2.5 p-3 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
             <p className="text-[0.85rem] font-bold">{partLabel(selected)}</p>
 
@@ -1256,7 +1329,7 @@ export function TemplateEditor({
 
             <button
               type="button"
-              onClick={() => setSelected(null)}
+              onClick={unpick}
               className="w-full pt-1 text-[0.76rem] text-ink-faint underline"
             >
               {t('doneWithThis')}
@@ -1265,7 +1338,7 @@ export function TemplateEditor({
         )}
 
         {/* ---------------- Khula hua panel ---------------- */}
-        {!selected && tab === 'design' && (
+        {panel === 'design' && (
         <div className="card order-3 p-4 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
           <h2 className="text-[0.95rem] font-bold">{t('startFrom')}</h2>
           <p className="mt-1 text-[0.75rem] text-ink-faint">{t('startFromHint')}</p>
@@ -1389,7 +1462,7 @@ export function TemplateEditor({
               className="relative shrink-0 overflow-hidden rounded-card shadow-[0_18px_50px_-12px_rgba(0,0,0,0.45)] ring-1 ring-black/10"
               style={{ width: CANVAS_W * zoom, height: CANVAS_H * zoom }}
               // Khali jagah par tap = kuch bhi chuna hua nahi
-              onPointerDown={() => setSelected(null)}
+              onPointerDown={unpick}
             >
               <div
                 ref={stageRef}
@@ -1428,7 +1501,7 @@ export function TemplateEditor({
                   <Handle
                     k="badge"
                     cssClass="badge"
-                    {...{ spec, selected, drag, startDrag, setSelected }}
+                    {...{ spec, selected, drag, startDrag, pick }}
                   >
                     {spec.badgeText || '—'}
                   </Handle>
@@ -1437,7 +1510,7 @@ export function TemplateEditor({
                     <Handle
                       k="title"
                       cssClass="title"
-                      {...{ spec, selected, drag, startDrag, setSelected }}
+                      {...{ spec, selected, drag, startDrag, pick }}
                     >
                       {t('sampleProductTitle')}
                     </Handle>
@@ -1445,7 +1518,7 @@ export function TemplateEditor({
                     <Handle
                       k="price"
                       cssClass="price-row"
-                      {...{ spec, selected, drag, startDrag, setSelected }}
+                      {...{ spec, selected, drag, startDrag, pick }}
                     >
                       <div className="price">{formatPkr(pkr(2850))}</div>
                     </Handle>
@@ -1454,14 +1527,14 @@ export function TemplateEditor({
                       <Handle
                         k="name"
                         cssClass="seller-name"
-                        {...{ spec, selected, drag, startDrag, setSelected }}
+                        {...{ spec, selected, drag, startDrag, pick }}
                       >
                         {t('sampleSellerName')}
                       </Handle>
                       <Handle
                         k="phone"
                         cssClass="seller-phone"
-                        {...{ spec, selected, drag, startDrag, setSelected }}
+                        {...{ spec, selected, drag, startDrag, pick }}
                       >
                         {/* LTR andar wale span par — dekhen templates/layout.html ka note */}
                         <span className="ltr">0300 1234567</span>
@@ -1471,7 +1544,7 @@ export function TemplateEditor({
                     <Handle
                       k="cta"
                       cssClass="cta"
-                      {...{ spec, selected, drag, startDrag, setSelected }}
+                      {...{ spec, selected, drag, startDrag, pick }}
                     >
                       {spec.ctaText?.trim() || t('sampleCta')}
                     </Handle>
@@ -1483,7 +1556,7 @@ export function TemplateEditor({
                       key={index}
                       k={`L${index}`}
                       cssClass={`layer-${index}`}
-                      {...{ spec, selected, drag, startDrag, setSelected }}
+                      {...{ spec, selected, drag, startDrag, pick }}
                     >
                       {layer.kind === 'image' ? (
                         /* eslint-disable-next-line @next/next/no-img-element -- storage se aaya hua logo; naap spec ke CSS se aata hai */
@@ -1668,7 +1741,7 @@ export function TemplateEditor({
           Ab bahar ka dabba scroll karta hai aur andar ke hisse sirf lakeeron se juda
           hain — jaisa har design tool ke side panel mein hota hai.
         */}
-        {!selected && tab === 'settings' && (
+        {panel === 'settings' && (
         <div className="card order-3 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
           <div className="space-y-4 p-4">
             <label className="block">
@@ -1775,7 +1848,7 @@ export function TemplateEditor({
         </div>
         )}
 
-        {!selected && (tab === 'layers' || tab === 'text' || tab === 'shapes' || tab === 'upload') && (
+        {(panel === 'layers' || panel === 'text' || panel === 'shapes' || panel === 'upload') && (
         <div className="card order-3 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
           {/*
             Cheezon ki list — Canva ke "layers" wala kaam.
@@ -1923,7 +1996,7 @@ export function TemplateEditor({
                   >
                     <button
                       type="button"
-                      onClick={() => setSelected(sel)}
+                      onClick={() => pick(sel)}
                       className="link-tap flex min-w-0 flex-1 items-center gap-2 text-right"
                     >
                       {/* Nishan — rang ka gola, shakl, ya likhai ka `T` */}
@@ -2087,7 +2160,7 @@ function Handle({
   selected,
   drag,
   startDrag,
-  setSelected,
+  pick,
   children,
 }: {
   k: Sel
@@ -2096,7 +2169,7 @@ function Handle({
   selected: Sel | null
   drag: { key: Sel; mode: HandleId } | null
   startDrag: (key: Sel, mode: HandleId, event: React.PointerEvent) => void
-  setSelected: (key: Sel) => void
+  pick: (key: Sel) => void
   children: React.ReactNode
 }) {
   const style = part(spec, k)
@@ -2110,7 +2183,7 @@ function Handle({
       onPointerDown={(event) => startDrag(k, 'move', event)}
       onClick={(event) => {
         event.stopPropagation()
-        setSelected(k)
+        pick(k)
       }}
       style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
       className={`${cssClass} ${
