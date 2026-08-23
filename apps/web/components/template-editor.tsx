@@ -561,6 +561,41 @@ export function TemplateEditor({
    * likhi. Ek line kaafi hai, aur wo line usi jagah honi chahiye jahan banda tap kar
    * raha hai.
    */
+  /**
+   * Wo kacha kaam jo pichhli dafa mehfooz nahi hua tha.
+   *
+   * `null` = kuch nahi mila (aam soorat). Peshkash SIRF tab hoti hai jab draft mojood
+   * ho AUR wo us cheez se ALAG ho jo abhi khuli hai — warna reseller ko har dafa ek
+   * be-maani sawal milta.
+   */
+  const [recovered, setRecovered] = useState<Draft | null>(null)
+
+  useEffect(() => {
+    const draft = readDraft()
+    if (!draft) return
+    if (JSON.stringify(draft.spec) === JSON.stringify(spec) && draft.name === name) {
+      clearDraft()
+      return
+    }
+    setRecovered(draft)
+    // Sirf ek dafa, safha khulte waqt — baad ka apna kaam peshkash nahi banna chahiye
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /**
+   * Har tabdeeli draft mein — magar sirf jab wo mehfooz na hui ho.
+   *
+   * Thora ruk kar likhte hain: drag ke dauran spec har frame par badalta hai, aur har
+   * frame par `localStorage` likhna ungli ke neeche laggy mehsoos hota hai.
+   */
+  useEffect(() => {
+    if (saved) return
+    const id = window.setTimeout(() => {
+      writeDraft({ name, spec, selectedId, at: Date.now() })
+    }, 700)
+    return () => window.clearTimeout(id)
+  }, [spec, name, selectedId, saved])
+
   const LAYER_LIMIT = 6
   const atLayerLimit = (spec.layers?.length ?? 0) >= LAYER_LIMIT
 
@@ -1040,6 +1075,9 @@ export function TemplateEditor({
     )
     setSelectedId(data.id)
     setSaved(true)
+    // Mehfooz ho gaya — ab draft rakhna ghalat hai (dekhen DRAFT_KEY ka note)
+    clearDraft()
+    setRecovered(null)
   }
 
   async function makeDefault() {
@@ -1359,6 +1397,45 @@ export function TemplateEditor({
         Yehi rang Content Studio ke sar par pehle se hai (bg-coal-900) — ye naya mizaj
         nahi, wohi hai.
       */}
+      {/*
+        Pichhli dafa ka kacha kaam — patti ke OOPAR, gehre rang par.
+
+        🔴 Ye peshkash hai, hukm nahi: do saaf raste, aur dono ek jaise nazar aane wale.
+        "Wapas layen" ko bara aur "hata den" ko chhota bana dena us banday ko dhakelta
+        hai jis ka draft waqai purana ho gaya ho — aur wo apna naya kaam kho baithe.
+
+        Jagah yahan is liye ke reseller ki nazar sab se pehle isi patti par parti hai.
+        Panel mein rakhne ka matlab hota ke wo tab nazar aati jab banda usay dhoondh
+        chuka hota — aur us waqt tak wo apna kaam dobara shuru kar chuka hota.
+      */}
+      {recovered && (
+        <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-card bg-accent-50 p-2.5 text-[0.8rem] text-accent-700 ring-1 ring-accent-600">
+          <span className="flex-1 leading-relaxed">{t('draftFound')}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setName(recovered.name)
+              setSelectedId(recovered.selectedId)
+              commit(recovered.spec)
+              setRecovered(null)
+            }}
+            className="rounded-pill bg-accent-600 px-3 py-1.5 font-semibold text-white"
+          >
+            {t('draftRestore')}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              clearDraft()
+              setRecovered(null)
+            }}
+            className="tap rounded-pill px-3 py-1.5 font-semibold"
+          >
+            {t('draftDiscard')}
+          </button>
+        </div>
+      )}
+
       <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-card bg-coal-900 p-2 text-white">
         <div className="flex items-center gap-1">
           <IconButton label={t('undo')} onClick={undo} disabled={past.length === 0} dark>
@@ -2988,6 +3065,58 @@ function LayerThumb({
       </span>
     </span>
   )
+}
+
+/**
+ * Kacha kaam browser mein — mehfooz karne se pehle wala arsa.
+ *
+ * 🔴 Ye "achha hota to sahi" wali cheez nahi hai; ye us khatre ka hal hai jo hamari
+ * reseller par SAB SE ZYADA lagta hai.
+ *
+ * Wo phone par kaam karti hai. Phone WhatsApp ya call ke liye tab hata deta hai, aur
+ * wapas aane par safha naye sire se khulta hai. Us waqt tak ka saara kaam gaya —
+ * "Leave site?" wali tanbeeh tabhi kaam aati hai jab banda KHUD kahin ja raha ho, aur
+ * ye soorat us se bilkul alag hai: yahan koi tanbeeh nahi aati, kuch poochha nahi jata,
+ * bas kaam nahi hota.
+ *
+ * Draft chhota hai (chand sau bytes ka spec), is liye har tabdeeli par likh dena sasta
+ * hai. Mehfooz hote hi mit jata hai — warna agli dafa banda apna PURANA kaam wapas
+ * laane ki peshkash dekhta, jo mehfooz shuda se bhi purana hota.
+ */
+const DRAFT_KEY = 'oyebazar:template-draft:v1'
+
+type Draft = { name: string; spec: TemplateSpec; selectedId: string | null; at: number }
+
+function readDraft(): Draft | null {
+  try {
+    const raw = window.localStorage.getItem(DRAFT_KEY)
+    if (!raw) return null
+    const draft = JSON.parse(raw) as Draft
+    // Zod se guzara hua nahi hai — is liye sirf wohi maante hain jis ki shakl theek ho
+    return draft?.spec && typeof draft.at === 'number' ? draft : null
+  } catch {
+    /*
+     * `localStorage` phenk sakta hai — private window, ya jagah bhar chuki ho. Us soorat
+     * mein draft na hona bilkul theek hai; is ki wajah se editor rukna nahi chahiye.
+     */
+    return null
+  }
+}
+
+function writeDraft(draft: Draft): void {
+  try {
+    window.localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+  } catch {
+    // Upar wali wajah — khamoshi se guzar jao
+  }
+}
+
+function clearDraft(): void {
+  try {
+    window.localStorage.removeItem(DRAFT_KEY)
+  } catch {
+    // Upar wali wajah
+  }
 }
 
 /**

@@ -409,6 +409,13 @@ const DICTIONARY = {
     en: 'Lawn 3-Piece — Floral',
     rm: 'Lawn three piece — phoolon wala',
   },
+  draftFound: {
+    ur: 'پچھلی بار کا کام محفوظ نہیں ہوا تھا۔ واپس لے آئیں؟',
+    en: 'Your last work was not saved. Bring it back?',
+    rm: 'Pichhli baar ka kaam mehfooz nahi hua tha. Wapas le aayen?',
+  },
+  draftRestore: { ur: 'واپس لے آئیں', en: 'Bring it back', rm: 'Wapas le aayen' },
+  draftDiscard: { ur: 'رہنے دیں', en: 'Leave it', rm: 'Rehne den' },
   layerLimitReached: {
     ur: 'تصویر پر 6 سے زیادہ چیزیں نہیں لگ سکتیں۔ نئی لگانے کے لیے پہلے کوئی پرانی ہٹا دیں — "پرتیں" میں سے۔',
     en: 'You can put at most 6 things on the photo. To add another, remove one first — from "Layers".',
