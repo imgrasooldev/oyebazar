@@ -547,6 +547,23 @@ export function TemplateEditor({
    * rehti hai aur sirf line-height badalti hai, yani wo farq nazar hi nahi aata jo
    * dikhane ke liye ye switch banaya gaya hai.
    */
+  /**
+   * Cheezon ki hadd — aur us ka SAAF paighaam.
+   *
+   * 🔴 Ye hadd pehle khamosh thi, aur wohi shikayat dobara paida kar rahi thi.
+   *
+   * Chhe layers ke baad "شکل" aur "+ اپنا متن" ke button be-awaz band ho jate the — koi
+   * paighaam nahi, kahin kuch likha nahi. Reseller saatvin cheez daalne ke liye tap
+   * karti aur KUCH NA HOTA. Ye bilkul wohi soorat hai jis ki shikayat aayi thi ("click
+   * kerne per kuch nahi ho raha"), bas doosri jagah.
+   *
+   * Band button ka koi qusoor nahi — qusoor ye hai ke band hone ki WAJAH kahin nahi
+   * likhi. Ek line kaafi hai, aur wo line usi jagah honi chahiye jahan banda tap kar
+   * raha hai.
+   */
+  const LAYER_LIMIT = 6
+  const atLayerLimit = (spec.layers?.length ?? 0) >= LAYER_LIMIT
+
   const sample =
     packLang === 'en'
       ? { title: 'Lawn 3-Piece — Floral', seller: 'Sadia Bibi', cta: 'Message to order' }
@@ -1135,7 +1152,7 @@ export function TemplateEditor({
 
   function addLayer() {
     const layers = [...(spec.layers ?? [])]
-    if (layers.length >= 6) return
+    if (layers.length >= LAYER_LIMIT) return
 
     layers.push({
       kind: 'text',
@@ -1158,7 +1175,7 @@ export function TemplateEditor({
    * hai (dekhen lib/api/template-assets.ts).
    */
   async function addLogo(file: File) {
-    if ((spec.layers?.length ?? 0) >= 6) return
+    if (atLayerLimit) return
 
     setUploading(true)
     setError(null)
@@ -1200,7 +1217,7 @@ export function TemplateEditor({
    */
   function addShape(shape: ShapeLayer['shape']) {
     const layers = [...(spec.layers ?? [])]
-    if (layers.length >= 6) return
+    if (layers.length >= LAYER_LIMIT) return
 
     const size =
       shape === 'circle'
@@ -2347,7 +2364,7 @@ export function TemplateEditor({
                       key={shape}
                       type="button"
                       onClick={() => addShape(shape)}
-                      disabled={(spec.layers?.length ?? 0) >= 6}
+                      disabled={atLayerLimit}
                       className="tap flex flex-col items-center gap-1.5 rounded-xl bg-paper-sunken px-1 py-3 disabled:opacity-40"
                     >
                       {/*
@@ -2378,6 +2395,7 @@ export function TemplateEditor({
                     </button>
                   ))}
                 </div>
+                {atLayerLimit && <LimitNote text={t('layerLimitReached')} />}
               </div>
             )}
 
@@ -2412,12 +2430,14 @@ export function TemplateEditor({
               <button
                 type="button"
                 onClick={addLayer}
-                disabled={(spec.layers?.length ?? 0) >= 6}
+                disabled={atLayerLimit}
                 className="btn-secondary !py-1.5 text-[0.8rem]"
               >
                 + {t('addText')}
               </button>
               )}
+
+              {tab === 'text' && atLayerLimit && <LimitNote text={t('layerLimitReached')} />}
 
               {tab === 'upload' && (
               <>
@@ -2430,7 +2450,7 @@ export function TemplateEditor({
               */}
               <label
                 className={
-                  uploading || (spec.layers?.length ?? 0) >= 6
+                  uploading || atLayerLimit
                     ? 'btn-secondary pointer-events-none !py-1.5 text-center text-[0.8rem] opacity-50'
                     : 'btn-secondary cursor-pointer !py-1.5 text-center text-[0.8rem]'
                 }
@@ -2449,6 +2469,7 @@ export function TemplateEditor({
                   }}
                 />
               </label>
+              {atLayerLimit && <LimitNote text={t('layerLimitReached')} />}
               </>
               )}
             </div>
@@ -2966,6 +2987,21 @@ function LayerThumb({
         {sample}
       </span>
     </span>
+  )
+}
+
+/**
+ * Band button ke saath us ke band hone ki wajah.
+ *
+ * 🔴 Ye alag component is liye hai ke ye TEEN jagah lagti hai — text, shakl aur logo,
+ * teenon ki hadd ek hi hai. Teen jagah alag alag likhne ka matlab hota ke kal ek jagah
+ * badle aur do wahin ki wahin reh jayen.
+ */
+function LimitNote({ text }: { text: string }) {
+  return (
+    <p className="mt-2 rounded-xl bg-paper-sunken px-3 py-2 text-[0.74rem] leading-relaxed text-ink-soft">
+      {text}
+    </p>
   )
 }
 

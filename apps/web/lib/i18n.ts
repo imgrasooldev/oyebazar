@@ -409,6 +409,11 @@ const DICTIONARY = {
     en: 'Lawn 3-Piece — Floral',
     rm: 'Lawn three piece — phoolon wala',
   },
+  layerLimitReached: {
+    ur: 'تصویر پر 6 سے زیادہ چیزیں نہیں لگ سکتیں۔ نئی لگانے کے لیے پہلے کوئی پرانی ہٹا دیں — "پرتیں" میں سے۔',
+    en: 'You can put at most 6 things on the photo. To add another, remove one first — from "Layers".',
+    rm: 'Tasveer par 6 se zyada cheezein nahi lag saktin. Nayi lagane ke liye pehle koi purani hata den — "Layers" mein se.',
+  },
   packLangUrdu: { ur: 'اردو', en: 'Urdu', rm: 'Urdu' },
   packLangEnglish: { ur: 'انگریزی', en: 'English', rm: 'English' },
   sampleSellerName: { ur: 'صادیہ بی بی', en: 'Sadia Bibi', rm: 'Sadia Bibi' },
