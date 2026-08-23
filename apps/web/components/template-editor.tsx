@@ -480,7 +480,20 @@ export function TemplateEditor({
    * ruk to jata hai — aur rukna hi asal cheez hai.
    */
   useEffect(() => {
-    if (saved || (past.length === 0 && !selectedId)) return
+    /*
+     * 🔴 Shart ka har hissa ginti mein aata hai — ye pehle ULTI likhi hui thi.
+     *
+     * `!selectedId` likha tha, yani mehfooz shuda template khulte hi tanbeeh chalu ho
+     * jati thi — bina kisi ke kuch badle. Reseller /templates kholti, kuch na karti,
+     * "Dashboard" dabati, aur browser poochhta "Leave site?". Aisi tanbeeh jo har dafa
+     * be-wajah aaye wo apna kaam khud khatam kar deti hai: banda usay parhna chhor kar
+     * hamesha "Leave" dabane lagta hai — aur phir jis din tabdeeli waqai kachi hoti hai,
+     * us din bhi wohi dabata hai.
+     *
+     * Ab tanbeeh sirf do sooraton mein: kuch badla ho (`past`), ya template abhi
+     * mehfooz hua hi na ho (koi `selectedId` nahi).
+     */
+    if (saved || (past.length === 0 && selectedId)) return
 
     function onBeforeUnload(event: BeforeUnloadEvent) {
       event.preventDefault()
