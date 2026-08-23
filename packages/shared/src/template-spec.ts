@@ -108,6 +108,18 @@ const ElementSpec = z.object({
    * ho ya na ho" — aur rang chunna khud us ka jawab "haan" hai.
    */
   pillColour: HexColour.optional(),
+  /**
+   * Rang bhare dabbe ke andar ki jagah — chaurai aur oonchai, alag alag.
+   *
+   * 🔴 `pill` ke baghair be-asar hai, aur ye theek hai: jagah tabhi nazar aati hai jab
+   * peechay rang ho. Bina dabbe ke padding sirf cheez ko us ki apni jagah se khiska
+   * deti, aur wo `x`/`y` ka kaam hai.
+   *
+   * Ikhtiyari — na ho to base.css ka apna naap chalta hai aur CSS mein ek lafz bhi
+   * ziyada nahi jata (dekhen upar wala note).
+   */
+  padX: z.number().int().min(0).max(80).optional(),
+  padY: z.number().int().min(0).max(60).optional(),
 })
 
 /**
@@ -155,6 +167,8 @@ const TextLayerSchema = z.object({
   font: z.enum(FONT_KEYS).optional(),
   pill: z.boolean().optional(),
   pillColour: HexColour.optional(),
+  padX: z.number().int().min(0).max(80).optional(),
+  padY: z.number().int().min(0).max(60).optional(),
   behind: BehindField,
 })
 
@@ -627,6 +641,10 @@ export function templateSpecToCss(spec: TemplateSpec): string {
         !inner && element.pill === true ? pillOn(element.pillColour) : '',
         !inner && element.pill === false ? PILL_OFF : '',
         !inner && element.colour && element.pill === true ? `color: ${element.colour};` : '',
+        // Jagah pill ke BAAD — `pillOn` apni padding laata hai, warna wo jeet jati hai
+        !inner && element.pill === true && (element.padX !== undefined || element.padY !== undefined)
+          ? `padding: calc(${element.padY ?? 10}px * var(--scale)) calc(${element.padX ?? 34}px * var(--scale));`
+          : '',
       ]
         .filter(Boolean)
         .join('\n  ')
@@ -638,6 +656,9 @@ export function templateSpecToCss(spec: TemplateSpec): string {
             element.pill === false ? PILL_OFF : '',
             element.font ? `font-family: ${FONT_STACK[element.font]};` : '',
             element.colour && element.pill === true ? `color: ${element.colour};` : '',
+            element.pill === true && (element.padX !== undefined || element.padY !== undefined)
+              ? `padding: calc(${element.padY ?? 18}px * var(--scale)) calc(${element.padX ?? 34}px * var(--scale));`
+              : '',
           ]
             .filter(Boolean)
             .join('\n  ')
@@ -773,6 +794,9 @@ function layersCss(spec: TemplateSpec): string {
         `font-family: ${FONT_STACK[layer.font ?? 'nastaliq']};`,
         layer.pill ? pillOn(layer.pillColour) : '',
         layer.colour && layer.pill ? `color: ${layer.colour};` : '',
+        layer.pill && (layer.padX !== undefined || layer.padY !== undefined)
+          ? `padding: calc(${layer.padY ?? 10}px * var(--scale)) calc(${layer.padX ?? 40}px * var(--scale));`
+          : '',
       ]
         .filter(Boolean)
         .join('\n  ')

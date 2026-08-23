@@ -232,6 +232,9 @@ type PartStyle = {
   pill?: boolean | undefined
   /** Us dabbe ka apna rang — dabbe ke baghair be-asar, dekhen `ElementSpec`. */
   pillColour?: string | undefined
+  /** Dabbe ke andar ki jagah — dabbe ke baghair be-asar. */
+  padX?: number | undefined
+  padY?: number | undefined
   radius?: number | undefined
   /** Maal ke naam/qeemat ke peechay jaye ya oopar — shapes ki poori wajah yehi hai. */
   behind?: boolean | undefined
@@ -2270,6 +2273,33 @@ export function TemplateEditor({
                         max={20}
                         onChange={(rotate) => patchPart(selected, { rotate })}
                       />
+                      {/*
+                        Dabbe ke andar ki jagah — sirf jab dabba ho.
+                        
+                        🔴 Bina pill ke ye khaane dikhana jhoot hai: slider chalta rahega
+                        aur tasveer par kuch nahi hoga. Jo qabu asar na kare wo mojood na
+                        hone se bura hai — banda usay hilata hai, kuch nahi hota, aur
+                        phir baqi qabu par bhi bharosa khatam ho jata hai.
+                      */}
+                      {isTextish && isPillOn(spec, selected) && (
+                        <>
+                          <SliderField
+                            label={t('padXLabel')}
+                            value={part(spec, selected)?.padX ?? (selected === 'price' ? 34 : 36)}
+                            min={0}
+                            max={80}
+                            onChange={(padX) => patchPart(selected, { padX })}
+                          />
+                          <SliderField
+                            label={t('padYLabel')}
+                            value={part(spec, selected)?.padY ?? (selected === 'price' ? 18 : 14)}
+                            min={0}
+                            max={60}
+                            onChange={(padY) => patchPart(selected, { padY })}
+                          />
+                        </>
+                      )}
+
                       {selectedLayer?.kind === 'shape' && (
                         <SliderField
                           label={t('shapeHeight')}

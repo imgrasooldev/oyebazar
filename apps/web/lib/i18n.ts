@@ -409,6 +409,8 @@ const DICTIONARY = {
     en: 'Lawn 3-Piece — Floral',
     rm: 'Lawn three piece — phoolon wala',
   },
+  padXLabel: { ur: 'دائیں بائیں جگہ', en: 'Space at the sides', rm: 'Daayen baayen jagah' },
+  padYLabel: { ur: 'اوپر نیچے جگہ', en: 'Space above and below', rm: 'Oopar neeche jagah' },
   dismiss: { ur: 'بند کریں', en: 'Dismiss', rm: 'Band karen' },
   draftFound: {
     ur: 'پچھلی بار کا کام محفوظ نہیں ہوا تھا۔ واپس لے آئیں؟',

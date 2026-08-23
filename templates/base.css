@@ -232,13 +232,30 @@ body {
   gap: calc(24px * var(--scale));
 }
 
+/*
+ * 🔴 Qeemat ki jagah NASTALIQ ke hisaab se nahi honi chahiye — wo hamesha angrezi hai.
+ *
+ * Yahan pehle `line-height: 1.9` aur `padding: 10px 44px 26px` tha. Wo naap Nastaliq ki
+ * majboori se aaya tha: Urdu ke haroof ki dumein neeche jati hain, aur un ke liye jagah
+ * chhorni parti hai. Magar is dabbe mein Nastaliq kabhi nahi chalta — `font-family`
+ * Inter hai aur `direction: ltr`, kyunke "Rs 3,000" Urdu ke darmiyan ulta nahi hona
+ * chahiye. Yani wo saari jagah kisi kaam ki nahi thi: number ke neeche ek khali khitta
+ * reh jata tha aur dabba apni zaroorat se kaheen bara lagta tha.
+ *
+ * Naya naap Latin haroof ke liye hai aur charon taraf se sanjeeda: upar neeche barabar,
+ * aur side mein utni hi jitni gol kinare ko chahiye.
+ *
+ * Cache par asar: is se bane hue pack dobara render nahi hote (cache key mein CSS nahi
+ * hai) — purane pack purane naap par rehte hain aur naye is par. Raat ki pre-generation
+ * ke saath ye khud ba khud barabar ho jata hai.
+ */
 .price {
   background: var(--accent);
   color: var(--badge-text);
   font-size: calc(78px * var(--scale));
   font-weight: 700;
-  line-height: 1.9;
-  padding: calc(10px * var(--scale)) calc(44px * var(--scale)) calc(26px * var(--scale));
+  line-height: 1.25;
+  padding: calc(18px * var(--scale)) calc(34px * var(--scale));
   border-radius: calc(28px * var(--scale));
   /* qeemat hamesha LTR — "Rs 3,000" Urdu ke beech ulta na ho */
   direction: ltr;
