@@ -149,6 +149,8 @@ type PartStyle = {
   rotate?: number | undefined
   font?: FontKey | undefined
   pill?: boolean | undefined
+  /** Us dabbe ka apna rang — dabbe ke baghair be-asar, dekhen `ElementSpec`. */
+  pillColour?: string | undefined
   radius?: number | undefined
   /** Maal ke naam/qeemat ke peechay jaye ya oopar — shapes ki poori wajah yehi hai. */
   behind?: boolean | undefined
@@ -199,6 +201,18 @@ const TABS = [
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
+
+/**
+ * Chuni hui cheez ke qabu — har ek apna tray kholta hai.
+ *
+ * 🔴 Tarteeb ittefaqi nahi. Reseller ne jo teen sawal poochhe — "foreground color kaise
+ * change hota hai, background color kaise change hota hai, shape kaise apply hota hai" —
+ * un mein se do ka jawab yahan pehle DO buttons hain. Jo cheez sab se zyada poochhi
+ * jaye wo qatar mein sab se pehle honi chahiye, chhupi hui nahi.
+ *
+ * `text` sab se aage hai kyunke jab likhai hi badalni ho to baqi kuch maani nahi rakhta.
+ */
+type ToolId = 'text' | 'colour' | 'bg' | 'font' | 'size' | 'place' | 'more'
 
 const FONT_LABEL = {
   nastaliq: 'fontNastaliq',
@@ -336,22 +350,25 @@ export function TemplateEditor({
 
   const [selected, setSelected] = useState<Sel | null>(null)
   /**
-   * Chuni hui cheez ke qabu khule hain ya nahi — chunao se ALAG.
+   * Chuni hui cheez ka kaun sa qabu khula hai — rang, likhai, naap waghera.
    *
-   * 🔴 Ye do baaten ek nahi hain, aur inhen ek samajhna hi wo bug tha jis ki reseller
-   * ne shikayat ki: "design, text, shapes per click kerne per kuch nahi ho raha".
+   * 🔴 Poore editor ka sab se ahem faisla yehi hai, aur ye teen dafa ghalat baitha.
    *
-   * Pehle har darwaza `!selected` par bandha tha. Yani tasveer par kisi cheez ko tap
-   * karte hi baayen rail ke chhe ke chhe button MURDA ho jate the — dabao, halka sa
-   * rang badalta, aur panel wahin ka wahin. Nikalne ka rasta sirf ek chhoti si
-   * "ho gaya" wali line thi jo neeche scroll mein chhupi hui thi.
+   * Pehle ye qabu baayen panel mein the. Us ka natija ye tha ke ek hi cheez ke qabu DO
+   * alag column mein bant gaye — naap canvas ke neeche, rang panel mein — aur reseller
+   * ne bilkul theek poochha: "foreground color kaise change hota hai, background color
+   * kaise change hota hai". Jawab ye tha ke rang panel mein neeche scroll mein para
+   * hai, aur peechay ka rang mojood hi nahi tha.
    *
-   * Canva mein chuni hui cheez chuni rehti hai chahe aap baayen kuch bhi kholen. Ab
-   * yahan bhi wohi hai: rail ka koi bhi button panel badalta hai, chunao ko haath nahi
-   * lagata — handles tasveer par qayam rehte hain, aur wapas aane ke liye rail mein
-   * cheez ke apne naam ka button mojood hai.
+   * Canva phone par jo karta hai wohi yahan hai: cheez chunte hi us ke NEECHE ek qatar
+   * aati hai — rang, لکھائی, سائز — aur us mein se kisi par tap karne se usi ka tray
+   * neeche khulta hai. Ek waqt mein ek sawal, hamesha usi jagah, aur wo jagah us cheez
+   * ke bilkul paas jise badla ja raha hai.
+   *
+   * Baayan panel ab sirf cheezein DAALNE ke liye hai (design, text, shapes, tasveer) —
+   * jaisa Canva mein hai. Do maqsad ek panel mein mila dena hi asal gharbar thi.
    */
-  const [showSelection, setShowSelection] = useState(false)
+  const [tool, setTool] = useState<ToolId | null>(null)
   const [drag, setDrag] = useState<{ key: Sel; mode: HandleId } | null>(null)
   const [guides, setGuides] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] })
   /**
@@ -395,19 +412,22 @@ export function TemplateEditor({
    */
   const [tab, setTab] = useState<TabId>('design')
 
-  /** Is waqt panel mein kya khula hai — rail ka darwaza, ya chuni hui cheez ke qabu. */
-  const panel: TabId | 'select' = showSelection && selected ? 'select' : tab
-
-  /** Tasveer par (ya list mein) kisi cheez par tap — chuno AUR us ke qabu kholo. */
+  /**
+   * Tasveer par (ya list mein) kisi cheez par tap.
+   *
+   * Nayi cheez chunte hi khula hua tray band — warna banda "رنگ" khol kar doosri cheez
+   * par tap karta aur tray to khula rehta magar wo ab kisi AUR cheez ka rang badal raha
+   * hota. Ye wo ghalti hai jo nazar aane mein waqt leti hai.
+   */
   function pick(key: Sel) {
     setSelected(key)
-    setShowSelection(true)
+    if (key !== selected) setTool(null)
   }
 
-  /** Kaam khatam — chunao chhoro aur wapas usi darwaze par jahan se aaye the. */
+  /** Kaam khatam — chunao aur khula hua tray, dono chhor do. */
   function unpick() {
     setSelected(null)
-    setShowSelection(false)
+    setTool(null)
   }
 
   /**
@@ -1008,6 +1028,45 @@ export function TemplateEditor({
   const selectedLayerIndex = selected ? layerIndex(selected) : null
   const selectedLayer = selectedLayerIndex !== null ? spec.layers?.[selectedLayerIndex] : undefined
 
+  /**
+   * Likhai wali cheez hai ya nahi — rang ka dabba aur font sirf isi par maani rakhte hain.
+   *
+   * Tay-shuda chhe cheezein (badge, title, qeemat, naam, number, CTA) sab likhai hain,
+   * aur un par `selectedLayer` hota hi nahi — is liye "layer nahi hai" bhi likhai hi hai.
+   */
+  const isTextish =
+    Boolean(selected) && selectedLayer?.kind !== 'image' && selectedLayer?.kind !== 'shape'
+
+  /**
+   * Jo likhai badli ja sakti hai — teen alag jagahon se, magar UI ke liye EK khana.
+   *
+   * 🔴 Pehle ye teen alag input the aur teenon alag jagah rakhe the: badge ka text
+   * "سیٹنگ" ke darwaze mein, CTA ka kahin nahi, aur apni layer ka panel mein. Reseller
+   * badge par tap karti, rang aur font milta, magar LIKHAI badalne ka rasta nazar hi na
+   * aata — "text change ka option to hai hi nahi".
+   *
+   * `null` ka matlab hai "ye likhai badli hi nahi ja sakti" (qeemat, naam, number — wo
+   * maal aur profile se aate hain), aur us soorat mein button hi nahi banta.
+   */
+  const editableText: string | null =
+    selectedLayer?.kind === 'text'
+      ? selectedLayer.text
+      : selected === 'badge'
+        ? spec.badgeText
+        : selected === 'cta'
+          ? (spec.ctaText ?? '')
+          : null
+
+  function setEditableText(value: string) {
+    if (selectedLayer?.kind === 'text' && selectedLayerIndex !== null) {
+      setLayerText(selectedLayerIndex, value)
+    } else if (selected === 'badge') {
+      patch({ badgeText: value })
+    } else if (selected === 'cta') {
+      patch({ ctaText: value })
+    }
+  }
+
   const isDefault = Boolean(selectedId && defaultKey?.startsWith(`custom:${selectedId}@`))
   const css = useMemo(() => templateSpecToCss(spec), [spec])
   const zoom = fitZoom * zoomMultiplier
@@ -1126,60 +1185,25 @@ export function TemplateEditor({
 
           Canva ka sab se pehchana hua hissa. Phone par ye neeche ki patti ban jati hai
           (jahan angootha pohanchta hai), computer par baayen taraf khari.
+
+          🔴 Ye rail sirf ek sawal ka jawab deti hai: "tasveer par NAYI kya daalni hai".
+          Chuni hui cheez ko badalne ka koi button yahan nahi — wo sab canvas ke neeche
+          wali qatar mein hai, us cheez ke paas jise badla ja raha hai. Dono maqsad ek
+          panel mein mila dene se hi wo gharbar hui thi jis mein rang dhoondhe nahi
+          milta tha.
         */}
         <div className="order-2 lg:order-1 lg:min-h-0">
           <div className="card flex gap-1 p-1.5 lg:h-full lg:flex-col">
-            {/*
-              Chuni hui cheez ka apna darwaza — sirf jab koi cheez chuni ho.
-
-              🔴 Ye rail ka pehla button hai, aakhri nahi. Chuni hui cheez ke qabu wahi
-              cheez hain jinhen banda abhi dhoondh raha hota hai, aur phone par rail
-              neeche ki patti hai jahan pehla khana angoothe ke sab se qareeb hai.
-
-              Iske baghair rail ka koi bhi darwaza kholte hi chuni hui cheez ke rang,
-              font aur naap tak wapas jane ka koi rasta nahi bachta — sirf tasveer par
-              dobara tap karna, jo chhoti cheezon par mushkil hai.
-            */}
-            {selected && (
-              <button
-                type="button"
-                onClick={() => setShowSelection(true)}
-                aria-label={partLabel(selected)}
-                title={partLabel(selected)}
-                aria-pressed={panel === 'select'}
-                className={
-                  panel === 'select'
-                    ? 'flex min-h-tap flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bg-accent-600 px-2 py-2 text-white lg:flex-none lg:w-14'
-                    : 'link-tap flex min-h-tap flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bg-accent-50 px-2 py-2 text-accent-700 lg:flex-none lg:w-14'
-                }
-              >
-                <span className="text-[1.05rem] leading-none">✥</span>
-                <span className="w-full truncate text-[0.62rem] font-semibold leading-tight">
-                  {partLabel(selected)}
-                </span>
-              </button>
-            )}
-
             {TABS.map((entry) => (
               <button
                 key={entry.id}
                 type="button"
-                /*
-                  🔴 Chunao ko haath NAHI lagta — sirf panel badalta hai.
-
-                  Canva mein bhi cheez chuni rehti hai chahe aap baayen "Elements" khol
-                  len. Yahan bhi handles tasveer par qayam rehte hain, teer se hilana
-                  chalta rehta hai, aur upar wale button se qabu wapas aa jate hain.
-                */
-                onClick={() => {
-                  setTab(entry.id)
-                  setShowSelection(false)
-                }}
+                onClick={() => setTab(entry.id)}
                 aria-label={t(entry.label)}
                 title={t(entry.label)}
-                aria-pressed={panel === entry.id}
+                aria-pressed={tab === entry.id}
                 className={
-                  panel === entry.id
+                  tab === entry.id
                     ? 'flex min-h-tap flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bg-accent-50 px-2 py-2 text-accent-700 lg:flex-none lg:w-14'
                     : 'link-tap flex min-h-tap flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-2 text-ink-soft lg:flex-none lg:w-14'
                 }
@@ -1191,154 +1215,9 @@ export function TemplateEditor({
           </div>
         </div>
 
-        {/*
-          ---------------- Chuni hui cheez ke qabu ----------------
-
-          🔴 Ye pehle canvas ke NEECHE the, aur wahi masla tha: font, rang, gehra pan
-          aur terha pan mil kar ~335px le lete the, aur canvas ke liye 60px bachti thi —
-          yani jis cheez ko banane aaye the wohi nazar nahi aati thi.
-
-          Canva mein bhi tasveer ke oopar sirf ek PATLI qatar hoti hai; tafseel panel
-          mein jati hai. Ab wohi hai: qatar mein sirf naap aur jagah wale button, aur
-          baqi sab yahan — jahan panel ka apna scroll pehle se mojood hai.
-        */}
-        {panel === 'select' && selected && (
-          <div className="card order-3 space-y-2.5 p-3 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
-            <p className="text-[0.85rem] font-bold">{partLabel(selected)}</p>
-
-            {/*
-              🔴 Likhne ka khana WAHIN jahan cheez chuni gayi hai.
-
-              Pehle badge ka text "سیٹنگ" ke darwaze mein para tha: banda badge par tap
-              karta, us ka rang aur font to milta magar LIKHAI badalne ka koi rasta nazar
-              na aata. Aur neeche wali line ("آرڈر کے لیے میسج کریں") to kahin se bhi
-              nahi badalti thi.
-
-              Ab teenon apni jagah par hain — aur jo cheezein waqai nahi badal saktin,
-              un ke liye wajah likhi hai. "Option hai hi nahi" aur "option is liye nahi
-              ke ye khud maal se aata hai" — do bilkul alag baatein hain.
-            */}
-            {selectedLayer?.kind === 'text' && (
-              <input
-                value={selectedLayer.text}
-                onChange={(e) => setLayerText(layerIndex(selected)!, e.target.value)}
-                maxLength={40}
-                placeholder={t('myTextSample')}
-                className="field w-full text-[0.95rem]"
-              />
-            )}
-
-            {selected === 'badge' && (
-              <input
-                value={spec.badgeText}
-                onChange={(e) => patch({ badgeText: e.target.value })}
-                maxLength={24}
-                placeholder={t('badgeText')}
-                className="field w-full text-[0.95rem]"
-              />
-            )}
-
-            {selected === 'cta' && (
-              <input
-                value={spec.ctaText ?? ''}
-                onChange={(e) => patch({ ctaText: e.target.value })}
-                maxLength={40}
-                placeholder={t('ctaPlaceholder')}
-                className="field w-full text-[0.95rem]"
-              />
-            )}
-
-            {/* Jo maal se aata hai — us ki wajah likhi hai, warna "toota hua" lagta hai */}
-            {(selected === 'title' ||
-              selected === 'price' ||
-              selected === 'name' ||
-              selected === 'phone') && (
-              <p className="rounded-xl bg-paper-sunken px-3 py-2 text-[0.74rem] leading-relaxed text-ink-soft">
-                {selected === 'title'
-                  ? t('boundTitle')
-                  : selected === 'price'
-                    ? t('boundPrice')
-                    : t('boundSeller')}
-              </p>
-            )}
-
-            {selectedLayer?.kind !== 'image' && (
-              <SwatchRow
-                label={selectedLayer?.kind === 'shape' ? t('shapeColour') : t('textColour')}
-                customLabel={t('customColour')}
-                showHex={advanced}
-                accent={spec.accent}
-                value={part(spec, selected)?.colour}
-                onChange={(colour) => patchPart(selected, { colour })}
-              />
-            )}
-
-            {/* Likhai sirf text par — tasveer aur shakl par font ka koi matlab nahi */}
-            {selectedLayer?.kind !== 'image' && selectedLayer?.kind !== 'shape' && (
-              <div>
-                <p className="text-[0.78rem] font-semibold">{t('fontLabel')}</p>
-                {/*
-                  Dropdown, chips nahi.
-                  Teen chips ek qatar mein aa jate the, magar sat nahin — wo teen qatarein
-                  ban kar panel kha jate. Dropdown chahe kitne bhi font hon, ek qatar mein
-                  rehti hai, aur har naam apni HI likhai mein dikhta hai — yani banda
-                  chunne se PEHLE dekh leta hai ke wo kaisa lagega.
-                */}
-                <select
-                  value={part(spec, selected)?.font ?? 'nastaliq'}
-                  onChange={(e) => patchPart(selected, { font: e.target.value as FontKey })}
-                  className="field mt-1.5 w-full text-[0.85rem]"
-                >
-                  {FONT_KEYS.map((font) => (
-                    <option key={font} value={font} style={{ fontFamily: FONT_PREVIEW[font] }}>
-                      {t(FONT_LABEL[font])}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {selectedLayer?.kind === 'shape' && (
-              <SliderField
-                label={t('shapeHeight')}
-                value={selectedLayer.height}
-                min={1}
-                max={60}
-                onChange={(height) => patchPart(selected, { height })}
-              />
-            )}
-
-            {advanced && (
-              <>
-                <SliderField
-                  label={t('opacityLabel')}
-                  value={part(spec, selected)?.opacity ?? 100}
-                  min={10}
-                  max={100}
-                  onChange={(opacity) => patchPart(selected, { opacity })}
-                />
-                <SliderField
-                  label={t('rotateLabel')}
-                  value={part(spec, selected)?.rotate ?? 0}
-                  min={-20}
-                  max={20}
-                  onChange={(rotate) => patchPart(selected, { rotate })}
-                />
-              </>
-            )}
-
-            <button
-              type="button"
-              onClick={unpick}
-              className="w-full pt-1 text-[0.76rem] text-ink-faint underline"
-            >
-              {t('doneWithThis')}
-            </button>
-          </div>
-        )}
 
         {/* ---------------- Khula hua panel ---------------- */}
-        {panel === 'design' && (
+        {tab === 'design' && (
         <div className="card order-3 p-4 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
           <h2 className="text-[0.95rem] font-bold">{t('startFrom')}</h2>
           <p className="mt-1 text-[0.75rem] text-ink-faint">{t('startFromHint')}</p>
@@ -1628,103 +1507,333 @@ export function TemplateEditor({
             </p>
           )}
 
-          {/* Chuni hui cheez ka apna toolbar — canvas ke bilkul neeche, nazar wahin hai */}
+          {/*
+            ---------------- Chuni hui cheez ke qabu ----------------
+
+            🔴 Canva ka phone wala tareeqa, aur ye jaan boojh kar hai.
+
+            Reseller ne teen sawal poochhe: "foreground color kaise change hota hai,
+            background color kaise change hota hai, shape kaise apply hota hai". Teenon
+            ka jawab pehle "kahin aur" tha — rang baayen panel ke scroll mein, naap yahan
+            neeche, aur peechay ka rang mojood hi nahi tha.
+
+            Ab ek qatar hai, us cheez ke bilkul neeche jise badla ja raha hai, aur us
+            mein se har button apna tray isi jagah kholta hai. Ek waqt mein ek sawal.
+
+            Qatar EK line rehti hai — jagah kam pare to khud scroll karti hai. Pehle yehi
+            wrap ho kar teen qatarein ban jati thi aur canvas ke liye 60px chhorti thi.
+          */}
           {selected && (
-            <div className="card mt-1.5 shrink-0 overflow-x-auto p-1.5">
-              {/*
-                🔴 `flex-nowrap` — wrap NAHI.
+            <div className="card mt-1.5 shrink-0">
+              <div className="flex flex-nowrap items-center gap-1 overflow-x-auto p-1.5">
+                <span className="shrink-0 px-1 text-[0.78rem] font-bold">
+                  {partLabel(selected)}
+                </span>
 
-                Wrap hone par ye qatar do-teen qatarein ban jati thi aur canvas ki jagah
-                kha jati thi. Ab jagah kam pare to ye khud SCROLL karti hai (dabbe par
-                `overflow-x-auto`) — canvas ki oonchai chhoo hi nahi sakti.
-              */}
-              <div className="flex flex-nowrap items-center gap-2">
-                <span className="shrink-0 text-[0.82rem] font-bold">{partLabel(selected)}</span>
+                {/* Likhai khud — sirf jab wo waqai badli ja sakti ho */}
+                {editableText !== null && (
+                  <ToolButton id="text" active={tool} onPick={setTool} label={t('toolText')}>
+                    <span className="text-[1.05rem] leading-none">✎</span>
+                  </ToolButton>
+                )}
 
                 {/*
-                  Naap — tasveer par chaurai, baqi par font size.
+                  Rang ka button KHUD apna rang dikhata hai.
 
-                  Dono ke apne paimane hain (3–60% banaam 16–160px), is liye qadam bhi
-                  alag: tasveer par 2%, likhai par 4px.
+                  Ye "متن کا رنگ" likh dene se behtar hai: banda parhta nahi, dekhta hai.
+                  Canva mein bhi rang ka button ek bhara hua khaana hai, lafz nahi.
                 */}
-                <div className="flex items-center gap-1">
-                  <IconButton
-                    label={t('smaller')}
-                    onClick={() => resizeSelected(-1)}
-                  >
-                    A−
-                  </IconButton>
-                  <span dir="ltr" className="numeric w-8 text-center text-[0.75rem] text-ink-faint">
-                    {selectedLayer?.kind === 'image'
-                      ? `${selectedLayer.width}%`
-                      : (part(spec, selected)?.size ?? 40)}
-                  </span>
-                  <IconButton label={t('bigger')} onClick={() => resizeSelected(1)}>
-                    A+
-                  </IconButton>
-                </div>
+                {selectedLayer?.kind !== 'image' && (
+                  <ToolButton id="colour" active={tool} onPick={setTool} label={t('toolColour')}>
+                    <span className="flex flex-col items-center gap-0.5 leading-none">
+                      <span className="text-[0.85rem] font-black">A</span>
+                      <span
+                        className="h-1.5 w-5 rounded-pill ring-1 ring-black/20"
+                        style={{ background: part(spec, selected)?.colour ?? '#ffffff' }}
+                      />
+                    </span>
+                  </ToolButton>
+                )}
 
-                {/* Kinare par lagana — wo teen jagahen jahan 90% cheezein jati hain */}
-                <div className="flex items-center gap-1">
-                  {EDGE_GUIDES.map((x) => (
-                    <IconButton
-                      key={x}
-                      label={x === 4 ? t('alignStart') : x === 50 ? t('alignCentre') : t('alignEnd')}
-                      onClick={() => patchPart(selected, { x })}
+                {/* Peechay ka rang — yehi wo cheez thi jo pehle THI hi nahi */}
+                {isTextish && (
+                  <ToolButton id="bg" active={tool} onPick={setTool} label={t('toolBg')}>
+                    <span
+                      className="block h-4 w-5 rounded-md ring-1 ring-black/25"
+                      style={{
+                        background: isPillOn(spec, selected)
+                          ? (part(spec, selected)?.pillColour ?? spec.accent)
+                          : 'repeating-linear-gradient(45deg,#fff,#fff 3px,#e5e7eb 3px,#e5e7eb 6px)',
+                      }}
+                    />
+                  </ToolButton>
+                )}
+
+                {isTextish && (
+                  <ToolButton id="font" active={tool} onPick={setTool} label={t('toolFont')}>
+                    <span
+                      className="text-[1rem] leading-none"
+                      style={{ fontFamily: FONT_PREVIEW[part(spec, selected)?.font ?? 'nastaliq'] }}
                     >
-                      {x === 4 ? '▤' : x === 50 ? '▥' : '▦'}
-                    </IconButton>
-                  ))}
-                </div>
-
-                {/*
-                  Rang bhara dabba likhai par, aur gol-pan tasveer par.
-
-                  Ye do alag cheezein hain magar ek hi jagah par: dono "is cheez ki
-                  shakl" ka sawal hain, aur ek waqt mein sirf ek hi maani rakhti hai.
-                */}
-                {selectedLayer?.kind === 'image' ? (
-                  <IconButton
-                    label={t('roundLogo')}
-                    onClick={() =>
-                      patchPart(selected, { radius: selectedLayer.radius ? 0 : 50 })
-                    }
-                  >
-                    {selectedLayer.radius ? '⬤' : '⬛'}
-                  </IconButton>
-                ) : selectedLayer?.kind === 'shape' ? null : (
-                  <IconButton
-                    label={t('pillToggle')}
-                    onClick={() => patchPart(selected, { pill: !isPillOn(spec, selected) })}
-                  >
-                    {isPillOn(spec, selected) ? '▬' : '▭'}
-                  </IconButton>
+                      Aa
+                    </span>
+                  </ToolButton>
                 )}
 
-                {/*
-                  Peechay / aage — sirf apni layers par.
+                <ToolButton id="size" active={tool} onPick={setTool} label={t('toolSize')}>
+                  <span className="text-[1rem] leading-none">⤢</span>
+                </ToolButton>
 
-                  🔴 Shapes ki poori wajah yehi switch hai: rang ki patti ka kaam likhai
-                  ko PARHNE LAIQ banana hai, aur agar wo hamesha upar rahe to wo usi
-                  likhai ko dhaanp leti hai jis ke liye lagayi gayi thi.
-                */}
-                {selectedLayer && (
-                  <IconButton
-                    label={selectedLayer.behind ? t('sendFront') : t('sendBehind')}
-                    onClick={() => patchPart(selected, { behind: !selectedLayer.behind })}
-                  >
-                    {selectedLayer.behind ? '▣' : '▤'}
-                  </IconButton>
-                )}
+                <ToolButton id="place" active={tool} onPick={setTool} label={t('toolPlace')}>
+                  <span className="text-[1rem] leading-none">▥</span>
+                </ToolButton>
+
+                <ToolButton id="more" active={tool} onPick={setTool} label={t('toolMore')}>
+                  <span className="text-[1rem] leading-none">⋯</span>
+                </ToolButton>
 
                 <button
                   type="button"
                   onClick={() => patchPart(selected, { show: false })}
-                  className="ms-auto shrink-0 whitespace-nowrap text-[0.78rem] text-ink-soft underline"
+                  className="ms-auto shrink-0 whitespace-nowrap ps-2 text-[0.78rem] text-ink-soft underline"
                 >
                   {t('hideThis')}
                 </button>
               </div>
+
+              {/* ---------------- Tray ---------------- */}
+              {tool && (
+                <div className="border-t border-line p-3">
+                  {tool === 'text' && editableText !== null && (
+                    <div>
+                      <input
+                        value={editableText}
+                        onChange={(e) => setEditableText(e.target.value)}
+                        maxLength={40}
+                        placeholder={t('myTextSample')}
+                        className="field w-full text-[0.95rem]"
+                      />
+                      {selectedLayer?.kind === 'text' && (
+                        <p className="mt-2 text-[0.72rem] leading-relaxed text-ink-faint">
+                          {t('layerWarning')}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {tool === 'colour' && (
+                    <SwatchRow
+                      label={selectedLayer?.kind === 'shape' ? t('shapeColour') : t('textColour')}
+                      customLabel={t('customColour')}
+                      showHex={advanced}
+                      accent={spec.accent}
+                      value={part(spec, selected)?.colour}
+                      onChange={(colour) => patchPart(selected, { colour })}
+                    />
+                  )}
+
+                  {/*
+                    Peechay ka rang — aur "koi nahi" usi tray mein.
+
+                    🔴 Rang chunna KHUD "haan, dabba chahiye" ka jawab hai, is liye
+                    swatch `pill: true` bhi lagata hai. Do alag sawal poochhna (dabba ho
+                    ya na ho, aur kis rang ka) yahan faltu hai — reseller sirf ye chahti
+                    hai ke bhari hui tasveer par us ki likhai parhi ja sake.
+                  */}
+                  {tool === 'bg' && (
+                    <div className="space-y-2">
+                      <SwatchRow
+                        label={t('bgColour')}
+                        customLabel={t('customColour')}
+                        showHex={advanced}
+                        accent={spec.accent}
+                        value={
+                          isPillOn(spec, selected)
+                            ? (part(spec, selected)?.pillColour ?? spec.accent)
+                            : undefined
+                        }
+                        onChange={(pillColour) => patchPart(selected, { pill: true, pillColour })}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => patchPart(selected, { pill: false })}
+                        className={
+                          isPillOn(spec, selected)
+                            ? 'link-tap w-full rounded-xl border border-line py-2 text-[0.8rem] font-semibold'
+                            : 'w-full rounded-xl bg-accent-50 py-2 text-[0.8rem] font-semibold text-accent-700'
+                        }
+                      >
+                        {t('bgNone')}
+                      </button>
+                    </div>
+                  )}
+
+                  {/*
+                    Font — poori list, aur har naam apni HI likhai mein.
+
+                    Dropdown ki jagah khule hue khaane: banda chunne se PEHLE dekh leta
+                    hai ke wo kaisa lagega, aur ungli ko bara nishana milta hai.
+                  */}
+                  {tool === 'font' && (
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {FONT_KEYS.map((font) => {
+                        const on = (part(spec, selected)?.font ?? 'nastaliq') === font
+                        return (
+                          <button
+                            key={font}
+                            type="button"
+                            onClick={() => patchPart(selected, { font })}
+                            className={
+                              on
+                                ? 'rounded-xl bg-accent-50 px-2 py-2 text-[0.95rem] text-accent-700 ring-1 ring-accent-600'
+                                : 'link-tap rounded-xl px-2 py-2 text-[0.95rem] ring-1 ring-line'
+                            }
+                            style={{ fontFamily: FONT_PREVIEW[font] }}
+                          >
+                            {t(FONT_LABEL[font])}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {tool === 'size' && (
+                    <div className="flex items-center gap-3">
+                      <IconButton label={t('smaller')} onClick={() => resizeSelected(-1)}>
+                        A−
+                      </IconButton>
+                      <div className="flex-1">
+                        {selectedLayer?.kind === 'image' ? (
+                          <SliderField
+                            label={t('toolSize')}
+                            value={selectedLayer.width}
+                            min={3}
+                            max={60}
+                            onChange={(width) => patchPart(selected, { width })}
+                          />
+                        ) : (
+                          <SliderField
+                            label={t('toolSize')}
+                            value={part(spec, selected)?.size ?? 40}
+                            min={16}
+                            max={160}
+                            onChange={(size) => patchPart(selected, { size })}
+                          />
+                        )}
+                      </div>
+                      <IconButton label={t('bigger')} onClick={() => resizeSelected(1)}>
+                        A+
+                      </IconButton>
+                    </div>
+                  )}
+
+                  {tool === 'place' && (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {EDGE_GUIDES.map((x) => (
+                        <IconButton
+                          key={x}
+                          label={
+                            x === 4 ? t('alignStart') : x === 50 ? t('alignCentre') : t('alignEnd')
+                          }
+                          onClick={() => patchPart(selected, { x })}
+                        >
+                          {x === 4 ? '▤' : x === 50 ? '▥' : '▦'}
+                        </IconButton>
+                      ))}
+                      <span className="w-2" />
+                      <IconButton
+                        label={t('nudgeUp')}
+                        onClick={() =>
+                          patchPart(selected, { y: clamp((part(spec, selected)?.y ?? 0) - 2) })
+                        }
+                      >
+                        ↑
+                      </IconButton>
+                      <IconButton
+                        label={t('nudgeDown')}
+                        onClick={() =>
+                          patchPart(selected, { y: clamp((part(spec, selected)?.y ?? 0) + 2) })
+                        }
+                      >
+                        ↓
+                      </IconButton>
+                      {/*
+                        Peechay / aage — sirf apni layers par.
+
+                        🔴 Shapes ki poori wajah yehi switch hai: rang ki patti ka kaam
+                        likhai ko PARHNE LAIQ banana hai, aur agar wo hamesha upar rahe
+                        to wo usi likhai ko dhaanp leti hai jis ke liye lagayi gayi thi.
+                      */}
+                      {selectedLayer && (
+                        <IconButton
+                          label={selectedLayer.behind ? t('sendFront') : t('sendBehind')}
+                          onClick={() => patchPart(selected, { behind: !selectedLayer.behind })}
+                        >
+                          {selectedLayer.behind ? '▣' : '▤'}
+                        </IconButton>
+                      )}
+                    </div>
+                  )}
+
+                  {tool === 'more' && (
+                    <div className="space-y-2.5">
+                      <SliderField
+                        label={t('opacityLabel')}
+                        value={part(spec, selected)?.opacity ?? 100}
+                        min={10}
+                        max={100}
+                        onChange={(opacity) => patchPart(selected, { opacity })}
+                      />
+                      <SliderField
+                        label={t('rotateLabel')}
+                        value={part(spec, selected)?.rotate ?? 0}
+                        min={-20}
+                        max={20}
+                        onChange={(rotate) => patchPart(selected, { rotate })}
+                      />
+                      {selectedLayer?.kind === 'shape' && (
+                        <SliderField
+                          label={t('shapeHeight')}
+                          value={selectedLayer.height}
+                          min={1}
+                          max={60}
+                          onChange={(height) => patchPart(selected, { height })}
+                        />
+                      )}
+                      {selectedLayer?.kind === 'image' && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            patchPart(selected, { radius: selectedLayer.radius ? 0 : 50 })
+                          }
+                          className="link-tap w-full rounded-xl border border-line py-2 text-[0.8rem] font-semibold"
+                        >
+                          {t('roundLogo')}
+                        </button>
+                      )}
+                      {/*
+                        Jo maal se aata hai us ki wajah yahan likhi hai.
+
+                        "Option hai hi nahi" aur "option is liye nahi ke ye khud maal se
+                        aata hai" — do bilkul alag baatein hain, aur doosri ko khamoshi
+                        se chhor dena pehli jaisa hi lagta hai.
+                      */}
+                      {(selected === 'title' ||
+                        selected === 'price' ||
+                        selected === 'name' ||
+                        selected === 'phone') && (
+                        <p className="rounded-xl bg-paper-sunken px-3 py-2 text-[0.74rem] leading-relaxed text-ink-soft">
+                          {selected === 'title'
+                            ? t('boundTitle')
+                            : selected === 'price'
+                              ? t('boundPrice')
+                              : t('boundSeller')}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1741,7 +1850,7 @@ export function TemplateEditor({
           Ab bahar ka dabba scroll karta hai aur andar ke hisse sirf lakeeron se juda
           hain — jaisa har design tool ke side panel mein hota hai.
         */}
-        {panel === 'settings' && (
+        {tab === 'settings' && (
         <div className="card order-3 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
           <div className="space-y-4 p-4">
             <label className="block">
@@ -1848,7 +1957,7 @@ export function TemplateEditor({
         </div>
         )}
 
-        {(panel === 'layers' || panel === 'text' || panel === 'shapes' || panel === 'upload') && (
+        {(tab === 'layers' || tab === 'text' || tab === 'shapes' || tab === 'upload') && (
         <div className="card order-3 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
           {/*
             Cheezon ki list — Canva ke "layers" wala kaam.
@@ -1865,46 +1974,72 @@ export function TemplateEditor({
               use foran list mein dekhna hi wo jagah hai jahan se usay chuna aur sanwara
               jata hai. Canva mein bhi layers hamesha haath ki pohanch mein rehti hain.
             */}
+            {/*
+              Shakl lagane ka rasta — bare khaane, shakl ke saath us ka naam.
+
+              🔴 Pehle ye 36px ke chhote nishan the, bina naam ke, ek qatar mein thunse
+              hue. Reseller ne poochha "shape kaise apply hota hai" — yani wo nazar hi
+              nahi aa rahe the ke ye button hain.
+
+              Ab har khaana ungli bhar ka hai, shakl bari hai aur naam saath likha hai,
+              aur ek tap par wo shakl tasveer par aa jati hai. Canva mein bhi "Elements"
+              bare khaane hain, chhote nishan nahi.
+            */}
             {tab === 'shapes' && (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="w-full text-[0.78rem] font-semibold">{t('addShape')}</span>
-              {(['rect', 'circle', 'line', 'triangle', 'diamond', 'star', 'arrow', 'burst'] as const).map(
-                (shape) => (
-                  <button
-                    key={shape}
-                    type="button"
-                    onClick={() => addShape(shape)}
-                    disabled={(spec.layers?.length ?? 0) >= 6}
-                    aria-label={t(SHAPE_LABEL[shape])}
-                    title={t(SHAPE_LABEL[shape])}
-                    className="link-tap flex h-9 w-9 items-center justify-center rounded-lg bg-paper-sunken disabled:opacity-40"
-                  >
-                    {/*
-                      Nishan wohi shakl hai jo banegi — `clip-path` bhi wohi jo render
-                      istemal karta hai (SHAPE_PREVIEW_CLIP). Naam likhne se banda
-                      "ہیرا" parh kar bhi nahi jaanta ke kya banega; shakl dekh kar
-                      jaan jata hai.
-                    */}
-                    <span
-                      className={
-                        shape === 'line'
-                          ? 'h-[3px] w-5 rounded-full bg-accent-700'
-                          : shape === 'rect'
-                            ? 'h-3 w-5 rounded-[2px] bg-accent-700'
-                            : 'h-4 w-4 bg-accent-700'
-                      }
-                      style={
-                        shape === 'circle'
-                          ? { borderRadius: '50%' }
-                          : SHAPE_PREVIEW_CLIP[shape]
-                            ? { clipPath: SHAPE_PREVIEW_CLIP[shape] }
-                            : undefined
-                      }
-                    />
-                  </button>
-                ),
-              )}
-            </div>
+              <div>
+                <p className="text-[0.85rem] font-bold">{t('addShape')}</p>
+                <p className="mt-1 text-[0.74rem] leading-relaxed text-ink-faint">
+                  {t('shapeHint')}
+                </p>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {(
+                    [
+                      'rect',
+                      'circle',
+                      'line',
+                      'triangle',
+                      'diamond',
+                      'star',
+                      'arrow',
+                      'burst',
+                    ] as const
+                  ).map((shape) => (
+                    <button
+                      key={shape}
+                      type="button"
+                      onClick={() => addShape(shape)}
+                      disabled={(spec.layers?.length ?? 0) >= 6}
+                      className="link-tap flex flex-col items-center gap-1.5 rounded-xl bg-paper-sunken px-1 py-3 disabled:opacity-40"
+                    >
+                      {/*
+                        Nishan wohi shakl hai jo banegi — `clip-path` bhi wohi jo asli
+                        render istemal karta hai (SHAPE_PREVIEW_CLIP). Naam parh kar
+                        banda "ہیرا" ka matlab nahi jaanta; shakl dekh kar foran jaan
+                        jata hai. Naam sirf us ki tasdeeq ke liye hai.
+                      */}
+                      <span
+                        className={
+                          shape === 'line'
+                            ? 'h-[4px] w-8 rounded-full bg-accent-700'
+                            : shape === 'rect'
+                              ? 'h-5 w-8 rounded-[3px] bg-accent-700'
+                              : 'h-7 w-7 bg-accent-700'
+                        }
+                        style={
+                          shape === 'circle'
+                            ? { borderRadius: '50%' }
+                            : SHAPE_PREVIEW_CLIP[shape]
+                              ? { clipPath: SHAPE_PREVIEW_CLIP[shape] }
+                              : undefined
+                        }
+                      />
+                      <span className="text-[0.68rem] font-semibold leading-tight">
+                        {t(SHAPE_LABEL[shape])}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
 
             <div className="grid gap-2">
@@ -2290,6 +2425,53 @@ function TemplateThumb({ spec, photo }: { spec: TemplateSpec; photo: string | nu
 
 /** Namoone ki chaurai — is se chhota par shakl pehchani hi nahi jati. */
 const THUMB_W = 54
+
+/**
+ * Chuni hui cheez ke qatar ka ek button — nishan oopar, naam neeche.
+ *
+ * 🔴 Naam nazar aata hai, `title` mein chhupa hua nahi.
+ *
+ * Phone par `title` ka koi wujood hi nahi (hover hota hi nahi), aur sirf nishan par
+ * chhor dene ka matlab hai ke banda har button ko tap kar ke dekhe ke ye kya karta hai.
+ * "⋯" aur "▥" apne aap kuch nahi kehte. Naam do harf ka hai magar wohi farq hai ke
+ * reseller ko rang DHOONDHNA parey ya wo saamne ho.
+ *
+ * Dobara tap karne se tray band — kholne aur band karne ka ek hi button, jaisa Canva
+ * mein hai. Alag "✕" ek aur cheez seekhne ki hai.
+ */
+function ToolButton({
+  id,
+  active,
+  onPick,
+  label,
+  children,
+}: {
+  id: ToolId
+  active: ToolId | null
+  onPick: (next: ToolId | null) => void
+  label: string
+  children: React.ReactNode
+}) {
+  const on = active === id
+  return (
+    <button
+      type="button"
+      onClick={() => onPick(on ? null : id)}
+      aria-label={label}
+      aria-pressed={on}
+      className={
+        on
+          ? 'flex min-h-tap w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-accent-50 px-1 py-1.5 text-accent-700 ring-1 ring-accent-600'
+          : 'link-tap flex min-h-tap w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-ink'
+      }
+    >
+      {children}
+      <span className="w-full truncate text-center text-[0.6rem] font-semibold leading-tight">
+        {label}
+      </span>
+    </button>
+  )
+}
 
 function IconButton({
   children,

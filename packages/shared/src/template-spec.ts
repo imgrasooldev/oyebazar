@@ -100,6 +100,14 @@ const ElementSpec = z.object({
   font: z.enum(FONT_KEYS).optional(),
   /** Rang bhara hua dabba — jaisa qeemat par pehle se hai. */
   pill: z.boolean().optional(),
+  /**
+   * Us dabbe ka apna rang — na ho to template ka aam rang (`--accent`).
+   *
+   * 🔴 Ye `pill` ke baghair be-asar hai, aur ye jaan boojh kar hai: dabba hai hi nahi to
+   * us ka rang kis cheez par lage? UI ko yehi ek sawal poochhna chahiye — "peechay rang
+   * ho ya na ho" — aur rang chunna khud us ka jawab "haan" hai.
+   */
+  pillColour: HexColour.optional(),
 })
 
 /**
@@ -146,6 +154,7 @@ const TextLayerSchema = z.object({
   rotate: z.number().int().min(-20).max(20).optional(),
   font: z.enum(FONT_KEYS).optional(),
   pill: z.boolean().optional(),
+  pillColour: HexColour.optional(),
   behind: BehindField,
 })
 
@@ -359,11 +368,22 @@ export const DEFAULT_TEMPLATE_SPEC: TemplateSpec = {
  * baseline se kaafi neeche jati hain aur barabar padding par wo dabbe se bahar nikal
  * kar kati hui lagti hain.
  */
-const PILL_ON = `background: var(--accent);
+/**
+ * Likhai ke peechay rang bhara dabba.
+ *
+ * 🔴 `colour` na ho to haraf ba haraf wohi CSS bane jo pehle banti thi.
+ *
+ * Ye khali khoobsurti nahi — cache ki shart hai. Bane hue pack ka key template ke CSS
+ * par khara hai; ek `background:` ki line badalne se har purana pack dobara render
+ * hoga. Isi liye yahan `??` hai, koi shart nahi.
+ */
+function pillOn(colour?: string): string {
+  return `background: ${colour ?? 'var(--accent)'};
   color: var(--badge-text);
   padding: calc(10px * var(--scale)) calc(40px * var(--scale)) calc(24px * var(--scale));
   border-radius: 999px;
   display: inline-block;`
+}
 
 const PILL_OFF = `background: transparent;
   padding: 0;
@@ -591,7 +611,7 @@ export function templateSpecToCss(spec: TemplateSpec): string {
         element.opacity !== undefined ? `opacity: ${element.opacity / 100};` : '',
         element.rotate ? `transform: rotate(${element.rotate}deg);` : '',
         element.font ? `font-family: ${FONT_STACK[element.font]};` : '',
-        !inner && element.pill === true ? PILL_ON : '',
+        !inner && element.pill === true ? pillOn(element.pillColour) : '',
         !inner && element.pill === false ? PILL_OFF : '',
       ]
         .filter(Boolean)
@@ -600,7 +620,7 @@ export function templateSpecToCss(spec: TemplateSpec): string {
       const innerExtra = inner
         ? [
             element.colour ? `color: ${element.colour};` : '',
-            element.pill === true ? PILL_ON : '',
+            element.pill === true ? pillOn(element.pillColour) : '',
             element.pill === false ? PILL_OFF : '',
             element.font ? `font-family: ${FONT_STACK[element.font]};` : '',
           ]
@@ -734,7 +754,7 @@ function layersCss(spec: TemplateSpec): string {
         layer.opacity !== undefined ? `opacity: ${layer.opacity / 100};` : '',
         layer.rotate ? `transform: rotate(${layer.rotate}deg);` : '',
         `font-family: ${FONT_STACK[layer.font ?? 'nastaliq']};`,
-        layer.pill ? PILL_ON : '',
+        layer.pill ? pillOn(layer.pillColour) : '',
       ]
         .filter(Boolean)
         .join('\n  ')

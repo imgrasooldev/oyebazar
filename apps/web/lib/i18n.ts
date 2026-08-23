@@ -259,6 +259,24 @@ const DICTIONARY = {
   fontPoppins: { ur: 'پاپنز', en: 'Poppins', rm: 'Poppins' },
   fontPlayfair: { ur: 'پلے فیئر', en: 'Playfair', rm: 'Playfair' },
   textColour: { ur: 'لکھائی کا رنگ', en: 'Text colour', rm: 'Likhai ka rang' },
+  /*
+   * Chuni hui cheez ke qatar ke naam — do harf, aur wohi lafz jo reseller bolti hai.
+   *
+   * 🔴 "رنگ" aur "پیچھے" — "foreground"/"background" ka tarjuma NAHI. Wo do lafz design
+   * tool ki zabaan hain; jo banda WhatsApp par maal bechta hai wo ye poochhta hai ke
+   * "likhai ka rang" kya ho aur "peechay" kya ho.
+   */
+  toolText: { ur: 'متن', en: 'Text', rm: 'Matn' },
+  toolColour: { ur: 'رنگ', en: 'Colour', rm: 'Rang' },
+  toolBg: { ur: 'پیچھے', en: 'Behind', rm: 'Peechay' },
+  toolFont: { ur: 'لکھائی', en: 'Font', rm: 'Likhai' },
+  toolSize: { ur: 'سائز', en: 'Size', rm: 'Size' },
+  toolPlace: { ur: 'جگہ', en: 'Place', rm: 'Jagah' },
+  toolMore: { ur: 'مزید', en: 'More', rm: 'Mazeed' },
+  bgColour: { ur: 'پیچھے کا رنگ', en: 'Background colour', rm: 'Peechay ka rang' },
+  bgNone: { ur: 'پیچھے کچھ نہیں', en: 'No background', rm: 'Peechay kuch nahi' },
+  nudgeUp: { ur: 'اوپر', en: 'Up', rm: 'Oopar' },
+  nudgeDown: { ur: 'نیچے', en: 'Neeche', rm: 'Neeche' },
   opacityLabel: { ur: 'گہرا پن', en: 'Opacity', rm: 'Gehra pan' },
   rotateLabel: { ur: 'ٹیڑھا', en: 'Tilt', rm: 'Terha' },
   pillToggle: { ur: 'رنگ بھرا ڈبہ', en: 'Filled pill', rm: 'Rang bhara dabba' },
@@ -288,6 +306,11 @@ const DICTIONARY = {
   shapeStar: { ur: 'ستارہ', en: 'Star', rm: 'Sitara' },
   shapeArrow: { ur: 'تیر', en: 'Arrow', rm: 'Teer' },
   shapeBurst: { ur: 'چمک', en: 'Burst', rm: 'Chamak' },
+  shapeHint: {
+    ur: 'کسی بھی شکل پر ایک بار دبائیں — وہ تصویر پر آ جائے گی، پھر اسے گھسیٹ کر جہاں چاہیں رکھ دیں۔',
+    en: 'Tap any shape once — it lands on the photo, then drag it where you want.',
+    rm: 'Kisi bhi shakl par ek baar dabayen — wo tasveer par aa jayegi, phir usay ghaseet kar jahan chahen rakh den.',
+  },
   shapeColour: { ur: 'شکل کا رنگ', en: 'Shape colour', rm: 'Shakl ka rang' },
   shapeHeight: { ur: 'اونچائی', en: 'Height', rm: 'Oonchai' },
   sendBehind: { ur: 'لکھائی کے پیچھے', en: 'Send behind text', rm: 'Likhai ke peechay' },
