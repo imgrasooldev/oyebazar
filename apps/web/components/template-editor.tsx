@@ -1,6 +1,14 @@
 'use client'
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import {
   DEFAULT_TEMPLATE_SPEC,
   FONT_KEYS,
@@ -570,7 +578,15 @@ export function TemplateEditor({
    * ka scrollbar aana, phone ka ghoomna, keyboard khulna — sab us dabbe ka naap badalte
    * hain aur window ka `resize` un mein se kai par chalta hi nahi.
    */
-  useEffect(() => {
+  /*
+   * 🔴 `useLayoutEffect` — `useEffect` nahi.
+   *
+   * `useEffect` paint ke BAAD chalta hai. Yani pehla frame us shuruaati zoom par bana
+   * jata tha jo asal jagah se koi taalluq nahi rakhta, aur reseller ko ek lamhe ke liye
+   * canvas apne dabbe se bahar nikla hua nazar aata tha — jaise kuch toot gaya ho.
+   * Layout effect paint se pehle naapta hai, is liye pehla frame hi theek banta hai.
+   */
+  useLayoutEffect(() => {
     const area = canvasAreaRef.current
     if (!area) return
 
@@ -1458,7 +1474,7 @@ export function TemplateEditor({
                   <Handle
                     k="badge"
                     cssClass="badge"
-                    {...{ spec, selected, drag, startDrag, pick }}
+                    {...{ spec, selected, drag, zoom, startDrag, pick }}
                   >
                     {spec.badgeText || '—'}
                   </Handle>
@@ -1467,7 +1483,7 @@ export function TemplateEditor({
                     <Handle
                       k="title"
                       cssClass="title"
-                      {...{ spec, selected, drag, startDrag, pick }}
+                      {...{ spec, selected, drag, zoom, startDrag, pick }}
                     >
                       {t('sampleProductTitle')}
                     </Handle>
@@ -1475,7 +1491,7 @@ export function TemplateEditor({
                     <Handle
                       k="price"
                       cssClass="price-row"
-                      {...{ spec, selected, drag, startDrag, pick }}
+                      {...{ spec, selected, drag, zoom, startDrag, pick }}
                     >
                       <div className="price">{formatPkr(pkr(2850))}</div>
                     </Handle>
@@ -1484,14 +1500,14 @@ export function TemplateEditor({
                       <Handle
                         k="name"
                         cssClass="seller-name"
-                        {...{ spec, selected, drag, startDrag, pick }}
+                        {...{ spec, selected, drag, zoom, startDrag, pick }}
                       >
                         {t('sampleSellerName')}
                       </Handle>
                       <Handle
                         k="phone"
                         cssClass="seller-phone"
-                        {...{ spec, selected, drag, startDrag, pick }}
+                        {...{ spec, selected, drag, zoom, startDrag, pick }}
                       >
                         {/* LTR andar wale span par — dekhen templates/layout.html ka note */}
                         <span className="ltr">0300 1234567</span>
@@ -1501,7 +1517,7 @@ export function TemplateEditor({
                     <Handle
                       k="cta"
                       cssClass="cta"
-                      {...{ spec, selected, drag, startDrag, pick }}
+                      {...{ spec, selected, drag, zoom, startDrag, pick }}
                     >
                       {spec.ctaText?.trim() || t('sampleCta')}
                     </Handle>
@@ -1513,7 +1529,7 @@ export function TemplateEditor({
                       key={index}
                       k={`L${index}`}
                       cssClass={`layer-${index}`}
-                      {...{ spec, selected, drag, startDrag, pick }}
+                      {...{ spec, selected, drag, zoom, startDrag, pick }}
                     >
                       {layer.kind === 'image' ? (
                         /* eslint-disable-next-line @next/next/no-img-element -- storage se aaya hua logo; naap spec ke CSS se aata hai */
@@ -2378,6 +2394,7 @@ function Handle({
   spec,
   selected,
   drag,
+  zoom,
   startDrag,
   pick,
   children,
@@ -2387,6 +2404,8 @@ function Handle({
   spec: TemplateSpec
   selected: Sel | null
   drag: { key: Sel; mode: HandleId } | null
+  /** Canvas ka asal paimana — handle ka naap isi se ulta kiya jata hai, neeche dekhen. */
+  zoom: number
   startDrag: (key: Sel, mode: HandleId, event: React.PointerEvent) => void
   pick: (key: Sel) => void
   children: React.ReactNode
@@ -2397,6 +2416,66 @@ function Handle({
   const isSelected = selected === k
   const isDragging = drag?.key === k
 
+  /*
+   * 🔴 Handle ka naap SCREEN ke pixel mein, canvas ke nahi.
+   *
+   * Ye pehle ulta likha hua tha: handle 52px ka tha "kyunke canvas simta hua hota hai
+   * (aksar 25–30%)". Wo andaza ghalat tha. Asal layout mein zoom 0.14 ke qareeb nikalta
+   * hai, yani wo 52px ka handle screen par SAAT pixel ka reh jata tha aur us ka 6px ka
+   * haashiya ek pixel se bhi kam. Nateeja: handle nazar hi nahi aate the, aur reseller
+   * ne bilkul theek kaha ke naap badalne mein "issue aa raha hai" — jise pakarna hai wo
+   * dikhta hi nahi tha.
+   *
+   * Ab har naap ko zoom se taqseem karte hain: jo bhi zoom ho, handle screen par utne
+   * hi pixel ka rehta hai. Canva mein bhi yehi hota hai — design chhota bara karo, us
+   * ke handle waise ke waise rehte hain.
+   */
+  const px = (screenPx: number) => screenPx / (zoom || 1)
+
+  const hasWidth = style.width !== undefined
+  const hasHeight = style.height !== undefined
+
+  /*
+   * Sirf wo handle jo waqai kuch karte hain.
+   *
+   * Shakl par charon taraf (chaurai aur oonchai dono apni hain), tasveer par sirf
+   * daayen-baayen (oonchai us ki apni nisbat se banti hai), aur likhai par sirf neeche
+   * wala — wahan "naap" font ka naap hai, koi dabba nahi. Jo handle kuch na kare us ka
+   * hona seekhne ki ek faltu cheez hai.
+   */
+  const corners = hasWidth ? (['is-bs', 'ie-bs', 'is-be', 'ie-be'] as const) : []
+  const edges = [
+    ...(hasWidth ? (['is', 'ie'] as const) : []),
+    ...(hasHeight ? (['bs', 'be'] as const) : []),
+    ...(!hasWidth && !hasHeight ? (['be'] as const) : []),
+  ]
+
+  const CURSOR: Record<string, string> = {
+    'is-bs': 'nwse-resize',
+    'ie-be': 'nwse-resize',
+    'ie-bs': 'nesw-resize',
+    'is-be': 'nesw-resize',
+    is: 'ew-resize',
+    ie: 'ew-resize',
+    bs: 'ns-resize',
+    be: 'ns-resize',
+  }
+
+  /** Nishan chhota, pakarne ki jagah bari — ungli 11px ke nuqte par nahi lagti. */
+  const hit = px(28)
+
+  const knob = (shape: 'corner' | 'inline' | 'block'): React.CSSProperties => ({
+    display: 'block',
+    background: '#fff',
+    border: `${px(1.5)}px solid #C2410C`,
+    boxShadow: `0 ${px(1)}px ${px(3)}px rgba(0,0,0,0.35)`,
+    ...(shape === 'corner'
+      ? { width: px(11), height: px(11), borderRadius: px(999) }
+      : shape === 'inline'
+        ? { width: px(5), height: px(18), borderRadius: px(999) }
+        : { width: px(18), height: px(5), borderRadius: px(999) }),
+  })
+
   return (
     <div
       onPointerDown={(event) => startDrag(k, 'move', event)}
@@ -2404,47 +2483,62 @@ function Handle({
         event.stopPropagation()
         pick(k)
       }}
-      style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
+      style={{
+        cursor: isDragging ? 'grabbing' : 'grab',
+        touchAction: 'none',
+        /*
+         * Chunne ka haashiya bhi screen ke paimane par — 6px ka outline yahan bhi
+         * 0.8px ban kar gayab ho jata tha.
+         */
+        ...(isSelected
+          ? {
+              outline: `${px(1.5)}px solid #C2410C`,
+              outlineOffset: `${px(2)}px`,
+            }
+          : {}),
+      }}
       className={`${cssClass} ${
-        isSelected
-          ? 'outline-dashed outline-[6px] outline-offset-[10px] outline-white/80'
-          : 'hover:outline-dashed hover:outline-[4px] hover:outline-offset-[10px] hover:outline-white/35'
+        isSelected ? '' : 'hover:outline-dashed hover:outline-[4px] hover:outline-offset-[10px] hover:outline-white/35'
       }`}
     >
       {children}
 
-      {/*
-        Naap ke handle — charon kone.
-
-        🔴 Canvas simta hua hota hai (aksar 25–30%), is liye handle ko 1080-paimane par
-        BARA banana parta hai. 56px yahan asli screen par ~15px ban jata hai — ungli ke
-        liye bilkul kaafi. Chhota rakhne par wo ek nuqta ban jata hai jise pakra hi nahi
-        ja sakta, aur reseller samajhti hai ke naap badalta hi nahi.
-
-        Sirf kone (kinare wale nahi): aath handle chhoti shakl par ek doosre par charh
-        jate hain, aur chaar kone har banday ko pehle se samajh aate hain.
-      */}
       {isSelected &&
-        (['is-bs', 'ie-bs', 'is-be', 'ie-be'] as const).map((handle) => {
-          const top = handle.startsWith('bs') || handle.includes('-bs')
-          const inlineStart = handle.startsWith('is')
+        [...corners, ...edges].map((handle) => {
+          const isCorner = handle.includes('-')
+          const inlineStart = PULLS_INLINE_START(handle)
+          const inlineEnd = PULLS_INLINE_END(handle)
+          const blockStart = PULLS_BLOCK_START(handle)
+          const blockEnd = PULLS_BLOCK_END(handle)
+
           return (
             <div
               key={handle}
               onPointerDown={(event) => startDrag(k, handle, event)}
               style={{
                 position: 'absolute',
-                ...(inlineStart ? { insetInlineStart: -26 } : { insetInlineEnd: -26 }),
-                ...(top ? { top: -26 } : { bottom: -26 }),
-                width: 52,
-                height: 52,
-                borderRadius: 999,
-                background: '#fff',
-                border: '6px solid #C2410C',
-                cursor: 'pointer',
+                width: hit,
+                height: hit,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: CURSOR[handle],
                 touchAction: 'none',
+                // Kinare wale handle beech mein, kone wale kone par
+                ...(inlineStart
+                  ? { insetInlineStart: -hit / 2 }
+                  : inlineEnd
+                    ? { insetInlineEnd: -hit / 2 }
+                    : { insetInlineStart: `calc(50% - ${hit / 2}px)` }),
+                ...(blockStart
+                  ? { top: -hit / 2 }
+                  : blockEnd
+                    ? { bottom: -hit / 2 }
+                    : { top: `calc(50% - ${hit / 2}px)` }),
               }}
-            />
+            >
+              <span style={knob(isCorner ? 'corner' : inlineStart || inlineEnd ? 'inline' : 'block')} />
+            </div>
           )
         })}
     </div>
