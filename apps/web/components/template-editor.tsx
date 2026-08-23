@@ -369,7 +369,27 @@ export function TemplateEditor({
    * jaisa Canva mein hai. Do maqsad ek panel mein mila dena hi asal gharbar thi.
    */
   const [tool, setTool] = useState<ToolId | null>(null)
-  const [drag, setDrag] = useState<{ key: Sel; mode: HandleId } | null>(null)
+  /**
+   * Chalta hua drag — aur us ke saath wo jagah jahan se cheez PAKRI gayi thi.
+   *
+   * 🔴 `grabInline`/`grabBlock` ke baghair cheez ungli ke neeche CHHALANG lagati hai.
+   *
+   * Cheez ki jagah us ke shuru wale kone se naapi jati hai (`x`, `y`). Agar drag ke
+   * waqt seedha ungli ki jagah `x` par likh di jaye, to jis ne qeemat ko us ke BEECH se
+   * pakra tha us ki qeemat foran khisak kar apna kona ungli ke neeche le aati hai. Ek
+   * saada tap bhi cheez ko hila deta tha — reseller ke liye ye "cheez khud hi hil gayi"
+   * jaisa lagta hai, aur wohi cheez editor ko be-qaboo mehsoos karati hai.
+   *
+   * Is liye pakarte waqt kone aur ungli ka faasla mehfooz kar lete hain, aur har harkat
+   * par wohi faasla ghata dete hain. Nateeja: cheez ungli ke saath chalti hai, ungli ke
+   * neeche kood ti nahi.
+   */
+  const [drag, setDrag] = useState<{
+    key: Sel
+    mode: HandleId
+    grabInline: number
+    grabBlock: number
+  } | null>(null)
   const [guides, setGuides] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] })
   /**
    * Zoom — reseller ka apna, aur wo jo jagah ke mutabiq khud nikalta hai.
@@ -621,7 +641,22 @@ export function TemplateEditor({
     // Drag SE PEHLE ki halat dhair par — taake ek undo poore drag ko wapas kare
     setPast((history) => [...history.slice(-49), spec])
     setFuture([])
-    setDrag({ key, mode })
+
+    /*
+     * Kone aur ungli ka faasla — sirf `move` par. Kone ke handle par ye faasla hai hi
+     * nahi (wahan ungli KA hi matlab naya kinara hai), is liye wahan sifar.
+     */
+    const box = stageRef.current?.getBoundingClientRect()
+    const style = part(spec, key)
+    const grab =
+      mode === 'move' && box && style
+        ? {
+            grabInline: ((box.right - event.clientX) / box.width) * 100 - style.x,
+            grabBlock: ((event.clientY - box.top) / box.height) * 100 - style.y,
+          }
+        : { grabInline: 0, grabBlock: 0 }
+
+    setDrag({ key, mode, ...grab })
   }
 
   function onPointerMove(event: React.PointerEvent) {
@@ -682,8 +717,9 @@ export function TemplateEditor({
       return
     }
 
-    let x = pointerInline
-    let y = pointerBlock
+    // Kone ki jagah = ungli ki jagah manha wo faasla jahan se pakri gayi thi
+    let x = pointerInline - drag.grabInline
+    let y = pointerBlock - drag.grabBlock
 
     /*
      * Snap — safhe ke apne guides, aur baqi HAR cheez ke kinare (tay-shuda aur apna
@@ -1335,7 +1371,7 @@ export function TemplateEditor({
              * `max-h` us surat mein bhi dabbe ko bandha rakhta hai; canvas bara hua to
              * scroll ISI dabbe ke andar hoga (`overflow-auto`), safhe ka nahi.
              */
-            className="sticky top-[4.25rem] z-10 flex h-[55vh] items-center justify-center overflow-auto rounded-card bg-coal-900/[0.06] p-1.5 lg:static lg:h-auto lg:max-h-none lg:min-h-0 lg:flex-1"
+            className="sticky top-[4.25rem] z-10 flex h-[55vh] min-h-[12rem] items-center justify-center overflow-auto rounded-card bg-coal-900/[0.06] p-1.5 lg:static lg:h-auto lg:max-h-none lg:min-h-[15rem] lg:flex-1"
           >
             <div
               className="relative shrink-0 overflow-hidden rounded-card shadow-[0_18px_50px_-12px_rgba(0,0,0,0.45)] ring-1 ring-black/10"
@@ -1603,7 +1639,20 @@ export function TemplateEditor({
 
               {/* ---------------- Tray ---------------- */}
               {tool && (
-                <div className="border-t border-line p-3">
+                /*
+                  🔴 `max-h` aur `overflow-y-auto` — dono lazmi hain.
+
+                  Tray `shrink-0` hai aur canvas `flex-1`, is liye bina hadd ke ek lamba
+                  tray canvas ko SIFAR par gira deta hai. Live par bilkul yehi hua:
+                  "پیچھے کا رنگ" kholte hi design gayab ho gaya aur sirf rang ke khaane
+                  bache. Canva mein bhi rang chunte waqt design saamne rehta hai — warna
+                  banda dekh hi nahi sakta ke rang jama ya nahi.
+
+                  `max-w` isi ka doosra rukh hai: chaure tray mein nau khaane 60px ke
+                  ho jate the aur qabu tasveer se bara lagne lagta tha.
+                */
+                <div className="max-h-[34vh] overflow-y-auto border-t border-line p-3">
+                  <div className="mx-auto max-w-sm">
                   {tool === 'text' && editableText !== null && (
                     <div>
                       <input
@@ -1832,6 +1881,7 @@ export function TemplateEditor({
                       )}
                     </div>
                   )}
+                  </div>
                 </div>
               )}
             </div>
