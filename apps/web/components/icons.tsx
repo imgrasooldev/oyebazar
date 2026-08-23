@@ -186,6 +186,42 @@ export function SparkIcon({ className = 'h-5 w-5' }: Props) {
 }
 
 /**
+ * Aankh — cheez dikh rahi hai ya chhupi hui.
+ *
+ * 🔴 SVG, emoji nahi. `👁`/`🚫` har nizam par apni shakl aur apne rang mein aate hain
+ * (kuch par rangeen, kuch par patle) — list be-tarteeb lagti thi aur rang UI se mel
+ * nahi khata tha.
+ */
+export function EyeIcon({ className = 'h-4 w-4' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="12" r="2.75" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  )
+}
+
+export function EyeOffIcon({ className = 'h-4 w-4' }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M9.9 5.8A9.6 9.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.6 3.4M6.2 7.3A16.6 16.6 0 0 0 2.5 12S6 18.5 12 18.5c1.4 0 2.6-.3 3.7-.8"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="m4 4 16 16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/**
  * Undo / redo.
  *
  * 🔴 SVG, `↶`/`↷` nahi. Wo haroof har font mein hote hi nahi — Windows par khali dabba

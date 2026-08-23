@@ -10,7 +10,7 @@ import {
   type ShapeLayer,
   type TemplateSpec,
 } from '@oyebazar/shared'
-import { RedoIcon, UndoIcon } from '@/components/icons'
+import { EyeIcon, EyeOffIcon, RedoIcon, UndoIcon } from '@/components/icons'
 import { translator, type Locale } from '@/lib/i18n'
 
 /**
@@ -1766,30 +1766,69 @@ export function TemplateEditor({
               use foran list mein dekhna hi wo jagah hai jahan se usay chuna aur sanwara
               jata hai. Canva mein bhi layers hamesha haath ki pohanch mein rehti hain.
             */}
-            <p className="text-[0.8rem] font-semibold">{t('elementsTitle')}</p>
-            <div className="mt-2 space-y-1">
+            <p className="text-[0.78rem] font-semibold text-ink-soft">{t('elementsTitle')}</p>
+
+            {/*
+              Qatarein patli aur nazar ke liye saaf.
+
+              🔴 Har qatar par us cheez ka apna NISHAN hai — rang ka gola (jo us ka asal
+              rang dikhata hai), ya shakl, ya `T`. Sirf naam likhne se aankh ko har dafa
+              parhna parta hai; nishan se wo ek nazar mein pehchan leti hai. Yehi wajah
+              hai ke har design tool ki layer list mein nishan hota hai.
+
+              `divide-y` — qatarein lakeeron se judi hain, faaslon se nahi. Faasle
+              (space-y) list ko lamba karte hain aur ye panel pehle se tang hai.
+            */}
+            <div className="mt-1.5 divide-y divide-line/70 overflow-hidden rounded-xl ring-1 ring-line/70">
               {allParts(spec).map(({ sel, style }) => {
                 const index = layerIndex(sel)
+                const layer = index !== null ? spec.layers?.[index] : undefined
                 return (
                   <div
                     key={sel}
                     className={
                       selected === sel
-                        ? 'flex items-center gap-1 rounded-xl bg-accent-50 px-2 py-1.5'
-                        : 'flex items-center gap-1 rounded-xl px-2 py-1.5'
+                        ? 'flex items-center gap-1.5 bg-accent-50 px-2 py-1'
+                        : 'flex items-center gap-1.5 px-2 py-1'
                     }
                   >
                     <button
                       type="button"
                       onClick={() => setSelected(sel)}
-                      className={
-                        style.show
-                          ? 'link-tap min-w-0 flex-1 truncate text-right text-[0.82rem] font-semibold'
-                          : 'link-tap min-w-0 flex-1 truncate text-right text-[0.82rem] font-semibold text-ink-faint line-through'
-                      }
+                      className="link-tap flex min-w-0 flex-1 items-center gap-2 text-right"
                     >
-                      {index !== null && <span className="text-accent-700">✎ </span>}
-                      {partLabel(sel)}
+                      {/* Nishan — rang ka gola, shakl, ya likhai ka `T` */}
+                      <span
+                        aria-hidden="true"
+                        className={
+                          layer?.kind === 'shape'
+                            ? 'h-3.5 w-3.5 shrink-0'
+                            : 'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[0.6rem] font-bold text-white'
+                        }
+                        style={
+                          layer?.kind === 'shape'
+                            ? {
+                                background: layer.colour ?? spec.accent,
+                                borderRadius: layer.shape === 'circle' ? '50%' : '3px',
+                                ...(SHAPE_PREVIEW_CLIP[layer.shape]
+                                  ? { clipPath: SHAPE_PREVIEW_CLIP[layer.shape] }
+                                  : {}),
+                              }
+                            : { background: style.colour ?? spec.accent }
+                        }
+                      >
+                        {layer?.kind === 'image' ? '▣' : layer?.kind === 'shape' ? '' : 'T'}
+                      </span>
+
+                      <span
+                        className={
+                          style.show
+                            ? 'min-w-0 flex-1 truncate text-[0.8rem] font-semibold'
+                            : 'min-w-0 flex-1 truncate text-[0.8rem] font-semibold text-ink-faint line-through'
+                        }
+                      >
+                        {partLabel(sel)}
+                      </span>
                     </button>
 
                     {/* Aage/peechay sirf apne text par — tay-shuda cheezon ki tarteeb tay hai */}
@@ -1801,7 +1840,7 @@ export function TemplateEditor({
                           disabled={index === (spec.layers?.length ?? 0) - 1}
                           aria-label={t('bringForward')}
                           title={t('bringForward')}
-                          className="link-tap flex h-7 w-5 items-center justify-center text-[0.75rem] text-ink-soft disabled:opacity-30"
+                          className="link-tap flex h-6 w-4 items-center justify-center text-[0.7rem] text-ink-faint disabled:opacity-25"
                         >
                           ▲
                         </button>
@@ -1811,7 +1850,7 @@ export function TemplateEditor({
                           disabled={index === 0}
                           aria-label={t('sendBackward')}
                           title={t('sendBackward')}
-                          className="link-tap flex h-7 w-5 items-center justify-center text-[0.75rem] text-ink-soft disabled:opacity-30"
+                          className="link-tap flex h-6 w-4 items-center justify-center text-[0.7rem] text-ink-faint disabled:opacity-25"
                         >
                           ▼
                         </button>
@@ -1820,7 +1859,7 @@ export function TemplateEditor({
                           onClick={() => removeLayer(index)}
                           aria-label={t('deleteTemplate')}
                           title={t('deleteTemplate')}
-                          className="link-tap flex h-7 w-5 items-center justify-center text-[0.75rem] text-ink-soft"
+                          className="link-tap flex h-6 w-4 items-center justify-center text-[0.72rem] text-ink-faint"
                         >
                           ✕
                         </button>
@@ -1832,9 +1871,17 @@ export function TemplateEditor({
                       onClick={() => patchPart(sel, { show: !style.show })}
                       aria-label={style.show ? t('hideThis') : t('showThis')}
                       title={style.show ? t('hideThis') : t('showThis')}
-                      className="link-tap flex h-7 w-7 items-center justify-center rounded-lg text-[0.85rem] text-ink-soft"
+                      className={
+                        style.show
+                          ? 'link-tap flex h-6 w-6 items-center justify-center rounded-md text-ink-soft'
+                          : 'link-tap flex h-6 w-6 items-center justify-center rounded-md text-ink-faint'
+                      }
                     >
-                      {style.show ? '👁' : '🚫'}
+                      {style.show ? (
+                        <EyeIcon className="h-3.5 w-3.5" />
+                      ) : (
+                        <EyeOffIcon className="h-3.5 w-3.5" />
+                      )}
                     </button>
                   </div>
                 )

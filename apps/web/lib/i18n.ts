@@ -234,11 +234,7 @@ const DICTIONARY = {
   scrimStrength: { ur: 'تصویر پر دھند', en: 'Shade on photo', rm: 'Tasveer par dhund' },
   frameWidth: { ur: 'حاشیہ', en: 'Frame', rm: 'Haashiya' },
   cornerRadius: { ur: 'کونوں کی گولائی', en: 'Corner rounding', rm: 'Konon ki golai' },
-  elementsTitle: {
-    ur: 'کیا کیا دکھے، اور کتنا بڑا',
-    en: 'What shows, and how big',
-    rm: 'Kya kya dikhe, aur kitna bara',
-  },
+  elementsTitle: { ur: 'تصویر پر کیا کیا ہے', en: 'On the image', rm: 'Tasveer par kya kya hai' },
   elBadge: { ur: 'بیج', en: 'Badge', rm: 'Badge' },
   elTitle: { ur: 'مال کا نام', en: 'Item name', rm: 'Maal ka naam' },
   elPrice: { ur: 'ریٹ', en: 'Price', rm: 'Rate' },
