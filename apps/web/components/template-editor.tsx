@@ -13,11 +13,14 @@ import {
   DEFAULT_TEMPLATE_SPEC,
   FONT_KEYS,
   TEMPLATE_PRESETS,
+  PACK_FORMATS,
+  PACK_FORMAT_KEYS,
   formatPkr,
   pkr,
   templateSpecToCss,
   type FontKey,
   type ShapeLayer,
+  type PackFormatKey,
   type TemplateSpec,
 } from '@oyebazar/shared'
 import {
@@ -105,17 +108,34 @@ const PREVIEW_BASE_CSS = `
   left: 0;
   top: 0;
   transform-origin: 0 0;
-  width: ${CANVAS_W}px;
-  height: ${CANVAS_H}px;
+  width: var(--canvas-w);
+  height: var(--canvas-h);
   overflow: hidden;
   background: #fff;
   font-family: 'Noto Nastaliq Urdu', serif;
   direction: rtl;
-  --scale: 1;
+  --pad-x: calc(60px * var(--scale));
 }
 .tpl-stage .photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .tpl-stage .scrim { position: absolute; inset: 0; }
-.tpl-stage .content { position: absolute; inset: 0; }
+/*
+ * 🔴 \`.content\` ka inset base.css se HOOBAHOO — yahan pehle \`inset: 0\` tha.
+ *
+ * Ye "jo dikh raha hai wohi ban raha hai" wala wada tor raha tha, aur khamoshi se.
+ * Har cheez ki jagah feesad mein hai, aur wo feesad \`.content\` se naapa jata hai —
+ * asli render mein \`.content\` safe zones se andar hota hai (story par upar 180px,
+ * neeche 250px), yani us ki oonchai 1490 hai, 1920 nahi. Preview mein wo poore 1920
+ * par tha.
+ *
+ * Farq chhota nahi tha: CTA (y=91%) preview mein 1747px par baithta tha aur asli pack
+ * mein 1536px par — 211px, yani canvas ka 11%. Reseller neeche wali line ko kinare se
+ * theek uthati, aur bana hua pack us se kaafi upar hota. Aur us ka koi paighaam nahi
+ * aata tha — bas pack "thora alag" lagta tha.
+ */
+.tpl-stage .content {
+  position: absolute;
+  inset: var(--safe-top) var(--pad-x) var(--safe-bottom) var(--pad-x);
+}
 .tpl-stage .badge {
   background: var(--accent); color: var(--badge-text);
   font-weight: 700; line-height: 2.2;
@@ -470,6 +490,20 @@ export function TemplateEditor({
   const [tab, setTab] = useState<TabId>('design')
 
   /**
+   * Kaun se naap par dekh rahe hain.
+   *
+   * 🔴 Pack CHAAR naap mein banta hai, magar editor sirf story (9:16) dikhata tha —
+   * yani reseller apna template banati thi aur teen naap kabhi dekh hi nahi paati thi.
+   * Chaura (1.91:1) sab se ziyada khatarnak hai: wahan lambai bohat kam hai aur wohi
+   * cheezein jo story par theek baithti hain, wahan ek doosre par charh jati hain.
+   *
+   * Sirf DEKHNE ka faisla hai — spec mein kuch mehfooz nahi hota, is liye cache ko
+   * haath nahi lagta.
+   */
+  const [formatKey, setFormatKey] = useState<PackFormatKey>('story')
+  const fmt = PACK_FORMATS[formatKey]
+
+  /**
    * Tasveer par (ya list mein) kisi cheez par tap.
    *
    * Nayi cheez chunte hi khula hua tray band — warna banda "رنگ" khol kar doosri cheez
@@ -596,14 +630,15 @@ export function TemplateEditor({
       // 0.94 — kinare par thori saans, warna canvas dabbe se bilkul chipak jata hai
       // 0.99 — kinare par bas itni saans ke saaya kata na lage. Pehle 0.94 tha, aur wo
       // chhoti screen par canvas ko be-wajah 6%% chhota kar deta tha.
-      setFitZoom(Math.min(width / CANVAS_W, height / CANVAS_H) * 0.99)
+      setFitZoom(Math.min(width / fmt.width, height / fmt.height) * 0.99)
     }
 
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(area)
     return () => observer.disconnect()
-  }, [])
+    // Naap badle to canvas dobara fit hona chahiye
+  }, [fmt.width, fmt.height])
 
   /** Har tabdeeli undo ke dhair par — magar drag ke dauran nahi, warna 60 qadam ban jate. */
   const commit = useCallback((next: TemplateSpec) => {
@@ -1484,7 +1519,7 @@ export function TemplateEditor({
           >
             <div
               className="relative shrink-0 overflow-hidden rounded-card shadow-[0_18px_50px_-12px_rgba(0,0,0,0.45)] ring-1 ring-black/10"
-              style={{ width: CANVAS_W * zoom, height: CANVAS_H * zoom }}
+              style={{ width: fmt.width * zoom, height: fmt.height * zoom }}
               // Khali jagah par tap = kuch bhi chuna hua nahi
               onPointerDown={unpick}
             >
@@ -1493,8 +1528,18 @@ export function TemplateEditor({
                 onPointerMove={onPointerMove}
                 onPointerUp={endDrag}
                 onPointerCancel={endDrag}
-                className="tpl-stage stage custom"
-                style={{ transform: `scale(${zoom})` }}
+                className={`tpl-stage stage custom format-${formatKey}`}
+                style={
+                  {
+                    transform: `scale(${zoom})`,
+                    // Wohi variables jo asli render deta hai — dekhen worker ka template.ts
+                    '--canvas-w': `${fmt.width}px`,
+                    '--canvas-h': `${fmt.height}px`,
+                    '--safe-top': `${fmt.safeTop}px`,
+                    '--safe-bottom': `${fmt.safeBottom}px`,
+                    '--scale': String(fmt.scale),
+                  } as React.CSSProperties
+                }
               >
                 {/*
                   🔴 Reseller ke apne maal ki tasveer — banawati rang nahi.
@@ -1624,6 +1669,33 @@ export function TemplateEditor({
             hi wo tareeqa hai jis se banda ek AISA template banata hai jo har maal par
             chalta hai — sirf us ek par nahi jo abhi saamne hai.
           */}
+          {/*
+            Naap ka chunao — canvas ke bilkul neeche.
+
+            🔴 Ye sirf DEKHNE ka faisla hai, spec mein kuch mehfooz nahi hota. Har naap
+            ka apna safe zone aur apna paimana hai, is liye ek hi template chaar naap par
+            chaar tarah ka lagta hai — aur chaura (1.91:1) sab se ziyada alag, kyunke
+            wahan lambai bohat kam hai. Reseller ko banane se PEHLE ye dekh lena chahiye,
+            bhejne ke baad nahi.
+          */}
+          <div className="mt-1.5 flex shrink-0 flex-wrap items-center justify-center gap-1">
+            {PACK_FORMAT_KEYS.map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setFormatKey(key)}
+                aria-pressed={formatKey === key}
+                className={
+                  formatKey === key
+                    ? 'rounded-pill bg-accent-50 px-3 py-1 text-[0.72rem] font-semibold text-accent-700 ring-1 ring-accent-600'
+                    : 'tap rounded-pill px-3 py-1 text-[0.72rem] font-semibold text-ink-soft'
+                }
+              >
+                {locale === 'ur' ? PACK_FORMATS[key].labelUr : PACK_FORMATS[key].labelEn}
+              </button>
+            ))}
+          </div>
+
           {photos.length > 1 && (
             <div className="mt-1.5 flex shrink-0 items-center justify-center gap-1.5">
               {photos.map((url) => (
@@ -2676,8 +2748,23 @@ function TemplateThumb({ spec, photo }: { spec: TemplateSpec; photo: string | nu
         }}
       />
       <div
-        className={`tpl-stage stage custom thumb-${id}`}
-        style={{ transform: `scale(${scale})` }}
+        className={`tpl-stage stage custom thumb-${id} format-story`}
+        /*
+         * Namoona hamesha story (9:16) par — wohi naap hai jo 90% pack banate hain.
+         *
+         * 🔴 Variables yahan bhi lazmi hain: `.tpl-stage` ka naap aur `.content` ka
+         * inset ab in par khare hain, aur in ke baghair namoona bilkul gir jata hai.
+         */
+        style={
+          {
+            transform: `scale(${scale})`,
+            '--canvas-w': `${CANVAS_W}px`,
+            '--canvas-h': `${CANVAS_H}px`,
+            '--safe-top': `${PACK_FORMATS.story.safeTop}px`,
+            '--safe-bottom': `${PACK_FORMATS.story.safeBottom}px`,
+            '--scale': String(PACK_FORMATS.story.scale),
+          } as React.CSSProperties
+        }
       >
         {photo ? (
           /* eslint-disable-next-line @next/next/no-img-element -- storage ki tasveer */
