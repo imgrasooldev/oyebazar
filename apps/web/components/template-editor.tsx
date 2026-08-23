@@ -335,6 +335,44 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
    */
   const [tab, setTab] = useState<TabId>('design')
 
+  /**
+   * Poori screen — editor safhe ke upar aa jata hai.
+   *
+   * 🔴 Do tareeqe ek saath, aur dono zaroori hain:
+   *
+   *  · `position: fixed` wala overlay — YE asal kaam karta hai. App ka header, side nav
+   *    aur safhe ki padding sab ke upar aa jata hai, aur ye HAR jagah chalta hai.
+   *  · Browser ka apna fullscreen (`requestFullscreen`) — us se browser ki apni pattiyan
+   *    bhi chali jati hain, yani aur 100–150px canvas ko milte hain.
+   *
+   * Sirf browser wale par bharosa nahi kiya ja sakta: wo iframe mein, kuch phone ke
+   * browsers mein, aur bina "user gesture" ke chalta hi nahi — aur us soorat mein banda
+   * button dabata aur kuch na hota.
+   */
+  const [fullscreen, setFullscreen] = useState(false)
+
+  function toggleFullscreen() {
+    const next = !fullscreen
+    setFullscreen(next)
+
+    // Nakami par kuch nahi karna — overlay to lag hi chuka hai
+    if (next) void document.documentElement.requestFullscreen?.().catch(() => undefined)
+    else void document.exitFullscreen?.().catch(() => undefined)
+  }
+
+  /*
+   * Browser ka fullscreen banda `Esc` se ya browser ke apne button se bhi chhor sakta
+   * hai — us soorat mein hamara overlay bhi utarna chahiye, warna wo bina fullscreen ke
+   * poore safhe par chipka reh jata hai.
+   */
+  useEffect(() => {
+    function onChange() {
+      if (!document.fullscreenElement) setFullscreen(false)
+    }
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [])
+
   const [fitZoom, setFitZoom] = useState(0.28)
   const [zoomMultiplier, setZoomMultiplier] = useState(1)
   const [uploading, setUploading] = useState(false)
@@ -566,6 +604,17 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
         event.preventDefault()
         if (event.shiftKey) redo()
         else undo()
+        return
+      }
+
+      /*
+       * Escape ka do darjay ka matlab: pehle chuni hui cheez chhoro, phir poori screen
+       * se niklo. Ek hi dafa mein dono karna banday ko chaunka deta hai — wo sirf
+       * cheez chhorna chahta tha aur poora editor simat gaya.
+       */
+      if (event.key === 'Escape' && !selected && fullscreen) {
+        event.preventDefault()
+        toggleFullscreen()
         return
       }
 
@@ -854,7 +903,13 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
      * scroll karta hai — us ke baghair flex bachche ko simatne hi nahi deta aur scroll
      * kahin nahi hota, bas safha lamba hota jata hai.
      */
-    <div className="flex flex-col gap-2 lg:h-full">
+    <div
+      className={
+        fullscreen
+          ? 'fixed inset-0 z-50 flex h-[100dvh] flex-col gap-2 bg-paper p-2'
+          : 'flex flex-col gap-2 lg:h-full'
+      }
+    >
       {/*
         ---------------- Ooper ki patti ----------------
 
@@ -903,6 +958,14 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
             dark
           >
             +
+          </IconButton>
+
+          <IconButton
+            label={fullscreen ? t('exitFullscreen') : t('enterFullscreen')}
+            onClick={toggleFullscreen}
+            dark
+          >
+            {fullscreen ? '⤡' : '⤢'}
           </IconButton>
         </div>
 

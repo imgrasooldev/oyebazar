@@ -296,6 +296,8 @@ const DICTIONARY = {
   showSimple: { ur: 'کم دکھائیں', en: 'Show less', rm: 'Kam dikhayen' },
   doneWithThis: { ur: '✓ ہو گیا', en: '✓ Done', rm: '✓ Ho gaya' },
   customColour: { ur: 'اپنی مرضی کا رنگ', en: 'Custom colour', rm: 'Apni marzi ka rang' },
+  enterFullscreen: { ur: 'پوری اسکرین', en: 'Full screen', rm: 'Poori screen' },
+  exitFullscreen: { ur: 'پوری اسکرین سے نکلیں', en: 'Exit full screen', rm: 'Poori screen se niklen' },
   tabDesign: { ur: 'ڈیزائن', en: 'Design', rm: 'Design' },
   tabText: { ur: 'متن', en: 'Text', rm: 'Matn' },
   tabShapes: { ur: 'شکلیں', en: 'Shapes', rm: 'Shaklen' },
