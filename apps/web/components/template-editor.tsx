@@ -1043,7 +1043,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
           baqi sab yahan — jahan panel ka apna scroll pehle se mojood hai.
         */}
         {selected && (
-          <div className="card order-3 space-y-3 p-4 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
+          <div className="card order-3 space-y-2.5 p-3 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
             <p className="text-[0.85rem] font-bold">{partLabel(selected)}</p>
 
             {selectedLayer?.kind === 'text' && (
@@ -1060,6 +1060,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
               <SwatchRow
                 label={selectedLayer?.kind === 'shape' ? t('shapeColour') : t('textColour')}
                 customLabel={t('customColour')}
+                showHex={advanced}
                 accent={spec.accent}
                 value={part(spec, selected)?.colour}
                 onChange={(colour) => patchPart(selected, { colour })}
@@ -1070,7 +1071,8 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
             {selectedLayer?.kind !== 'image' && selectedLayer?.kind !== 'shape' && (
               <div>
                 <p className="text-[0.78rem] font-semibold">{t('fontLabel')}</p>
-                <div className="mt-2 flex flex-wrap gap-2">
+                {/* Grid — teen chips hamesha EK qatar mein, chahe naam kitne bhi lambe hon */}
+                <div className="mt-1.5 grid grid-cols-3 gap-1">
                   {(['nastaliq', 'naskh', 'latin'] as const).map((font) => (
                     <button
                       key={font}
@@ -1078,8 +1080,8 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
                       onClick={() => patchPart(selected, { font })}
                       className={
                         (part(spec, selected)?.font ?? 'nastaliq') === font
-                          ? 'chip chip-active !py-1 text-[0.75rem]'
-                          : 'chip !py-1 text-[0.75rem]'
+                          ? 'chip chip-active w-full justify-center !px-1 !py-1 text-[0.7rem]'
+                          : 'chip w-full justify-center !px-1 !py-1 text-[0.7rem]'
                       }
                     >
                       {font === 'nastaliq'
@@ -1488,6 +1490,7 @@ export function TemplateEditor({ templates: initial, defaultTemplateKey, locale 
             <SwatchRow
               label={t('accentColour')}
               customLabel={t('customColour')}
+              showHex={advanced}
               accent={spec.accent}
               value={spec.accent}
               onChange={(accent) => patch({ accent })}
@@ -1969,6 +1972,7 @@ const SWATCHES = [
 function SwatchRow({
   label,
   customLabel,
+  showHex,
   value,
   accent,
   onChange,
@@ -1976,6 +1980,8 @@ function SwatchRow({
   label: string
   /** Picker aur hex ke liye — SwatchRow module ke darje par hai, wahan `t` nahi hota. */
   customLabel: string
+  /** Hex ka khana — sirf "mazeed settings" par. */
+  showHex: boolean
   value: string | undefined
   /** Template ka apna rang — "koi rang nahi chuna" ka matlab yehi hai. */
   accent: string
@@ -1984,7 +1990,14 @@ function SwatchRow({
   return (
     <div>
       <p className="text-[0.78rem] font-semibold">{label}</p>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
+      {/*
+        🔴 `grid`, `flex-wrap` nahi.
+
+        Wrap par ye aath khaane + pahiya do qatarein ban jate the aur panel ka aadha
+        neecha kha lete the. Grid mein har khaana bache hui chaurai ka nauwan hissa le
+        leta hai — chahe panel kitna bhi tang ho, qatar EK hi rehti hai.
+      */}
+      <div className="mt-1.5 grid grid-cols-9 gap-1">
         {SWATCHES.map((colour) => {
           const active = (value ?? accent).toLowerCase() === colour.toLowerCase()
           return (
@@ -1996,8 +2009,8 @@ function SwatchRow({
               title={colour}
               className={
                 active
-                  ? 'h-8 w-8 rounded-full ring-2 ring-accent-700 ring-offset-2'
-                  : 'link-tap h-8 w-8 rounded-full ring-1 ring-black/15'
+                  ? 'aspect-square w-full rounded-full ring-2 ring-accent-700 ring-offset-1'
+                  : 'link-tap aspect-square w-full rounded-full ring-1 ring-black/15'
               }
               style={{ background: colour }}
             />
@@ -2015,7 +2028,7 @@ function SwatchRow({
           aur tap par system ka apna rang chunne wala khulta hai (phone par bhi).
         */}
         <label
-          className="link-tap relative h-8 w-8 cursor-pointer overflow-hidden rounded-full ring-1 ring-black/15"
+          className="link-tap relative aspect-square w-full cursor-pointer overflow-hidden rounded-full ring-1 ring-black/15"
           title={customLabel}
           style={{
             background:
@@ -2030,17 +2043,25 @@ function SwatchRow({
             className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
           />
         </label>
+      </div>
 
-        {/* Hex — un ke liye jin ke paas brand ka rang likha hua hota hai */}
+      {/*
+        Hex ka khana sirf "مزید سیٹنگز" par.
+
+        Rang ka pahiya wohi kaam kar deta hai aur qatar mein hi baith jata hai; hex ki
+        zaroorat sirf us waqt parti hai jab kisi ke paas apne brand ka rang LIKHA hua ho.
+        Us ek soorat ke liye ek poori qatar hamesha kharch karna mehnga hai.
+      */}
+      {showHex && (
         <input
           value={value ?? accent}
           onChange={(e) => onChange(e.target.value)}
           dir="ltr"
           maxLength={7}
           aria-label={customLabel}
-          className="field numeric h-8 w-20 !py-0 text-[0.72rem]"
+          className="field numeric mt-1.5 h-7 w-24 !py-0 text-[0.72rem]"
         />
-      </div>
+      )}
     </div>
   )
 }
@@ -2092,8 +2113,8 @@ function SliderField({
   return (
     <div>
       <div className="flex items-baseline justify-between">
-        <span className="text-[0.78rem] font-semibold">{label}</span>
-        <span dir="ltr" className="numeric text-[0.7rem] text-ink-faint">
+        <span className="text-[0.74rem] font-semibold">{label}</span>
+        <span dir="ltr" className="numeric text-[0.68rem] text-ink-faint">
           {value}
         </span>
       </div>
@@ -2103,7 +2124,7 @@ function SliderField({
         max={max}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="mt-2 h-2 w-full cursor-pointer appearance-none rounded-pill bg-paper-sunken accent-brand-500"
+        className="mt-1 h-1.5 w-full cursor-pointer appearance-none rounded-pill bg-paper-sunken accent-brand-500"
       />
     </div>
   )
