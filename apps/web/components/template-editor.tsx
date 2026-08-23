@@ -607,18 +607,22 @@ export function TemplateEditor({
    * scrollbar aana, phone ka ghoomna, keyboard khulna, poori screen mein jana — sab us
    * dabbe ka naap badalte hain aur window ka `resize` un mein se kai par chalta hi nahi.
    *
-   * 🔴 Callback ref, `useRef` + `useEffect` NAHI — aur ye ek pakre hue bug ka hal hai.
+   * Callback ref (`useRef` + `useEffect` ki jagah) — taake observer HAMESHA usi node par
+   * ho jo abhi screen par hai. Effect ke deps mein node nahi aa sakta; callback ref har
+   * dafa chalta hai jab node badalta hai.
    *
-   * Pehle observer ek effect mein lagta tha jis ke deps mein sirf naap tha. "Poori
-   * screen" dabane par React is dabbe ko dobara banata hai (poora editor `fixed
-   * inset-0` wale dabbe mein chala jata hai), yani ref naye node par chala jata aur
-   * observer PURANE, alag ho chuke node ko dekhta reh jata. Nateeja: canvas ka khaana
-   * 267 se 321px ho jata magar canvas 238 par ATKA rehta — reseller "poori screen"
-   * dabati aur kuch bara hota hi nahi.
+   * 🔴 Ye kisi pakre hue bug ka hal NAHI hai — ye baat saaf likhi honi chahiye.
    *
-   * Callback ref har dafa chalta hai jab node BADALTA hai, is liye observer hamesha usi
-   * dabbe par hota hai jo is waqt screen par hai. Ye poori qism ke bug ka hal hai, sirf
-   * poori screen ka nahi.
+   * Maine ise "poori screen par canvas bara nahi hota" samajh kar badla tha. Wo naap
+   * ghalat thi: main jis tab mein aazma raha tha wo background mein thi, aur background
+   * tab mein browser rendering ke qadam chalata hi nahi — is liye `ResizeObserver` ka
+   * pehla callback tak nahi aata aur `getBoundingClientRect` purani qadar deta hai.
+   * Screenshot se dekha to poori screen mein canvas ~63% bara ho raha tha, yani wo
+   * pehle bhi theek kaam kar raha tha.
+   *
+   * Callback ref phir bhi rakha hai kyunke wo asal mein zyada mehfooz hai (node badle
+   * to observer khud us ke saath chala jata hai), magar us ke saath jhooti wajah likhi
+   * chhorna agle banday ko usi ghalat raste par le jata.
    */
   const observerRef = useRef<ResizeObserver | null>(null)
 
