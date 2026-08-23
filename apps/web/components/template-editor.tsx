@@ -2197,8 +2197,8 @@ export function TemplateEditor({
                     key={sel}
                     className={
                       on
-                        ? 'flex items-center gap-2 rounded-xl bg-accent-50 p-1.5 ring-1 ring-accent-600'
-                        : 'flex items-center gap-2 rounded-xl p-1.5 ring-1 ring-line/70'
+                        ? 'flex items-center gap-1.5 rounded-xl bg-accent-50 p-1 ring-1 ring-accent-600'
+                        : 'flex items-center gap-1.5 rounded-xl p-1 ring-1 ring-line/70'
                     }
                   >
                     <button
@@ -2212,13 +2212,13 @@ export function TemplateEditor({
                         <span
                           className={
                             style.show
-                              ? 'block truncate text-[0.82rem] font-semibold'
-                              : 'block truncate text-[0.82rem] font-semibold text-ink-faint line-through'
+                              ? 'block truncate text-[0.8rem] font-semibold leading-tight'
+                              : 'block truncate text-[0.8rem] font-semibold leading-tight text-ink-faint line-through'
                           }
                         >
                           {partLabel(sel)}
                         </span>
-                        <span className="block truncate text-[0.66rem] text-ink-faint">
+                        <span className="block truncate text-[0.62rem] leading-tight text-ink-faint">
                           {layer?.kind === 'image'
                             ? t('addLogo')
                             : layer?.kind === 'shape'
@@ -2261,14 +2261,14 @@ export function TemplateEditor({
                       title={style.show ? t('hideThis') : t('showThis')}
                       className={
                         style.show
-                          ? 'link-tap flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-soft'
-                          : 'link-tap flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-paper-sunken text-ink-faint'
+                          ? 'link-tap flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-ink-soft'
+                          : 'link-tap flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-paper-sunken text-ink-faint'
                       }
                     >
                       {style.show ? (
-                        <EyeIcon className="h-4 w-4" />
+                        <EyeIcon className="h-3.5 w-3.5" />
                       ) : (
-                        <EyeOffIcon className="h-4 w-4" />
+                        <EyeOffIcon className="h-3.5 w-3.5" />
                       )}
                     </button>
                   </div>
@@ -2495,7 +2495,7 @@ function LayerThumb({
   layer: NonNullable<TemplateSpec['layers']>[number] | undefined
   accent: string
 }) {
-  const box = 'flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg'
+  const box = 'flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg'
 
   if (layer?.kind === 'image') {
     return (
