@@ -155,6 +155,34 @@ const PREVIEW_BASE_CSS = `
 .tpl-stage .seller-phone { font-weight: 700; color: #fff; white-space: nowrap; }
 .tpl-stage .seller-phone .ltr { direction: ltr; font-family: system-ui, sans-serif; display: inline-block; }
 .tpl-stage .cta { line-height: 2.1; color: #fff; opacity: .92; white-space: nowrap; }
+
+/*
+ * ---------------------------------------------------------------- angrezi pack
+ *
+ * 🔴 Ye qawaid base.css se HOOBAHOO hain, aur inhen wahan se alag hona GHALTI hai.
+ *
+ * Angrezi pack sirf zaban nahi badalta: rukh badalta hai (RTL → LTR), likhai badalti
+ * hai, aur har cheez ki line-height badalti hai. Line-height sab se ahem hai — 2.1
+ * Nastaliq ki majboori hai (us se kam par haroof ek doosre par charh jate hain), magar
+ * Latin haroof ko itni jagah nahi chahiye aur 2.1 par angrezi title itna bikhar jata
+ * hai ke do line ka title teen line le leta hai.
+ *
+ * Editor mein ye qawaid the hi nahi. Yani jo reseller angrezi mein pack banati thi, wo
+ * apna template KABHI dekh hi nahi paati thi — dekhti Urdu wala aur bhejti angrezi
+ * wala.
+ */
+.tpl-stage.lang-en { direction: ltr; font-family: 'Inter', system-ui, sans-serif; }
+.tpl-stage.lang-en .badge {
+  line-height: 1.35;
+  padding: calc(14px * var(--scale)) calc(32px * var(--scale));
+  letter-spacing: calc(1px * var(--scale));
+  text-transform: uppercase;
+}
+.tpl-stage.lang-en .title { line-height: 1.25; }
+.tpl-stage.lang-en .price { line-height: 1.3; padding: calc(14px * var(--scale)) calc(40px * var(--scale)); }
+.tpl-stage.lang-en .seller-name { line-height: 1.3; }
+.tpl-stage.lang-en .cta { line-height: 1.4; }
+.tpl-stage.lang-en.format-wide .badge { right: auto; left: 0; }
 `
 
 const ELEMENTS = ['badge', 'title', 'price', 'name', 'phone', 'cta'] as const
@@ -498,6 +526,35 @@ export function TemplateEditor({
    */
   const [formatKey, setFormatKey] = useState<PackFormatKey>('story')
   const fmt = PACK_FORMATS[formatKey]
+
+  /**
+   * Pack ki zaban — sirf DEKHNE ke liye, naap ki tarah.
+   *
+   * 🔴 Angrezi pack ka look Urdu se kaafi alag hai: rukh ulta, likhai alag, aur har
+   * cheez ki line-height alag. Editor mein ye kabhi nazar hi nahi aata tha.
+   *
+   * Zaban spec mein nahi hai (aur nahi honi chahiye) — wo pack banate waqt tay hoti hai.
+   * Ek hi template dono zabanon mein chalta hai, is liye reseller ko dono dekhne chahiyen.
+   */
+  const [packLang, setPackLang] = useState<'ur' | 'en'>('ur')
+
+  /**
+   * Namoone ka text pack ki zaban se aata hai, UI ki zaban se NAHI.
+   *
+   * 🔴 Ye do alag cheezein hain aur inhen ek samajhna asal masla chhupa deta. Reseller
+   * ka apna safha angrezi mein ho sakta hai jabke wo Urdu pack banati ho — aur ulta
+   * bhi. Agar namoona UI ki zaban se aaye to zaban ka switch dabane par likhai wohi
+   * rehti hai aur sirf line-height badalti hai, yani wo farq nazar hi nahi aata jo
+   * dikhane ke liye ye switch banaya gaya hai.
+   */
+  const sample =
+    packLang === 'en'
+      ? { title: 'Lawn 3-Piece — Floral', seller: 'Sadia Bibi', cta: 'Message to order' }
+      : {
+          title: 'لان تھری پیس — پھولوں والا',
+          seller: 'صادیہ بی بی',
+          cta: 'آرڈر کے لیے میسج کریں',
+        }
 
   /**
    * Tasveer par (ya list mein) kisi cheez par tap.
@@ -1536,7 +1593,7 @@ export function TemplateEditor({
                 onPointerMove={onPointerMove}
                 onPointerUp={endDrag}
                 onPointerCancel={endDrag}
-                className={`tpl-stage stage custom format-${formatKey}`}
+                className={`tpl-stage stage custom format-${formatKey}${packLang === 'en' ? ' lang-en' : ''}`}
                 style={
                   {
                     transform: `scale(${zoom})`,
@@ -1589,7 +1646,7 @@ export function TemplateEditor({
                       cssClass="title"
                       {...{ spec, selected, drag, zoom, startDrag, pick }}
                     >
-                      {t('sampleProductTitle')}
+                      {sample.title}
                     </Handle>
 
                     <Handle
@@ -1606,7 +1663,7 @@ export function TemplateEditor({
                         cssClass="seller-name"
                         {...{ spec, selected, drag, zoom, startDrag, pick }}
                       >
-                        {t('sampleSellerName')}
+                        {sample.seller}
                       </Handle>
                       <Handle
                         k="phone"
@@ -1623,7 +1680,7 @@ export function TemplateEditor({
                       cssClass="cta"
                       {...{ spec, selected, drag, zoom, startDrag, pick }}
                     >
-                      {spec.ctaText?.trim() || t('sampleCta')}
+                      {spec.ctaText?.trim() || sample.cta}
                     </Handle>
                   </div>
 
@@ -1687,6 +1744,31 @@ export function TemplateEditor({
             bhejne ke baad nahi.
           */}
           <div className="mt-1.5 flex shrink-0 flex-wrap items-center justify-center gap-1">
+            {/*
+              Zaban — naap ke saath usi qatar mein, aur ek chhoti si lakeer se juda.
+
+              Dono ek hi qism ka sawal hain: "ye template kis soorat mein dekhna hai".
+              Alag jagah rakhne ka matlab hota ke reseller ek dhoondh le aur doosri ka
+              use pata hi na chale.
+            */}
+            {(['ur', 'en'] as const).map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setPackLang(key)}
+                aria-pressed={packLang === key}
+                className={
+                  packLang === key
+                    ? 'rounded-pill bg-accent-50 px-3 py-1 text-[0.72rem] font-semibold text-accent-700 ring-1 ring-accent-600'
+                    : 'tap rounded-pill px-3 py-1 text-[0.72rem] font-semibold text-ink-soft'
+                }
+              >
+                {key === 'ur' ? t('packLangUrdu') : t('packLangEnglish')}
+              </button>
+            ))}
+
+            <span aria-hidden="true" className="mx-1 h-4 w-px bg-line" />
+
             {PACK_FORMAT_KEYS.map((key) => (
               <button
                 key={key}

@@ -409,6 +409,8 @@ const DICTIONARY = {
     en: 'Lawn 3-Piece — Floral',
     rm: 'Lawn three piece — phoolon wala',
   },
+  packLangUrdu: { ur: 'اردو', en: 'Urdu', rm: 'Urdu' },
+  packLangEnglish: { ur: 'انگریزی', en: 'English', rm: 'English' },
   sampleSellerName: { ur: 'صادیہ بی بی', en: 'Sadia Bibi', rm: 'Sadia Bibi' },
   sampleCta: { ur: 'آرڈر کے لیے میسج کریں', en: 'Message to order', rm: 'Order ke liye message karen' },
 
