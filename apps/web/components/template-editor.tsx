@@ -1322,6 +1322,7 @@ export function TemplateEditor({
                 key={preset.key}
                 type="button"
                 onClick={() => startNew(preset.spec)}
+                aria-label={locale === 'ur' ? preset.nameUr : preset.nameEn}
                 className="tap flex flex-col items-center gap-1"
               >
                 <TemplateThumb spec={preset.spec} photo={photo} />
@@ -1350,7 +1351,8 @@ export function TemplateEditor({
                 <button
                   type="button"
                   onClick={() => choose(template)}
-                  className="tap flex min-w-0 flex-1 items-center gap-2 text-right"
+                  aria-label={template.name}
+                  className="tap flex min-w-0 flex-1 items-center gap-2 text-start"
                 >
                   <TemplateThumb spec={template.spec} photo={photo} />
                   <span className="min-w-0 flex-1 truncate text-[0.85rem] font-semibold">
@@ -2597,6 +2599,16 @@ function TemplateThumb({ spec, photo }: { spec: TemplateSpec; photo: string | nu
 
   return (
     <div
+      /*
+       * 🔴 `aria-hidden` — kyunke is dabbe ke ANDAR ek `<style>` tag hai.
+       *
+       * Namoona banane ke liye asli CSS wahin daalna parta hai (wohi CSS jo asli render
+       * chalata hai), magar us ka natija ye tha ke jis button mein ye namoona rakha
+       * jata hai us ka NAAM poora CSS ban jata tha — screen reader "Simple" ki jagah
+       * ":root { --accent: #F2600C; ..." bolta tha. Namoona sirf dekhne ki cheez hai;
+       * naam button par `aria-label` se aata hai.
+       */
+      aria-hidden="true"
       className="relative shrink-0 overflow-hidden rounded-lg ring-1 ring-black/10"
       style={{ width: THUMB_W, height: CANVAS_H * scale }}
     >
