@@ -236,6 +236,18 @@ export const TemplateSpecSchema = z.object({
   frame: z.number().min(0).max(12),
   radius: z.number().int().min(0).max(80),
   badgeText: z.string().trim().max(24),
+  /**
+   * Neeche wali line — "آرڈر کے لیے میسج کریں".
+   *
+   * 🔴 IKHTIYARI, aur khali ka matlab "jo pehle se hai wohi" (zaban ke hisaab se).
+   * Purane template ke spec mein ye khana hai hi nahi, aur un ka pack haraf ba haraf
+   * wohi rehta hai.
+   *
+   * Ye badalne ke qabil is liye hai ke har reseller ka tareeqa alag hai: koi "واٹس ایپ
+   * کریں" likhti hai, koi "آرڈر کے لیے کال کریں", aur koi apne ilaqe ka naam. Ye us ki
+   * apni aawaz hai — hamari nahi.
+   */
+  ctaText: z.string().trim().max(40).optional(),
   elements: z.object({
     badge: ElementSpec,
     title: ElementSpec,

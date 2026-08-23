@@ -371,7 +371,15 @@ export async function buildStatusPackHtml(
     priceText: escapeHtml(formatPkr(data.price)),
     resellerName: escapeHtml(data.resellerName),
     resellerPhone: escapeHtml(formatLocalPhone(data.resellerPhone)),
-    ctaText: CTA_TEXT[lang],
+    /*
+     * Reseller ka apna likha hua — warna zaban ke hisaab se hamara.
+     *
+     * 🔴 `escapeHtml` lazmi hai: ye bhi user ka likha hua text hai aur wohi raste se
+     * guzarta hai jis se layers guzarte hain (dekhen `layerHtml` ka note).
+     */
+    ctaText: customSpec?.ctaText?.trim()
+      ? escapeHtml(customSpec.ctaText.trim())
+      : CTA_TEXT[lang],
     /*
      * 🔴 Reseller ka apna likha hua text — `escapeHtml` se guzarna LAZMI hai.
      *

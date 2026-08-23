@@ -301,6 +301,26 @@ const DICTIONARY = {
   tryOnPhoto: { ur: 'اپنے مال پر دیکھیں', en: 'See it on your item', rm: 'Apne maal par dekhen' },
   duplicateTemplate: { ur: 'نقل', en: 'Duplicate', rm: 'Naqal' },
   copySuffix: { ur: '(نقل)', en: '(copy)', rm: '(naqal)' },
+  ctaPlaceholder: {
+    ur: 'آرڈر کے لیے میسج کریں',
+    en: 'Message to order',
+    rm: 'Order ke liye message karen',
+  },
+  boundTitle: {
+    ur: 'یہ مال کا نام ہے — ہر مال پر خود بدلتا ہے، اس لیے یہاں نہیں لکھا جاتا۔',
+    en: 'This is the item name — it changes with each item, so it is not typed here.',
+    rm: 'Ye maal ka naam hai — har maal par khud badalta hai, is liye yahan nahi likha jata.',
+  },
+  boundPrice: {
+    ur: 'یہ آپ کا ریٹ ہے — پیک بناتے وقت سلائیڈر سے طے ہوتا ہے۔',
+    en: 'This is your price — you set it on the slider when making the pack.',
+    rm: 'Ye apka rate hai — pack banate waqt slider se tay hota hai.',
+  },
+  boundSeller: {
+    ur: 'یہ آپ کا نام اور نمبر ہے — پیک بناتے وقت بدلا یا ہٹایا جا سکتا ہے۔',
+    en: 'This is your name and number — change or hide it when making the pack.',
+    rm: 'Ye apka naam aur number hai — pack banate waqt badla ya hataya ja sakta hai.',
+  },
   tabDesign: { ur: 'ڈیزائن', en: 'Design', rm: 'Design' },
   tabText: { ur: 'متن', en: 'Text', rm: 'Matn' },
   tabShapes: { ur: 'شکلیں', en: 'Shapes', rm: 'Shaklen' },

@@ -1104,6 +1104,18 @@ export function TemplateEditor({
           <div className="card order-3 space-y-2.5 p-3 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
             <p className="text-[0.85rem] font-bold">{partLabel(selected)}</p>
 
+            {/*
+              🔴 Likhne ka khana WAHIN jahan cheez chuni gayi hai.
+
+              Pehle badge ka text "سیٹنگ" ke darwaze mein para tha: banda badge par tap
+              karta, us ka rang aur font to milta magar LIKHAI badalne ka koi rasta nazar
+              na aata. Aur neeche wali line ("آرڈر کے لیے میسج کریں") to kahin se bhi
+              nahi badalti thi.
+
+              Ab teenon apni jagah par hain — aur jo cheezein waqai nahi badal saktin,
+              un ke liye wajah likhi hai. "Option hai hi nahi" aur "option is liye nahi
+              ke ye khud maal se aata hai" — do bilkul alag baatein hain.
+            */}
             {selectedLayer?.kind === 'text' && (
               <input
                 value={selectedLayer.text}
@@ -1112,6 +1124,40 @@ export function TemplateEditor({
                 placeholder={t('myTextSample')}
                 className="field w-full text-[0.95rem]"
               />
+            )}
+
+            {selected === 'badge' && (
+              <input
+                value={spec.badgeText}
+                onChange={(e) => patch({ badgeText: e.target.value })}
+                maxLength={24}
+                placeholder={t('badgeText')}
+                className="field w-full text-[0.95rem]"
+              />
+            )}
+
+            {selected === 'cta' && (
+              <input
+                value={spec.ctaText ?? ''}
+                onChange={(e) => patch({ ctaText: e.target.value })}
+                maxLength={40}
+                placeholder={t('ctaPlaceholder')}
+                className="field w-full text-[0.95rem]"
+              />
+            )}
+
+            {/* Jo maal se aata hai — us ki wajah likhi hai, warna "toota hua" lagta hai */}
+            {(selected === 'title' ||
+              selected === 'price' ||
+              selected === 'name' ||
+              selected === 'phone') && (
+              <p className="rounded-xl bg-paper-sunken px-3 py-2 text-[0.74rem] leading-relaxed text-ink-soft">
+                {selected === 'title'
+                  ? t('boundTitle')
+                  : selected === 'price'
+                    ? t('boundPrice')
+                    : t('boundSeller')}
+              </p>
             )}
 
             {selectedLayer?.kind !== 'image' && (
@@ -1401,7 +1447,7 @@ export function TemplateEditor({
                       cssClass="cta"
                       {...{ spec, selected, drag, startDrag, setSelected }}
                     >
-                      {t('sampleCta')}
+                      {spec.ctaText?.trim() || t('sampleCta')}
                     </Handle>
                   </div>
 
@@ -2179,7 +2225,15 @@ function SwatchRow({
         neecha kha lete the. Grid mein har khaana bache hui chaurai ka nauwan hissa le
         leta hai — chahe panel kitna bhi tang ho, qatar EK hi rehti hai.
       */}
-      <div className="mt-1.5 grid grid-cols-9 gap-1">
+      {/*
+        🔴 `items-center` — warna khaane GOL nahi bante.
+
+        Grid apne bachchon ko khud khinch deta hai (`align-items: stretch`), aur khinche
+        hue box par `aspect-square` haar jata hai: oonchai pehle se tay ho chuki hoti
+        hai. Nateeja: gol khaane oval pill ban jate the — sirf chuna hua khaana gol lagta
+        tha kyunke us ke ring ne shakl bhar di hoti thi.
+      */}
+      <div className="mt-1.5 grid grid-cols-9 items-center gap-1">
         {SWATCHES.map((colour) => {
           const active = (value ?? accent).toLowerCase() === colour.toLowerCase()
           return (
@@ -2191,8 +2245,8 @@ function SwatchRow({
               title={colour}
               className={
                 active
-                  ? 'aspect-square w-full rounded-full ring-2 ring-accent-700 ring-offset-1'
-                  : 'link-tap aspect-square w-full rounded-full ring-1 ring-black/15'
+                  ? 'aspect-square w-full self-center rounded-full ring-2 ring-accent-700 ring-offset-1'
+                  : 'link-tap aspect-square w-full self-center rounded-full ring-1 ring-black/15'
               }
               style={{ background: colour }}
             />
@@ -2210,7 +2264,7 @@ function SwatchRow({
           aur tap par system ka apna rang chunne wala khulta hai (phone par bhi).
         */}
         <label
-          className="link-tap relative aspect-square w-full cursor-pointer overflow-hidden rounded-full ring-1 ring-black/15"
+          className="link-tap relative aspect-square w-full self-center cursor-pointer overflow-hidden rounded-full ring-1 ring-black/15"
           title={customLabel}
           style={{
             background:
