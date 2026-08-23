@@ -119,23 +119,20 @@ const PREVIEW_BASE_CSS = `
 .tpl-stage .photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .tpl-stage .scrim { position: absolute; inset: 0; }
 /*
- * 🔴 \`.content\` ka inset base.css se HOOBAHOO — yahan pehle \`inset: 0\` tha.
+ * 🔴 \`inset: 0\` — aur ye base.css se ULTA hai, jaan boojh kar.
  *
- * Ye "jo dikh raha hai wohi ban raha hai" wala wada tor raha tha, aur khamoshi se.
- * Har cheez ki jagah feesad mein hai, aur wo feesad \`.content\` se naapa jata hai —
- * asli render mein \`.content\` safe zones se andar hota hai (story par upar 180px,
- * neeche 250px), yani us ki oonchai 1490 hai, 1920 nahi. Preview mein wo poore 1920
- * par tha.
+ * base.css mein \`.content\` safe zones se andar hota hai (story par upar 180px, neeche
+ * 250px). Magar custom template ke liye \`templateSpecToCss\` khud likhta hai:
+ * \`.stage.custom .content { inset: 0 }\` — aur wo rule asli render mein bhi jata hai
+ * aur specificity mein jeet ta hai. Wajah saaf hai: custom template mein bahao nahi,
+ * JAGAH hai — har cheez wahin jahan reseller ne rakhi, aur us ka feesad poore canvas se
+ * naapa jana chahiye, kisi andar wale khaane se nahi.
  *
- * Farq chhota nahi tha: CTA (y=91%) preview mein 1747px par baithta tha aur asli pack
- * mein 1536px par — 211px, yani canvas ka 11%. Reseller neeche wali line ko kinare se
- * theek uthati, aur bana hua pack us se kaafi upar hota. Aur us ka koi paighaam nahi
- * aata tha — bas pack "thora alag" lagta tha.
+ * Yani preview yahan asli render se MEL khata hai. (Ek dafa maine ise bug samajh kar
+ * safe zones daal diye the — wo ghalti thi: maine base.css ka rule parh liya aur ye
+ * dekhna reh gaya ke spec ka CSS us ke oopar chalta hai.)
  */
-.tpl-stage .content {
-  position: absolute;
-  inset: var(--safe-top) var(--pad-x) var(--safe-bottom) var(--pad-x);
-}
+.tpl-stage .content { position: absolute; inset: 0; }
 .tpl-stage .badge {
   background: var(--accent); color: var(--badge-text);
   font-weight: 700; line-height: 2.2;
