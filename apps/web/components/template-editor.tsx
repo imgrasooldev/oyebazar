@@ -2853,7 +2853,20 @@ function SwatchRow({
         hai. Nateeja: gol khaane oval pill ban jate the — sirf chuna hua khaana gol lagta
         tha kyunke us ke ring ne shakl bhar di hoti thi.
       */}
-      <div className="mt-1.5 grid grid-cols-9 items-center gap-1">
+      {/*
+        🔴 Naap PAKKA — `aspect-square` par nahi.
+
+        Ye khaane teesri dafa bezwi (oval) bane. Har dafa wajah alag thi, magar jar ek
+        hi hai: `aspect-square` ka matlab hai "oonchai chaurai ke barabar", aur wo har
+        us cheez se HAAR jata hai jo oonchai alag se tay kar de. Grid ka `stretch` us
+        se jeeta, aur ab `min-h-tap` (44px) jeet raha tha — panel mein khaana 30px
+        chaura tha, is liye 30×44 ka anda ban gaya.
+
+        Ab koi nisbat hai hi nahi: `h-9 w-9`, dono taraf se pakka. Aur qatar `flex-wrap`
+        hai, grid nahi — nau khaane tang panel mein do qataron mein baith jate hain aur
+        gol ke gol rehte hain. Canva mein bhi rang ke khaane wrap hote hain.
+      */}
+      <div className="mt-1.5 flex flex-wrap items-center gap-2">
         {SWATCHES.map((colour) => {
           const active = (value ?? accent).toLowerCase() === colour.toLowerCase()
           return (
@@ -2865,8 +2878,8 @@ function SwatchRow({
               title={colour}
               className={
                 active
-                  ? 'aspect-square w-full self-center rounded-full ring-2 ring-accent-700 ring-offset-1'
-                  : 'tap aspect-square w-full self-center rounded-full ring-1 ring-black/15'
+                  ? 'h-9 w-9 shrink-0 rounded-full ring-2 ring-accent-700 ring-offset-2'
+                  : 'h-9 w-9 shrink-0 rounded-full ring-1 ring-black/15 transition hover:ring-2 hover:ring-black/30'
               }
               style={{ background: colour }}
             />
@@ -2884,7 +2897,7 @@ function SwatchRow({
           aur tap par system ka apna rang chunne wala khulta hai (phone par bhi).
         */}
         <label
-          className="tap relative aspect-square w-full self-center cursor-pointer overflow-hidden rounded-full ring-1 ring-black/15"
+          className="relative h-9 w-9 shrink-0 cursor-pointer overflow-hidden rounded-full ring-1 ring-black/15 transition hover:ring-2 hover:ring-black/30"
           title={customLabel}
           style={{
             background:
