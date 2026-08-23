@@ -141,6 +141,12 @@ export class PrismaStatusPackRepository implements StatusPackRepository {
     return toView(row)
   }
 
+  async findOwnedById(resellerId: string, id: string): Promise<StatusPackView | null> {
+    // `findFirst` + resellerId — `findUnique` par shart lag hi nahi sakti
+    const row = await this.db.statusPack.findFirst({ where: { id, resellerId }, select: PACK_SELECT })
+    return row ? toView(row) : null
+  }
+
   async markDownloaded(id: string, at: Date): Promise<void> {
     await this.db.statusPack.update({ where: { id }, data: { downloadedAt: at } })
   }

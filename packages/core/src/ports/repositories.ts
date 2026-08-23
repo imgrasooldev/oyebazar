@@ -265,6 +265,15 @@ export interface StatusPackRepository {
     input: StatusPackCacheKey & { imageUrl: string | null; options: PackOptions },
   ): Promise<StatusPackView>
   markRendered(id: string, imageUrl: string, at: Date): Promise<StatusPackView>
+  /**
+   * Ek pack — magar SIRF us reseller ka jo maang rahi hai.
+   *
+   * 🔴 `resellerId` yahan lazmi hai. Ye pack ki tasveer utarne ke liye istemal hota hai,
+   * aur us tasveer ka pata Supabase ka seedha public link hai. Agar lookup sirf id par
+   * hoti to koi bhi logged-in reseller doosri ki id daal kar us ka pack utaar leti — aur
+   * pack par us ka NAAM aur NUMBER chhapa hota hai.
+   */
+  findOwnedById(resellerId: string, id: string): Promise<StatusPackView | null>
   markDownloaded(id: string, at: Date): Promise<void>
   incrementShared(id: string): Promise<void>
   findRecentByReseller(resellerId: string, query: CursorQuery): Promise<Page<StatusPackView>>

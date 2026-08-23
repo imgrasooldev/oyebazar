@@ -533,9 +533,20 @@ export function StatusPackStudio({
                   </p>
 
                   {asset.imageUrl && (
+                    /*
+                      🔴 Apne pate se, Supabase se seedha NAHI.
+
+                      `download` ki khasoosiyat cross-origin par chalti hi nahi (browsers
+                      usay jaan boojh kar nazar andaz karte hain), aur tasveer Supabase
+                      par hai. Us ka natija ye tha ke reseller "ڈاؤن لوڈ" dabati aur
+                      tasveer usi tab mein KHUL jati — download hota hi nahi tha.
+
+                      Hamara apna route wohi file `Content-Disposition: attachment` ke
+                      saath deta hai, yani mehfooz karne ka faisla header se aata hai aur
+                      browser ki marzi par nahi chhorna parta.
+                    */
                     <a
-                      href={asset.imageUrl}
-                      download={`oyebazar-${asset.format}.jpg`}
+                      href={`/api/v1/status-pack/${asset.packId}/image`}
                       onClick={() => void markDownloaded(asset.packId)}
                       className="btn-secondary w-full !py-2 text-[0.8rem]"
                     >
