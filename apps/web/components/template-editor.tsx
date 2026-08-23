@@ -590,11 +590,32 @@ export function TemplateEditor({
    */
   useEffect(() => {
     if (saved) return
+
+    /*
+     * 🔴 Draft SIRF tab likho jab is session mein waqai kuch bana ho.
+     *
+     * Bina is shart ke safha khulte hi apni bina-badli halat draft par likh jati thi —
+     * yani jis lamhe reseller editor dobara kholti, us ka pichhla bacha hua kaam MIT
+     * jata. Aur ye theek us waqt hota jab wo usay sab se zyada chahiye hota. Live par
+     * aazma kar yehi pakra: purane tab mein sitara daala, naya tab khola, aur storage
+     * mein sitare wala draft ja chuka tha.
+     *
+     * `past.length > 0` = is session mein koi tabdeeli hui. `selectedId === null` =
+     * naya template (preset ya naqal) jo abhi kahin mehfooz hi nahi — us mein pehli
+     * tabdeeli se pehle bhi kaam mojood hai.
+     *
+     * `recovered` ke waqt bhi nahi likhte: us waqt screen par jo hai wo purani mehfooz
+     * shuda cheez hai, aur usay draft par likh dena wohi kaam mita dega jise wapas
+     * laane ki peshkash abhi saamne khari hai.
+     */
+    if (recovered) return
+    if (past.length === 0 && selectedId !== null) return
+
     const id = window.setTimeout(() => {
       writeDraft({ name, spec, selectedId, at: Date.now() })
     }, 700)
     return () => window.clearTimeout(id)
-  }, [spec, name, selectedId, saved])
+  }, [spec, name, selectedId, saved, recovered, past.length])
 
   const LAYER_LIMIT = 6
   const atLayerLimit = (spec.layers?.length ?? 0) >= LAYER_LIMIT
