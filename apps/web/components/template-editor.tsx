@@ -1985,20 +1985,26 @@ export function TemplateEditor({
               onChange={(accent) => patch({ accent })}
             />
 
-            {advanced && (
-              <div className="grid grid-cols-2 gap-3">
-                <ColourField
-                  label={t('accentColour')}
-                  value={spec.accent}
-                  onChange={(accent) => patch({ accent })}
-                />
-                <ColourField
-                  label={t('accentTextColour')}
-                  value={spec.accentText}
-                  onChange={(accentText) => patch({ accentText })}
-                />
-              </div>
-            )}
+            {/*
+              🔴 Yahan pehle "Accent colour" DO dafa tha.
+
+              Upar wali `SwatchRow` khud apne andar hex ka khana rakhti hai (jab
+              "زیادہ" khula ho), aur us ke theek neeche USI naam ka ek aur ColourField
+              para tha — do control, ek hi qadar ke liye, aur naam bhi ek hi. Banda
+              soch mein par jata hai ke asli kaun sa hai.
+
+              Ab "accent par likhai" ka rang bhi usi SwatchRow ki shakl mein hai:
+              swatches se ek tap, aur hex sirf "زیادہ" ke saath. Dono rang ek jaise
+              chunay jate hain — do alag tareeqe seekhne ki koi wajah nahi.
+            */}
+            <SwatchRow
+              label={t('accentTextColour')}
+              customLabel={t('customColour')}
+              showHex={advanced}
+              accent={spec.accent}
+              value={spec.accentText}
+              onChange={(accentText) => patch({ accentText })}
+            />
 
             <div>
               <p className="text-[0.8rem] font-semibold">{t('bottomCard')}</p>
@@ -2151,6 +2157,32 @@ export function TemplateEditor({
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/*
+              🔴 Har darwaze ka apna unwan aur ek line ka ishara.
+              
+              "Shapes" par ye pehle se tha aur wohi darwaza sab se saaf lagta tha; "Text"
+              par sirf ek button para tha aur "Logo" par sirf "+ Logo". Khali button ye
+              nahi batata ke banda kahan hai aur us ne kya kholna tha — khaas kar us ke
+              liye jo pehli dafa aaya ho.
+            */}
+            {tab === 'text' && (
+              <div className="mb-2">
+                <p className="text-[0.85rem] font-bold">{t('addText')}</p>
+                <p className="mt-1 text-[0.74rem] leading-relaxed text-ink-faint">
+                  {t('addTextHint')}
+                </p>
+              </div>
+            )}
+
+            {tab === 'upload' && (
+              <div className="mb-2">
+                <p className="text-[0.85rem] font-bold">{t('addLogo')}</p>
+                <p className="mt-1 text-[0.74rem] leading-relaxed text-ink-faint">
+                  {t('addLogoHint')}
+                </p>
               </div>
             )}
 
@@ -2887,37 +2919,6 @@ function SwatchRow({
         />
       )}
     </div>
-  )
-}
-
-function ColourField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string
-  value: string
-  onChange: (value: string) => void
-}) {
-  return (
-    <label className="block">
-      <span className="text-[0.78rem] font-semibold">{label}</span>
-      <div className="mt-2 flex items-center gap-2">
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-9 w-11 shrink-0 cursor-pointer rounded-lg border border-line bg-transparent"
-        />
-        <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          dir="ltr"
-          maxLength={7}
-          className="field numeric w-full text-[0.78rem]"
-        />
-      </div>
-    </label>
   )
 }
 

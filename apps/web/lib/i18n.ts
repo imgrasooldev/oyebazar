@@ -302,6 +302,16 @@ const DICTIONARY = {
   showThis: { ur: 'اسے دکھائیں', en: 'Show this', rm: 'Isay dikhayen' },
   addText: { ur: 'اپنا متن', en: 'Your own text', rm: 'Apna matn' },
   myText: { ur: 'میرا متن', en: 'My text', rm: 'Mera matn' },
+  addTextHint: {
+    ur: 'اپنی لائن لکھیں — جیسے "مفت ڈیلیوری" یا "آخری 2 پیس"۔ ریٹ یہاں نہ لکھیں۔',
+    en: 'Write your own line — like "Free delivery" or "Last 2 pieces". Do not write the price here.',
+    rm: 'Apni line likhen — jaise "مفت ڈیلیوری" ya "آخری 2 پیس". Rate yahan na likhen.',
+  },
+  addLogoHint: {
+    ur: 'اپنا لوگو یا کوئی چھوٹی تصویر — تصویر پر آ کر جہاں چاہیں رکھ دیں۔',
+    en: 'Your logo or a small picture — it lands on the photo, then put it where you want.',
+    rm: 'Apna logo ya koi chhoti tasveer — tasveer par aa kar jahan chahen rakh den.',
+  },
   myLogo: { ur: 'میرا لوگو', en: 'My logo', rm: 'Mera logo' },
   addLogo: { ur: 'لوگو', en: 'Logo', rm: 'Logo' },
   roundLogo: { ur: 'گول لوگو', en: 'Round logo', rm: 'Gol logo' },
