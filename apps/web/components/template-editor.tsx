@@ -854,6 +854,23 @@ export function TemplateEditor({
    * tezi se chale to wo element se bahar nikal jati hai, aur capture ke baghair drag
    * wahin chhoot jata hai. Phone par ye har dafa hota hai.
    */
+  /**
+   * Ungli kis "inline" jagah par hai — feesad mein, us kinare se jahan se parhna shuru.
+   *
+   * 🔴 Ye zaban ke saath BADALTA hai, aur yehi wo cheez thi jo tooti hui thi.
+   *
+   * Cheez ki jagah CSS mein `inset-inline-start` se lagti hai, aur wo element ki apni
+   * direction se naapta hai: Urdu par (rtl) DAAYEN kinare se, angrezi par (ltr) BAAYEN
+   * se. Yahan hisaab hamesha daayen se ho raha tha. Nateeja: angrezi wale pack par
+   * cheez ungli ke ULTI simt chalti thi — reseller daayen khinchti aur cheez baayen
+   * jati. Ye masla zaban ka switch daalte hi paida hua, aur wohi is ka lazmi hissa hai.
+   */
+  function inlineAt(box: DOMRect, clientX: number): number {
+    return packLang === 'en'
+      ? ((clientX - box.left) / box.width) * 100
+      : ((box.right - clientX) / box.width) * 100
+  }
+
   function startDrag(key: Sel, mode: HandleId, event: React.PointerEvent) {
     event.preventDefault()
     event.stopPropagation()
@@ -885,7 +902,7 @@ export function TemplateEditor({
     const grab =
       mode === 'move' && box && style
         ? {
-            grabInline: ((box.right - event.clientX) / box.width) * 100 - style.x,
+            grabInline: inlineAt(box, event.clientX) - style.x,
             grabBlock: ((event.clientY - box.top) / box.height) * 100 - style.y,
           }
         : { grabInline: 0, grabBlock: 0 }
@@ -901,7 +918,7 @@ export function TemplateEditor({
     if (!dragged) return
 
     // Ungli/mouse kahan hai — mantiqi paimane mein (inline = us kinare se jahan se parhna shuru)
-    const pointerInline = ((box.right - event.clientX) / box.width) * 100
+    const pointerInline = inlineAt(box, event.clientX)
     const pointerBlock = ((event.clientY - box.top) / box.height) * 100
 
     if (drag.mode !== 'move') {
@@ -1497,7 +1514,7 @@ export function TemplateEditor({
             type="button"
             onClick={() => setZoomMultiplier(1)}
             title={t('zoomFit')}
-            className="numeric w-12 rounded-lg py-1 text-center text-[0.75rem] text-white/60 transition hover:bg-white/10 hover:text-white"
+            className="numeric min-h-tap w-12 rounded-lg py-1 text-center text-[0.75rem] text-white/60 transition hover:bg-white/10 hover:text-white lg:min-h-0"
             dir="ltr"
           >
             {Math.round(zoomMultiplier * 100)}%
@@ -1524,17 +1541,17 @@ export function TemplateEditor({
           onChange={(e) => setName(e.target.value)}
           maxLength={40}
           placeholder={t('myTemplate')}
-          className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/10 px-3 py-1.5 text-[0.88rem] text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none"
+          className="min-h-tap min-w-0 flex-1 rounded-xl border border-white/15 bg-white/10 px-3 py-1.5 text-[0.88rem] text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none lg:min-h-0"
         />
 
-        <button type="button" onClick={save} disabled={busy} className="btn-primary !py-1.5">
+        <button type="button" onClick={save} disabled={busy} className="btn-primary min-h-tap !py-1.5 lg:min-h-0">
           {saved ? t('savedTick') : t('saveTemplate')}
         </button>
         <button
           type="button"
           onClick={makeDefault}
           disabled={busy || !selectedId || isDefault}
-          className="shrink-0 rounded-pill border border-white/25 px-3 py-1.5 text-[0.82rem] font-semibold text-white transition hover:bg-white/10 disabled:opacity-40"
+          className="min-h-tap shrink-0 rounded-pill border border-white/25 px-3 py-1.5 text-[0.82rem] font-semibold text-white transition hover:bg-white/10 disabled:opacity-40 lg:min-h-0"
         >
           {isDefault ? `★ ${t('isDefault')}` : t('makeDefault')}
         </button>
@@ -1572,7 +1589,19 @@ export function TemplateEditor({
         wohi `min-h-0` har column ko sifar oonchai par gira deta tha — isi wajah se
         canvas ka naap 0×0 nikla tha.
       */}
-      <div className="grid gap-2 lg:min-h-0 lg:flex-1 lg:grid-cols-[auto_minmax(0,260px)_minmax(0,1fr)]">
+      {/*
+        🔴 `grid-cols-1` — aur ye ek line poore phone ka masla thi.
+
+        Bina is ke mobile par grid ka ek hi column banta hai aur wo `auto` hota hai,
+        yani apne MAX-CONTENT tak phail jata hai. Panel ke andar "کہاں سے شروع کریں" aur
+        namoonon ka grid mil kar 626px maangte the, to column 626 ka ban jata — aur us
+        ke saath rail bhi. Nateeja: 360px ke phone par safha 660px chaura, aur POORA app
+        side mein khisakta hua. App ke toote hone ka sab se pehla ehsaas yehi hota hai.
+
+        Tailwind ka `grid-cols-1` `minmax(0, 1fr)` deta hai — yani column dabbe se bara
+        ho hi nahi sakta, aur andar ki cheezein khud simat jati hain.
+      */}
+      <div className="grid grid-cols-1 gap-2 lg:min-h-0 lg:flex-1 lg:grid-cols-[auto_minmax(0,260px)_minmax(0,1fr)]">
         {/*
           ---------------- Baayen icon rail ----------------
 
@@ -1597,12 +1626,23 @@ export function TemplateEditor({
                 aria-pressed={tab === entry.id}
                 className={
                   tab === entry.id
-                    ? 'flex min-h-tap flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bg-accent-50 px-2 py-2 text-accent-700 lg:flex-none lg:w-14'
-                    : 'tap flex min-h-tap flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-2 text-ink-soft lg:flex-none lg:w-14'
+                    ? 'flex min-h-tap min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bg-accent-50 px-1 py-2 text-accent-700 lg:w-14 lg:flex-none lg:px-2'
+                    : 'tap flex min-h-tap min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-2 text-ink-soft lg:w-14 lg:flex-none lg:px-2'
                 }
               >
-                <entry.Icon className="h-[1.15rem] w-[1.15rem]" />
-                <span className="text-[0.62rem] font-semibold leading-tight">{t(entry.label)}</span>
+                <entry.Icon className="h-[1.15rem] w-[1.15rem] shrink-0" />
+                {/*
+                  🔴 `min-w-0` + `truncate` — dono lazmi.
+
+                  Flex ka bachcha default par apni min-content se chhota nahi hota, yani
+                  ye chhe button apne NAAM se tang nahi ho sakte the. Phone par us ka
+                  natija ye tha ke rail 660px chaurī ho jati (360px ki screen par!) aur
+                  POORA safha side mein khisakta tha — jo app ko toota hua dikhata hai.
+                  Naam phir bhi rehta hai; bas jagah kam pare to woh kat jata hai.
+                */}
+                <span className="w-full truncate text-center text-[0.62rem] font-semibold leading-tight">
+                  {t(entry.label)}
+                </span>
               </button>
             ))}
           </div>
@@ -1673,7 +1713,7 @@ export function TemplateEditor({
                     type="button"
                     onClick={() => duplicate(template)}
                     disabled={busy}
-                    className="text-[0.7rem] text-ink-faint underline"
+                    className="tap min-h-tap items-center px-2 text-[0.72rem] text-ink-soft underline"
                   >
                     {t('duplicateTemplate')}
                   </button>
@@ -1681,7 +1721,7 @@ export function TemplateEditor({
                     type="button"
                     onClick={() => remove(template.id)}
                     disabled={busy}
-                    className="text-[0.7rem] text-ink-faint underline"
+                    className="tap min-h-tap items-center px-2 text-[0.72rem] text-ink-soft underline"
                   >
                     {t('deleteTemplate')}
                   </button>
@@ -1917,7 +1957,7 @@ export function TemplateEditor({
                 aria-pressed={packLang === key}
                 className={
                   packLang === key
-                    ? 'shrink-0 whitespace-nowrap rounded-pill bg-accent-50 px-3 py-1 text-[0.72rem] font-semibold text-accent-700 ring-1 ring-accent-600'
+                    ? 'inline-flex min-h-tap shrink-0 items-center whitespace-nowrap rounded-pill bg-accent-50 px-3 py-1 text-[0.72rem] font-semibold text-accent-700 ring-1 ring-accent-600 lg:min-h-0'
                     : 'tap shrink-0 whitespace-nowrap rounded-pill px-3 py-1 text-[0.72rem] font-semibold text-ink-soft'
                 }
               >
@@ -1935,7 +1975,7 @@ export function TemplateEditor({
                 aria-pressed={formatKey === key}
                 className={
                   formatKey === key
-                    ? 'shrink-0 whitespace-nowrap rounded-pill bg-accent-50 px-3 py-1 text-[0.72rem] font-semibold text-accent-700 ring-1 ring-accent-600'
+                    ? 'inline-flex min-h-tap shrink-0 items-center whitespace-nowrap rounded-pill bg-accent-50 px-3 py-1 text-[0.72rem] font-semibold text-accent-700 ring-1 ring-accent-600 lg:min-h-0'
                     : 'tap shrink-0 whitespace-nowrap rounded-pill px-3 py-1 text-[0.72rem] font-semibold text-ink-soft'
                 }
               >
@@ -3290,8 +3330,8 @@ function IconButton({
       title={label}
       className={
         dark
-          ? 'flex h-9 min-w-9 items-center justify-center rounded-xl px-2 text-[0.85rem] font-semibold text-white/80 transition hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent'
-          : 'tap flex h-9 min-w-9 items-center justify-center rounded-xl bg-paper-sunken px-2 text-[0.85rem] font-semibold disabled:opacity-35'
+          ? 'flex h-11 min-w-11 items-center justify-center rounded-xl px-2 text-[0.85rem] font-semibold text-white/80 transition hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent lg:h-9 lg:min-w-9'
+          : 'tap flex h-11 min-w-11 items-center justify-center rounded-xl bg-paper-sunken px-2 text-[0.85rem] font-semibold disabled:opacity-35 lg:h-9 lg:min-w-9'
       }
     >
       {children}
