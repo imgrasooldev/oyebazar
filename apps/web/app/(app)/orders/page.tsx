@@ -4,6 +4,7 @@ import { formatPkr } from '@oyebazar/shared'
 import { OrderConfirmButton } from '@/components/order-confirm-button'
 import { PinIcon } from '@/components/icons'
 import { toResellerOrderDTO } from '@/lib/api/mappers'
+import { OrderThread, type ThreadMessage } from '@/components/order-thread'
 import { requireReseller } from '@/lib/api/session'
 import { container } from '@/lib/container'
 import { orderStatusStyle } from '@/lib/order-status-style'
@@ -28,6 +29,29 @@ export default async function OrdersPage() {
 
   const page = await container.orders.listForReseller(reseller.id, { limit: 30 })
   const orders = page.items.map(toResellerOrderDTO)
+
+  /*
+   * Har order ki guftagu — ek hi dafa, sab ke liye.
+   *
+   * 🔴 Har card ko apni fetch karne dena N+1 hai, aur is safhe par 20 order hote hain.
+   * Ek saath laana ek query ka farq hai; alag alag laane par bees.
+   */
+  const threads = new Map(
+    await Promise.all(
+      page.items.map(
+        async (order) =>
+          [
+            order.orderNo,
+            (await container.repositories.orderMessages.listForOrder(order.id)).map((m) => ({
+              id: m.id,
+              kind: m.kind,
+              authorType: m.authorType,
+              body: m.body,
+            })),
+          ] as const,
+      ),
+    ),
+  )
 
   const pending = orders.filter((order) => order.status === 'PENDING_CONFIRM')
   const rest = orders.filter((order) => order.status !== 'PENDING_CONFIRM')
@@ -70,7 +94,7 @@ export default async function OrdersPage() {
           <ul className="grid gap-4 lg:grid-cols-2">
             {pending.map((order) => (
               <li key={order.id} className="card space-y-4 p-5 ring-1 ring-brand-200">
-                <OrderRow order={order} locale={locale} />
+                <OrderRow order={order} locale={locale} messages={threads.get(order.orderNo) ?? []} />
                 <OrderConfirmButton orderNo={order.orderNo} locale={locale} />
               </li>
             ))}
@@ -92,7 +116,7 @@ export default async function OrdersPage() {
           <ul className="grid gap-4 lg:grid-cols-2">
             {rest.map((order) => (
               <li key={order.id} className="card p-5">
-                <OrderRow order={order} locale={locale} />
+                <OrderRow order={order} locale={locale} messages={threads.get(order.orderNo) ?? []} />
               </li>
             ))}
           </ul>
@@ -105,9 +129,11 @@ export default async function OrdersPage() {
 function OrderRow({
   order,
   locale,
+  messages,
 }: {
   order: ReturnType<typeof toResellerOrderDTO>
   locale: Locale
+  messages: ThreadMessage[]
 }) {
   const t = translator(locale)
   const label = orderStatusLabel(locale, order.status)
@@ -154,6 +180,32 @@ function OrderRow({
           </span>
         </span>
       </div>
+
+      {/*
+        Order ke gird ki baat — aur "masla hua".
+
+        🔴 Ye order ke SAATH hai, kisi alag safhe par nahi. Alag safha banane ka matlab
+        hota ke reseller usay tab dhoondhti jab masla ho chuka hota — aur us waqt tak wo
+        WhatsApp par baat kar chuki hoti aur yahan kuch likhne ka koi faida na rehta.
+      */}
+      <OrderThread
+        endpoint={`/api/v1/orders/${order.orderNo}/messages`}
+        initial={messages}
+        canRaiseIssue
+        labels={{
+          title: t('threadTitle'),
+          hint: t('threadHint'),
+          placeholder: t('threadPlaceholder'),
+          send: t('threadSend'),
+          raiseIssue: t('threadRaiseIssue'),
+          issueBadge: t('threadIssueBadge'),
+          empty: t('threadEmpty'),
+          failed: t('threadFailed'),
+          reseller: t('threadYou'),
+          supplier: t('threadShop'),
+          ops: t('threadOps'),
+        }}
+      />
     </div>
   )
 }

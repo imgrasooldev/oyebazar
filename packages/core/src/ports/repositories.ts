@@ -293,6 +293,41 @@ export interface SupplierDemandView {
   readonly delivered: number
 }
 
+/**
+ * Order ke gird ki baat — aur "masla hua" bhi isi mein.
+ *
+ * 🔴 Ye WhatsApp ki jagah nahi le raha, aur ye baat design mein saaf honi chahiye.
+ * WhatsApp hamesha tez rahega aur log wahin baat karenge. Ye us cheez ke liye hai jo
+ * BAAD mein kaam aati hai: jab reseller aur dukan ki baat alag ho aur kisi ko faisla
+ * karna ho, to platform ke paas kuch to ho. Abhi us waqt kuch bhi nahi hota.
+ */
+export interface OrderMessageView {
+  readonly id: string
+  readonly kind: 'NOTE' | 'ISSUE'
+  readonly authorType: 'reseller' | 'supplier' | 'ops'
+  readonly body: string
+  readonly photoUrl: string | null
+  readonly resolvedAt: Date | null
+  readonly createdAt: Date
+}
+
+export interface OrderMessageRepository {
+  /** Ek order ki poori guftagu — purani pehle, jaisa parhi jati hai. */
+  listForOrder(orderId: string): Promise<OrderMessageView[]>
+  add(input: {
+    orderId: string
+    kind: 'NOTE' | 'ISSUE'
+    authorType: 'reseller' | 'supplier' | 'ops'
+    authorId?: string | undefined
+    body: string
+    photoUrl?: string | undefined
+  }): Promise<OrderMessageView>
+  /** Masla hal — sirf `ISSUE` par maani rakhta hai. */
+  resolve(id: string, at: Date): Promise<void>
+  /** Ops ki list: khule hue masle. */
+  openIssues(limit: number): Promise<(OrderMessageView & { orderId: string; orderNo: string })[]>
+}
+
 export interface SupplierDemandRepository {
   demand(supplierId: string, since: Date): Promise<SupplierDemandView>
 }

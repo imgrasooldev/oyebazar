@@ -20,6 +20,7 @@ import { PrismaResellerPricingRepository } from './repositories/reseller-pricing
 import { PrismaStatusPackRepository } from './repositories/status-pack.repository'
 import { PrismaResellerTemplateRepository } from './repositories/reseller-template.repository'
 import { PrismaSupplierDemandRepository } from './repositories/supplier-demand.repository'
+import { PrismaOrderMessageRepository } from './repositories/order-message.repository'
 import { PrismaSessionRepository } from './repositories/session.repository'
 import { PrismaOtpChallengeRepository } from './repositories/otp.repository'
 import { PrismaCategoryRepository } from './repositories/category.repository'
@@ -49,6 +50,7 @@ export interface Repositories {
   statusPacks: PrismaStatusPackRepository
   resellerTemplates: PrismaResellerTemplateRepository
   supplierDemand: PrismaSupplierDemandRepository
+  orderMessages: PrismaOrderMessageRepository
   sessions: PrismaSessionRepository
   otpChallenges: PrismaOtpChallengeRepository
   categories: PrismaCategoryRepository
@@ -78,6 +80,7 @@ export function createRepositories(client: PrismaClient = prisma): Repositories 
     statusPacks: new PrismaStatusPackRepository(client),
     resellerTemplates: new PrismaResellerTemplateRepository(client),
     supplierDemand: new PrismaSupplierDemandRepository(client),
+    orderMessages: new PrismaOrderMessageRepository(client),
     sessions: new PrismaSessionRepository(client),
     otpChallenges: new PrismaOtpChallengeRepository(client),
     categories: new PrismaCategoryRepository(client),

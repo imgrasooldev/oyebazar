@@ -25,7 +25,18 @@ export default async function AdminOrdersPage() {
   const { user } = await requireOpsUser()
 
   // Admin ki list INTERNAL view hai — is mein hamari fee bhi dikhti hai
-  const page = await container.repositories.orders.listForOps({ limit: 60 })
+  /*
+   * Khule hue masle sab se OOPAR — order ki list se pehle.
+   *
+   * 🔴 Shikayat ka poora faida isi par khara hai ke wo kisi ki NAZAR mein aaye. Agar wo
+   * order ki list mein kahin dabi rahe to reseller ne likh to diya magar kuch hua nahi —
+   * aur agli dafa wo likhegi hi nahi, wapas WhatsApp par chali jayegi. Us soorat mein ye
+   * poora nizam banane ka koi maqsad nahi bachta.
+   */
+  const [page, issues] = await Promise.all([
+    container.repositories.orders.listForOps({ limit: 60 }),
+    container.repositories.orderMessages.openIssues(20),
+  ])
   const orders = page.items
 
   const toSend = orders.filter((order) => order.status === 'CONFIRMED')
@@ -39,6 +50,26 @@ export default async function AdminOrdersPage() {
 
   return (
     <div className="space-y-8">
+      {issues.length > 0 && (
+        <section className="mb-6 rounded-card bg-red-50 p-4 ring-1 ring-red-200">
+          <h2 className="text-[0.95rem] font-bold text-red-800">
+            {issues.length} khule hue masle
+          </h2>
+          <ul className="mt-2 space-y-2">
+            {issues.map((issue) => (
+              <li key={issue.id} className="rounded-2xl bg-white px-3 py-2">
+                <p dir="ltr" className="numeric text-[0.72rem] font-semibold text-ink-faint">
+                  {issue.orderNo}
+                </p>
+                <p className="mt-0.5 whitespace-pre-line text-[0.86rem] leading-relaxed">
+                  {issue.body}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <div>
         <h1 className="text-[1.4rem] font-bold tracking-tight">Orders</h1>
         <p className="mt-1 text-sm text-ink-soft">

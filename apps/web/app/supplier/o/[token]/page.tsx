@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { BRAND, formatPkr } from '@oyebazar/shared'
 import { SupplierOrderActions } from '@/components/supplier-order-actions'
+import { OrderThread } from '@/components/order-thread'
 import { SupplierStatusButton } from '@/components/supplier-status-button'
 import { PinIcon } from '@/components/icons'
 import { container } from '@/lib/container'
@@ -36,6 +37,23 @@ export default async function SupplierOrderPage({
   const locale = await getLocale()
 
   const order = await container.orders.getForSupplierToken(token).catch(() => null)
+
+  /*
+   * Guftagu — dukan ke liye bhi wohi jo reseller ko dikhti hai.
+   *
+   * 🔴 Login ke baghair: Bolton Market ka thok wala naya account nahi banata magar
+   * WhatsApp ka link zaroor kholta hai (isi liye accept/reject bhi isi token se hota
+   * hai). Jawab dene ke liye login maangne ka matlab hai ke wo jawab dega hi nahi, aur
+   * guftagu ek tarfa reh jayegi — jo us se bhi buri soorat hai ke guftagu hoti hi na.
+   */
+  const messages = order
+    ? (await container.repositories.orderMessages.listForOrder(order.id)).map((m) => ({
+        id: m.id,
+        kind: m.kind,
+        authorType: m.authorType,
+        body: m.body,
+      }))
+    : []
   if (!order) notFound()
 
   const t = translator(locale)
@@ -131,6 +149,26 @@ export default async function SupplierOrderPage({
       {order.status === 'SENT_TO_SUPPLIER' && (
         <div className="mt-5">
           <SupplierOrderActions endpoint={`/api/v1/supplier/link/${token}`} />
+
+          {/* Dukan masla SHURU nahi karti, sirf jawab deti hai — dekhen messages route */}
+          <OrderThread
+            endpoint={`/api/v1/supplier/link/${token}/messages`}
+            initial={messages}
+            canRaiseIssue={false}
+            labels={{
+              title: t('threadTitle'),
+              hint: t('threadHint'),
+              placeholder: t('threadPlaceholder'),
+              send: t('threadSend'),
+              raiseIssue: t('threadRaiseIssue'),
+              issueBadge: t('threadIssueBadge'),
+              empty: t('threadEmpty'),
+              failed: t('threadFailed'),
+              reseller: t('threadReseller'),
+              supplier: t('threadYou'),
+              ops: t('threadOps'),
+            }}
+          />
         </div>
       )}
 

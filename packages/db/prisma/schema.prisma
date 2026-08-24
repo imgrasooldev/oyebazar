@@ -508,6 +508,7 @@ model Order {
   supplier  Supplier     @relation(fields: [supplierId], references: [id])
   items     OrderItem[]
   events    OrderEvent[]
+  messages  OrderMessage[]
   feeLedger FeeLedger?
   payout    ResellerPayout?
 
@@ -563,6 +564,55 @@ model OrderItem {
 }
 
 /// Immutable audit log — order ki har harkat. Update kabhi nahi, sirf insert.
+/**
+ * Order ke gird ki baat — aur us mein "masla hua" bhi.
+ *
+ * 🔴 Ye EK nizam hai, do nahi — aur ye faisla poore feature ki jaan hai.
+ *
+ * Pehli nazar mein "baat karna" aur "shikayat karna" do alag cheezein lagti hain. Hain
+ * nahi: shikayat bhi order ke saath juri hui ek baat hi hai, bas us par nishan laga hota
+ * hai ke ye masla hai. Do alag nizam banane ka matlab hota ke ek hi guftagu do jagah
+ * bant jaye — aur jab ops ko faisla karna ho to usay dono jagah parhni parti.
+ *
+ * `kind` sirf ye batata hai ke ye baat kis darje ki hai. `ISSUE` par order ka safha
+ * usay numaya karta hai aur ops ki list mein aa jata hai; `NOTE` aam baat hai.
+ *
+ * 🔴 Ye WhatsApp ki jagah nahi le raha — wo hamesha tez rahega. Ye us cheez ke liye hai
+ * jo BAAD mein kaam aati hai: jab dono ki baat alag ho aur koi faisla karna ho, to
+ * platform ke paas kuch to ho. Abhi us waqt kuch bhi nahi hota.
+ */
+model OrderMessage {
+  id      String           @id @default(cuid())
+  orderId String
+  kind    OrderMessageKind @default(NOTE)
+  /// reseller | supplier | ops
+  authorType String
+  /// Kis ne likha — `ops` par OpsUser ki id, warna reseller/supplier ki.
+  authorId   String?
+  body       String
+  /**
+   * Maal ki tasveer — "aisa aaya hai" wali baat lafzon se nahi hoti.
+   *
+   * 🔴 URL hamari apni storage ka hona lazmi hai; jaanch server par hoti hai. Bahar ka
+   * link lene ka matlab hota ke koi hamare safhe par kisi bhi pate ki tasveer chipka de.
+   */
+  photoUrl   String?
+  /// Masla hal ho gaya — sirf `ISSUE` par maani rakhta hai.
+  resolvedAt DateTime?
+  createdAt  DateTime         @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+  /// Ops ki list: khule hue masle, naye pehle
+  @@index([kind, resolvedAt, createdAt])
+}
+
+enum OrderMessageKind {
+  NOTE
+  ISSUE
+}
+
 model OrderEvent {
   id         String       @id @default(cuid())
   orderId    String
