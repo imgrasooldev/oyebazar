@@ -47,6 +47,20 @@ export interface ResellerProductView {
   readonly media: readonly ProductMediaView[]
   readonly variants: readonly ProductVariantView[]
   readonly listedAt: Date
+  /**
+   * Kis dukan ka maal — shanakht, rabta NAHI.
+   *
+   * 🔴 Yahan `phone`/`whatsappPublic` jaan boojh kar nahi hai. Dekhen
+   * `RESELLER_PRODUCT_SELECT` ka note: portal ke andar dukan CHUNI ja sakti hai, us se
+   * seedha rabta nahi kiya ja sakta.
+   */
+  readonly supplier: {
+    readonly id: string
+    readonly slug: string
+    readonly businessName: string
+    readonly city: string
+    readonly marketName: string | null
+  }
 }
 
 /**

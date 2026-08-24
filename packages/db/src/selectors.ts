@@ -54,7 +54,28 @@ export const RESELLER_PRODUCT_SELECT = {
     orderBy: { sortOrder: 'asc' },
   },
   createdAt: true,
-  // supplierPrice: NAHI. supplierId: NAHI. supplier: NAHI.
+  /*
+   * 🔴 Dukan ki SHANAKHT hai, us se RABTA nahi — aur ye farq poore feature ki jaan hai.
+   *
+   * Pehle yahan likha tha "supplier: NAHI", aur wajah durust thi: agar reseller ko pata
+   * chal jaye ke maal kis dukan ka hai to wo seedha wahan ja sakti hai aur fee dene ki
+   * wajah khatam ho jati hai. Marketplace isi tarah bypass hote hain.
+   *
+   * Magar wo hifazat asal mein thi hi nahi: dukan ka naam, sheher aur us ka PUBLIC
+   * WhatsApp number `/bazaar` par bina login ke pehle se mojood hai. Yani jo cheez
+   * chhupayi ja rahi thi wo doosre tab mein khuli hui thi — aur us chhupane ki qeemat
+   * reseller de rahi thi, jo apna maal chunte waqt ye nahi jaan sakti thi ke wo kis se
+   * le rahi hai.
+   *
+   * Is liye ab shanakht yahan hai — naam, sheher, mandi — magar `phone` aur
+   * `whatsappPublic` NAHI. Portal ke andar dukan CHUNI ja sakti hai, us se seedha rabta
+   * nahi kiya ja sakta. Wo raasta bazaar par pehle se khula hai; usay portal ke andar
+   * dohrana bypass ko aasan banana hoga, faida koi nahi.
+   */
+  supplier: {
+    select: { id: true, slug: true, businessName: true, city: true, marketName: true },
+  },
+  // supplierPrice: NAHI. supplier.phone / whatsappPublic: NAHI.
 } satisfies Prisma.ProductSelect
 
 /**

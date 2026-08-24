@@ -533,6 +533,17 @@ const DICTIONARY = {
     en: 'On the way or with the wholesaler',
   },
   ordersDelivered: { ur: 'پہنچ گئے', rm: 'Pohanch gaye', en: 'Delivered' },
+  wholesalersNav: { ur: 'دکانیں', en: 'Wholesalers', rm: 'Dukanein' },
+  wholesalersTitle: { ur: 'دکانیں', en: 'Wholesalers', rm: 'Dukanein' },
+  wholesalersBody: {
+    ur: 'دکان چنیں اور اس کا مال اپنے ریٹ کے ساتھ دیکھیں۔',
+    en: 'Pick a wholesaler and see their goods with your own price.',
+    rm: 'Dukan chunen aur us ka maal apne rate ke saath dekhen.',
+  },
+  wholesalersSearchHint: { ur: 'دکان یا شہر کا نام', en: 'Shop or city name', rm: 'Dukan ya sheher ka naam' },
+  wholesalersEmpty: { ur: 'کوئی دکان نہیں ملی۔', en: 'No wholesalers found.', rm: 'Koi dukan nahi mili.' },
+  wholesalerGoods: { ur: 'اس دکان کا مال', en: 'Goods from this shop', rm: 'Is dukan ka maal' },
+  wholesalerNoGoods: { ur: 'اس دکان کا کوئی مال ابھی دستیاب نہیں۔', en: 'No goods from this shop right now.', rm: 'Is dukan ka koi maal abhi dastyab nahi.' },
   reachTitle: { ur: 'آپ کا مال کہاں تک پہنچا', en: 'How far your goods reached', rm: 'Aap ka maal kahan tak pohancha' },
   reachHint: {
     ur: 'پچھلے 30 دن — آرڈر آنے سے پہلے مال ریسیلرز تک پہنچتا ہے۔',

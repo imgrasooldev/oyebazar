@@ -43,6 +43,8 @@ export type CatalogueSort = 'newest' | 'priceLow' | 'priceHigh' | 'profitHigh'
 
 export interface CatalogueFilters extends CursorQuery {
   readonly categorySlug?: string | undefined
+  /** Sirf ek dukan ka maal — reseller ke portal mein dukan chunne ke liye. */
+  readonly supplierSlug?: string | undefined
   readonly search?: string | undefined
   readonly minPrice?: Pkr | undefined
   readonly maxPrice?: Pkr | undefined

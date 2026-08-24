@@ -43,6 +43,8 @@ export default async function CataloguePage({
     inStockOnly?: string
     sort?: string
     view?: string
+    /** Ek dukan ka maal — `/wholesalers/<slug>` se aata hai. */
+    supplier?: string
   }>
 }) {
   const { reseller } = await requireReseller()
@@ -53,6 +55,14 @@ export default async function CataloguePage({
 
   const search = query.q?.trim() || undefined
   const category = query.category || undefined
+  /*
+   * Dukan ki chhanni — `/wholesalers/<slug>` se yahan aati hai.
+   *
+   * Alag safha bana kar wahan apna grid rakhne ka matlab hota ke maal ka card teesri
+   * dafa likha jaye. Yahan bhejne se reseller ko us ki saari chhanni aur tarteeb bhi
+   * mil jati hai, aur hisaab ek hi jagah rehta hai.
+   */
+  const supplierSlug = query.supplier || undefined
 
   /*
    * Rate ki hadd URL se aati hai. Ghalat ya khali qadar ko chup chaap girate hain —
@@ -85,6 +95,7 @@ export default async function CataloguePage({
       limit: 48,
       ...(search ? { search } : {}),
       ...(category ? { categorySlug: category } : {}),
+      ...(supplierSlug ? { supplierSlug } : {}),
       ...(minPrice !== undefined ? { minPrice: pkr(minPrice) } : {}),
       // Ulti hadd (min > max) par sirf max girate hain — us se list khali nahi hoti
       ...(maxPrice !== undefined && (minPrice === undefined || maxPrice >= minPrice)

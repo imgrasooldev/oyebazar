@@ -347,7 +347,11 @@ export class PrismaProductRepository implements ProductRepository {
   private async resellerWhere(filters: CatalogueFilters): Promise<Prisma.ProductWhereInput> {
     return {
       status: filters.inStockOnly ? 'LIVE' : { in: ['LIVE', 'OUT_OF_STOCK'] },
-      supplier: { status: 'VERIFIED' },
+      // Dukan se chhanna — aur `status: VERIFIED` yahan bhi qaim rehta hai
+      supplier: {
+        status: 'VERIFIED',
+        ...(filters.supplierSlug ? { slug: filters.supplierSlug } : {}),
+      },
       ...(filters.categorySlug
         ? { category: await categoryFilter(this.db, filters.categorySlug) }
         : {}),
@@ -401,6 +405,13 @@ type ResellerRow = {
   titleUr: string
   titleEn: string
   descriptionUr: string | null
+  supplier: {
+    id: string
+    slug: string
+    businessName: string
+    city: string
+    marketName: string | null
+  }
   bajiPrice: number
   suggestedRetail: number
   status: string
@@ -457,6 +468,8 @@ function toResellerView(row: ResellerRow): ResellerProductView {
     titleUr: row.titleUr,
     titleEn: row.titleEn,
     descriptionUr: row.descriptionUr,
+    // Shanakht, rabta nahi — dekhen RESELLER_PRODUCT_SELECT ka note
+    supplier: row.supplier,
     category: row.category,
     coverImageUrl: coverUrl(row.media),
     bajiPrice: pkr(row.bajiPrice),

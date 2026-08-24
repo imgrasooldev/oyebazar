@@ -41,6 +41,14 @@ export const dynamic = 'force-dynamic'
 const NAV = [
   { href: '/dashboard', key: 'dashboard', Icon: SparkIcon },
   { href: '/catalogue', key: 'catalogue', Icon: GridIcon },
+  /*
+   * Dukanein — catalogue ke theek baad.
+   *
+   * 🔴 Ye safar pehle sirf `/bazaar` par tha, yani us banday ke liye jo login kiye
+   * baghair aata hai. Reseller ke portal mein dukan ka zikr tak nahi tha — jabke poora
+   * wada yehi hai ke wo dukan chun sakti hai.
+   */
+  { href: '/wholesalers', key: 'wholesalersNav', Icon: StoreIcon },
   { href: '/templates', key: 'templatesNav', Icon: TemplateIcon },
   { href: '/orders', key: 'orders', Icon: ListIcon },
   { href: '/money', key: 'moneyNav', Icon: MoneyIcon },
