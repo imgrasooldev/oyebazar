@@ -45,8 +45,16 @@ export function LanguageToggle({ locale }: { locale: Locale }) {
             disabled={pending}
             onClick={() => choose(option)}
             aria-current={active ? 'true' : undefined}
-            // min-h-tap: ungli se lagne wala size. 23px ka button sasta phone par miss hota hai.
-            className={`inline-flex min-h-tap items-center rounded-pill px-2.5 text-xs font-semibold transition disabled:opacity-60 ${
+            /*
+              min-h-tap: ungli se lagne wala size. 23px ka button sasta phone par miss
+              hota hai.
+
+              🔴 Magar `lg:` par ye hadd uthh jati hai. 44px ka sabab UNGLI hai; bari
+              screen par mouse chal raha hota hai jo pixel par lagta hai. Wahan yehi hadd
+              patti ko be-wajah mota kar deti thi — teen zubanein 169×48px kha jati thin,
+              jabke kaam is se kafi kam mein ho jata hai.
+            */
+            className={`inline-flex min-h-tap items-center rounded-pill px-2.5 text-xs font-semibold transition disabled:opacity-60 lg:min-h-0 lg:px-2 lg:py-1 lg:text-[0.72rem] ${
               active ? 'bg-white text-coal-900' : 'text-white/70 hover:bg-white/10 hover:text-white'
             }`}
           >

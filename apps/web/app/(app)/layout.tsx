@@ -69,12 +69,25 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <RouteProgress />
 
       <header className="sticky top-0 z-30 border-b border-black/[0.05] bg-paper/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-shell items-center justify-between gap-3 px-5 py-3 lg:px-8">
-          <Link href="/dashboard" className="flex min-h-tap flex-col justify-center leading-none">
-            <span className="font-nastaliq text-[1.25rem] font-bold text-brand-700">
+        <div className="mx-auto flex max-w-shell items-center justify-between gap-3 px-4 py-2 lg:px-6">
+          {/*
+            Naam aur "kis ka portal" — EK qatar mein, do mein nahi.
+
+            Do qatarein header ko 78px lamba kar rahi thin. Wo lambai har safhe se katti
+            hai (header chipka hua hai), aur badle mein sirf ek lafz dikhati hai jo banda
+            pehli dafa ke baad kabhi nahi parhta.
+          */}
+          <Link
+            href="/dashboard"
+            className="flex min-h-tap items-center gap-2 leading-none lg:min-h-0"
+          >
+            <span className="font-nastaliq text-[1.2rem] font-bold text-brand-700">
               {locale === 'ur' ? BRAND.nameUr : BRAND.name}
             </span>
-            <span className="mt-1 text-[0.7rem] text-ink-faint">{t('resellerPortal')}</span>
+            <span aria-hidden="true" className="hidden h-3.5 w-px bg-line sm:block" />
+            <span className="hidden text-[0.72rem] text-ink-faint sm:block">
+              {t('resellerPortal')}
+            </span>
           </Link>
 
           <div className="flex items-center gap-2">
@@ -85,7 +98,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             */}
             <Link
               href="/dashboard"
-              className="flex min-h-tap items-center gap-2 rounded-pill px-1.5 transition hover:bg-paper-sunken"
+              className="flex min-h-tap items-center gap-2 rounded-pill px-1.5 transition hover:bg-paper-sunken lg:min-h-0 lg:py-1"
               title={actor.reseller.name}
             >
               <Avatar name={actor.reseller.name} size="sm" />
@@ -101,7 +114,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-shell gap-8 px-5 py-6 lg:px-8">
+      {/*
+        Kinare aur beech ka faasla — pehle 32px har taraf tha (gutter + gap-8).
+
+        🔴 Wo jagah maal se cheeni ja rahi thi. 1280 ki screen par patti ke dono taraf
+        aur beech mein 96px sirf khali hawa thi, aur usi wajah se catalogue mein maal ki
+        qatar mein ek khana kam aata tha.
+      */}
+      <div className="mx-auto flex max-w-shell gap-4 px-4 py-5 lg:gap-5 lg:px-6">
         {/* Side nav sirf bari screen par — phone par neeche wali patti kaam karti hai */}
         <aside className="hidden shrink-0 lg:block">
           <PortalSidebar
@@ -121,22 +141,27 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {/*
         Neeche ki patti — mobile app jaisi. Har kaam ek tap.
 
-        🔴 `grid-cols-6` ki ginti NAV ke saath badalni parti hai. Tailwind class ka naam
+        🔴 `grid-cols-7` ki ginti NAV ke saath badalni parti hai. Tailwind class ka naam
         chalte waqt nahi bana sakta (wo build par CSS nikalta hai), is liye ye hath se
         likha hua hai — NAV mein koi cheez daalen ya nikalen to yahan bhi badlen, warna
         patti do qatar mein toot jati hai aur aakhri item screen se bahar chala jata hai.
 
+        🔴 Aur theek yehi hua tha: yahan `6` likha tha jabke NAV mein SAAT khane hain,
+        yani "Bazaar" doosri qatar mein utar chuka tha — aur upar wala `pb-24` sirf EK
+        qatar jitni jagah chhorta hai, is liye wo qatar safhe ke aakhri maal ke upar
+        chark jati thi.
+
         `pb-[env(safe-area-inset-bottom)]`: iPhone ke home bar ke peechay na chhupe.
       */}
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-black/[0.06] bg-paper-raised/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
-        <div className="mx-auto grid max-w-shell grid-cols-6">
+        <div className="mx-auto grid max-w-shell grid-cols-7">
           {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="flex min-h-tap min-w-0 flex-col items-center justify-center gap-1 px-1 py-2.5 text-[0.72rem] font-semibold text-ink-faint transition hover:bg-brand-50 hover:text-brand-700"
+              className="flex min-h-tap min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2 text-[0.62rem] font-semibold text-ink-faint transition hover:bg-brand-50 hover:text-brand-700"
             >
-              <item.Icon className="h-5 w-5 shrink-0" />
+              <item.Icon className="h-[1.15rem] w-[1.15rem] shrink-0" />
               <span className="w-full truncate text-center">{label(item.key)}</span>
             </Link>
           ))}
