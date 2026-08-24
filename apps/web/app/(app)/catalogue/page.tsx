@@ -120,7 +120,17 @@ export default async function CataloguePage({
   return (
     <div className="space-y-10">
       {/* --------------------------------------------------------- آج کا پیک */}
-      {dailyPacks.length > 0 && !search && !category && (
+      {/*
+        🔴 `!supplierSlug` bhi — warna chhanni jhoot bolti hai.
+
+        Ye do rail (aaj ka pack, aur trending) chhanni ke MUTABIQ nahi chalte: wo poore
+        platform ki cheezein dikhate hain. `search` aur `category` par ye pehle se chhup
+        jate the, magar dukan wali chhanni nayi hai aur usay shart mein daalna reh gaya —
+        yani "sirf is dukan ka maal" wale safhe par doosri dukanon ka maal upar khara
+        rehta tha. Test mein yehi pakra: jhooti dukan par bhi paanch cheezein dikh rahi
+        thin.
+      */}
+      {dailyPacks.length > 0 && !search && !category && !supplierSlug && (
         <section className="overflow-hidden rounded-card bg-coal-900 text-white shadow-lift">
           <div className="flex flex-wrap items-center gap-3 px-6 pb-4 pt-6">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-brand-500/20 text-brand-300">
@@ -170,7 +180,7 @@ export default async function CataloguePage({
         Filter ya search ke waqt ye patti nahi aati: us waqt reseller kuch DHOOND rahi
         hai, aur us ke saamne alag maal rakhna sirf raste mein aana hai.
       */}
-      {trending.length > 0 && !search && !category && (
+      {trending.length > 0 && !search && !category && !supplierSlug && (
         <section>
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-[1.15rem] font-bold tracking-tight">{t('trendingNow')}</h2>
