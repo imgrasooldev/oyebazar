@@ -547,6 +547,7 @@ const DICTIONARY = {
   reviewSubmit: { ur: 'رائے بھیجیں', en: 'Send', rm: 'Raye bhejen' },
   reviewThanks: { ur: 'شکریہ — آپ کی رائے محفوظ ہو گئی۔', en: 'Thank you — your view is saved.', rm: 'Shukriya — aap ki raye mehfooz ho gayi.' },
   reviewSkip: { ur: 'بعد میں', en: 'Later', rm: 'Baad mein' },
+  myRatingTitle: { ur: 'ریسیلرز آپ کے بارے میں کیا کہتی ہیں', en: 'What resellers say about you', rm: 'Resellers aap ke bare mein kya kehti hain' },
   reviewCount: { ur: 'ریسیلرز کی رائے', en: 'reseller reviews', rm: 'resellers ki raye' },
   reviewNotEnough: { ur: 'ابھی کافی رائے نہیں', en: 'Not enough reviews yet', rm: 'Abhi kaafi raye nahi' },
   threadTitle: { ur: 'اس آرڈر پر بات', en: 'About this order', rm: 'Is order par baat' },

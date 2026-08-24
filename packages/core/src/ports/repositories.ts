@@ -374,6 +374,24 @@ export interface SupplierReviewRepository {
    */
   pendingFor(resellerId: string, period: string): Promise<PendingReviewView | null>
 
+  /**
+   * Dukan ka apna record — us ke apne portal ke liye.
+   *
+   * 🔴 Kisi ko parakhna aur usay batana hi na — wo saza hai, sudhar ka mauqa nahi. Agar
+   * dukan ko ye nazar na aaye ke reseller kis cheez par shikayat kar rahi hain, to wo
+   * badle ga kya? Sitare us ka karobar to gira denge magar wajah kabhi maloom nahi hogi.
+   *
+   * 🔴 KIS ne likha — ye NAHI jata. Sirf raye aur us ki tareekh.
+   *
+   * Naam dikhane ka matlab hai ke dukan us reseller ka order agli dafa rad kar de, ya us
+   * se baat na kare. Us khatre ka natija saaf hai: reseller sach likhna chhor degi, aur
+   * phir ye poora nizam sirf achhi raye ka ek dabba reh jayega.
+   */
+  forSupplier(supplierId: string): Promise<{
+    rating: SupplierRating
+    comments: readonly { comment: string; createdAt: Date }[]
+  }>
+
   add(input: {
     supplierId: string
     resellerId: string

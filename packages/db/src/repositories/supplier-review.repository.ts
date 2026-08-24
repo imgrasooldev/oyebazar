@@ -116,6 +116,49 @@ export class PrismaSupplierReviewRepository implements SupplierReviewRepository 
     return null
   }
 
+  async forSupplier(supplierId: string): Promise<{
+    rating: SupplierRating
+    comments: readonly { comment: string; createdAt: Date }[]
+  }> {
+    const rows = await this.db.supplierReview.findMany({
+      where: { supplierId },
+      /*
+       * 🔴 `resellerId` yahan SELECT hi nahi hota.
+       *
+       * Ye ehtiyat nahi, hifazat hai: agar dukan ko pata chal jaye ke kis ne buri raye
+       * di, to wo us reseller ka agla order rad kar sakta hai ya us se baat karna chhor
+       * sakta hai. Us khatre ka natija saaf hai — reseller sach likhna chhor degi, aur
+       * phir sitare sirf achhi raye ka ek dabba reh jayenge.
+       */
+      select: { quality: true, communication: true, payoutOnTime: true, comment: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    const rating = supplierRating(
+      rows.map((r) => ({
+        quality: r.quality,
+        communication: r.communication,
+        payoutOnTime: r.payoutOnTime,
+      })),
+    )
+
+    return {
+      rating,
+      /*
+       * Baat sirf tab dikhti hai jab sitare bhi dikhte hain.
+       *
+       * Kam raye par ek hi comment poore record ki jagah le leta hai — aur wo aksar us
+       * ek naraz shakhs ka hota hai. Hadd ek jagah honi chahiye, do jagah nahi.
+       */
+      comments:
+        rating.stars === null
+          ? []
+          : rows
+              .filter((r): r is typeof r & { comment: string } => Boolean(r.comment))
+              .map((r) => ({ comment: r.comment, createdAt: r.createdAt })),
+    }
+  }
+
   async add(input: {
     supplierId: string
     resellerId: string

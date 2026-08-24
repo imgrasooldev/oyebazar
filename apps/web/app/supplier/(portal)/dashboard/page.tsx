@@ -53,13 +53,22 @@ export default async function SupplierDashboardPage() {
    */
   const demandSince = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 
-  const [page, ledger, payouts, platformFee, trending, demand] = await Promise.all([
+  const [page, ledger, payouts, platformFee, trending, demand, myRating] =
+    await Promise.all([
     container.orders.listForSupplier(supplier.id, { limit: 60 }),
     container.payouts.ledgerByReseller(supplier.id),
     container.payouts.listForSupplier(supplier.id),
     container.payouts.platformFeeForSupplier(supplier.id),
     container.repositories.products.findTrending({ limit: 5, days: 30, supplierId: supplier.id }),
     container.repositories.supplierDemand.demand(supplier.id, demandSince),
+    /*
+     * Apna record — reseller kya keh rahi hain.
+     *
+     * 🔴 Naam ke baghair. Agar dukan ko pata chal jaye ke kis ne buri raye di to wo us
+     * reseller ka agla order rad kar sakta hai — aur us khatre ka natija ye hai ke
+     * reseller sach likhna chhor degi.
+     */
+    container.repositories.supplierReviews.forSupplier(supplier.id),
   ])
 
   const orders = page.items
@@ -126,6 +135,57 @@ export default async function SupplierDashboardPage() {
         <h1 className="text-[1.35rem] font-bold tracking-tight">{supplier.businessName}</h1>
         <p className="mt-1 text-[0.92rem] text-ink-soft">{t('supplierDashboardBody')}</p>
       </div>
+
+      {/*
+        Apne sitare — reseller kya keh rahi hain.
+
+        🔴 Ye "reach" se PEHLE hai. Pohanch aur order khabar hain; ye wo cheez hai jis par
+        dukan ko KAAM karna hai. Aur agar usay ye nazar hi na aaye to wo badle ga kya?
+        Sitare us ka karobar to gira denge magar wajah kabhi maloom nahi hogi — aur wo
+        soorat na us ke liye insaaf hai, na reseller ke liye faida.
+      */}
+      {myRating.rating.stars !== null && (
+        <section className="rounded-card bg-paper-raised p-4 shadow-soft">
+          <h2 className="text-[0.95rem] font-bold">{t('myRatingTitle')}</h2>
+          <p className="mt-1 text-[1.35rem] font-bold text-accent-700">
+            ★ <span dir="ltr" className="numeric">{myRating.rating.stars}</span>
+            <span className="ms-2 text-[0.78rem] font-normal text-ink-faint">
+              <span dir="ltr" className="numeric">{myRating.rating.count}</span>{' '}
+              {t('reviewCount')}
+            </span>
+          </p>
+
+          <dl className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {(
+              [
+                [t('reviewQuality'), myRating.rating.quality],
+                [t('reviewCommunication'), myRating.rating.communication],
+                [t('reviewPayout'), myRating.rating.payoutOnTime],
+              ] as const
+            ).map(([label, value]) => (
+              <div key={label} className="rounded-2xl bg-paper-sunken px-3 py-2.5">
+                <dt className="text-[0.72rem] text-ink-soft">{label}</dt>
+                <dd dir="ltr" className="numeric mt-0.5 text-[1.15rem] font-bold">
+                  {value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+
+          {myRating.comments.length > 0 && (
+            <ul className="mt-3 space-y-2">
+              {myRating.comments.slice(0, 5).map((entry) => (
+                <li
+                  key={entry.createdAt.toISOString()}
+                  className="rounded-2xl bg-paper-sunken px-3 py-2 text-[0.86rem] leading-relaxed"
+                >
+                  {entry.comment}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       {/*
         Aap ka maal kahan tak pohancha — pichhle 30 din.
