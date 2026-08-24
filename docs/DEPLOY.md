@@ -65,6 +65,57 @@ app har boot par log mein `static_otp_enabled` chillati hai — taake wo bhoola 
 
 ---
 
+## 1b · Kharcha — ye ek SHART hai, baad ki soch nahi
+
+Ye chhote margin ka karobar hai. Har mahana ka kharcha aisi cheez par jana jo abhi koi
+istemal nahi kar raha, seedha runway khata hai — aur infra ka kharcha KHAMOSHI se
+barhta hai: koi error nahi aata, sirf bill aata hai.
+
+**Machine ka naap NAAP kar chunen, andaze se nahi.**
+
+```bash
+flyctl ssh console -a oyebazar-worker --command "sh -c 'cat /proc/loadavg; free -m'"
+```
+
+24-08-2026 ko yehi kiya: worker `performance-1x` par chal raha tha aur load average
+`0.00 0.00 0.00` tha, memory 503MB/1968. `shared-cpu-4x` par jana **sasta bhi nikla aur
+tez bhi** — kyunke `performance-1x` EK core deta hai aur `shared-cpu-4x` CHAAR. Hamara
+kaam 99% waqt khali baithta hai aur chand second ke liye bharakta hai; burst cores usi
+shakl ke kaam ke liye behtar hain.
+
+| | `performance-1x` | `shared-cpu-4x` |
+|---|---|---|
+| Cores | 1 (dedicated) | 4 (burst) |
+| Ek pack | 7,112 ms | 4,700 ms |
+| Chaar pack | qatar mein | ek saath |
+
+Shared CPU wahan haarta hai jahan kaam DER TAK chale — yani raat ka bara batch jab
+hazaron pack banenge. Us din:
+
+```bash
+flyctl scale vm performance-2x --memory 4096 -a oyebazar-worker
+```
+
+**Per-command billing polling wale design se mel nahi khata.** Upstash har command ka
+bill karta hai, aur BullMQ ka worker khali baithe bhi blocking read baar baar naya karta
+hai — yani bill KAAM se nahi, KHALI WAQT se barhta hai. `drainDelay` isi liye 30s hai
+(dekhen `apps/worker/src/index.ts`): wo sirf khali queue par lagta hai, naya job aate hi
+read foran wapas aati hai. Is se mahana ~770k se ~340k par aaya, yani muft hadd ke andar.
+
+**🔴 Kuch bachatein na len:**
+
+* Worker par `auto_stop_machines` **nahi**. BullMQ ka schedule Redis mein para hai magar
+  wo tabhi chalta hai jab koi worker zinda ho — machine so gayi to raat 3 baje ki
+  pre-generation aur subah ka broadcast khamoshi se nahi chalenge.
+* Render ki concurrency machine ke cores se ziyada na rakhen — Chromium ke context
+  ek doosre se larne lagte hain aur har render dheema ho jata hai.
+
+**Aage jo cheez sab se pehle mehngi hogi:** storage aur bandwidth. Har pack ~300KB ka
+hai; 10,000 reseller par ye ~45 GB ROZANA banta hai. Us waqt purane packs ki safai ka
+usool tay karna paregi — machine ka naap us ke saamne chhoti baat hai.
+
+---
+
 ## 2 · Secrets — jo Fly par jane hain
 
 `.env.example` mein har khana likha hua hai. Live par ye chahiyen:
