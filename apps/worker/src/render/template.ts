@@ -395,6 +395,7 @@ export async function buildStatusPackHtml(
      * jis ke liye `hide-*` ka poora tareeqa mojood hai.
      */
     options.note ? '' : 'hide-note',
+    options.showMark === false ? 'hide-mark' : '',
   ]
     .filter(Boolean)
     .join(' ')

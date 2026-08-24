@@ -474,6 +474,20 @@ export function StatusPackStudio({
             )}
 
             {/*
+              OyeBazar ka nishan — default laga hua, magar band ho sakta hai.
+
+              🔴 Band karne ka rasta khula rakhna is feature ki JAAN hai. Nishan is liye
+              hai ke ek reseller doosri ko dekh kar aaye — sab se sasta rasta. Magar agar
+              wo us ke apne brand ko dabaye to wo pack istemal hi nahi karegi, aur phir
+              faida ULTA ho jata hai kyunke pack banta hi nahi.
+            */}
+            <PackToggle
+              label={t('showMarkOnPack')}
+              checked={options.showMark !== false}
+              onChange={(value) => setOption('showMark', value)}
+            />
+
+            {/*
               Is pack ki apni line — "صرف آج", "آخری 2 پیس".
 
               🔴 Ye template ke apne text se ALAG hai, aur ishare mein wohi farq likha

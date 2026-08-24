@@ -297,6 +297,30 @@ body {
   display: inline-block;
 }
 
+/*
+ * OyeBazar ka nishan — kinare par, aur JAAN BOOJH KAR bohat halka.
+ *
+ * 🔴 Ye reseller ke brand se larna nahi chahiye. Us ka naam aur number pack ki asal
+ * cheez hain; ye sirf itna hai ke doosri reseller poochh le "ye kahan se banaya".
+ * Opacity 0.5 aur naap 22px — safe area ke andar (warna WhatsApp ka apna UI ise
+ * dhaanp leta hai), aur likhai Latin, kyunke ye naam hai tarjuma nahi.
+ */
+.mark {
+  position: absolute;
+  bottom: calc(var(--safe-bottom) * 0.28);
+  inset-inline-start: var(--pad-x);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: calc(22px * var(--scale));
+  letter-spacing: calc(0.5px * var(--scale));
+  color: #ffffff;
+  opacity: 0.5;
+  direction: ltr;
+}
+
+.hide-mark .mark {
+  display: none;
+}
+
 .cta {
   font-size: calc(40px * var(--scale));
   line-height: 2.1;

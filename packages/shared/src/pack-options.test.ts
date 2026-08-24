@@ -90,3 +90,24 @@ describe('pack ki apni line', () => {
     expect(packOptionsFrom({ note: long }).note).toHaveLength(NOTE_MAX)
   })
 })
+
+/**
+ * 🔴 Nishan default par LAGA hua hai — magar key mein tabhi aata hai jab BAND ho.
+ *
+ * Ye us usool ka sab se nazuk imtihan hai: default badal dena aur key waisi ki waisi
+ * rakhna. Agar laga hua nishan key mein aa jaye to HAR bana hua pack dobara render hoga.
+ */
+describe('pack par nishan', () => {
+  it('default laga hua hai', () => {
+    expect(packOptionsFrom({}).showMark).toBe(true)
+  })
+
+  it('laga hua ho to key khali hi rehti hai — purane pack qaim', () => {
+    expect(packOptionsKey(packOptionsFrom({}))).toBe('')
+    expect(packOptionsKey(packOptionsFrom({ showMark: true }))).toBe('')
+  })
+
+  it('band karne par hi key badalti hai', () => {
+    expect(packOptionsKey(packOptionsFrom({ showMark: false }))).toBe('m:0')
+  })
+})

@@ -44,6 +44,17 @@ export interface PackOptions {
    * rehta, aur reseller ko yaad hi na rehta ke usay hatana hai.
    */
   readonly note?: string | undefined
+  /**
+   * Pack ke kinare par OyeBazar ka halka sa nishan.
+   *
+   * 🔴 Default ON hai, magar reseller ise band kar sakti hai — aur ye baat is feature ki
+   * poori jaan hai. Ek reseller doosri reseller ko DEKH kar aati hai; ye sab se sasta
+   * rasta hai naye log laane ka. Magar agar ye nishan us ke apne brand ko dabaye to wo
+   * pack istemal hi nahi karegi — aur phir faida ulta ho jata hai, kyunke pack banta hi
+   * nahi. Is liye nishan itna halka hai ke nazar us par ruke hi na, aur band karne ka
+   * rasta khula hai.
+   */
+  readonly showMark?: boolean | undefined
 }
 
 export const DEFAULT_PACK_OPTIONS: PackOptions = {
@@ -63,6 +74,7 @@ export function packOptionsFrom(partial?: Partial<PackOptions> | null): PackOpti
     ...(partial?.name?.trim() ? { name: partial.name.trim() } : {}),
     ...(partial?.phone?.trim() ? { phone: partial.phone.trim() } : {}),
     ...(partial?.note?.trim() ? { note: partial.note.trim().slice(0, NOTE_MAX) } : {}),
+    showMark: partial?.showMark ?? true,
   }
 }
 
@@ -104,6 +116,11 @@ export function packOptionsKey(options: PackOptions): string {
    * line wali) tasveer milti, bina kisi wajah ke.
    */
   if (options.note) parts.push(`T:${options.note}`)
+  /*
+   * Sirf BAND hone par key mein — default (laga hua) par khali, taake purane pack apni
+   * jagah qaim rahen. Dekhen upar wala note: ye poori file ka bunyadi usool hai.
+   */
+  if (options.showMark === false) parts.push('m:0')
 
   return parts.join('|')
 }

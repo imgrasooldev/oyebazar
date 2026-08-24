@@ -248,6 +248,8 @@ export const PackOptionsSchema = z.object({
    * (Nastaliq lipatta nahi, phailta hai).
    */
   note: z.string().trim().max(NOTE_MAX).optional(),
+  /** Kinare par OyeBazar ka halka nishan — default laga hua. */
+  showMark: z.boolean().optional(),
 })
 
 export const GenerateStatusPackSchema = z.object({

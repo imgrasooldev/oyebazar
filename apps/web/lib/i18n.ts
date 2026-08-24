@@ -420,6 +420,11 @@ const DICTIONARY = {
   },
   padXLabel: { ur: 'دائیں بائیں جگہ', en: 'Space at the sides', rm: 'Daayen baayen jagah' },
   padYLabel: { ur: 'اوپر نیچے جگہ', en: 'Space above and below', rm: 'Oopar neeche jagah' },
+  showMarkOnPack: {
+    ur: 'کنارے پر OyeBazar کا نشان',
+    en: 'OyeBazar mark at the edge',
+    rm: 'Kinare par OyeBazar ka nishan',
+  },
   packNote: { ur: 'اس پیک کی اپنی لائن', en: 'A line for this pack', rm: 'Is pack ki apni line' },
   packNoteHint: {
     ur: 'صرف اسی پیک پر چھپے گی — ٹیمپلیٹ پر نہیں۔ اگلے پیک پر یہ خود ہی نہیں آئے گی۔',
