@@ -54,7 +54,7 @@ export function LanguageToggle({ locale }: { locale: Locale }) {
               patti ko be-wajah mota kar deti thi — teen zubanein 169×48px kha jati thin,
               jabke kaam is se kafi kam mein ho jata hai.
             */
-            className={`inline-flex min-h-tap items-center rounded-pill px-2.5 text-xs font-semibold transition disabled:opacity-60 lg:min-h-0 lg:px-2 lg:py-1 lg:text-[0.72rem] ${
+            className={`inline-flex min-h-tap items-center rounded-pill px-2.5 text-xs font-semibold transition disabled:opacity-60 lg:min-h-0 lg:px-1.5 lg:py-0.5 lg:text-[0.68rem] ${
               active ? 'bg-white text-coal-900' : 'text-white/70 hover:bg-white/10 hover:text-white'
             }`}
           >
