@@ -533,6 +533,23 @@ const DICTIONARY = {
     en: 'On the way or with the wholesaler',
   },
   ordersDelivered: { ur: 'پہنچ گئے', rm: 'Pohanch gaye', en: 'Delivered' },
+  reachTitle: { ur: 'آپ کا مال کہاں تک پہنچا', en: 'How far your goods reached', rm: 'Aap ka maal kahan tak pohancha' },
+  reachHint: {
+    ur: 'پچھلے 30 دن — آرڈر آنے سے پہلے مال ریسیلرز تک پہنچتا ہے۔',
+    en: 'Last 30 days — goods reach resellers before orders arrive.',
+    rm: 'Pichhle 30 din — order aane se pehle maal resellers tak pohanchta hai.',
+  },
+  reachResellers: { ur: 'ریسیلرز نے اٹھایا', en: 'Resellers picked it up', rm: 'Resellers ne uthaya' },
+  reachPacks: { ur: 'اسٹیٹس پیک بنے', en: 'Status packs made', rm: 'Status pack bane' },
+  reachDownloads: { ur: 'ڈاؤن لوڈ ہوئے', en: 'Downloaded', rm: 'Download hue' },
+  reachOrders: { ur: 'آرڈر آئے', en: 'Orders received', rm: 'Order aaye' },
+  trendingTitle: { ur: 'اس ہفتے کیا چل رہا ہے', en: 'What is selling this week', rm: 'Is hafte kya chal raha hai' },
+  trendingHint: {
+    ur: 'یہ آپ کا اپنا حساب نہیں — یہ وہ مال ہے جو باقی ریسیلرز بیچ رہی ہیں۔',
+    en: 'Not your own numbers — this is what other resellers are selling.',
+    rm: 'Ye aap ka apna hisaab nahi — ye wo maal hai jo baqi resellers bech rahi hain.',
+  },
+  trendingResellers: { ur: 'ریسیلرز نے بیچا', en: 'resellers sold it', rm: 'resellers ne becha' },
   packsMade: { ur: 'بنائے گئے پیک', rm: 'Banaye gaye pack', en: 'Packs made' },
   packsDownloaded: { ur: 'ڈاؤن لوڈ ہوئے', rm: 'download hue', en: 'downloaded' },
   shortcutCatalogue: {

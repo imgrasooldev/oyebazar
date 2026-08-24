@@ -42,12 +42,24 @@ export default async function SupplierDashboardPage() {
   const t = translator(locale)
   const now = new Date()
 
-  const [page, ledger, payouts, platformFee, trending] = await Promise.all([
+  /*
+   * Wholesaler ka pehla sawal: "main yahan kyun list karun?"
+   *
+   * 🔴 Order ki ginti us ka sirf AADHA jawab hai. Naye maal par order sifar hote hain
+   * aur us se lagta hai ke kuch ho hi nahi raha — jabke us maal ke pack ban rahe hote
+   * hain aur reseller usay apne customers ke saamne rakh rahi hoti hain. Pohanch pehle
+   * aati hai, order baad mein; agar sirf order dikhaye jayen to wo maal barhane se
+   * pehle hi haar maan leta hai.
+   */
+  const demandSince = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+
+  const [page, ledger, payouts, platformFee, trending, demand] = await Promise.all([
     container.orders.listForSupplier(supplier.id, { limit: 60 }),
     container.payouts.ledgerByReseller(supplier.id),
     container.payouts.listForSupplier(supplier.id),
     container.payouts.platformFeeForSupplier(supplier.id),
     container.repositories.products.findTrending({ limit: 5, days: 30, supplierId: supplier.id }),
+    container.repositories.supplierDemand.demand(supplier.id, demandSince),
   ])
 
   const orders = page.items
@@ -114,6 +126,43 @@ export default async function SupplierDashboardPage() {
         <h1 className="text-[1.35rem] font-bold tracking-tight">{supplier.businessName}</h1>
         <p className="mt-1 text-[0.92rem] text-ink-soft">{t('supplierDashboardBody')}</p>
       </div>
+
+      {/*
+        Aap ka maal kahan tak pohancha — pichhle 30 din.
+
+        🔴 Ye order ki ginti se PEHLE hai, aur ye tarteeb jaan boojh kar hai. Naye maal
+        par order sifar hote hain; agar wholesaler ko sirf wo dikhaya jaye to wo samjhega
+        ke kuch ho hi nahi raha. Haqeeqat ye hoti hai ke us ke maal ke pack ban rahe hote
+        hain aur reseller usay apne customers ke saamne rakh rahi hoti hain — pohanch
+        pehle aati hai, order baad mein.
+
+        "Kitni reseller ne uthaya" sab se ahem number hai: wo batata hai ke maal PASAND
+        aaya, chahe abhi bika na ho.
+      */}
+      {(demand.resellers > 0 || demand.packs > 0) && (
+        <section className="rounded-card bg-paper-raised p-4 shadow-soft">
+          <h2 className="text-[0.95rem] font-bold">{t('reachTitle')}</h2>
+          <p className="mt-1 text-[0.8rem] text-ink-soft">{t('reachHint')}</p>
+
+          <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {(
+              [
+                [t('reachResellers'), demand.resellers],
+                [t('reachPacks'), demand.packs],
+                [t('reachDownloads'), demand.packsDownloaded],
+                [t('reachOrders'), demand.orders],
+              ] as const
+            ).map(([label, value]) => (
+              <div key={label} className="rounded-2xl bg-paper-sunken px-3 py-2.5">
+                <dt className="text-[0.72rem] text-ink-soft">{label}</dt>
+                <dd dir="ltr" className="numeric mt-0.5 text-[1.15rem] font-bold">
+                  {value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
 
       {/*
         Sab se pehle wo qatar jis par KISI KA INTEZAR hai.

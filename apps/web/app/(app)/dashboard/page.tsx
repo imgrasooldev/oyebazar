@@ -32,7 +32,19 @@ export default async function ResellerDashboard() {
   const locale = await getLocale()
   const t = translator(locale)
 
-  const [stats, ordersPage, payouts, payoutTotals, risk] = await Promise.all([
+  /*
+   * "Aaj kya lagaun" — reseller ka rozana ka asal sawal.
+   *
+   * 🔴 Ye us ke APNE order ka hisaab NAHI hai. Us ka apna hisaab wo pehle se jaanti hai;
+   * jo wo nahi jaanti wo ye hai ke BAQI sab kya bech rahi hain. Aur nayi reseller ke
+   * paas apna koi hisaab hota hi nahi — usi ko is ki sab se ziyada zaroorat hai.
+   *
+   * Saat din: is se kam par ek din ka ittefaq poori list badal deta hai, is se ziyada par
+   * "abhi chal raha hai" ka matlab khatam ho jata hai.
+   */
+  const trendingSince = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+
+  const [stats, ordersPage, payouts, payoutTotals, risk, trending] = await Promise.all([
     container.repositories.resellerStats.summary(reseller.id, new Date()),
     container.orders.listForReseller(reseller.id, { limit: 5 }),
     container.payouts.listForReseller(reseller.id),
@@ -46,6 +58,7 @@ export default async function ResellerDashboard() {
      * nahi chalti, aur wo cheez badal bhi nahi sakti jo usay dikhti hi nahi.
      */
     container.payouts.resellerRisk([reseller.id]),
+    container.repositories.resellerStats.topSelling(trendingSince, 6),
   ])
   const myRecord = risk[0]
 
@@ -189,6 +202,55 @@ export default async function ResellerDashboard() {
         />
         )}
       </section>
+
+      {/*
+        "Is hafte kya chal raha hai" — reseller ka rozana ka asal sawal.
+
+        🔴 Ye us ki APNI ginti nahi hai, aur wohi is ki poori wajah hai. Apna hisaab wo
+        khud jaanti hai; jo wo nahi jaanti wo ye hai ke baqi sab kya bech rahi hain. Nayi
+        reseller ke paas to apna koi hisaab hota hi nahi.
+
+        "Kitni reseller ne becha" dikhaya ja raha hai, order ki ginti nahi — do reseller
+        ka becha hua maal ek reseller ke pandrah order se ziyada maani rakhta hai, kyunke
+        wo ye batata hai ke maal chal raha hai, koi ek achhi customer nahi.
+      */}
+      {trending.length > 0 && (
+        <section className="mt-8">
+          <h2 className="text-[1.05rem] font-bold">{t('trendingTitle')}</h2>
+          <p className="mt-1 text-[0.82rem] text-ink-soft">{t('trendingHint')}</p>
+
+          <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {trending.map((item) => (
+              <li key={item.productId}>
+                <Link href={`/catalogue/${item.productId}`} className="tile group block">
+                  <div className="relative aspect-square overflow-hidden bg-paper-sunken">
+                    {item.coverImageUrl && (
+                      /* eslint-disable-next-line @next/next/no-img-element -- storage ki tasveer */
+                      <img
+                        src={item.coverImageUrl}
+                        alt=""
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                      />
+                    )}
+                  </div>
+                  <div className="p-2">
+                    <p className="line-clamp-2 text-[0.78rem] font-semibold leading-snug">
+                      {locale === 'ur' ? item.titleUr : item.titleEn}
+                    </p>
+                    <p className="mt-1 text-[0.7rem] text-accent-700">
+                      <span dir="ltr" className="numeric font-semibold">
+                        {item.resellers}
+                      </span>{' '}
+                      {t('trendingResellers')}
+                    </p>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/*
         Kamai ki chaal — sirf tab jab kuch bana ho.

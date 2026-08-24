@@ -251,6 +251,48 @@ export interface ResellerStatsView {
 
 export interface ResellerStatsRepository {
   summary(resellerId: string, now: Date): Promise<ResellerStatsView>
+  /**
+   * "Aaj kya lagaun" — is waqt sab se ziyada bikne wala maal.
+   *
+   * 🔴 Ye reseller ke APNE order par nahi, POORE platform par hai — aur ye jaan boojh
+   * kar hai. Us ka apna hisaab wo pehle se jaanti hai; jo wo nahi jaanti wo ye hai ke
+   * BAQI sab kya bech rahi hain. Nayi reseller ke paas apna koi hisaab hota hi nahi, aur
+   * usi ko is ki sab se ziyada zaroorat hai.
+   *
+   * Rad aur wapas aaye hue order ginti mein nahi — warna wo maal "chal raha hai" dikhta
+   * jo asal mein wapas aa raha hai, aur hum reseller ko us ki taraf dhakel dete.
+   */
+  topSelling(since: Date, limit: number): Promise<TopSellingView[]>
+}
+
+export interface TopSellingView {
+  readonly productId: string
+  readonly titleUr: string
+  readonly titleEn: string
+  readonly coverImageUrl: string | null
+  /** Kitni ALAG reseller ne becha — kul order se ziyada maani wala number. */
+  readonly resellers: number
+  readonly orders: number
+}
+
+/**
+ * Wholesaler ko ye dikhana ke yahan hone ka faida kya hai.
+ *
+ * Us ka pehla sawal yehi hota hai: "main yahan kyun list karun?" Order ki ginti us ka
+ * aadha jawab hai — doosra aadha ye hai ke us ka maal kitni reseller tak POHANCHA, chahe
+ * order abhi na aaya ho. Status pack banna hi us pohanch ka saboot hai.
+ */
+export interface SupplierDemandView {
+  /** Kitni alag reseller ne is ka maal apne pack par lagaya. */
+  readonly resellers: number
+  readonly packs: number
+  readonly packsDownloaded: number
+  readonly orders: number
+  readonly delivered: number
+}
+
+export interface SupplierDemandRepository {
+  demand(supplierId: string, since: Date): Promise<SupplierDemandView>
 }
 
 export interface StatusPackRepository {
