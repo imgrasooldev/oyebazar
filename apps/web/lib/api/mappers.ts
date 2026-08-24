@@ -94,7 +94,7 @@ export function toResellerProductListItemDTO(item: CatalogueItem): ResellerProdu
     listedAt: product.listedAt,
     // Dukan ki SHANAKHT — rabta nahi. Dekhen RESELLER_PRODUCT_SELECT ka note.
     supplier: product.supplier,
-  })
+  } satisfies ResellerProductListItem)
 }
 
 export function toResellerProductDetailDTO(item: CatalogueItem): ResellerProductDetail {
@@ -112,9 +112,12 @@ export function toResellerProductDetailDTO(item: CatalogueItem): ResellerProduct
     inStock: product.inStock,
     stockLeft: product.stockLeft,
     listedAt: product.listedAt,
-    media: product.media,
-    variants: product.variants,
-  })
+    // Dukan ki SHANAKHT — rabta nahi. Dekhen RESELLER_PRODUCT_SELECT ka note.
+    supplier: product.supplier,
+    // Domain se readonly aati hain; DTO ki apni copy — spread wahi karta hai
+    media: [...product.media],
+    variants: [...product.variants],
+  } satisfies ResellerProductDetail)
 }
 
 export function toStatusPackDTO(result: StatusPackResult): StatusPack {
