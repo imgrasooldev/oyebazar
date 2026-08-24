@@ -177,20 +177,23 @@ export default async function ResellerDashboard() {
         ek nazar mein pata chalna chahiye ke wo kahan likha hai.
       */}
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Tarteeb StatTile jaisi — nishan aur naam ek qatar mein; wajah wahin likhi hai */}
         <div className="card bg-coal-900 p-4 text-white">
-          <span
-            className="flex h-10 w-10 items-center justify-center rounded-card bg-white/10 text-brand-300"
-            aria-hidden="true"
-          >
-            <MoneyIcon className="h-5 w-5" />
-          </span>
-          <p className="mt-3 text-[0.72rem] font-semibold uppercase tracking-wider text-white/50">
-            {t('earnedThisMonth')}
-          </p>
-          <p dir="ltr" className="numeric mt-1 text-[1.5rem] font-bold leading-none text-brand-300">
+          <div className="flex items-center gap-2">
+            <span
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-card bg-white/10 text-brand-300"
+              aria-hidden="true"
+            >
+              <MoneyIcon className="h-5 w-5" />
+            </span>
+            <p className="min-w-0 truncate text-[0.72rem] font-semibold uppercase tracking-wider text-white/50">
+              {t('earnedThisMonth')}
+            </p>
+          </div>
+          <p dir="ltr" className="numeric mt-2 text-[1.5rem] font-bold leading-none text-brand-300">
             {formatPkr(stats.earnedThisMonth)}
           </p>
-          <p className="mt-1.5 text-[0.76rem] text-white/45">
+          <p className="mt-1 text-[0.76rem] text-white/45">
             {t('earnedTotal')} <span dir="ltr">{formatPkr(stats.earnedTotal)}</span>
           </p>
         </div>

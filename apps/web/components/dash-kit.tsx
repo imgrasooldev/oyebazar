@@ -62,25 +62,35 @@ export function StatTile({
    */
   progress?: number
 }) {
+  /*
+   * Nishan aur naam EK qatar mein — ek doosre ke upar neeche nahi.
+   *
+   * 🔴 Pehle nishan apni alag qatar mein tha, aur us par 40px + 12px khali jate the.
+   * Us jagah ka badla kuch nahi tha: nishan naam ke SAATH parha jata hai, us se pehle
+   * nahi. Card 174px se ~120px par aa gaya — yani chaar card ki qatar 54px chhoti, aur
+   * niche wali cheez utni hi upar aa gayi.
+   */
   const body = (
     <>
-      <span
-        className={`flex h-10 w-10 items-center justify-center rounded-card ${CHIP[tone]}`}
-        aria-hidden="true"
-      >
-        {icon}
-      </span>
+      <div className="flex items-center gap-2">
+        <span
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-card ${CHIP[tone]}`}
+          aria-hidden="true"
+        >
+          {icon}
+        </span>
+        <p className="min-w-0 truncate text-[0.72rem] font-semibold uppercase tracking-wider text-ink-faint">
+          {label}
+        </p>
+      </div>
 
-      <p className="mt-3 text-[0.72rem] font-semibold uppercase tracking-wider text-ink-faint">
-        {label}
-      </p>
-      <p dir="ltr" className={`numeric mt-1 text-[1.5rem] font-bold leading-none ${VALUE[tone]}`}>
+      <p dir="ltr" className={`numeric mt-2 text-[1.5rem] font-bold leading-none ${VALUE[tone]}`}>
         {value}
       </p>
-      {hint && <p className="mt-1.5 text-[0.76rem] text-ink-faint">{hint}</p>}
+      {hint && <p className="mt-1 text-[0.76rem] text-ink-faint">{hint}</p>}
 
       {progress !== undefined && (
-        <span className="mt-3 block h-1.5 w-full overflow-hidden rounded-pill bg-paper-sunken">
+        <span className="mt-2 block h-1.5 w-full overflow-hidden rounded-pill bg-paper-sunken">
           <span
             className={`block h-full rounded-pill ${
               tone === 'brand'

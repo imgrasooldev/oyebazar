@@ -69,7 +69,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <RouteProgress />
 
       <header className="sticky top-0 z-30 border-b border-black/[0.05] bg-paper/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-shell items-center justify-between gap-3 px-4 py-2 lg:px-6">
+        <div className="mx-auto flex max-w-app items-center justify-between gap-3 px-4 py-2 lg:px-6">
           {/*
             Naam aur "kis ka portal" — EK qatar mein, do mein nahi.
 
@@ -121,7 +121,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         aur beech mein 96px sirf khali hawa thi, aur usi wajah se catalogue mein maal ki
         qatar mein ek khana kam aata tha.
       */}
-      <div className="mx-auto flex max-w-shell gap-4 px-4 py-5 lg:gap-5 lg:px-6">
+      <div className="mx-auto flex max-w-app gap-4 px-4 py-5 lg:gap-5 lg:px-6">
         {/* Side nav sirf bari screen par — phone par neeche wali patti kaam karti hai */}
         <aside className="hidden shrink-0 lg:block">
           <PortalSidebar
@@ -154,7 +154,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         `pb-[env(safe-area-inset-bottom)]`: iPhone ke home bar ke peechay na chhupe.
       */}
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-black/[0.06] bg-paper-raised/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
-        <div className="mx-auto grid max-w-shell grid-cols-7">
+        <div className="mx-auto grid max-w-app grid-cols-7">
           {NAV.map((item) => (
             <Link
               key={item.href}

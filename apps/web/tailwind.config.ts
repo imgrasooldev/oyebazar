@@ -76,8 +76,24 @@ export default {
         lift: '0 2px 6px rgba(25,26,29,.07), 0 18px 40px -20px rgba(25,26,29,.4)',
       },
       maxWidth: {
-        // 1200 par bari screen dono taraf khali lagti thi. 1440 marketplace ka aam arz hai.
+        /*
+         * `shell` — PARHNE wale safhon ke liye (landing, bazaar, dukan ka safha).
+         *
+         * 1200 par bari screen dono taraf khali lagti thi. 1440 marketplace ka aam arz
+         * hai — aur is se ziyada chaura karne par jumla itna lamba ho jata hai ke agli
+         * lakeer ka shuru dhoondhna parta hai.
+         */
         shell: '1440px',
+
+        /*
+         * `app` — LOGIN ke baad wale portal ke liye (reseller aur dukan dono).
+         *
+         * 🔴 Ye alag is liye hai ke wahan tehreer nahi, KHAANE hain: maal ki qatarein,
+         * order ki fehrist, ginti ke card. Un ka chaura hona faida hai — ek qatar mein ek
+         * khana ziyada aa jata hai. 1920 ki screen par 1440 ki hadd 294px khali chhor
+         * rahi thi (screen ka 17%), aur us khali jagah ka koi faida nahi tha.
+         */
+        app: '1680px',
       },
       minHeight: { tap: '44px' },
       minWidth: { tap: '44px' },
