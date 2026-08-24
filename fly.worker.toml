@@ -13,8 +13,23 @@ primary_region = "sin" # Singapore — Pakistan ke sab se qareeb Fly region
   RENDER_CONCURRENCY = "4"
   PORT = "8080"
 
+# 🔴 `shared-cpu-4x`, `performance-1x` NAHI — aur ye sirf paison ki baat nahi.
+#
+# `performance-1x` ek DEDICATED core deta hai; `shared-cpu-4x` CHAAR burst wale.
+# Hamara kaam 99% waqt bilkul khali baithta hai (naapa: load average 0.00) aur phir
+# chand second ke liye bharakta hai — jab reseller "بنائیں" dabati hai, aur raat 3 baje.
+# Aise kaam ke liye chaar burst core ek dedicated core se behtar hain: chaar render ek
+# saath chal sakte hain, jabke ek core par wo qatar mein lagte the.
+#
+# Shared CPU wahan haarta hai jahan kaam DER TAK chalta rahe (throttle lagta hai) — yani
+# raat ka bara batch jab hazaron pack banenge. Us din ek hukm se wapas performance par
+# ja sakte hain:
+#     flyctl scale vm performance-2x --memory 4096 -a oyebazar-worker
+#
+# Memory 2GB waise ki waisi: Chromium ka har context ~80MB leta hai aur 1GB par OOM
+# kills milte the.
 [[vm]]
-  size = "performance-1x"
+  size = "shared-cpu-4x"
   memory = "2gb"
 
 # Worker par HTTP traffic nahi aata — sirf health check.

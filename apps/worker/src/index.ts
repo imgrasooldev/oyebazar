@@ -83,10 +83,22 @@ async function main(): Promise<void> {
         // pool size se zyada concurrency ka faida nahi — contexts hi bottleneck hain
         concurrency: config.renderConcurrency,
         /*
-         * Yahan `drainDelay` nahi barhaya — reseller "بنائیں" daba kar SAAMNE baithi
-         * hai. Magar stalled ki jaanch 30s se 60s par le gaye: atka hua render itni
-         * jaldi dhoondhne ki koi wajah nahi, aur ye aadhi request bacha deta hai.
+         * 🔴 `drainDelay` 30 second — aur ye reseller ko INTEZAR nahi karwata.
+         *
+         * Pehle ye 5s tha, is dar se ke reseller "بنائیں" daba kar saamne baithi hai.
+         * Wo dar ghalat-fehmi par tha: `drainDelay` sirf ye tay karta hai ke queue KHALI
+         * hone par blocking read kitni der latki rahe. Naya job aate hi Redis wo read
+         * FORAN wapas kar deta hai — intezar sirf us soorat mein hota jab kuch aaya hi
+         * na ho.
+         *
+         * Faida seedha paison ka hai: Upstash har COMMAND ka bill karta hai, aur khali
+         * baithe worker ki ye renewals hi poora quota kha rahi thin. 5s par ye ~12
+         * request/minute thin, 30s par ~2 — yani mahane ka kul kharcha 770k se ~340k par,
+         * jo 500k ki muft hadd ke andar aa jata hai.
+         *
+         * Stalled ki jaanch 60s par — atka hua render itni jaldi dhoondhne ki wajah nahi.
          */
+        drainDelay: 30,
         stalledInterval: 60_000,
       },
     ),
