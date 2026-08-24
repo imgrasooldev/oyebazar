@@ -115,6 +115,16 @@ export default async function CataloguePage({
     container.catalogue.trending(reseller.id, { limit: 12, days: 30 }),
   ])
   const items = page.items.map(toResellerProductListItemDTO)
+  /*
+   * Dukanon ke sitare — EK query mein sab ke liye.
+   *
+   * 🔴 Har card ko apni query karne dena N+1 hai: is safhe par 48 cheezein hoti hain.
+   * Ek saath laane ka farq ek query aur athtaalees ka hai.
+   */
+  const ratings = await container.repositories.supplierReviews.ratingsFor([
+    ...new Set(page.items.map((item) => item.product.supplier.id)),
+  ])
+
   const readyCount = dailyPacks.filter((pack) => pack.imageUrl).length
 
   return (
@@ -488,6 +498,29 @@ export default async function CataloguePage({
                       aur mashwara dono saath chahiyen, warna wo apna rate andaze se
                       lagati hai.
                     */}
+                    {/*
+                      Dukan ka naam aur us ke sitare — RATE se pehle.
+
+                      🔴 Tarteeb jaan boojh kar hai. Reseller pehle ye dekhti hai ke maal
+                      KIS KA hai, phir rate. Ulta rakhne ka matlab hota ke wo rate par
+                      faisla kar chuki hoti aur dukan ka naam ek baad ki tafseel ban jata
+                      — jabke us ka customer aur us ki sakh usi dukan par khari hai.
+
+                      Sitare na hon to ginti bhi nahi likhte: "0 raye" us dukan par ek
+                      khali khaana chhaap deta hai jo bure number jaisa dikhta hai.
+                    */}
+                    <p className="mt-1.5 truncate text-[0.7rem] text-ink-faint">
+                      {item.supplier.businessName}
+                      {(() => {
+                        const rating = ratings.get(item.supplier.id)
+                        return rating?.stars ? (
+                          <span className="ms-1.5 whitespace-nowrap font-semibold text-accent-700">
+                            ★ <span dir="ltr" className="numeric">{rating.stars}</span>
+                          </span>
+                        ) : null
+                      })()}
+                    </p>
+
                     <dl className="mt-2 space-y-0.5 text-[0.75rem] leading-tight">
                       <div className="flex items-baseline justify-between gap-2">
                         <dt className="shrink-0 text-ink-faint">{t('yourCost')}</dt>

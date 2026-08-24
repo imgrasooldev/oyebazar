@@ -62,6 +62,7 @@ model Supplier {
 
   products     Product[]
   orders       Order[]
+  reviews      SupplierReview[]
   sessions     Session[]
   contentPacks ContentPack[]
   feeLedger    FeeLedger[]
@@ -294,6 +295,7 @@ model Reseller {
   pricing     ResellerPricing[]
   payouts     ResellerPayout[]
   orders      Order[]
+  reviews     SupplierReview[]
   statusPacks StatusPack[]
   sessions    Session[]
   templates   ResellerTemplate[]
@@ -509,6 +511,7 @@ model Order {
   items     OrderItem[]
   events    OrderEvent[]
   messages  OrderMessage[]
+  reviews   SupplierReview[]
   feeLedger FeeLedger?
   payout    ResellerPayout?
 
@@ -581,6 +584,60 @@ model OrderItem {
  * jo BAAD mein kaam aati hai: jab dono ki baat alag ho aur koi faisla karna ho, to
  * platform ke paas kuch to ho. Abhi us waqt kuch bhi nahi hota.
  */
+/**
+ * Reseller ki raye us dukan ke bare mein jis se us ne kharida.
+ *
+ * 🔴 Ye ORDER ke data ka mutabadil nahi, us ka doosra pehlu hai.
+ *
+ * Order se sirf ye pata chalta hai ke dukan ne qubool kiya ya rad, aur kitni jaldi bheja.
+ * Wo ye KABHI nahi bata sakta ke maal ka kya haal tha, baat karne mein kaisa hai, ya
+ * commission waqt par diya ya nahi. Wo teen cheezein sirf reseller jaanti hai — aur
+ * asal mein wohi teen us ka faisla banati hain.
+ *
+ * 🔴 Ek reseller, ek dukan, ek MAHINA — is se zyada nahi (`@@unique`).
+ *
+ * Bina is hadd ke ye do tarah se toot ta hai: naraz reseller ek hi din mein das buri
+ * raye daal kar dukan ka record khatam kar sakti hai, aur dost dukan wala apni jaan
+ * pehchan se sau achhi raye bharwa sakta hai. Mahine ki hadd dono raste band karti hai,
+ * aur us se ye bhi milta hai ke record WAQT ke saath badalta hai — jo dukan pehle bura
+ * tha aur ab sudhar gaya, us ka pichhla mahina us ke gale nahi parta.
+ */
+model SupplierReview {
+  id         String @id @default(cuid())
+  supplierId String
+  resellerId String
+  /// Kis order ke baad poochha gaya — raye us tajurbe se bandhi rehni chahiye.
+  orderId    String
+
+  /// 1–5. Maal kaisa nikla — sab se ahem, kyunke customer isi par wapas karta hai.
+  quality       Int
+  /// 1–5. Baat karne mein kaisa hai — jawab deta hai ya nahi.
+  communication Int
+  /// 1–5. Commission waqt par diya ya nahi.
+  payoutOnTime  Int
+
+  /// Ikhtiyari — ginti se jo baat nahi hoti wo yahan.
+  comment String?
+
+  /**
+   * `YYYY-MM` — mahine ki hadd isi par lagti hai.
+   *
+   * 🔴 Ye khana alag se rakha hai, `createdAt` se nikala nahi jata: Postgres ke unique
+   * index mein hisaab nahi lag sakta, aur hadd DATABASE par honi chahiye — sirf code par
+   * rakhne ka matlab hai ke do request ek saath aa kar dono nikal jayen.
+   */
+  periodMonth String
+
+  createdAt DateTime @default(now())
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  reseller Reseller @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([resellerId, supplierId, periodMonth], name: "onePerMonth")
+  @@index([supplierId, createdAt])
+}
+
 model OrderMessage {
   id      String           @id @default(cuid())
   orderId String

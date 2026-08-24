@@ -41,6 +41,11 @@ export default async function WholesalersPage({
     ...(city ? { city } : {}),
   })
 
+  /* Sab dukanon ke sitare ek saath — har card ke liye alag query nahi */
+  const ratings = await container.repositories.supplierReviews.ratingsForSlugs(
+    page.items.map((supplier) => supplier.slug),
+  )
+
   return (
     <div>
       <h1 className="text-[1.35rem] font-bold tracking-tight">{t('wholesalersTitle')}</h1>
@@ -83,6 +88,18 @@ export default async function WholesalersPage({
                     {supplier.marketName ? `${supplier.marketName} · ` : ''}
                     {supplier.city}
                   </p>
+                  {/* Sitare tabhi jab kaafi raye hon — warna kuch nahi, ginti bhi nahi */}
+                  {(() => {
+                    const rating = ratings.get(supplier.slug)
+                    return rating?.stars ? (
+                      <p className="mt-0.5 text-[0.78rem] font-semibold text-accent-700">
+                        ★ <span dir="ltr" className="numeric">{rating.stars}</span>{' '}
+                        <span className="font-normal text-ink-faint">
+                          (<span dir="ltr" className="numeric">{rating.count}</span>)
+                        </span>
+                      </p>
+                    ) : null
+                  })()}
                 </div>
               </Link>
             </li>

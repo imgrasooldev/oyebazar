@@ -9,6 +9,7 @@
  *  · kal Prisma badla ya read-replica/caching layer aayi to core ko haath nahi lagta
  *  · junior ko methods ke naam se pata chalta hai ke kaunsa data kis surface ke liye hai
  */
+import type { SupplierRating } from '../services/supplier-rating'
 import type { Page, PackFormatKey, PackOptions, Pkr, TemplateSpec } from '@oyebazar/shared'
 import type {
   PricingProductView,
@@ -326,6 +327,63 @@ export interface OrderMessageRepository {
   resolve(id: string, at: Date): Promise<void>
   /** Ops ki list: khule hue masle. */
   openIssues(limit: number): Promise<(OrderMessageView & { orderId: string; orderNo: string })[]>
+}
+
+/**
+ * Reseller ki raye — rakhna, ginna, aur ye batana ke kis ki raye BAQI hai.
+ *
+ * 🔴 "Baqi hai" wala sawal is poore feature ki jaan hai. Form banana aasan hai; log us
+ * tak pohanchte nahi. Agar reseller ko khud dhoondhna pare to wo kabhi nahi bharegi —
+ * aur bina raye ke sitare bante hi nahi. Isi liye ye repository ye bhi janti hai ke
+ * KIS order ke baad kaun sa sawal us ke saamne rakhna hai.
+ */
+export interface PendingReviewView {
+  readonly supplierId: string
+  readonly supplierName: string
+  readonly orderId: string
+  readonly orderNo: string
+  /** Pehli dafa hai is dukan se, ya mahine ka waqt aa gaya. */
+  readonly reason: 'first' | 'monthly'
+}
+
+export interface SupplierReviewRepository {
+  /**
+   * Kai dukanon ke sitare ek saath — catalogue par har card ke liye alag query nahi.
+   *
+   * Wapas aane wale Map mein wohi dukanein hain jin ki koi raye mojood hai; baqi par
+   * "abhi kaafi raye nahi" wala bartao hota hai.
+   */
+  ratingsFor(supplierIds: readonly string[]): Promise<Map<string, SupplierRating>>
+
+  /**
+   * Wohi cheez, magar `slug` se — public safhon ke liye.
+   *
+   * 🔴 `PublicSupplierView` par `id` jaan boojh kar nahi hai (wo bahar ke logon ka DTO
+   * hai). Sirf sitare dikhane ke liye us mein andar ka `id` daal dena us hadd ko kamzor
+   * karna hoga, aur wo hadd kisi din kisi aur cheez ko rok rahi hogi. Ek method zyada
+   * sasta sauda hai.
+   */
+  ratingsForSlugs(slugs: readonly string[]): Promise<Map<string, SupplierRating>>
+
+  /**
+   * Is reseller ke liye agla sawal — ya `null`.
+   *
+   * 🔴 Sirf POHANCHE HUE order par. Jab tak maal customer tak na pohanche, reseller ke
+   * paas "maal kaisa nikla" ka jawab hai hi nahi, aur "commission waqt par mila" ka to
+   * bilkul nahi.
+   */
+  pendingFor(resellerId: string, period: string): Promise<PendingReviewView | null>
+
+  add(input: {
+    supplierId: string
+    resellerId: string
+    orderId: string
+    quality: number
+    communication: number
+    payoutOnTime: number
+    comment?: string | undefined
+    periodMonth: string
+  }): Promise<void>
 }
 
 export interface SupplierDemandRepository {

@@ -41,6 +41,7 @@ export default async function WholesalerPage({ params }: { params: Promise<{ slu
    * hai — jo yahan dobara banani parti.
    */
   const goods = await container.catalogue.list(reseller.id, { limit: 1, supplierSlug: slug })
+  const rating = (await container.repositories.supplierReviews.ratingsForSlugs([slug])).get(slug)
 
   return (
     <div>
@@ -56,6 +57,46 @@ export default async function WholesalerPage({ params }: { params: Promise<{ slu
           </p>
         </div>
       </div>
+
+      {/*
+        Sitare aur teenon sawal alag alag.
+
+        🔴 Sirf jorh dikhana kaafi nahi. Ek dukan jis ka maal achha hai magar commission
+        der se deta hai, aur ek jis ka maal maamooli hai magar paisa waqt par — dono ka
+        jorh ek jaisa aa sakta hai, jabke do alag reseller ke liye wo do BILKUL alag
+        dukanein hain. Faisla us ka hai, hamara nahi.
+
+        Kaafi raye na hon to jorh bhi nahi, ginti bhi nahi — "0 raye" ek khali khaana
+        chhaap deta hai jo bure number jaisa dikhta hai.
+      */}
+      {rating?.stars ? (
+        <section className="mt-4 rounded-card bg-paper-raised p-4 shadow-soft">
+          <p className="text-[1.1rem] font-bold text-accent-700">
+            ★ <span dir="ltr" className="numeric">{rating.stars}</span>
+            <span className="ms-2 text-[0.78rem] font-normal text-ink-faint">
+              <span dir="ltr" className="numeric">{rating.count}</span> {t('reviewCount')}
+            </span>
+          </p>
+          <dl className="mt-2 space-y-1 text-[0.82rem]">
+            {(
+              [
+                [t('reviewQuality'), rating.quality],
+                [t('reviewCommunication'), rating.communication],
+                [t('reviewPayout'), rating.payoutOnTime],
+              ] as const
+            ).map(([label, value]) => (
+              <div key={label} className="flex items-baseline justify-between gap-3">
+                <dt className="text-ink-soft">{label}</dt>
+                <dd dir="ltr" className="numeric font-semibold">
+                  {value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ) : (
+        <p className="mt-4 text-[0.82rem] text-ink-faint">{t('reviewNotEnough')}</p>
+      )}
 
       {supplier.bioUr && (
         <p className="mt-3 text-[0.9rem] leading-relaxed text-ink-soft">{supplier.bioUr}</p>

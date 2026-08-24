@@ -7,6 +7,8 @@ import { ResellerPayoutReply } from '@/components/payout-actions'
 import { toResellerOrderDTO } from '@/lib/api/mappers'
 import { requireReseller } from '@/lib/api/session'
 import { container } from '@/lib/container'
+import { reviewPeriod } from '@oyebazar/core'
+import { SupplierReviewForm } from '@/components/supplier-review-form'
 import { orderStatusLabel, translator, type Locale } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
 import { orderStatusStyle } from '@/lib/order-status-style'
@@ -44,7 +46,8 @@ export default async function ResellerDashboard() {
    */
   const trendingSince = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
 
-  const [stats, ordersPage, payouts, payoutTotals, risk, trending] = await Promise.all([
+  const [stats, ordersPage, payouts, payoutTotals, risk, trending, pendingReview] =
+    await Promise.all([
     container.repositories.resellerStats.summary(reseller.id, new Date()),
     container.orders.listForReseller(reseller.id, { limit: 5 }),
     container.payouts.listForReseller(reseller.id),
@@ -59,6 +62,15 @@ export default async function ResellerDashboard() {
      */
     container.payouts.resellerRisk([reseller.id]),
     container.repositories.resellerStats.topSelling(trendingSince, 6),
+    /*
+     * Kis dukan ki raye baqi hai — aur ye SAB SE OOPAR aati hai.
+     *
+     * 🔴 Form banana aasan hai; log us tak pohanchte nahi. Alag safha banane ka matlab
+     * hota ke raye sirf un se aaye jo usay DHOONDH len — aur wo aksar naraz log hote
+     * hain, jis se poora record ek taraf jhuk jata hai. Yahan wo us jagah hai jahan
+     * reseller pehle se roz aati hai.
+     */
+    container.repositories.supplierReviews.pendingFor(reseller.id, reviewPeriod(new Date())),
   ])
   const myRecord = risk[0]
 
@@ -96,6 +108,31 @@ export default async function ResellerDashboard() {
 
   return (
     <div className="space-y-8">
+      {/* Dukan ki raye — safhe par SAB SE OOPAR, kyunke wohi ek cheez hai jo bhoolti hai */}
+      {pendingReview && (
+        <div className="mb-6">
+          <SupplierReviewForm
+            orderId={pendingReview.orderId}
+            supplierName={pendingReview.supplierName}
+            orderNo={pendingReview.orderNo}
+            reason={pendingReview.reason}
+            labels={{
+              titleFirst: t('reviewTitleFirst'),
+              titleMonthly: t('reviewTitleMonthly'),
+              hint: t('reviewHint'),
+              quality: t('reviewQuality'),
+              communication: t('reviewCommunication'),
+              payoutOnTime: t('reviewPayout'),
+              commentPlaceholder: t('reviewComment'),
+              submit: t('reviewSubmit'),
+              thanks: t('reviewThanks'),
+              failed: t('threadFailed'),
+              skip: t('reviewSkip'),
+            }}
+          />
+        </div>
+      )}
+
       <div>
         <h1 className="text-[1.35rem] font-bold tracking-tight">
           {t('hello')} {reseller.name}

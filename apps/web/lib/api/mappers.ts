@@ -92,6 +92,8 @@ export function toResellerProductListItemDTO(item: CatalogueItem): ResellerProdu
     inStock: product.inStock,
     stockLeft: product.stockLeft,
     listedAt: product.listedAt,
+    // Dukan ki SHANAKHT — rabta nahi. Dekhen RESELLER_PRODUCT_SELECT ka note.
+    supplier: product.supplier,
   })
 }
 

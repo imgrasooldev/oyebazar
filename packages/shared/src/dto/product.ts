@@ -97,6 +97,20 @@ export const ResellerProductListItemDTO = z
      */
     stockLeft: z.number().int().nonnegative(),
     listedAt: z.coerce.date(),
+    /**
+     * Kis dukan ka maal — SHANAKHT, rabta nahi.
+     *
+     * 🔴 `phone`/`whatsappPublic` yahan jaan boojh kar nahi. Reseller portal ke andar
+     * dukan CHUN sakti hai, us se seedha rabta nahi kar sakti — us ka rasta bazaar par
+     * alag se khula hai.
+     */
+    supplier: z.object({
+      id: z.string(),
+      slug: z.string(),
+      businessName: z.string(),
+      city: z.string(),
+      marketName: z.string().nullable(),
+    }),
   })
   .strict()
 
