@@ -14,6 +14,7 @@ import {
   TEMPLATE_PRESETS,
   PACK_FORMATS,
   PACK_FORMAT_KEYS,
+  SHAPE_CLIP,
   formatPkr,
   pkr,
   templateSpecToCss,
@@ -264,14 +265,6 @@ function part(spec: TemplateSpec, sel: Sel): PartStyle | null {
  * banata hai, alag alag qadrein nahi deta). Ye sirf NISHAN hai — asli shakl hamesha
  * render ki hai; yahan farq aa bhi jaye to sirf button thora alag dikhega.
  */
-const SHAPE_PREVIEW_CLIP: Partial<Record<string, string>> = {
-  triangle: 'polygon(50% 0%, 100% 100%, 0% 100%)',
-  diamond: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
-  star: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
-  arrow: 'polygon(0% 25%, 60% 25%, 60% 0%, 100% 50%, 60% 100%, 60% 75%, 0% 75%)',
-  burst:
-    'polygon(50% 0%, 58% 18%, 79% 10%, 76% 32%, 97% 32%, 84% 50%, 97% 68%, 76% 68%, 79% 90%, 58% 82%, 50% 100%, 42% 82%, 21% 90%, 24% 68%, 3% 68%, 16% 50%, 3% 32%, 24% 32%, 21% 10%, 42% 18%)',
-}
 
 /**
  * Baayen rail ke darwaze — tarteeb kaam ke hisaab se.
@@ -338,7 +331,41 @@ const SHAPE_LABEL = {
   star: 'shapeStar',
   arrow: 'shapeArrow',
   burst: 'shapeBurst',
+  heart: 'shapeHeart',
+  hexagon: 'shapeHexagon',
+  pentagon: 'shapePentagon',
+  ribbon: 'shapeRibbon',
+  tag: 'shapeTag',
+  bubble: 'shapeBubble',
+  chevron: 'shapeChevron',
+  seal: 'shapeSeal',
 } as const
+
+/**
+ * Panel mein shaklon ki tarteeb — kaam ke hisaab se, hurf-e-tahajji se nahi.
+ *
+ * Pehli qatar wo hain jo har roz lagti hain (patti, daira, lakeer), phir wo jo qeemat
+ * aur "سیل" ke saath aati hain, aur aakhir mein sajawat wali. Reseller neeche tak scroll
+ * nahi karti — jo upar hai wohi istemal hota hai.
+ */
+const SHAPE_ORDER = [
+  'rect',
+  'circle',
+  'line',
+  'ribbon',
+  'tag',
+  'bubble',
+  'star',
+  'burst',
+  'seal',
+  'heart',
+  'arrow',
+  'chevron',
+  'triangle',
+  'diamond',
+  'hexagon',
+  'pentagon',
+] as const
 
 /**
  * Kaun sa handle pakra gaya hai.
@@ -2578,18 +2605,7 @@ export function TemplateEditor({
                   {t('shapeHint')}
                 </p>
                 <div className="mt-2 grid grid-cols-3 gap-2">
-                  {(
-                    [
-                      'rect',
-                      'circle',
-                      'line',
-                      'triangle',
-                      'diamond',
-                      'star',
-                      'arrow',
-                      'burst',
-                    ] as const
-                  ).map((shape) => (
+                  {SHAPE_ORDER.map((shape) => (
                     <button
                       key={shape}
                       type="button"
@@ -2599,7 +2615,7 @@ export function TemplateEditor({
                     >
                       {/*
                         Nishan wohi shakl hai jo banegi — `clip-path` bhi wohi jo asli
-                        render istemal karta hai (SHAPE_PREVIEW_CLIP). Naam parh kar
+                        render istemal karta hai (SHAPE_CLIP). Naam parh kar
                         banda "ہیرا" ka matlab nahi jaanta; shakl dekh kar foran jaan
                         jata hai. Naam sirf us ki tasdeeq ke liye hai.
                       */}
@@ -2614,8 +2630,8 @@ export function TemplateEditor({
                         style={
                           shape === 'circle'
                             ? { borderRadius: '50%' }
-                            : SHAPE_PREVIEW_CLIP[shape]
-                              ? { clipPath: SHAPE_PREVIEW_CLIP[shape] }
+                            : SHAPE_CLIP[shape]
+                              ? { clipPath: SHAPE_CLIP[shape] }
                               : undefined
                         }
                       />
@@ -3179,8 +3195,8 @@ function LayerThumb({
           style={{
             background: layer.colour ?? accent,
             borderRadius: layer.shape === 'circle' ? '50%' : '2px',
-            ...(SHAPE_PREVIEW_CLIP[layer.shape]
-              ? { clipPath: SHAPE_PREVIEW_CLIP[layer.shape] }
+            ...(SHAPE_CLIP[layer.shape]
+              ? { clipPath: SHAPE_CLIP[layer.shape] }
               : {}),
           }}
         />

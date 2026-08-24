@@ -217,7 +217,24 @@ export type ImageLayer = z.infer<typeof ImageLayerSchema>
  */
 const ShapeLayerSchema = z.object({
   kind: z.literal('shape'),
-  shape: z.enum(['rect', 'circle', 'line', 'triangle', 'diamond', 'star', 'arrow', 'burst']),
+  shape: z.enum([
+    'rect',
+    'circle',
+    'line',
+    'triangle',
+    'diamond',
+    'star',
+    'arrow',
+    'burst',
+    'heart',
+    'hexagon',
+    'pentagon',
+    'ribbon',
+    'tag',
+    'bubble',
+    'chevron',
+    'seal',
+  ]),
   show: z.boolean(),
   x: z.number().min(0).max(100),
   y: z.number().min(0).max(100),
@@ -243,7 +260,17 @@ export type ShapeLayer = z.infer<typeof ShapeLayerSchema>
  * `rect`, `circle` aur `line` yahan nahi: un ka kaam `border-radius` se ho jata hai,
  * aur `clip-path` un par kinare ko dandana bana deta hai.
  */
-const SHAPE_CLIP: Partial<Record<ShapeLayer['shape'], string>> = {
+/**
+ * 🔴 Ye EXPORT hai — aur is ki wajah ek pakri hui naqal hai.
+ *
+ * Editor ke paas isi ki ek doosri naqal (`SHAPE_PREVIEW_CLIP`) para hui thi, taake
+ * panel mein har shakl ka namoona dikh sake. Do naqlon ka anjaam hamesha ek hi hota hai:
+ * nayi shakl ek jagah aati hai aur doosri jagah nahi, aur phir reseller ko panel mein
+ * khali dabba dikhta hai jis par tap karne se tasveer par kuch aur ban jata hai.
+ *
+ * Ab ek hi jagah hai — wohi jo asli render chalati hai.
+ */
+export const SHAPE_CLIP: Partial<Record<ShapeLayer['shape'], string>> = {
   triangle: 'polygon(50% 0%, 100% 100%, 0% 100%)',
   diamond: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
   star: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
@@ -252,6 +279,35 @@ const SHAPE_CLIP: Partial<Record<ShapeLayer['shape'], string>> = {
   /** Chamak — sale wale badge ke peechay. 12 nokon wala. */
   burst:
     'polygon(50% 0%, 58% 18%, 79% 10%, 76% 32%, 97% 32%, 84% 50%, 97% 68%, 76% 68%, 79% 90%, 58% 82%, 50% 100%, 42% 82%, 21% 90%, 24% 68%, 3% 68%, 16% 50%, 3% 32%, 24% 32%, 21% 10%, 42% 18%)',
+
+  /*
+   * Ye aath baad mein aayi hain, aur har ek ka apna kaam hai — shakl ke liye shakl nahi.
+   *
+   * `heart` aur `seal` sab se ziyada maangi jane wali hain (pasand aur "asli maal" ka
+   * nishan). `ribbon` aur `tag` qeemat ke peechay lagti hain. `bubble` "میسج کریں" ke
+   * saath. `chevron` teer ka halka rukh hai jahan poora teer bhaari lagta hai. `hexagon`
+   * aur `pentagon` logo ke peechay saaf baithti hain.
+   *
+   * 🔴 Sab `polygon()` hain — koi `url()`, koi `path()`. Reseller sirf naam chunti hai;
+   * qadar yahin se aati hai. Ye wohi darwaza hai jo band rehna chahiye.
+   */
+
+  /** Dil — do goliyan aur ek nok. Nokdar hissa neeche, warna ulta lagta hai. */
+  heart:
+    'polygon(50% 24%, 50% 22%, 51% 18%, 54% 13%, 58% 7%, 64% 2%, 72% 0%, 80% 0%, 88% 4%, 94% 10%, 98% 18%, 100% 27%, 98% 37%, 94% 46%, 88% 55%, 80% 63%, 72% 71%, 64% 78%, 58% 85%, 54% 91%, 51% 96%, 50% 99%, 50% 100%, 50% 99%, 49% 96%, 46% 91%, 42% 85%, 36% 78%, 28% 71%, 20% 63%, 12% 55%, 6% 46%, 2% 37%, 0% 27%, 2% 18%, 6% 10%, 12% 4%, 20% 0%, 28% 0%, 36% 2%, 42% 7%, 46% 13%, 49% 18%, 50% 22%)',
+  hexagon: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)',
+  pentagon: 'polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)',
+  /** Patti jis ke sire andar ko kate hue — qeemat ya "سیل" ke peechay. */
+  ribbon: 'polygon(0% 0%, 100% 0%, 96% 50%, 100% 100%, 0% 100%, 4% 50%)',
+  /** Qeemat wala label — ek taraf nok, jaise kapre par laga hua. */
+  tag: 'polygon(0% 0%, 82% 0%, 100% 50%, 82% 100%, 0% 100%)',
+  /** Baat ka ghubbara — neeche ek chhoti dum, "میسج کریں" ke saath. */
+  bubble: 'polygon(0% 0%, 100% 0%, 100% 78%, 34% 78%, 20% 100%, 18% 78%, 0% 78%)',
+  /** Halka rukh — poora teer jahan bhaari lagta hai wahan ye kaafi hai. */
+  chevron: 'polygon(0% 0%, 55% 0%, 100% 50%, 55% 100%, 0% 100%, 45% 50%)',
+  /** Mohar — dandane dar daira, "asli maal" ya "گارنٹی" ke nishan ke tor par. */
+  seal:
+    'polygon(50% 0%, 61% 10%, 75% 7%, 79% 21%, 93% 25%, 90% 39%, 100% 50%, 90% 61%, 93% 75%, 79% 79%, 75% 93%, 61% 90%, 50% 100%, 39% 90%, 25% 93%, 21% 79%, 7% 75%, 10% 61%, 0% 50%, 10% 39%, 7% 25%, 21% 21%, 25% 7%, 39% 10%)',
 }
 
 /** Text, tasveer ya shakl — tarteeb teenon ke liye ek hi list mein. */
