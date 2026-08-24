@@ -39,8 +39,8 @@ export const dynamic = 'force-dynamic'
  * banta hai — halanke ye mahine mein ek dafa ka kaam hai, roz ka nahi.
  */
 const NAV = [
-  { href: '/dashboard', key: 'dashboard', Icon: SparkIcon },
-  { href: '/catalogue', key: 'catalogue', Icon: GridIcon },
+  { href: '/dashboard', key: 'dashboard', tab: 'tabDashboard', Icon: SparkIcon },
+  { href: '/catalogue', key: 'catalogue', tab: 'tabCatalogue', Icon: GridIcon },
   /*
    * Dukanein — catalogue ke theek baad.
    *
@@ -48,11 +48,11 @@ const NAV = [
    * baghair aata hai. Reseller ke portal mein dukan ka zikr tak nahi tha — jabke poora
    * wada yehi hai ke wo dukan chun sakti hai.
    */
-  { href: '/wholesalers', key: 'wholesalersNav', Icon: StoreIcon },
-  { href: '/templates', key: 'templatesNav', Icon: TemplateIcon },
-  { href: '/orders', key: 'orders', Icon: ListIcon },
-  { href: '/money', key: 'moneyNav', Icon: MoneyIcon },
-  { href: '/bazaar', key: 'bazaar', Icon: StoreIcon },
+  { href: '/wholesalers', key: 'wholesalersNav', tab: 'tabWholesalers', Icon: StoreIcon },
+  { href: '/templates', key: 'templatesNav', tab: 'tabTemplates', Icon: TemplateIcon },
+  { href: '/orders', key: 'orders', tab: 'tabOrders', Icon: ListIcon },
+  { href: '/money', key: 'moneyNav', tab: 'tabMoney', Icon: MoneyIcon },
+  { href: '/bazaar', key: 'bazaar', tab: 'tabBazaar', Icon: StoreIcon },
 ] as const
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -162,7 +162,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               className="flex min-h-tap min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2 text-[0.62rem] font-semibold text-ink-faint transition hover:bg-brand-50 hover:text-brand-700"
             >
               <item.Icon className="h-[1.15rem] w-[1.15rem] shrink-0" />
-              <span className="w-full truncate text-center">{label(item.key)}</span>
+              <span className="w-full truncate text-center">{t(item.tab)}</span>
             </Link>
           ))}
         </div>

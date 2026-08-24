@@ -1106,6 +1106,25 @@ const DICTIONARY = {
   filterCity: { ur: 'شہر', en: 'City', rm: 'Sheher' },
   filterResults: { ur: 'نتائج', en: 'results', rm: 'natije' },
   moneyNav: { ur: 'پیسے', en: 'Money', rm: 'Paise' },
+
+  /*
+   * Phone ki neeche wali patti ke naam — SIRF us patti ke liye.
+   *
+   * 🔴 Ye alag is liye hain ke 360px ke phone par saat khane hain, yani har khane ko
+   * 51px milte hain. Us mein "Wholesalers" aur "Catalogue" poore nahi aate — wo "Wholesa…"
+   * aur "Catalog…" ban jate hain, aur teen nuqton ke sath dono ek jaise lagne lagte hain.
+   *
+   * Aur ye sirf jagah ka masla nahi tha: patti ka naam FEHRIST ka unwan nahi hota, wo
+   * ek lafz ka nishan hota hai. Har app yehi karta hai — safhe par "Wholesalers" likha
+   * rehta hai, patti par "Dukanein".
+   */
+  tabDashboard: { ur: 'ہوم', en: 'Home', rm: 'Home' },
+  tabCatalogue: { ur: 'مال', en: 'Stock', rm: 'Maal' },
+  tabWholesalers: { ur: 'دکانیں', en: 'Shops', rm: 'Dukan' },
+  tabTemplates: { ur: 'ڈیزائن', en: 'Design', rm: 'Design' },
+  tabOrders: { ur: 'آرڈر', en: 'Orders', rm: 'Order' },
+  tabMoney: { ur: 'پیسے', en: 'Money', rm: 'Paise' },
+  tabBazaar: { ur: 'بازار', en: 'Bazaar', rm: 'Bazaar' },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
   moneyByReseller: { ur: 'ریسیلر کے حساب سے', en: 'By reseller', rm: 'Reseller ke hisab se' },
   moneyEarnedTotal: { ur: 'کل کمائی', en: 'Total earned', rm: 'Kul kamai' },
