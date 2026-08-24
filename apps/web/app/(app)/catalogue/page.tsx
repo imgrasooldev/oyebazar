@@ -410,6 +410,31 @@ export default async function CataloguePage({
                           className="tile-media h-full"
                         />
                       )}
+
+                      {/*
+                        Waqt aur "sirf itne bache" — tasveer ke KONE par, apni qatar mein
+                        nahi.
+
+                        🔴 Ye ek qatar 22px leti thi (18px likhai + 4px faasla), aur card
+                        pehle hi 456px ka tha. Tasveer ke neeche ka kona waise bhi khali
+                        rehta hai — wahan rakh dene se wohi maloomat milti hai aur oonchai
+                        ka kuch bhi kharch nahi hota.
+
+                        Halka kaala parda is liye ke tasveer chamakdaar bhi ho sakti hai
+                        aur safed likhai us par gum ho jati hai.
+                      */}
+                      <p className="absolute inset-x-0 bottom-0 flex items-center gap-1.5 bg-gradient-to-t from-black/55 to-transparent px-2 pb-1.5 pt-4 text-[0.68rem] text-white/85">
+                        {timeAgo(locale, item.listedAt, now)}
+                        {item.inStock && item.stockLeft > 0 && item.stockLeft <= LOW_STOCK && (
+                          <span className="font-semibold text-red-300">
+                            ·{' '}
+                            <span dir="ltr" className="numeric">
+                              {item.stockLeft}
+                            </span>{' '}
+                            {t('onlyLeft')}
+                          </span>
+                        )}
+                      </p>
                       {!item.inStock && (
                         <span className="badge absolute start-2 top-2 bg-coal-900/85 text-white">
                           {t('outOfStock')}
@@ -427,26 +452,9 @@ export default async function CataloguePage({
                     teen alag lines teen guna jagah leti thin, jabke faisla ek number par
                     hota hai.
                   */}
-                  <div className="flex flex-1 flex-col p-3">
+                  <div className="flex flex-1 flex-col px-3 pb-3 pt-2.5">
                     <p className="line-clamp-2 text-[0.85rem] font-semibold leading-snug">
                       {title}
-                    </p>
-                    {/*
-                      Sirf waqt — "naya" ka tamgha yahan nahi lagaya. Catalogue naye maal
-                      se shuru hota hai, to pehle safhe par har card par tamgha lag jata
-                      aur tamghe ka matlab hi khatam ho jata. Chhota sa waqt kaafi hai.
-                    */}
-                    <p className="mt-1 text-[0.7rem] text-ink-faint">
-                      {timeAgo(locale, item.listedAt, now)}
-                      {item.inStock && item.stockLeft > 0 && item.stockLeft <= LOW_STOCK && (
-                        <span className="ms-1.5 font-semibold text-red-700">
-                          ·{' '}
-                          <span dir="ltr" className="numeric">
-                            {item.stockLeft}
-                          </span>{' '}
-                          {t('onlyLeft')}
-                        </span>
-                      )}
                     </p>
 
                     {/*
@@ -459,7 +467,7 @@ export default async function CataloguePage({
                       aur mashwara dono saath chahiyen, warna wo apna rate andaze se
                       lagati hai.
                     */}
-                    <dl className="mt-2 space-y-0.5 text-[0.75rem]">
+                    <dl className="mt-2 space-y-0.5 text-[0.75rem] leading-tight">
                       <div className="flex items-baseline justify-between gap-2">
                         <dt className="shrink-0 text-ink-faint">{t('yourCost')}</dt>
                         <dd dir="ltr" className="numeric whitespace-nowrap text-ink-soft">
@@ -491,7 +499,7 @@ export default async function CataloguePage({
                       line mein (chhota, sabz) aur button poori chaurai par: ek nazar
                       mein saaf, aur ungli ke liye bara nishana.
                     */}
-                    <div className="mt-auto pt-2.5">
+                    <div className="mt-auto pt-2">
                       {/*
                         Munafa — card ka sab se numaya number.
                         Pehle ye ek chhoti si goli thi aur "+Rs 350" par lafz bhi nahi
@@ -499,7 +507,7 @@ export default async function CataloguePage({
                         pohanchne ka rasta hain), is liye ab poori chaurai par apna
                         khaana, bara hindsa aur sabz zameen.
                       */}
-                      <div className="rounded-card bg-accent-50 px-3 py-2">
+                      <div className="rounded-card bg-accent-50 px-3 py-1.5">
                         {/*
                           Lafz upar, hindsa neeche — saath rakhte to 180px ke card mein
                           dono toot jate the ("YOUR / PROFIT" aur "+Rs / 350"). Tootа hua
