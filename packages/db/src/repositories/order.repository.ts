@@ -69,6 +69,8 @@ const SUPPLIER_SELECT = {
   createdAt: true,
   acceptedAt: true,
   dispatchedAt: true,
+  courier: true,
+  trackingNo: true,
   items: {
     select: {
       qty: true,
@@ -92,6 +94,10 @@ const RESELLER_SELECT = {
   confirmedAt: true,
   confirmedBy: true,
   createdAt: true,
+  // Courier aur CN — dukan ki shanakht nahi, parcel ki. Reseller ka apna kaam.
+  dispatchedAt: true,
+  courier: true,
+  trackingNo: true,
   items: {
     select: {
       productId: true,
@@ -255,6 +261,8 @@ export class PrismaOrderRepository implements OrderRepository {
       createdAt: row.createdAt,
       acceptedAt: row.acceptedAt,
       dispatchedAt: row.dispatchedAt,
+      courier: row.courier,
+      trackingNo: row.trackingNo,
       items: row.items.map((item) => ({
         titleUr: titles.get(item.productId)?.titleUr ?? '',
         titleEn: titles.get(item.productId)?.titleEn ?? '',
@@ -332,7 +340,25 @@ export class PrismaOrderRepository implements OrderRepository {
           ...(change.to === 'REJECTED'
             ? { rejectedAt: change.at, rejectionReason: change.rejectionReason ?? change.note ?? null }
             : {}),
-          ...(change.to === 'DISPATCHED' ? { dispatchedAt: change.at } : {}),
+          /*
+           * Courier aur CN status ke SAATH, usi ek update mein.
+           *
+           * 🔴 Alag call se likhne ka matlab hota ke beech mein kuch toot jane par order
+           * "raste mein" ho jata magar CN kahin likha hi na jata — aur us soorat mein
+           * dobara likhne ka koi rasta bhi nahi tha, kyunke DISPATCHED se DISPATCHED
+           * wali transition mana hai.
+           */
+          ...(change.to === 'DISPATCHED'
+            ? {
+                dispatchedAt: change.at,
+                ...(change.shipment
+                  ? {
+                      courier: change.shipment.courier,
+                      trackingNo: change.shipment.trackingNo,
+                    }
+                  : {}),
+              }
+            : {}),
           ...(change.to === 'DELIVERED' ? { deliveredAt: change.at } : {}),
           ...(change.to === 'RTO' ? { rtoReason: change.note ?? null } : {}),
         },
@@ -490,6 +516,9 @@ export class PrismaOrderRepository implements OrderRepository {
       confirmedAt: row.confirmedAt,
       confirmedBy: row.confirmedBy,
       createdAt: row.createdAt,
+      courier: row.courier,
+      trackingNo: row.trackingNo,
+      dispatchedAt: row.dispatchedAt,
       items: row.items.map((item) => ({
         productId: item.productId,
         titleUr: titles.get(item.productId) ?? '',

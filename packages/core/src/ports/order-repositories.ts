@@ -41,6 +41,15 @@ export interface OrderStatusChange {
   readonly confirmedBy?: ConfirmedBy | undefined
   /** REJECTED par wajah — reseller ko yehi dikhti hai */
   readonly rejectionReason?: string | undefined
+  /**
+   * DISPATCHED ke saath — courier aur CN.
+   *
+   * 🔴 Ye status ke SAATH ek hi update mein likha jata hai, alag call se nahi. Do
+   * alag likhaiyon ka matlab hota ke beech mein kuch toot jane par order "raste mein"
+   * to ho jata magar CN kahin likha hi na jata — aur phir kisi ko pata na chalta ke wo
+   * kahan reh gaya.
+   */
+  readonly shipment?: { courier: string; trackingNo: string | null } | undefined
 }
 
 export interface PendingConfirmationOrder {
@@ -96,6 +105,9 @@ export interface SupplierOrderView {
    * reseller ka paisa atka hota hai (DELIVERED tak us ka hissa khulta hi nahi).
    */
   readonly dispatchedAt: Date | null
+  /** Kis courier ke haath diya, aur CN — dukan ne khud likha tha */
+  readonly courier: string | null
+  readonly trackingNo: string | null
   readonly items: readonly {
     readonly titleUr: string
     readonly titleEn: string

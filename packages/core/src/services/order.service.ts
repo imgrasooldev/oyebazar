@@ -22,10 +22,13 @@ import {
   pkr,
   subtractPkr,
   formatPkr,
+  courierName,
   type Page,
   type Pkr,
 } from '@oyebazar/shared'
+
 import { assertTransition, type OrderStatus } from '../domain/order-status'
+import { readShipment } from '../domain/shipment'
 import type {
   ConfirmedBy,
   CreateOrderCommand,
@@ -401,20 +404,51 @@ export class OrderService {
     })
   }
 
+  /**
+   * Courier ko de diya — aur ab ye batana bhi parta hai ke KIS ko.
+   *
+   * 🔴 Courier lazmi hai, CN sirf tab jab courier koi kampani ho.
+   *
+   * Mandi ki bohat si dukanein apne bandey ke haath maal bhejti hain; un ke paas CN
+   * hota hi nahi. Agar hum har soorat CN maangte to wo `1111` likh kar aage barh jate
+   * aur phir har number par shak karna parta. `self` ka saaf jawab — "apna rider,
+   * number hai hi nahi" — us se kahin behtar hai, kyunke wo SACH hota hai.
+   */
   async markDispatchedBySupplier(
     supplierId: string,
     orderNo: string,
+    shipment: { courier: string; trackingNo?: string | undefined },
   ): Promise<InternalOrderView> {
     const view = await this.orders.findForSupplier(supplierId, orderNo)
     if (!view) throw new NotFoundError('Order', orderNo)
 
+    const parcel = readShipment(shipment)
+
     const order = await this.transition(view.id, 'DISPATCHED', {
       actorType: 'supplier',
       actorId: supplierId,
-      note: 'Wholesaler ne courier ko de diya',
+      note:
+        parcel.trackingNo === null
+          ? `Dukan ke apne rider ke haath`
+          : `${courierName(parcel.courier)} — ${parcel.trackingNo}`,
+      shipment: parcel,
     })
 
-    // Reseller ko foran khabar — us ka customer isi ka intezar kar raha hota hai
+    /*
+     * Reseller ko foran khabar — us ka customer isi ka intezar kar raha hota hai.
+     *
+     * 🔴 CN yahan JAAN BOOJH KAR nahi bheja ja raha, halanke wo ab mojood hai.
+     *
+     * Provider ke template ke parameters NAAM se jate hain, aur wo naam template mein
+     * pehle se declared hona parta hai. Ek ghair-elaan shuda parameter bhejne ka natija
+     * ye hota hai ke poora paighaam rad ho jata — yani reseller ko "maal nikal gaya"
+     * wali khabar bhi na milti, jo abhi milti hai. Ek nayi cheez jorhne ke chakkar mein
+     * jo pehle se chal raha hai usay torhna ghalat sauda hai.
+     *
+     * CN portal par mojood hai (order ke saath, copy hone wala). Jis din provider par
+     * `baji_order_dispatched` mein `trackingNo` ka khaana bana diya jaye, us din wo
+     * yahan ek line se jur jayega.
+     */
     await this.notifyReseller(order, 'baji_order_dispatched', { orderNo: order.orderNo })
     return order
   }
@@ -574,6 +608,14 @@ export class OrderService {
     token: string,
     toStatus: 'PACKED' | 'DISPATCHED' | 'DELIVERED' | 'RTO' | 'CANCELLED',
     reason?: string,
+    /*
+     * 🔴 Magic link wale raste par bhi wohi shart lagti hai jo portal par.
+     *
+     * Agar yahan CN maafi ho jati to raasta khul jata: dukan portal chhor kar hamesha
+     * link se DISPATCHED kar deti aur courier ka koi record kabhi bhi na banta. Ek hi
+     * kaam ke do darwaze rakhna theek hai; un par do alag shartein rakhna nahi.
+     */
+    shipment?: { courier: string; trackingNo?: string | undefined },
   ): Promise<InternalOrderView> {
     const view = await this.orders.findBySupplierToken(token)
     if (!view) throw new NotFoundError('Order')
@@ -591,7 +633,8 @@ export class OrderService {
       case 'PACKED':
         return this.markPackedBySupplier(order.supplierId, order.orderNo)
       case 'DISPATCHED':
-        return this.markDispatchedBySupplier(order.supplierId, order.orderNo)
+        if (!shipment) throw new ValidationError('Courier chunen')
+        return this.markDispatchedBySupplier(order.supplierId, order.orderNo, shipment)
       case 'DELIVERED':
         return this.markDeliveredBySupplier(order.supplierId, order.orderNo)
       case 'RTO':
@@ -855,7 +898,12 @@ export class OrderService {
   private async transition(
     orderId: string,
     to: OrderStatus,
-    actor: { actorType: 'reseller' | 'supplier' | 'ops' | 'system'; actorId?: string; note?: string },
+    actor: {
+      actorType: 'reseller' | 'supplier' | 'ops' | 'system'
+      actorId?: string
+      note?: string
+      shipment?: { courier: string; trackingNo: string | null }
+    },
   ): Promise<InternalOrderView> {
     const order = await this.orders.findById(orderId)
     if (!order) throw new NotFoundError('Order', orderId)
@@ -870,6 +918,7 @@ export class OrderService {
       actorType: actor.actorType,
       actorId: actor.actorId,
       note: actor.note,
+      ...(actor.shipment ? { shipment: actor.shipment } : {}),
     })
   }
 

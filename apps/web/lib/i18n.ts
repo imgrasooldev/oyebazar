@@ -1125,6 +1125,34 @@ const DICTIONARY = {
   tabOrders: { ur: 'آرڈر', en: 'Orders', rm: 'Order' },
   tabMoney: { ur: 'پیسے', en: 'Money', rm: 'Paise' },
   tabBazaar: { ur: 'بازار', en: 'Bazaar', rm: 'Bazaar' },
+
+  // Courier aur CN — dukan se dispatch ke waqt
+  courierAsk: {
+    ur: 'کس کورئیر کے ہاتھ؟',
+    en: 'Which courier?',
+    rm: 'Kis courier ke haath?',
+  },
+  cnAsk: { ur: 'CN نمبر', en: 'CN number', rm: 'CN number' },
+  cnHint: {
+    ur: 'وہی نمبر جو کورئیر کی رسید پر ہے۔ ریسیلر یہی نمبر اپنی گاہک کو بھیجے گی۔',
+    en: "The number on the courier receipt. The reseller passes it to her customer.",
+    rm: 'Wohi number jo courier ki rasid par hai. Reseller yehi number apni customer ko bhejegi.',
+  },
+  // Reseller ke order safhe par
+  parcelTitle: { ur: 'پارسل', en: 'Parcel', rm: 'Parcel' },
+  parcelSelf: {
+    ur: 'دکان کے اپنے رائیڈر کے ہاتھ — کوئی CN نمبر نہیں',
+    en: 'With the shop’s own rider — no CN number',
+    rm: 'Dukan ke apne rider ke haath — koi CN number nahi',
+  },
+  parcelCopy: { ur: 'کاپی', en: 'Copy', rm: 'Copy' },
+  parcelCopied: { ur: 'کاپی ہو گیا', en: 'Copied', rm: 'Copy ho gaya' },
+  parcelTrack: { ur: 'کورئیر کی سائٹ', en: 'Courier site', rm: 'Courier ki site' },
+  parcelNone: {
+    ur: 'دکان نے ابھی کورئیر نہیں لکھا',
+    en: 'The shop has not recorded a courier yet',
+    rm: 'Dukan ne abhi courier nahi likha',
+  },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
   moneyByReseller: { ur: 'ریسیلر کے حساب سے', en: 'By reseller', rm: 'Reseller ke hisab se' },
   moneyEarnedTotal: { ur: 'کل کمائی', en: 'Total earned', rm: 'Kul kamai' },

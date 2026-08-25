@@ -501,6 +501,10 @@ model Order {
    */
   supplierToken    String?   @unique
   dispatchedAt     DateTime?
+  /// kis courier ke haath — `self` ka matlab dukan ka apna rider (koi CN nahi)
+  courier          String?
+  /// CN number, space/dash hata kar bara haroof mein
+  trackingNo       String?
   deliveredAt      DateTime?
   rtoReason        String?
   createdAt        DateTime  @default(now())

@@ -63,6 +63,9 @@ export default async function SupplierOrderPage({
     reasonAsk: t('reasonAsk'),
     confirm: t('confirmAction'),
     back: t('backOut'),
+    courierAsk: t('courierAsk'),
+    cnAsk: t('cnAsk'),
+    cnHint: t('cnHint'),
   }
   const mapsUrl =
     order.locationLat && order.locationLng

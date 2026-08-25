@@ -198,6 +198,9 @@ export function toResellerOrderDTO(order: ResellerOrderView): ResellerOrder {
     confirmedAt: order.confirmedAt?.toISOString() ?? null,
     confirmedBy: order.confirmedBy,
     createdAt: order.createdAt.toISOString(),
+    courier: order.courier,
+    trackingNo: order.trackingNo,
+    dispatchedAt: order.dispatchedAt?.toISOString() ?? null,
     items: order.items.map((item) => ({
       productId: item.productId,
       titleUr: item.titleUr,
@@ -205,7 +208,7 @@ export function toResellerOrderDTO(order: ResellerOrderView): ResellerOrder {
       bajiPrice: item.bajiPrice,
       retailPrice: item.retailPrice,
     })),
-  })
+  } satisfies ResellerOrder)
 }
 
 /** Product views ko bina reseller pricing ke DTO banane ke liye (detail page). */

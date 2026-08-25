@@ -9,11 +9,17 @@ const BodySchema = z
   .object({
     toStatus: z.enum(['PACKED', 'DISPATCHED', 'DELIVERED', 'RTO', 'CANCELLED']),
     reason: z.string().trim().min(3).max(200).optional(),
+    courier: z.string().trim().min(1).max(30).optional(),
+    trackingNo: z.string().trim().max(60).optional(),
   })
   .strict()
   .refine((body) => !['RTO', 'CANCELLED'].includes(body.toStatus) || Boolean(body.reason), {
     message: 'Wajah likhen — reseller ke customer ko yehi batana parta hai',
     path: ['reason'],
+  })
+  .refine((body) => body.toStatus !== 'DISPATCHED' || Boolean(body.courier), {
+    message: 'Courier chunen',
+    path: ['courier'],
   })
 
 /**
@@ -39,12 +45,15 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ token: st
     if (!limit.allowed) throw new RateLimitedError(undefined, limit.retryAfterMs)
 
     const { token } = await ctx.params
-    const { toStatus, reason } = await parseBody(request, BodySchema)
+    const { toStatus, reason, courier, trackingNo } = await parseBody(request, BodySchema)
 
     const order = await container.orders.markStatusByToken(
       token,
       toStatus,
-      ...(reason ? ([reason] as const) : ([] as const)),
+      reason,
+      courier
+        ? { courier, ...(trackingNo ? { trackingNo } : {}) }
+        : undefined,
     )
 
     return { orderNo: order.orderNo, status: order.status }

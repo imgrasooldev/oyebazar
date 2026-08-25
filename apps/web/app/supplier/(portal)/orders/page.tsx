@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { ORDER_TRANSIT, formatPkr } from '@oyebazar/shared'
+import { ORDER_TRANSIT, courierName, formatPkr } from '@oyebazar/shared'
 import type { ResellerRiskRecord, SupplierOrderView } from '@oyebazar/core'
 import { SupplierOrderActions } from '@/components/supplier-order-actions'
 import { ResellerRtoRecord } from '@/components/reseller-rto-record'
@@ -131,6 +131,9 @@ function Section({
     reasonAsk: t('reasonAsk'),
     confirm: t('confirmAction'),
     back: t('backOut'),
+    courierAsk: t('courierAsk'),
+    cnAsk: t('cnAsk'),
+    cnHint: t('cnHint'),
   }
 
   return (
@@ -265,6 +268,25 @@ function OrderCard({
       */}
       {order.status === 'DISPATCHED' && order.dispatchedAt && (
         <TransitAge dispatchedAt={order.dispatchedAt} locale={locale} now={now} />
+      )}
+
+      {/*
+        Dukan ko apna likha hua CN wapas dikhta hai.
+
+        🔴 Ye sirf sajawat nahi: jab reseller poochhti hai "parcel ka kya bana", to jawab
+        dene wale ke saamne wohi number hona chahiye jo us ne likha tha. Warna use apni
+        courier ki rasidon ke dher mein se ye order dhoondhna parta hai — aur wahi wo
+        lamha hai jahan log "baad mein dekhta hoon" keh dete hain.
+      */}
+      {order.courier && (
+        <p className="flex flex-wrap items-center gap-2 text-[0.8rem] text-ink-faint">
+          <span className="font-semibold">{courierName(order.courier)}</span>
+          {order.trackingNo && (
+            <span dir="ltr" className="numeric font-bold text-ink-soft">
+              {order.trackingNo}
+            </span>
+          )}
+        </p>
       )}
 
       {/*
