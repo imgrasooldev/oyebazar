@@ -167,12 +167,25 @@ flyctl secrets set -a oyebazar-web \
 # worker ko wohi secrets chahiyen (APP_URL bhi — link isi se bante hain)
 flyctl secrets set -a oyebazar-worker ...wohi...
 
-# 3) Database ka dhancha (migrations) — apni machine se, prod DB par
-DATABASE_URL="<prod>" DIRECT_URL="<prod>" pnpm --filter @oyebazar/db exec prisma migrate deploy
-
-# 4) Deploy
+# 3) Deploy — migrations KHUD BA KHUD chalti hain, deploy se pehle
+#
+# 🔴 Migration ab haath se nahi chalani. `fly.web.toml` mein `release_command` hai:
+# Fly usay ek waqti machine par (app ke apne secrets ke saath) chalata hai, purane
+# version ke chalte hue, aur naya code TABHI live karta hai jab wo kamyab ho.
+#
+# Wajah tajurbe se hai: ek dafa code migration se pehle live ho gaya aur production ne
+# har order ke safhe par `Order.courier does not exist` dena shuru kar diya. Tarteeb
+# yaad rakhne ka bharosa aadmi par rakhna hi ghalti thi.
+#
+# 🔴 WEB PEHLE. Migrations web ke deploy ke saath lagti hain; worker ka apna
+# release_command nahi (do jagah chalane se har deploy par ek fazool machine banti aur
+# dono ek doosre ka intezar karte). Worker naye column maange aur web abhi deploy na
+# hua ho to wohi purani kharabi wapas aa jayegi.
 flyctl deploy -c fly.web.toml --remote-only
 flyctl deploy -c fly.worker.toml --remote-only
+
+# Migration lagi ya nahi — logs mein saaf likha hota hai
+flyctl logs -a oyebazar-web --no-tail | grep -i migration
 
 # 5) Domain
 flyctl certs add -a oyebazar-web oyebazar.com
