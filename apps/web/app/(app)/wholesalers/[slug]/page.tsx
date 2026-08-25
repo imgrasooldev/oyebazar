@@ -11,6 +11,7 @@
  *
  * Rabte ka number yahan jaan boojh kar nahi — dekhen `RESELLER_PRODUCT_SELECT` ka note.
  */
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { formatPkr } from '@oyebazar/shared'
@@ -23,6 +24,24 @@ import { SupplierLogo } from '@/components/supplier-logo'
 import { ProductCard } from '@/components/product-card'
 
 export const dynamic = 'force-dynamic'
+
+/**
+ * Safhe ka apna unwan.
+ *
+ * 🔴 Bina is ke browser ki tab par poore site ka default chalta tha ("OyeBazar —
+ * Pakistan ke tasdeeq shuda wholesalers ki directory"). Reseller aksar do teen dukanein
+ * alag tabon mein khol kar moqabla karti hai — aur teenon tab bilkul ek jaisi dikhti
+ * thin, yani wo apni hi khuli hui dukan dhoondh nahi sakti thi.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const supplier = await container.bazaar.getSupplier(slug).catch(() => null)
+  return { title: supplier ? supplier.businessName : 'OyeBazar' }
+}
 
 /**
  * Safhe par kitna maal.
@@ -63,6 +82,12 @@ export default async function WholesalerPage({ params }: { params: Promise<{ slu
 
   const items = goods.items.map(toResellerProductListItemDTO)
 
+  // Sirf haroof aur hindse — "Bolton Market · Karachi" aur "Bolton Market, Karachi" ek hi hain
+  const bare = (value: string) => value.toLowerCase().replace(/[^a-z0-9؀-ۿ]/g, '')
+  const known = bare(`${supplier.marketName ?? ''}${supplier.city}`)
+  const extraAddress =
+    supplier.address && bare(supplier.address) !== known ? supplier.address : null
+
   return (
     <div className="space-y-5">
       <header className="flex items-start gap-3">
@@ -75,7 +100,15 @@ export default async function WholesalerPage({ params }: { params: Promise<{ slu
             {supplier.marketName ? `${supplier.marketName} · ` : ''}
             {supplier.city}
           </p>
-          {supplier.address && (
+          {/*
+            Pata sirf tab jab wo upar wali line se kuch ZYADA batata ho.
+
+            🔴 Bohat si dukanon ka `address` bilkul wohi hota hai jo mandi aur sheher —
+            "Bolton Market, Karachi" theek us line ke neeche jis par pehle se "Bolton
+            Market · Karachi" likha hai. Wo dobara likhna maloomat nahi deta, sirf ye
+            shak daalta hai ke shayad ye do alag cheezein hain.
+          */}
+          {extraAddress && (
             <p className="mt-0.5 text-[0.8rem] text-ink-faint">{supplier.address}</p>
           )}
         </div>
@@ -218,6 +251,7 @@ export default async function WholesalerPage({ params }: { params: Promise<{ slu
                 locale={locale}
                 rating={rating}
                 now={now}
+                showSupplier={false}
               />
             ))}
           </ul>

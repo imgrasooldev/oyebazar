@@ -32,6 +32,7 @@ export function ProductCard({
   rating,
   now,
   listView = false,
+  showSupplier = true,
 }: {
   item: ResellerProductListItem
   locale: Locale
@@ -40,6 +41,15 @@ export function ProductCard({
   /** Ek hi "abhi" poori list ke liye — har card apna waqt na nikale */
   now: Date
   listView?: boolean
+  /**
+   * Dukan ka naam dikhana ya nahi.
+   *
+   * 🔴 Us dukan ke APNE safhe par wo naam har card par dobara likhna shor hai — bees
+   * card, bees dafa wohi naam, aur reseller ko wahan wo cheez chahiye jo har maal mein
+   * ALAG hai (rate aur munafa). Jo baat safhe ke sar-name se pehle hi maloom ho, usay
+   * dobara likhna nazar ka waqt khata hai.
+   */
+  showSupplier?: boolean
 }) {
   const t = translator(locale)
 
@@ -229,6 +239,7 @@ export function ProductCard({
               hai), warna link ke andar link banta — jo HTML mein jaiz hi nahi
               aur browser mein ajeeb chalta hai.
             */}
+            {showSupplier && (
             <Link
               href={`/wholesalers/${item.supplier.slug}`}
               className="mt-1.5 flex min-w-0 items-center gap-1.5 text-[0.7rem] text-ink-faint transition hover:text-brand-700"
@@ -242,6 +253,7 @@ export function ProductCard({
                 </span>
               ) : null}
             </Link>
+            )}
 
             <dl className="mt-2 space-y-0.5 text-[0.75rem] leading-tight">
               <div className="flex items-baseline justify-between gap-2">
