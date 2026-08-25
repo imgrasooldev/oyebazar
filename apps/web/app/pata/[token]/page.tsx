@@ -12,6 +12,19 @@ export const dynamic = 'force-dynamic'
 type Props = { params: Promise<{ token: string }> }
 
 /**
+ * 🔴 Ye safha `(public)` group ke BAHAR hai — aur ye jaan boojh kar hai.
+ *
+ * Pehle wo wahin andar tha, aur live dekhne par saaf hua ke customer ko poora
+ * marketplace ka header dikh raha tha: "Wholesaler login", "Search wholesalers or
+ * markets", "directory of verified wholesalers".
+ *
+ * Yani jis customer ko reseller ne apna link bheja tha, usay ek tap mein wo jagah nazar
+ * aa rahi thi jahan se maal aata hai. Wo reseller ke karobar ki jarh kaat deta hai —
+ * aur us link se, jo us ne KHUD bheja tha.
+ *
+ * Yahan sirf root layout lagta hai (html/body, koi chrome nahi). Safha customer ka hai:
+ * reseller ka naam, maal, aur pata likhne ki jagah — aur kuch nahi.
+ *
  * 🔴 `noindex` — ye safha kabhi Google par nahi jana chahiye.
  *
  * Is par ek shakhs ka naam, number aur ghar ka pata likha jata hai. Aur khud link ek
