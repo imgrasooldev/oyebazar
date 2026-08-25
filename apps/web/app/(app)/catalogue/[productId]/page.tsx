@@ -5,7 +5,7 @@ import type { Metadata } from 'next'
 import { STATUS_PACK_TEMPLATES, customTemplateKey, formatPkr } from '@oyebazar/shared'
 import { StatusPackStudio } from '@/components/status-pack-studio'
 import { SupplierPaymentRecord } from '@/components/supplier-payment-record'
-import { ChevronIcon } from '@/components/icons'
+import { ChevronIcon, StoreIcon } from '@/components/icons'
 import { toResellerProductDetailDTO } from '@/lib/api/mappers'
 import { requireReseller } from '@/lib/api/session'
 import { container } from '@/lib/container'
@@ -50,6 +50,18 @@ export default async function ProductPage({
   }))
 
   const product = toResellerProductDetailDTO(item)
+
+  /*
+   * Dukan ke sitare — maal ke saath.
+   *
+   * 🔴 Ye alag query is liye hai ke wo `item` ke aane ke BAAD chalti hai: dukan ki id
+   * usi mein se milti hai. Upar wale `Promise.all` mein daalne ke liye pehle product
+   * chahiye — aur ek query bacha kar do gunna intezar karwana bura sauda hai.
+   */
+  const ratings = await container.repositories.supplierReviews.ratingsFor([
+    product.supplier.id,
+  ])
+  const rating = ratings.get(product.supplier.id)
   const title = locale === 'ur' ? product.titleUr : product.titleEn
 
   // Reseller ka apna rate na ho to tajweez kardah — munafa isi par dikhta hai
@@ -94,6 +106,37 @@ export default async function ProductPage({
                     {pickName(locale, product.category)}
                   </p>
                   <h1 className="mt-1 text-[1.3rem] font-bold leading-snug">{title}</h1>
+
+                  {/*
+                    Maal kis dukan ka hai — aur wo dukan kaisi hai.
+
+                    🔴 Ye safha wo jagah hai jahan reseller waqai FAISLA karti hai (order
+                    ka button isi par hai), aur yahan tak dukan ka koi zikr hi nahi tha.
+                    Catalogue ki qatar mein naam dikhana aur faisle ke lamhe par chhupa
+                    dena ulti tarteeb thi.
+
+                    🔴 Sitare na hon to ginti bhi nahi likhte. Teen se kam raye par
+                    `stars` `null` aata hai — aur "0 raye" chhaap dena us dukan par ek
+                    bura number jaisa lagta hai, jabke haqeeqat sirf itni hai ke abhi
+                    kisi ne kuch kaha hi nahi.
+                  */}
+                  <Link
+                    href={`/wholesalers/${product.supplier.slug}`}
+                    className="mt-2 inline-flex min-h-tap items-center gap-2 text-[0.85rem] text-ink-soft transition hover:text-brand-700 lg:min-h-0"
+                  >
+                    <StoreIcon className="h-4 w-4 shrink-0" />
+                    <span className="underline decoration-dotted underline-offset-2">
+                      {product.supplier.businessName}
+                    </span>
+                    {rating?.stars ? (
+                      <span className="whitespace-nowrap font-semibold text-accent-700">
+                        ★ <span dir="ltr" className="numeric">{rating.stars}</span>
+                        <span className="ms-1 font-normal text-ink-faint">
+                          (<span dir="ltr" className="numeric">{rating.count}</span>)
+                        </span>
+                      </span>
+                    ) : null}
+                  </Link>
                 </div>
 
                 <span

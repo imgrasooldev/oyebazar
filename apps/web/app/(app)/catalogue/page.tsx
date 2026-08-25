@@ -509,17 +509,38 @@ export default async function CataloguePage({
                       Sitare na hon to ginti bhi nahi likhte: "0 raye" us dukan par ek
                       khali khaana chhaap deta hai jo bure number jaisa dikhta hai.
                     */}
-                    <p className="mt-1.5 truncate text-[0.7rem] text-ink-faint">
-                      {item.supplier.businessName}
+                    {/*
+                      🔴 Dukan ka naam ab DABNE wala hai — pehle wo sirf likha hua tha.
+
+                      Yehi wo jagah hai jahan reseller ka agla sawal uthta hai: "ye dukan
+                      kaun hai?" Naam dikha kar us sawal ka koi jawab na dena us se bura
+                      hai ke naam dikhaya hi na jata — banda dabata hai, kuch nahi hota,
+                      aur wo samajhta hai ke safha toota hua hai.
+
+                      Sitare is ka sabab aur bhi barha dete hain: "★ 4.2" dekh kar pehla
+                      khayal hi ye aata hai ke ye number kis cheez ka hai — aur us ka
+                      jawab dukan ke apne safhe par hai.
+
+                      🔴 Ye upar wale `Link` ke BAHAR hai (wo sirf tasveer par lipta hua
+                      hai), warna link ke andar link banta — jo HTML mein jaiz hi nahi
+                      aur browser mein ajeeb chalta hai.
+                    */}
+                    <Link
+                      href={`/wholesalers/${item.supplier.slug}`}
+                      className="mt-1.5 flex min-w-0 items-center gap-1.5 text-[0.7rem] text-ink-faint transition hover:text-brand-700"
+                    >
+                      <span className="min-w-0 truncate underline decoration-dotted underline-offset-2">
+                        {item.supplier.businessName}
+                      </span>
                       {(() => {
                         const rating = ratings.get(item.supplier.id)
                         return rating?.stars ? (
-                          <span className="ms-1.5 whitespace-nowrap font-semibold text-accent-700">
+                          <span className="shrink-0 whitespace-nowrap font-semibold text-accent-700">
                             ★ <span dir="ltr" className="numeric">{rating.stars}</span>
                           </span>
                         ) : null
                       })()}
-                    </p>
+                    </Link>
 
                     <dl className="mt-2 space-y-0.5 text-[0.75rem] leading-tight">
                       <div className="flex items-baseline justify-between gap-2">
