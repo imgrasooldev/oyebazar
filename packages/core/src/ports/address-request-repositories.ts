@@ -33,6 +33,7 @@ export interface FilledAddressRequestView {
   readonly locationLng: number | null
   readonly filledAt: Date
   readonly productTitleUr: string
+  readonly productTitleEn: string
   readonly imageUrl: string | null
 }
 

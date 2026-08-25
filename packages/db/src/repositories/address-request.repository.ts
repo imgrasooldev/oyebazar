@@ -179,6 +179,7 @@ const FILLED_SELECT = {
   product: {
     select: {
       titleUr: true,
+      titleEn: true,
       media: {
         where: { type: 'IMAGE' as const },
         select: { processedUrl: true, originalUrl: true },
@@ -226,6 +227,7 @@ function toFilled(row: FilledRow): FilledAddressRequestView | null {
     locationLng: row.locationLng,
     filledAt: row.filledAt,
     productTitleUr: row.product.titleUr,
+    productTitleEn: row.product.titleEn,
     imageUrl: image?.processedUrl ?? image?.originalUrl ?? null,
   }
 }

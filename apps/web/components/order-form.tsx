@@ -263,6 +263,14 @@ export function OrderForm({
         order khud ba khud NAHI banta. Wo khaane us ke saamne rehte hain aur wo unhen
         theek kar sakti hai: ye kisi asli bande ka pata hai aur us par parcel jayega.
       */}
+      {/*
+        Paste ka khaana tab chhup jata hai jab customer khud pata bhej chuki ho.
+
+        🔴 Do raste ek saath dikhana reseller ko rok deta hai: wo sochti hai ke shayad
+        yahan bhi kuch daalna hai. Jab kaam ho chuka ho to us ka auzaar hata dena chahiye
+        — warna wo auzaar ek sawal ban jata hai.
+      */}
+      {!prefill && (
       <label className="block rounded-card bg-paper-sunken p-3">
         <span className="text-sm font-semibold">{t('pasteMessage')}</span>
         <textarea
@@ -281,6 +289,7 @@ export function OrderForm({
           </span>
         )}
       </label>
+      )}
 
       <label className="block">
         <span className="text-sm font-semibold">{t('customerName')}</span>

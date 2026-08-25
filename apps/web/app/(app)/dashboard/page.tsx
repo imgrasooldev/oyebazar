@@ -10,7 +10,7 @@ import { requireReseller } from '@/lib/api/session'
 import { container } from '@/lib/container'
 import { reviewPeriod } from '@oyebazar/core'
 import { SupplierReviewForm } from '@/components/supplier-review-form'
-import { orderStatusLabel, translator, type Locale } from '@/lib/i18n'
+import { orderStatusLabel, pickTitle, translator, type Locale } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
 import { orderStatusStyle } from '@/lib/order-status-style'
 
@@ -150,7 +150,8 @@ export default async function ResellerDashboard() {
                       {pata.customerName}
                     </span>
                     <span className="block truncate text-[0.78rem] text-ink-faint">
-                      {pata.productTitleUr} · {pata.area}
+                      {pickTitle(locale, { titleUr: pata.productTitleUr, titleEn: pata.productTitleEn })} ·{' '}
+                      {pata.area}
                     </span>
                   </span>
                   <span className="shrink-0 text-[0.78rem] font-semibold text-accent-700">
