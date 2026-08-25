@@ -1267,6 +1267,12 @@ const DICTIONARY = {
    * chhupa deta.
    */
   sharePack: { ur: 'بھیجیں', en: 'Share', rm: 'Bhejein' },
+
+  // Pack ke faislay band halat mein — ek line, aur badalne ka rasta
+  packChange: { ur: 'بدلیں', en: 'Change', rm: 'Badlein' },
+  packNoPrice: { ur: 'ریٹ نہیں', en: 'no price', rm: 'rate nahi' },
+  packNoName: { ur: 'نام نہیں', en: 'no name', rm: 'naam nahi' },
+  packNoPhone: { ur: 'نمبر نہیں', en: 'no number', rm: 'number nahi' },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
   moneyByReseller: { ur: 'ریسیلر کے حساب سے', en: 'By reseller', rm: 'Reseller ke hisab se' },
   moneyEarnedTotal: { ur: 'کل کمائی', en: 'Total earned', rm: 'Kul kamai' },

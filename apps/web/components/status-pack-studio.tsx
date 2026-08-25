@@ -147,6 +147,49 @@ export function StatusPackStudio({
   const [savingDefaults, setSavingDefaults] = useState(false)
   const [defaultsSaved, setDefaultsSaved] = useState(false)
 
+  /*
+   * Design aur "image par kya dikhega" — ye SAB pehle har safhe par khule pade the.
+   *
+   * 🔴 Naap kar dekha: is ek safhe par 34 cheezein thin jin par faisla ho sakta tha.
+   * Jabke roz ka kaam teen tap ka hai — tasveer chuno, pack banao, bhejo.
+   *
+   * Aur asal baat ye hai ke wo 34 cheezein ek dafa ki hain, roz ki nahi. Reseller ek
+   * dafa apna template aur apne switch chunti hai, phir mahino wohi chalte hain — us ka
+   * apna default pehle se mehfooz hota hai. Har din, har maal par wohi 30 cheezein
+   * dobara dikhana usay kuch deta nahi, sirf asal button ko neeche dhakelta hai.
+   *
+   * Is liye kuch HATAYA nahi gaya — sab mojood hai, ek tap door. Farq sirf ye hai ke
+   * pehli nazar mein wo cheez saamne hai jo waqai roz karni hai.
+   *
+   * 🔴 Nayi reseller ke liye khula rehta hai. Jis ne abhi tak apna default chuna hi
+   * nahi, us ke saamne wo faisle chhupa dena usay ye batana hai ke "yahan kuch chunne ko
+   * hai hi nahi" — aur wo pehla pack us ke apne naam aur number ke baghair chala jata.
+   */
+  const [showSettings, setShowSettings] = useState(!defaultTemplateKey)
+
+  /*
+   * Band halat mein jo ek line dikhti hai — us mein wohi cheezein hain jo BADAL sakti
+   * hain aur jin ka asar tasveer par nazar aata hai.
+   *
+   * Jo band hai wo bhi likha jata hai ("rate nahi", "number nahi"), sirf jo khula hai wo
+   * nahi. 🔴 Us ki wajah tajurbe ki hai: reseller ka sab se aam sawal "mera number kyun
+   * nahi aaya?" hota hai, aur us ka jawab isi line mein hona chahiye — warna wo poora
+   * pack dobara banati hai ye samajhne ke liye ke hua kya tha.
+   */
+  const chosenTemplateName =
+    customTemplates.find((template) => template.key === templateKey)?.name ??
+    TEMPLATE_NAMES[templateKey]?.[locale] ??
+    templateKey
+
+  const chosenSummary = [
+    options.lang === 'en' ? t('packEnglish') : t('packUrdu'),
+    options.showPrice === false ? t('packNoPrice') : null,
+    options.showName === false ? t('packNoName') : null,
+    options.showPhone === false ? t('packNoPhone') : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
   function setOption<K extends keyof PackOptions>(field: K, value: PackOptions[K]) {
     setOptions((current) => ({ ...current, [field]: value }))
     // Faisla badal gaya to purani kit ab is se mel nahi khati — usay hata dete hain,
@@ -374,6 +417,36 @@ export function StatusPackStudio({
           </div>
         )}
 
+        {/*
+          Ek line jo batati hai ke abhi kya chuna hua hai — aur badalne ka rasta.
+
+          🔴 Chhupa dena aur BATA kar chhupana do alag cheezein hain. Agar yahan kuch na
+          likha hota to reseller ko pata hi na chalta ke us ka kaun sa design lagega, aur
+          wo har dafa "Badlein" daba kar tasdeeq karti — yani chhupane ka faida ulta ho
+          jata.
+        */}
+        {!showSettings && (
+          <button
+            type="button"
+            onClick={() => setShowSettings(true)}
+            className="flex w-full items-center justify-between gap-3 rounded-card bg-paper-sunken px-4 py-3 text-start transition hover:bg-paper-sunken/70"
+          >
+            <span className="min-w-0">
+              <span className="block truncate text-[0.88rem] font-semibold">
+                {chosenTemplateName}
+              </span>
+              <span className="mt-0.5 block truncate text-[0.76rem] text-ink-faint">
+                {chosenSummary}
+              </span>
+            </span>
+            <span className="shrink-0 text-[0.8rem] font-semibold text-brand-700">
+              {t('packChange')}
+            </span>
+          </button>
+        )}
+
+        {showSettings && (
+        <>
         {/* 2 — ٹیمپلیٹ */}
         <div>
           <div className="flex items-baseline justify-between gap-3">
@@ -526,6 +599,8 @@ export function StatusPackStudio({
             </button>
           </div>
         </div>
+        </>
+        )}
 
         {/* 4 — بنائیں */}
         <button
