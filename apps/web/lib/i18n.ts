@@ -1258,6 +1258,15 @@ const DICTIONARY = {
   shopLastListed: { ur: 'نیا مال', en: 'New stock', rm: 'Naya maal' },
   shopGoodsTitle: { ur: 'اس دکان کا مال', en: 'What this shop sells', rm: 'Is dukan ka maal' },
   shopSeeAll: { ur: 'سارا مال دیکھیں', en: 'See all stock', rm: 'Sara maal dekhein' },
+
+  /*
+   * "Bhejein" — "Share" nahi.
+   *
+   * Ye button phone ka apna share sheet kholta hai, aur wahan se maal Status par,
+   * Instagram par ya Facebook par jata hai. Kisi ek jagah ka naam likhna baqi do ko
+   * chhupa deta.
+   */
+  sharePack: { ur: 'بھیجیں', en: 'Share', rm: 'Bhejein' },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
   moneyByReseller: { ur: 'ریسیلر کے حساب سے', en: 'By reseller', rm: 'Reseller ke hisab se' },
   moneyEarnedTotal: { ur: 'کل کمائی', en: 'Total earned', rm: 'Kul kamai' },

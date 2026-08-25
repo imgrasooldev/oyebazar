@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { NOTE_MAX, formatPkr, type PackKit, type PackKitAsset, type PackOptions } from '@oyebazar/shared'
 import { CopyIcon, DownloadIcon, SparkIcon } from '@/components/icons'
+import { SharePackButton } from '@/components/share-pack-button'
 import { translator, type Locale } from '@/lib/i18n'
 
 const TEMPLATE_NAMES: Record<string, Record<Locale, string>> = {
@@ -608,6 +609,24 @@ export function StatusPackStudio({
                       <DownloadIcon className="h-4 w-4" />
                       {t('download')}
                     </a>
+                  )}
+
+                  {/*
+                    Share — phone ka apna sheet, jis mein Status, Instagram aur Facebook
+                    sab aa jate hain.
+
+                    🔴 Ye download ki JAGAH nahi, us ke SAATH hai. Phone par share do tap
+                    bachata hai; computer par wo button bunta hi nahi (wahan file share
+                    hoti hi nahi) aur download hi wahid rasta rehta hai. Ek ko doosre se
+                    badal dena ek taraf ke logon ka kaam rok deta.
+                  */}
+                  {asset.imageUrl && (
+                    <SharePackButton
+                      packId={asset.packId}
+                      caption={current.caption}
+                      label={t('sharePack')}
+                      onShared={() => void markDownloaded(asset.packId)}
+                    />
                   )}
                 </li>
               ))}

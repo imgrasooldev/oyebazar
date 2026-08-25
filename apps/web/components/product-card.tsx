@@ -66,7 +66,7 @@ export function ProductCard({
       */
       if (listView) {
         return (
-          <li key={item.id} className="card flex flex-wrap items-center gap-3 p-2.5">
+          <li className="card flex flex-wrap items-center gap-3 p-2.5">
             <Link
               href={`/catalogue/${item.id}`}
               className="tile-media-wrap h-16 w-16 shrink-0 rounded-card bg-paper-sunken"
@@ -85,6 +85,31 @@ export function ProductCard({
               <Link href={`/catalogue/${item.id}`} className="block">
                 <p className="truncate text-[0.92rem] font-semibold">{title}</p>
               </Link>
+              {/*
+                Dukan ka naam qatar wali shakl mein bhi.
+
+                🔴 Ye pehle sirf grid mein tha. View badalte hi maal KIS KA hai wo baat
+                gayab ho jati thi — aur qatar wali shakl wo hai jise reseller MOQABLE ke
+                liye kholti hai (paanch maal ek saath, numbers ek hi line par). Theek
+                usi jagah dukan ka naam chhupa dena ulta tha: moqabla sirf rate ka nahi
+                hota, us dukan ka bhi hota hai jis se maal aana hai.
+              */}
+              {showSupplier && (
+                <Link
+                  href={`/wholesalers/${item.supplier.slug}`}
+                  className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[0.74rem] text-ink-faint transition hover:text-brand-700"
+                >
+                  <span className="min-w-0 truncate underline decoration-dotted underline-offset-2">
+                    {item.supplier.businessName}
+                  </span>
+                  {rating?.stars ? (
+                    <span className="shrink-0 whitespace-nowrap font-semibold text-accent-700">
+                      ★ <span dir="ltr" className="numeric">{rating.stars}</span>
+                    </span>
+                  ) : null}
+                </Link>
+              )}
+
               <p className="mt-0.5 text-[0.74rem] text-ink-faint">
                 {pickName(locale, item.category)}
                 <span className="mx-1.5">·</span>
@@ -144,7 +169,7 @@ export function ProductCard({
       }
 
       return (
-        <li key={item.id} className="tile group flex flex-col">
+        <li className="tile group flex flex-col">
           <Link href={`/catalogue/${item.id}`} className="block">
             <div className="relative aspect-square overflow-hidden bg-paper-sunken">
               {item.coverImageUrl && (
