@@ -575,7 +575,6 @@ const DICTIONARY = {
   },
   wholesalersSearchHint: { ur: 'دکان یا شہر کا نام', en: 'Shop or city name', rm: 'Dukan ya sheher ka naam' },
   wholesalersEmpty: { ur: 'کوئی دکان نہیں ملی۔', en: 'No wholesalers found.', rm: 'Koi dukan nahi mili.' },
-  wholesalerGoods: { ur: 'اس دکان کا مال', en: 'Goods from this shop', rm: 'Is dukan ka maal' },
   wholesalerNoGoods: { ur: 'اس دکان کا کوئی مال ابھی دستیاب نہیں۔', en: 'No goods from this shop right now.', rm: 'Is dukan ka koi maal abhi dastyab nahi.' },
   reachTitle: { ur: 'آپ کا مال کہاں تک پہنچا', en: 'How far your goods reached', rm: 'Aap ka maal kahan tak pohancha' },
   reachHint: {
@@ -1247,6 +1246,18 @@ const DICTIONARY = {
     en: 'Open to place the order',
     rm: 'Order banane ke liye kholen',
   },
+
+  // ---- Dukan ka safha (reseller portal) ----
+  shopDeliveryCity: { ur: 'ڈیلیوری — اسی شہر', en: 'Delivery — same city', rm: 'Delivery — isi sheher' },
+  shopDeliveryOther: { ur: 'ڈیلیوری — دوسرا شہر', en: 'Delivery — other city', rm: 'Delivery — doosra sheher' },
+  shopPayoutTerm: { ur: 'کمیشن کب ملے گا', en: 'Commission paid in', rm: 'Commission kab milega' },
+  shopPayoutSameDay: { ur: 'اسی دن', en: 'Same day', rm: 'Usi din' },
+  days: { ur: 'دن', en: 'days', rm: 'din' },
+  shopItems: { ur: 'مال', en: 'items', rm: 'maal' },
+  shopSince: { ur: 'اوئے بازار پر', en: 'On OyeBazar', rm: 'OyeBazar par' },
+  shopLastListed: { ur: 'نیا مال', en: 'New stock', rm: 'Naya maal' },
+  shopGoodsTitle: { ur: 'اس دکان کا مال', en: 'What this shop sells', rm: 'Is dukan ka maal' },
+  shopSeeAll: { ur: 'سارا مال دیکھیں', en: 'See all stock', rm: 'Sara maal dekhein' },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
   moneyByReseller: { ur: 'ریسیلر کے حساب سے', en: 'By reseller', rm: 'Reseller ke hisab se' },
   moneyEarnedTotal: { ur: 'کل کمائی', en: 'Total earned', rm: 'Kul kamai' },

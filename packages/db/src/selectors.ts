@@ -124,6 +124,10 @@ export const PUBLIC_SUPPLIER_SELECT = {
   address: true,
   logoUrl: true,
   createdAt: true,
+  // Dukan ki apni shartein — reseller inhi par faisla karti hai (dekhen view ka note)
+  deliveryFeeCity: true,
+  deliveryFeeOther: true,
+  payoutTermDays: true,
   // ntn / strn / phone / bankAccount / feeRateBps: kabhi public nahi
   _count: { select: { products: { where: { status: 'LIVE' } } } },
   // Aakhri live listing — "2 din pehle naya maal" isi se banta hai

@@ -199,6 +199,9 @@ export class PrismaSupplierRepository
       productCount: row._count.products,
       memberSince: row.createdAt,
       lastListedAt: row.products[0]?.createdAt ?? null,
+      deliveryFeeCity: row.deliveryFeeCity,
+      deliveryFeeOther: row.deliveryFeeOther,
+      payoutTermDays: row.payoutTermDays,
     }
   }
 }
