@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { LazyImage } from '@/components/lazy-image'
 import type { Metadata } from 'next'
 import { formatPkr } from '@oyebazar/shared'
 import { MiniBars, StatTile, Widget } from '@/components/dash-kit'
@@ -46,7 +47,7 @@ export default async function ResellerDashboard() {
    */
   const trendingSince = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
 
-  const [stats, ordersPage, payouts, payoutTotals, risk, trending, pendingReview] =
+  const [stats, ordersPage, payouts, payoutTotals, risk, trending, pendingReview, waitingPata] =
     await Promise.all([
     container.repositories.resellerStats.summary(reseller.id, new Date()),
     container.orders.listForReseller(reseller.id, { limit: 5 }),
@@ -71,6 +72,15 @@ export default async function ResellerDashboard() {
      * reseller pehle se roz aati hai.
      */
     container.repositories.supplierReviews.pendingFor(reseller.id, reviewPeriod(new Date())),
+    /*
+     * Wo pate jo customer khud bhej chuki hai aur jin ka order abhi nahi bana.
+     *
+     * 🔴 Ye dashboard par is liye hai ke reseller ko KHABAR hi nahi hoti. Link us ne
+     * WhatsApp par bheja tha; customer ne wahan jawab nahi diya, safhe par pata likh
+     * diya — yani reseller ka phone chup raha. Bina is khaane ke wo pata yahan pada
+     * rehta aur customer intezar karti rehti ke parcel kab aayega.
+     */
+    container.addressRequests.listWaiting(reseller.id, 5),
   ])
   const myRecord = risk[0]
 
@@ -109,6 +119,50 @@ export default async function ResellerDashboard() {
   return (
     <div className="space-y-8">
       {/* Dukan ki raye — safhe par SAB SE OOPAR, kyunke wohi ek cheez hai jo bhoolti hai */}
+      {/*
+        Customer ne apna pata bhej diya — sab se pehla kaam.
+
+        🔴 Ye raye wale form se bhi UPAR hai. Wo form ek purane order ke bare mein hai
+        (kaam ho chuka); ye ek order hai jo abhi BANA hi nahi aur jis ke doosri taraf koi
+        intezar kar raha hai. Jis kaam par kisi ka intezar laga ho, wo pehle aata hai.
+      */}
+      {waitingPata.length > 0 && (
+        <section className="rounded-card bg-accent-50 p-4 ring-1 ring-accent-600/40">
+          <p className="text-[0.95rem] font-bold text-accent-700">{t('pataWaitingTitle')}</p>
+          <ul className="mt-3 space-y-2">
+            {waitingPata.map((pata) => (
+              <li key={pata.token}>
+                <Link
+                  href={`/orders/new/${pata.productId}?pata=${pata.token}`}
+                  className="flex items-center gap-3 rounded-card bg-paper-raised p-2.5 shadow-soft transition hover:shadow-lift"
+                >
+                  <span className="h-11 w-11 shrink-0 overflow-hidden rounded-card bg-paper-sunken">
+                    {pata.imageUrl && (
+                      <LazyImage
+                        src={pata.imageUrl}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[0.9rem] font-semibold">
+                      {pata.customerName}
+                    </span>
+                    <span className="block truncate text-[0.78rem] text-ink-faint">
+                      {pata.productTitleUr} · {pata.area}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-[0.78rem] font-semibold text-accent-700">
+                    {t('pataWaitingHint')}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {pendingReview && (
         <div className="mb-6">
           <SupplierReviewForm

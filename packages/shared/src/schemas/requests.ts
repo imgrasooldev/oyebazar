@@ -298,6 +298,12 @@ export const CreateOrderSchema = z.object({
   lines: z.array(OrderLineInputSchema).min(1, 'Kam se kam ek item chahiye').max(20),
   deliveryFee: z.number().int().nonnegative().max(5_000).default(200),
   paymentMethod: z.enum(['COD', 'PREPAID']).default('COD'),
+  /**
+   * Agar ye order us link se bana jis par customer ne khud apna pata likha tha.
+   *
+   * Order banne ke BAAD wo link band kar diya jata hai — ek link, ek order.
+   */
+  pataToken: z.string().trim().min(10).max(200).optional(),
 })
 
 export const CancelOrderSchema = z.object({

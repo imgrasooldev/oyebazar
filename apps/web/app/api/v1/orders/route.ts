@@ -49,6 +49,21 @@ export async function POST(request: Request) {
       idempotencyKey,
     })
 
+    /*
+     * Pata wala link band — ek link, ek order.
+     *
+     * 🔴 Ye order banne ke BAAD hai, pehle nahi. Pehle band karne ka matlab hota ke
+     * order banane mein koi bhi ghalti (maal khatam, rate ka masla) link ko jala deti
+     * aur customer ko dobara apna pata likhna parta — jabke us ka koi qusoor nahi tha.
+     *
+     * Nateeje ki parwah nahi ki jati: `false` ka matlab hai link pehle hi band tha, jo
+     * ek retry par bilkul mumkin hai (order banana idempotent hai). Us par error
+     * phenkna ek KAMYAB order ko nakaam dikhana hoga.
+     */
+    if (body.pataToken) {
+      await container.addressRequests.close(reseller.id, body.pataToken, order.id)
+    }
+
     // 🔴 Response reseller shape mein — internal view (fee, supplier) kabhi wapas nahi jata
     const view = await container.orders.getForReseller(order.orderNo, reseller.id)
     return toResellerOrderDTO(view)

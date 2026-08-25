@@ -13,6 +13,7 @@ import {
   FeeInvoiceService,
   CategoryAdminService,
   OrderService,
+  AddressRequestService,
   PayoutService,
   PriceChangeService,
   PricingService,
@@ -69,6 +70,7 @@ export interface Container {
   /** Nayi dukan ki darkhwast — public form se aati hai, chalu ops karti hai. */
   readonly supplierOnboarding: SupplierOnboardingService
   readonly orders: OrderService
+  readonly addressRequests: AddressRequestService
   /** 🔴 Reseller ke paise — do taraf ki tasdeeq, tafseel PayoutService mein. */
   readonly payouts: PayoutService
   /** Category ka darakht — ops banati aur tarteeb deti hai. */
@@ -184,6 +186,7 @@ function build(): Container {
     ),
     payouts,
     categoryAdmin: new CategoryAdminService(repositories.categoryAdmin, analytics, logger),
+    addressRequests: new AddressRequestService(repositories.addressRequests, tokens, clock),
     orders: new OrderService(
       repositories.orders,
       repositories.products,

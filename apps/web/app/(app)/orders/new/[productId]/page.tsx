@@ -11,12 +11,30 @@ export const dynamic = 'force-dynamic'
 
 export default async function NewOrderPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ productId: string }>
+  searchParams: Promise<{ pata?: string }>
 }) {
   const { reseller } = await requireReseller()
-  const { productId } = await params
-  const locale = await getLocale()
+  const [{ productId }, { pata }, locale] = await Promise.all([
+    params,
+    searchParams,
+    getLocale(),
+  ])
+
+  /*
+   * 🔴 `takeForOrder` mein `resellerId` shart hai — doosri reseller ka token yahan se
+   * kuch nahi deta. Us ke baghair koi bhi logged-in reseller URL mein token daal kar
+   * kisi aur ki customer ka naam, number aur ghar ka pata parh leti.
+   *
+   * Na milne par `null` — safha phir bhi khulta hai, bas khaane khali. Yahi theek hai:
+   * link band ho chuka ho (order ban gaya) to reseller ko error safha dikhane se koi
+   * faida nahi, wo waise bhi order laga sakti hai.
+   */
+  const filled = pata
+    ? await container.addressRequests.takeForOrder(reseller.id, pata).catch(() => null)
+    : null
 
   const [item, paymentRecord, delivery] = await Promise.all([
     container.catalogue.getById(reseller.id, productId).catch(() => null),
@@ -40,8 +58,21 @@ export default async function NewOrderPage({
         delivery={delivery}
         title={locale === 'ur' ? item.product.titleUr : item.product.titleEn}
         bajiPrice={item.product.bajiPrice}
-        defaultRetailPrice={item.myRetailPrice ?? item.product.suggestedRetail}
+        defaultRetailPrice={filled?.retailPrice ?? item.myRetailPrice ?? item.product.suggestedRetail}
         locale={locale}
+        {...(filled
+          ? {
+              prefill: {
+                token: filled.token,
+                customerName: filled.customerName,
+                customerPhone: filled.customerPhone,
+                customerAddress: filled.customerAddress,
+                area: filled.area,
+                locationLat: filled.locationLat,
+                locationLng: filled.locationLng,
+              },
+            }
+          : {})}
       />
     </div>
   )

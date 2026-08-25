@@ -144,6 +144,7 @@ model Product {
   variants      ProductVariant[]
   media         ProductMedia[]
   priceRequests PriceChangeRequest[]
+  addressRequests AddressRequest[]
 
   @@index([status, categoryId])
   @@index([supplierId, status])
@@ -299,6 +300,7 @@ model Reseller {
   statusPacks StatusPack[]
   sessions    Session[]
   templates   ResellerTemplate[]
+  addressRequests AddressRequest[]
 
   @@index([status, city])
   @@index([lastActiveAt])
@@ -926,4 +928,56 @@ model Event {
 
   @@index([name, createdAt])
   @@index([actorId, createdAt])
+}
+
+
+/// Customer apna pata KHUD likhti hai — reseller ke haath se nahi.
+///
+/// 🔴 Ye khaana RTO ke liye hai, sahulat ke liye nahi.
+///
+/// Ab tak raasta ye tha: customer WhatsApp par "haan chahiye" likhti, aur reseller us
+/// ki baat parh kar naam, number aur pata KHUD type karti. Har ghalat harf ek wapas
+/// aane wala parcel hai — aur us wapsi ka kiraya dono taraf ka dukan bharti hai,
+/// jabke sakh reseller ki jati hai.
+///
+/// Aur ek cheez jo pehle mumkin hi nahi thi: customer ka apna GPS pin. Order wale
+/// form mein sirf "MERI abhi ki location" ka button hai (aur wo theek likha hai) —
+/// magar jab customer WhatsApp par apni location bhejti thi, usay daalne ka koi
+/// khaana hi nahi tha. Ab wo pin customer ke apne phone se, ek tap mein aata hai.
+model AddressRequest {
+  id          String  @id @default(cuid())
+  /// 32 bytes — link WhatsApp par jata hai, is liye andaza lagana namumkin hona chahiye
+  token       String  @unique
+  resellerId  String
+  productId   String
+  variantId   String?
+  qty         Int     @default(1)
+  /// Us waqt ka retail — customer ko yehi dikhta hai, aur baad mein badal jane par bhi
+  /// wohi rehta hai jo usay dikhaya gaya tha
+  retailPrice Int
+
+  /// Neeche ke khaane CUSTOMER bharti hai
+  customerName    String?
+  customerPhone   String?
+  customerAddress String?
+  area            String?
+  locationLat     Float?
+  locationLng     Float?
+  filledAt        DateTime?
+
+  /// 🔴 Ek link se ek hi order. Warna wohi link dobara khol kar (ya forward kar ke)
+  /// kai order ban sakte the — aur har order par dukan ka maal rok liya jata hai.
+  orderId   String?   @unique
+  usedAt    DateTime?
+
+  /// Purana link customer ke phone par pada reh jata hai. Bina hadd ke wo mahino baad
+  /// khul kar us qeemat par order bana deta jo ab mojood hi nahi.
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  reseller Reseller @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id])
+
+  /// Reseller ka safha: "kis kis ne pata bhej diya" — bhare hue, bina istemal ke
+  @@index([resellerId, filledAt, usedAt])
 }
