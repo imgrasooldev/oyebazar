@@ -509,7 +509,7 @@ function toResellerView(row: ResellerRow): ResellerProductView {
  * Ab path se: har category ka path jarh se us tak ka rasta hai ("/a/b/c/"), is liye
  * "is shaakh ka sab kuch" sirf ek `startsWith` hai — chahe wo paanch darje neeche ho.
  */
-async function categoryFilter(
+export async function categoryFilter(
   db: PrismaClient,
   slug: string,
 ): Promise<Prisma.CategoryWhereInput> {

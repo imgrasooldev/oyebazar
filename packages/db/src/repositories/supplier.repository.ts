@@ -16,6 +16,7 @@ import type {
 } from '@oyebazar/core'
 import { toPage, type Page } from '@oyebazar/shared'
 import { PUBLIC_SUPPLIER_SELECT } from '../selectors'
+import { categoryFilter } from './product.repository'
 
 /**
  * Select se hi nikala hua — haath se likhi hui naql nahi.
@@ -116,7 +117,7 @@ export class PrismaSupplierRepository
 
   async findPublicList(filters: SupplierFilters): Promise<Page<PublicSupplierView>> {
     const rows = await this.db.supplier.findMany({
-      where: this.publicWhere(filters),
+      where: await this.publicWhere(filters),
       select: PUBLIC_SUPPLIER_SELECT,
       orderBy: [{ businessName: 'asc' }, { slug: 'asc' }],
       take: filters.limit + 1,
@@ -144,13 +145,35 @@ export class PrismaSupplierRepository
     return grouped.map((g) => ({ city: g.city, count: g._count._all }))
   }
 
-  private publicWhere(filters: SupplierFilters): Prisma.SupplierWhereInput {
+  private async publicWhere(filters: SupplierFilters): Promise<Prisma.SupplierWhereInput> {
     return {
       listedOnBazaar: true,
       status: 'VERIFIED',
       ...(filters.city ? { city: { equals: filters.city, mode: 'insensitive' } } : {}),
+      /*
+       * 🔴 Yahan pehle `category: { slug }` tha — yani BILKUL wohi category, us ke neeche
+       * ka kuch nahi.
+       *
+       * Aur `/bazaar` ki patti par UPAR wali categories dikhti hain (Cosmetics, Apparel,
+       * Toys), jabke maal NEECHE wali par laga hota hai (Makeup, Lawn, Bridal Wear). Is
+       * liye har chhanni sifar deti thi — cosmetics par bhi, apparel par bhi, sab par.
+       *
+       * Aur wo chup chaap deti thi: koi error nahi, bas "koi dukan nahi mili". Theek us
+       * kharabi se `categoryFilter` ka apna comment mana karta hai — magar wo helper
+       * sirf maal wali query mein laga tha, yahan nahi. Ek usool, do jagah likha hua —
+       * aur ek jagah purani reh gayi.
+       *
+       * Ab dono ek hi helper istemal karte hain.
+       */
       ...(filters.categorySlug
-        ? { products: { some: { status: 'LIVE', category: { slug: filters.categorySlug } } } }
+        ? {
+            products: {
+              some: {
+                status: 'LIVE' as const,
+                category: await categoryFilter(this.db, filters.categorySlug),
+              },
+            },
+          }
         : {}),
       ...(filters.search
         ? {
