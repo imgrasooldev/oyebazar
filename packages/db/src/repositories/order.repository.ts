@@ -295,7 +295,8 @@ export class PrismaOrderRepository implements OrderRepository {
       select: RESELLER_SELECT,
     })
     if (!row) return null
-    return this.toResellerView(row)
+    // Ek order — wohi helper, bas usi ke maal ke naam
+    return this.toResellerView(row, await this.titlesFor(row.items.map((i) => i.productId)))
   }
 
   async listForReseller(
@@ -310,7 +311,16 @@ export class PrismaOrderRepository implements OrderRepository {
       ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
     })
 
-    const views = await Promise.all(rows.map((row) => this.toResellerView(row)))
+    /*
+     * 🔴 Maal ke naam SAB orders ke liye EK query mein — pehle har order ki apni thi.
+     *
+     * `Promise.all(rows.map(...))` parallel dikhta hai magar wo N+1 hai: bees order =
+     * bees alag query. Saath saath chalne se DB par bojh kam nahi hota, sirf ek hi lamhe
+     * mein par jata hai — aur connection pool theek us waqt bharta hai jab safha sab se
+     * ziyada khulta hai.
+     */
+    const titles = await this.titlesFor(rows.flatMap((row) => row.items.map((i) => i.productId)))
+    const views = rows.map((row) => this.toResellerView(row, titles))
     return toPage(views, query.limit, (o) => o.id)
   }
 
@@ -488,14 +498,20 @@ export class PrismaOrderRepository implements OrderRepository {
   }
 
   /** Reseller view mein product ka title chahiye — items ke saath ek hi query mein. */
-  private async toResellerView(row: ResellerRow): Promise<ResellerOrderView> {
-    const productIds = row.items.map((i) => i.productId)
+  /** Maal ke naam — ek hi query, chahe kitne bhi order hon */
+  private async titlesFor(productIds: readonly string[]): Promise<Map<string, string>> {
+    if (productIds.length === 0) return new Map()
+
     const products = await this.db.product.findMany({
-      where: { id: { in: productIds } },
+      // Ek hi maal kai orders mein ho sakta hai — dohra id bhejne ka koi faida nahi
+      where: { id: { in: [...new Set(productIds)] } },
       select: { id: true, titleUr: true },
     })
-    const titles = new Map(products.map((p) => [p.id, p.titleUr]))
 
+    return new Map(products.map((p) => [p.id, p.titleUr]))
+  }
+
+  private toResellerView(row: ResellerRow, titles: Map<string, string>): ResellerOrderView {
     const myEarnings = row.items.reduce(
       (sum, item) => sum + (item.retailPriceSnapshot - item.bajiPriceSnapshot) * item.qty,
       0,
