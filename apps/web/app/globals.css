@@ -425,6 +425,48 @@
    * phir dheemi, 90% par ja kar tham jati hai. Asal waqt hamein pata hi nahi hota; 100%
    * dikha kar intezar karwana jhoot hai aur us se bharosa jata hai.
    */
+  /*
+   * Safha halka — jab tak naya safha ban raha ho.
+   *
+   * 🔴 `opacity` par, `filter: blur()` par NAHI. Blur poore safhe ki layer har frame
+   * par dobara rasterise karwata hai; sasta Android us par lag deta hai — yani jis cheez
+   * se safha TEZ mehsoos karana tha, wo usay SUST kar deti. Opacity compositor ka kaam
+   * hai aur us ka kharcha taqreeban sifar.
+   *
+   * Aur halka safha PARHA ja sakta hai. Us ek second mein purana safha abhi bhi kaam ka
+   * hai: banda samajh sakta hai ke us ne ghalat jagah click kiya, aur wapas ja sakta hai.
+   *
+   * `pointer-events: none` — jo hissa ja raha ho us par dobara click nahi lagna chahiye,
+   * warna do navigation ek saath chal parti hain.
+   */
+  main {
+    transition: opacity 220ms ease-out;
+  }
+
+  [data-navigating] main {
+    opacity: 0.45;
+    pointer-events: none;
+    transition: opacity 160ms ease-out;
+  }
+
+  /*
+   * Beech wala nishan DER se aata hai.
+   *
+   * 🔴 Jo navigation 250ms mein ho jaye us par nishan dikhana nuqsan hai: wo ek jhapki
+   * ban jata hai, aur jhapki "kuch kharab hua" parhi jati hai. Nishan sirf us intezar ke
+   * liye hai jo waqai mehsoos hota hai.
+   */
+  .route-spinner {
+    opacity: 0;
+    animation: route-spinner-in 200ms ease-out 250ms forwards;
+  }
+
+  @keyframes route-spinner-in {
+    to {
+      opacity: 1;
+    }
+  }
+
   .route-progress {
     animation: route-progress 12s cubic-bezier(0.1, 0.6, 0.2, 1) forwards;
   }
@@ -446,6 +488,12 @@
 
   /* Jise harkat se takleef hoti hai us ke liye lakeer khari rehti hai, bhaagti nahi */
   @media (prefers-reduced-motion: reduce) {
+    /* Nishan foran, ghoomne ka intezar nahi */
+    .route-spinner {
+      animation: none;
+      opacity: 1;
+    }
+
     .route-progress {
       animation: none;
       transform: scaleX(0.35);
