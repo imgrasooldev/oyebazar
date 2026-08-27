@@ -96,7 +96,14 @@ export function RouteProgress() {
   return (
     <span
       aria-hidden="true"
-      className="pointer-events-none fixed inset-x-0 top-0 z-50 h-0.5 overflow-hidden bg-brand-500/15"
+      /*
+        4px, 2px nahi.
+        🔴 2px ki lakeer safhe ke bilkul upar thi — theek wahan jahan click karne wale ki
+        nazar hoti hi nahi. Jo ishara dikhta na ho wo ishara nahi hota; us ki saari
+        mehnat rayegan jati hai. 4px abhi bhi halka hai magar aankh ke kone mein aa jata
+        hai.
+      */
+      className="pointer-events-none fixed inset-x-0 top-0 z-50 h-1 overflow-hidden bg-brand-500/15"
     >
       {/*
         Lakeer aage barhti hai magar kabhi 100% par nahi pohanchti — asal waqt hamein
