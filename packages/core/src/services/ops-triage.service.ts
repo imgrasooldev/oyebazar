@@ -64,6 +64,14 @@ export class OpsTriageService {
   constructor(
     private readonly repo: OpsTriageRepository,
     private readonly clock: Clock,
+    /**
+     * Site ka apna pata — dukan ka magic link isi se banta hai.
+     *
+     * Wohi qadar jo `OrderService` istemal karti hai. Do jagah do alag pate hone se wo
+     * link banta hai jo khulta hi nahi — aur wo ghalti us waqt pakri jati hai jab dukan
+     * shikayat kare.
+     */
+    private readonly appUrl: string,
   ) {}
 
   async flags(): Promise<TriageResult> {
@@ -115,7 +123,7 @@ export class OpsTriageService {
          * hamare paas nahi hai wo dukan ki taraf ka hai: paisa bheja ya nahi, aur TID
          * kya hai. Faisla usi ek jawab par rukka hua hota hai.
          */
-        action: { kind: 'call', phone: row.supplierPhone, who: 'supplier' },
+        action: { kind: 'whatsapp', phone: row.supplierPhone, who: 'supplier' },
       })
     }
 
@@ -133,7 +141,7 @@ export class OpsTriageService {
         values: { amount: row.amount, days: row.daysLate },
         since: row.since,
         // Paisa dukan ke paas hai — chase bhi usi ko karna hai
-        action: { kind: 'call', phone: row.supplierPhone, who: 'supplier' },
+        action: { kind: 'whatsapp', phone: row.supplierPhone, who: 'supplier' },
       })
     }
 
@@ -150,7 +158,22 @@ export class OpsTriageService {
         context: `${row.supplierName} · ${row.resellerName}`,
         values: { hours: row.hoursWaiting },
         since: row.since,
-        action: { kind: 'call', phone: row.supplierPhone, who: 'supplier' },
+        /*
+         * Yahan paighaam PEHLE SE likha hua jata hai — aur ye is nishan ki jaan hai.
+         *
+         * WhatsApp ka provider abhi juda nahi hai, is liye order "dukan ko chala jata
+         * hai" magar dukan ko khabar nahi pohanchti. Ops ke paas dukan ka number hona
+         * kaafi nahi — usay wo LINK bhejna hai jis se dukan bina login ke order dekh
+         * kar jawab de sake. Wo link yahan tayyar mil jata hai; ops sirf bhejti hai.
+         */
+        action: {
+          kind: 'whatsapp',
+          phone: row.supplierPhone,
+          who: 'supplier',
+          ...(row.supplierToken
+            ? { text: this.supplierNudge(row.orderNo, row.supplierToken) }
+            : {}),
+        },
       })
     }
 
@@ -264,5 +287,20 @@ export class OpsTriageService {
     }
 
     return { flags: sortFlags(flags), counts: countBySeverity(flags) }
+  }
+
+  /**
+   * Dukan ko bheja jane wala paighaam — Urdu mein.
+   *
+   * 🔴 Admin ka safha angrezi mein hai, magar ye jumla ANGREZI MEIN NAHI. Wo safha ops
+   * parhti hai; ye paighaam Bolton Market ke thok wale ke phone par jata hai. Zaban us
+   * ki chuni jati hai jo parhta hai, us ki nahi jo bhejta hai.
+   */
+  private supplierNudge(orderNo: string, token: string): string {
+    return [
+      `السلام علیکم — ${orderNo} کا آرڈر آپ کے پاس ہے۔`,
+      'یہاں سے دیکھ کر ہاں یا نہ کر دیں (لاگ اِن کی ضرورت نہیں):',
+      `${this.appUrl}/supplier/o/${token}`,
+    ].join('\n')
   }
 }

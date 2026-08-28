@@ -24,6 +24,7 @@ import type {
 
 const NOW = new Date('2026-08-28T12:00:00Z')
 const clock = { now: () => NOW }
+const APP_URL = 'https://oyebazar.com'
 
 const product = (over: Partial<ProductFlagRow> = {}): ProductFlagRow => ({
   productId: 'p1',
@@ -79,7 +80,7 @@ class FakeTriage implements OpsTriageRepository {
 function serviceWith(patch: (repo: FakeTriage) => void): OpsTriageService {
   const repo = new FakeTriage()
   patch(repo)
-  return new OpsTriageService(repo, clock)
+  return new OpsTriageService(repo, clock, APP_URL)
 }
 
 describe('chhanni — kya list mein aata hai', () => {
@@ -104,6 +105,7 @@ describe('chhanni — kya list mein aata hai', () => {
           supplierPhone: '923001000001',
           resellerName: 'صادیہ',
           hoursWaiting: 3,
+          supplierToken: null,
           since: NOW,
         },
       ]
@@ -153,16 +155,22 @@ describe('phone — sirf wahan jahan agla qadam call hai', () => {
           supplierPhone: '923001000003',
           resellerName: 'صادیہ',
           hoursWaiting: 83,
+          supplierToken: 'tok-1',
           since: new Date('2026-08-25T01:00:00Z'),
         },
       ]
     }).flags()
 
-    expect(flags[0]?.action).toEqual({
-      kind: 'call',
-      phone: '923001000003',
-      who: 'supplier',
-    })
+    expect(flags[0]?.action?.kind).toBe('whatsapp')
+    expect(flags[0]?.action?.phone).toBe('923001000003')
+
+    /*
+     * 🔴 Paighaam mein LINK hona lazmi hai — yehi is nishan ki jaan hai. WhatsApp ka
+     * provider juda nahi, is liye dukan ko order ki khabar sirf isi raste se pohanchti
+     * hai. Number hona kaafi nahi tha.
+     */
+    expect(flags[0]?.action?.text).toContain('https://oyebazar.com/supplier/o/tok-1')
+    expect(flags[0]?.action?.text).toContain('BJ-1001')
   })
 
   it('🔴 jhagre mein DUKAN ka number — reseller ka nahi', async () => {
@@ -292,6 +300,7 @@ describe('tarteeb aur ginti', () => {
           supplierPhone: '9230010000001',
           resellerName: 'ص',
           hoursWaiting: 2, // hadd se neeche — giregi
+          supplierToken: null,
           since: NOW,
         },
         {
@@ -301,6 +310,7 @@ describe('tarteeb aur ginti', () => {
           supplierPhone: '9230010000001',
           resellerName: 'ص',
           hoursWaiting: 50,
+          supplierToken: null,
           since: new Date('2026-08-26T10:00:00Z'),
         },
       ]

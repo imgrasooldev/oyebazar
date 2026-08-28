@@ -125,13 +125,19 @@ function FlagRow({ flag }: { flag: OpsFlag }) {
 
       <div className="flex shrink-0 flex-wrap items-center gap-2 self-center">
         {/*
-          Phone sirf wahan jahan agla qadam WAQAI phone karna hai. Har qatar par ek button
-          chipka dena us button ko bemani bana deta hai — aur wo number bhi saath likha
-          hai, kyunke ops aksar apne apne phone se call karti hai, is screen se nahi.
+          WhatsApp ka button sirf wahan jahan agla qadam WAQAI paighaam bhejna hai. Har
+          qatar par ek button chipka dena us button ko bemani bana deta hai — aur number
+          bhi saath likha hai, kyunke ops aksar apne phone se baat karti hai, is screen
+          se nahi.
+
+          🔴 Jahan hamare paas bhejne ko kuch TAYYAR hai (dukan ka apna order-link), wo
+          paighaam pehle se bhara hua jata hai. Ye sirf sahulat nahi: WhatsApp ka provider
+          abhi juda nahi hai, is liye dukan tak order ki khabar pohanchane ka WAHID
+          amli rasta yehi ek tap hai.
         */}
         {flag.action && (
           <a
-            href={whatsappLink(flag.action.phone)}
+            href={whatsappLink(flag.action.phone, flag.action.text)}
             target="_blank"
             rel="noreferrer"
             className="inline-flex min-h-tap items-center gap-1.5 rounded-pill bg-accent-50 px-3.5 text-[0.78rem] font-semibold text-accent-700 transition hover:bg-accent-100"

@@ -44,6 +44,16 @@ export interface UnansweredOrderFlag {
   readonly supplierPhone: string
   readonly resellerName: string
   readonly hoursWaiting: number
+  /**
+   * Dukan ka apna darwaza — is link se wo bina login ke order dekh kar jawab de sakti hai.
+   *
+   * 🔴 Ye ops ko is liye chahiye ke WhatsApp ka provider abhi juda hua nahi hai: order
+   * "dukan ko chala jata hai" magar dukan ko us ki KHABAR nahi pohanchti. Us soorat mein
+   * ops ke paas ye link hona hi wo cheez hai jo order ko aage badha sakti hai — warna
+   * `orderUnanswered` ka nishan wo masla batata hai jise hal karne ka koi zariya us ke
+   * paas hai hi nahi.
+   */
+  readonly supplierToken: string | null
   readonly since: Date
 }
 

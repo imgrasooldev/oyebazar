@@ -125,6 +125,7 @@ export class PrismaOpsTriageRepository implements OpsTriageRepository {
         id: true,
         orderNo: true,
         sentToSupplierAt: true,
+        supplierToken: true,
         createdAt: true,
         supplier: { select: { businessName: true, phone: true } },
         reseller: { select: { name: true } },
@@ -140,6 +141,7 @@ export class PrismaOpsTriageRepository implements OpsTriageRepository {
         supplierPhone: row.supplier.phone,
         resellerName: row.reseller.name,
         hoursWaiting: Math.floor((now.getTime() - since.getTime()) / MS_PER_HOUR),
+        supplierToken: row.supplierToken,
         since,
       }
     })

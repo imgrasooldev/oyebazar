@@ -202,7 +202,12 @@ function build(): Container {
     ),
     payouts,
     categoryAdmin: new CategoryAdminService(repositories.categoryAdmin, analytics, logger),
-    opsTriage: new OpsTriageService(repositories.opsTriage, clock),
+    opsTriage: new OpsTriageService(
+      repositories.opsTriage,
+      clock,
+      // Wohi pata jo OrderService ke paas hai — do jagah do alag hone se link khulta hi nahi
+      process.env.APP_URL ?? 'http://localhost:3000',
+    ),
     pitch: createPitchWriter({
       apiKey: process.env.ANTHROPIC_API_KEY,
       fallback: templatePitchWriter(),

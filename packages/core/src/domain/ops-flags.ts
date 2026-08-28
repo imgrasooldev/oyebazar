@@ -71,11 +71,20 @@ export type FlagSubject =
  * ko bemani bana deta hai.
  */
 export interface FlagAction {
-  readonly kind: 'call'
+  readonly kind: 'whatsapp'
   /** E.164 without plus — wohi shakl jo poore nizam mein hai */
   readonly phone: string
   /** Kis ko — "dukan" ya "reseller" */
   readonly who: 'supplier' | 'reseller'
+  /**
+   * Paighaam pehle se likha hua — SIRF wahan jahan hamare paas kehne ko kuch tayyar hai.
+   *
+   * 🔴 Aksar nishanon par ye khali rehta hai, aur wo jaan boojh kar: jhagre par ops ko
+   * BAAT karni hoti hai, aur us ke munh mein lafz daal dena us baat ko kharab karta hai.
+   * Sirf ek soorat mein hamare paas wo cheez hoti hai jo bheji hi jani chahiye — dukan
+   * ka apna link — aur wahan usay khud likhwana ops se ek fazool qadam maangna hai.
+   */
+  readonly text?: string | undefined
 }
 
 export interface OpsFlag {
