@@ -90,7 +90,13 @@ export function SiteHeader({
             <SearchSuggest
               locale={locale}
               source="public"
-              action="/bazaar"
+              /*
+                Enter dabane par MAAL ki list — dukanon ki nahi.
+                "bachon ke kapre" likhne wali reseller maal dhoond rahi hai; `/bazaar`
+                dukanon ke naam par chhanta hai, is liye us par jawab hamesha khali aata
+                tha. Dukan wali chhanni apni jagah mojood hai (Bazaar ka apna safha).
+              */
+              action="/bazaar/items"
               defaultValue={query ?? ''}
               className="hidden flex-1 sm:block"
             />
@@ -144,7 +150,7 @@ export function SiteHeader({
           <SearchSuggest
             locale={locale}
             source="public"
-            action="/bazaar"
+            action="/bazaar/items"
             defaultValue={query ?? ''}
             className="mt-3 sm:hidden"
           />

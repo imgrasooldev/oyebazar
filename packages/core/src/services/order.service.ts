@@ -39,6 +39,7 @@ import type {
   SupplierInternalRepository,
   SupplierOrderView,
 } from '../ports/order-repositories'
+import { assessRtoRisk, type RtoRisk } from '../domain/rto-risk'
 import type { InventoryRepository } from '../ports/inventory-repositories'
 import type { PayoutService } from './payout.service'
 import type { CursorQuery, ProductRepository, ResellerRepository } from '../ports/repositories'
@@ -533,6 +534,48 @@ export class OrderService {
       ...(query.cursor ? { cursor: query.cursor } : {}),
       ...(query.status ? { status: query.status } : {}),
     })
+  }
+
+  /**
+   * Wapsi ka andaza — un orders par jin par dukan ka faisla abhi baqi hai.
+   *
+   * 🔴 Yahan ginti aur faisla alag rakhe gaye hain: repository sirf ginti deti hai,
+   * `assessRtoRisk` us par wazan lagata hai. Isi liye hadd badalne ke liye SQL kholne
+   * ki zaroorat nahi parti aur poore hisab ka test likha ja sakta hai.
+   *
+   * `resellerRecord` bahar se aata hai kyunke safha wo pehle hi mangwa chuka hota hai
+   * (`ResellerRtoRecord` ke liye) — dobara wohi query chalana faltu chakkar hai.
+   */
+  async riskFor(
+    supplierId: string,
+    orders: readonly { id: string; deliveryFee: number; total: number; hasLocationPin: boolean }[],
+    resellerRecord: (orderId: string) => { delivered: number; rto: number },
+  ): Promise<Map<string, RtoRisk>> {
+    if (orders.length === 0) return new Map()
+
+    const facts = await this.orders.riskFacts({
+      supplierId,
+      orderIds: orders.map((order) => order.id),
+    })
+
+    const none = { delivered: 0, rto: 0 }
+    return new Map(
+      orders.map((order) => {
+        const row = facts.byOrder.get(order.id)
+        return [
+          order.id,
+          assessRtoRisk({
+            deliveryFee: order.deliveryFee,
+            total: order.total,
+            hasLocationPin: order.hasLocationPin,
+            customer: row?.customer ?? none,
+            area: row?.area ?? none,
+            reseller: resellerRecord(order.id),
+            supplierMedianOrder: facts.medianOrder,
+          }),
+        ]
+      }),
+    )
   }
 
   async getForSupplierToken(token: string): Promise<SupplierOrderView> {

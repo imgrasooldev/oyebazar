@@ -259,10 +259,17 @@ function toSuggestions(data: SuggestResponse, locale: Locale, source: Source): S
       : row.hint
         ? { hint: row.hint }
         : {}),
+    /*
+     * Maal ka apna safha — dukan ka nahi.
+     *
+     * Purani shakl (`/bazaar/<slug>`) dukan par le jati thi, kyunke Bazaar par maal ka
+     * apna safha tha hi nahi. Ab hai; ek cheez par ungli rakhne wale ko wohi cheez
+     * milni chahiye.
+     */
     href:
       source === 'catalogue'
         ? `/catalogue/${encodeURIComponent(row.id ?? '')}`
-        : `/bazaar/${encodeURIComponent(row.slug ?? '')}`,
+        : `/bazaar/item/${encodeURIComponent(row.slug ?? '')}`,
   }))
 
   return [...categories, ...suppliers, ...products]

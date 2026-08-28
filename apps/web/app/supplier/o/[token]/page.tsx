@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { BRAND, formatPkr } from '@oyebazar/shared'
 import { SupplierOrderActions } from '@/components/supplier-order-actions'
+import { OrderRiskNote } from '@/components/order-risk-note'
 import { OrderThread } from '@/components/order-thread'
 import { SupplierStatusButton } from '@/components/supplier-status-button'
 import { PinIcon } from '@/components/icons'
@@ -56,6 +57,12 @@ export default async function SupplierOrderPage({
     : []
   if (!order) notFound()
 
+  /* Is reseller ka chalan ISI dukan ke saath — wapsi ke andaze ka ek hissa. */
+  const resellerRecord =
+    order.status === 'SENT_TO_SUPPLIER'
+      ? await container.payouts.resellerRisk([order.resellerId], order.supplierId)
+      : []
+
   const t = translator(locale)
 
   // Teen button, teen lafz — ek hi jagah se, taake portal aur link par ek jaise rahen
@@ -64,6 +71,34 @@ export default async function SupplierOrderPage({
     confirm: t('confirmAction'),
     back: t('backOut'),
   }
+  /*
+   * Wapsi ka andaza — sirf usi lamhe jab faisla abhi baqi ho.
+   *
+   * 🔴 Ye safha portal se ZYADA ahem hai: Bolton Market ka thok wala login nahi karta,
+   * wo isi link par faisla karta hai. Jo ishara sirf portal par ho, wo aksar us shakhs
+   * tak pohanchta hi nahi jis ke liye banaya gaya tha.
+   */
+  const risk =
+    order.status === 'SENT_TO_SUPPLIER'
+      ? (
+          await container.orders.riskFor(
+            order.supplierId,
+            [
+              {
+                id: order.id,
+                deliveryFee: order.deliveryFee,
+                total: order.total,
+                hasLocationPin: order.locationLat !== null && order.locationLng !== null,
+              },
+            ],
+            () => {
+              const record = resellerRecord[0]
+              return { delivered: record?.delivered ?? 0, rto: record?.rto ?? 0 }
+            },
+          )
+        ).get(order.id)
+      : undefined
+
   const mapsUrl =
     order.locationLat && order.locationLng
       ? `https://maps.google.com/?q=${order.locationLat},${order.locationLng}`
@@ -147,7 +182,9 @@ export default async function SupplierOrderPage({
         koi list parh kar nahi chunta; wo wohi dabata hai jo saamne hai.
       */}
       {order.status === 'SENT_TO_SUPPLIER' && (
-        <div className="mt-5">
+        <div className="mt-5 space-y-4">
+          {/* Ishara BUTTON se pehle — faisle ke baad likhi hui baat kaam ki nahi rehti */}
+          <OrderRiskNote risk={risk} locale={locale} />
           <SupplierOrderActions endpoint={`/api/v1/supplier/link/${token}`} />
 
           {/* Dukan masla SHURU nahi karti, sirf jawab deti hai — dekhen messages route */}

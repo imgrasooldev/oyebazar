@@ -77,6 +77,14 @@ export interface SupplierOrderView {
    * hai ke qubool karne se pehle wo ginti dekhe jis ka asar usi par parta hai.
    */
   readonly resellerId: string
+  /**
+   * Apni hi dukan ki id — is view ko sirf wohi dukan dekhti hai jis ka ye order hai.
+   *
+   * Zaroorat magic link wale safhe par pari: wahan login nahi hota, is liye "main kaun
+   * hoon" ka jawab sirf order se aa sakta hai — aur wapsi ka andaza isi dukan ke apne
+   * chalan par khara hota hai (us ka darmiyana order, us ke saath reseller ka record).
+   */
+  readonly supplierId: string
   readonly status: OrderStatus
   readonly customerName: string
   readonly customerPhone: string
@@ -85,6 +93,14 @@ export interface SupplierOrderView {
   readonly locationLat: number | null
   readonly locationLng: number | null
   readonly paymentMethod: 'COD' | 'PREPAID'
+  /**
+   * Delivery ka rate — dukan ka apna, order ke waqt ka snapshot.
+   *
+   * Wapsi ka seedha nuqsan yehi raqam hai: maal wapas aa jata hai aur ye paisa nahi
+   * milta. Isi liye ye `SupplierOrderView` mein hai — dukan ko apna number dikhna
+   * chahiye, aur reseller ka retail phir bhi yahan kabhi nahi aata.
+   */
+  readonly deliveryFee: Pkr
   /** COD par courier isi raqam ko wasool kar ke wholesaler ko deta hai */
   readonly total: Pkr
   readonly createdAt: Date
@@ -167,6 +183,40 @@ export interface OrderRepository {
     limit: number
     cursor?: string | undefined
   }): Promise<Page<InternalOrderView>>
+
+  /**
+   * Wapsi ke andaze ka kachcha maal — sirf ginti, koi faisla nahi.
+   *
+   * Faisla `assessRtoRisk` karta hai (domain/rto-risk.ts). Ye alagav jaan boojh kar hai:
+   * ginti DB se aati hai, wazan aur hadd domain mein hain — warna hadd badalne ke liye
+   * SQL kholna parta aur us ka test likhna namumkin ho jata.
+   */
+  riskFacts(input: {
+    supplierId: string
+    orderIds: readonly string[]
+  }): Promise<OrderRiskFacts>
+}
+
+/** Ek dukan ke chand orders ke liye — un sab ka kachcha maal ek hi chakkar mein. */
+export interface OrderRiskFacts {
+  /**
+   * Is dukan ke mukammal hue orders ka DARMIYANA total.
+   *
+   * Ausat nahi — darmiyana. Ek Rs 90,000 wala order ausat ko itna upar utha deta hai ke
+   * phir har aam order "chhota" lagne lagta hai aur "bara order" wali wajah kabhi lagti
+   * hi nahi. Darmiyane par ek order ka koi asar nahi parta.
+   */
+  readonly medianOrder: number
+  /** order id → us order ke apne ishare */
+  readonly byOrder: ReadonlyMap<
+    string,
+    {
+      /** ISI customer ke number par — sab dukanon par milakar */
+      readonly customer: { readonly delivered: number; readonly rto: number }
+      /** ISI ilaqe (`area`) par — sab dukanon par milakar */
+      readonly area: { readonly delivered: number; readonly rto: number }
+    }
+  >
 }
 
 /**

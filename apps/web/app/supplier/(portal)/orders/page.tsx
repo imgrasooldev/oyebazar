@@ -3,6 +3,7 @@ import { ORDER_TRANSIT, formatPkr } from '@oyebazar/shared'
 import type { ResellerRiskRecord, SupplierOrderView } from '@oyebazar/core'
 import { SupplierOrderActions } from '@/components/supplier-order-actions'
 import { ResellerRtoRecord } from '@/components/reseller-rto-record'
+import { OrderRiskNote } from '@/components/order-risk-note'
 import { SupplierStatusButton } from '@/components/supplier-status-button'
 import { PinIcon } from '@/components/icons'
 import { requireSupplier } from '@/lib/api/supplier-session'
@@ -51,6 +52,28 @@ export default async function SupplierOrdersPage() {
   const riskByReseller = new Map(risk.map((row) => [row.resellerId, row]))
 
   const waiting = orders.filter((order) => order.status === 'SENT_TO_SUPPLIER')
+
+  /*
+   * Wapsi ka andaza — SIRF un orders par jin par faisla abhi baqi hai.
+   *
+   * Chal rahe aur mukammal shuda orders par ye sirf shor hai: maal ja chuka, faisla ho
+   * chuka. `showRecord` par yahi soch pehle se likhi hui hai — ye us se mel khata hai,
+   * aur is se ginti bhi chhoti reh jati hai (aam tor par teen-chaar orders).
+   */
+  const riskByOrder = await container.orders.riskFor(
+    supplier.id,
+    waiting.map((order) => ({
+      id: order.id,
+      deliveryFee: order.deliveryFee,
+      total: order.total,
+      hasLocationPin: order.locationLat !== null && order.locationLng !== null,
+    })),
+    (orderId) => {
+      const order = waiting.find((row) => row.id === orderId)
+      const record = order ? riskByReseller.get(order.resellerId) : undefined
+      return { delivered: record?.delivered ?? 0, rto: record?.rto ?? 0 }
+    },
+  )
   const running = orders.filter((order) => RUNNING.has(order.status))
   const done = orders.filter(
     (order) => !RUNNING.has(order.status) && order.status !== 'SENT_TO_SUPPLIER',
@@ -77,6 +100,8 @@ export default async function SupplierOrdersPage() {
             {waiting.map((order) => (
               <li key={order.id} className="card space-y-4 p-5 ring-1 ring-brand-200">
                 <OrderCard order={order} locale={locale} risk={riskByReseller} now={now} />
+                {/* Ishara BUTTON se pehle — faisle ke baad likhi hui baat kaam ki nahi rehti */}
+                <OrderRiskNote risk={riskByOrder.get(order.id)} locale={locale} />
                 <SupplierOrderActions endpoint={`/api/v1/supplier/orders/${order.orderNo}`} />
               </li>
             ))}

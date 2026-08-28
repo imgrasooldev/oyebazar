@@ -15,7 +15,7 @@ import type {
   SupplierProductRepository,
   SupplierProductView,
 } from '@oyebazar/core'
-import { MAX_MEDIA_PER_PRODUCT, NotFoundError, ValidationError } from '@oyebazar/shared'
+import { MAX_MEDIA_PER_PRODUCT, NotFoundError, ValidationError, buildSearchText } from '@oyebazar/shared'
 import { pkr } from '@oyebazar/shared'
 
 type MediaRow = {
@@ -63,10 +63,15 @@ export class PrismaSupplierProductRepository implements SupplierProductRepositor
    * hai (aur us ki ginti dekh kar usay pata chalta hai ke kitna maal filing maang raha
    * hai).
    */
-  private async fallbackCategory(): Promise<{ id: string; slug: string }> {
+  private async fallbackCategory(): Promise<{
+    id: string
+    slug: string
+    nameUr: string
+    nameEn: string
+  }> {
     const existing = await this.db.category.findUnique({
       where: { slug: FALLBACK_CATEGORY_SLUG },
-      select: { id: true, slug: true },
+      select: { id: true, slug: true, nameUr: true, nameEn: true },
     })
     if (existing) return existing
 
@@ -78,7 +83,7 @@ export class PrismaSupplierProductRepository implements SupplierProductRepositor
         // Aakhir mein — ye asli category nahi, ek intezar-gah hai
         sortOrder: 9_999,
       },
-      select: { id: true, slug: true },
+      select: { id: true, slug: true, nameUr: true, nameEn: true },
     })
 
     // Apna path khud likhta hai (jarh par hai, is liye sirf apni id)
@@ -95,7 +100,7 @@ export class PrismaSupplierProductRepository implements SupplierProductRepositor
     const category = input.categorySlug
       ? await this.db.category.findUnique({
           where: { slug: input.categorySlug },
-          select: { id: true, slug: true },
+          select: { id: true, slug: true, nameUr: true, nameEn: true },
         })
       : await this.fallbackCategory()
 
@@ -114,6 +119,14 @@ export class PrismaSupplierProductRepository implements SupplierProductRepositor
           bajiPrice: input.bajiPrice,
           suggestedRetail: input.suggestedRetail,
           status: 'DRAFT',
+          // Talash ka khana likhte waqt banta hai — dekhen shared/search-terms.ts
+          searchText: buildSearchText({
+            titleUr: input.titleUr,
+            titleEn: input.titleEn,
+            descriptionUr: input.descriptionUr,
+            categoryNameUr: category.nameUr,
+            categoryNameEn: category.nameEn,
+          }),
         },
         select: { id: true },
       })
@@ -164,7 +177,7 @@ export class PrismaSupplierProductRepository implements SupplierProductRepositor
   ): Promise<boolean> {
     const category = await this.db.category.findUnique({
       where: { slug: input.categorySlug },
-      select: { id: true },
+      select: { id: true, nameUr: true, nameEn: true },
     })
     if (!category) throw new NotFoundError('Category', input.categorySlug)
 
@@ -200,6 +213,13 @@ export class PrismaSupplierProductRepository implements SupplierProductRepositor
           supplierPrice: input.supplierPrice,
           bajiPrice: input.bajiPrice,
           suggestedRetail: input.suggestedRetail,
+          searchText: buildSearchText({
+            titleUr: input.titleUr,
+            titleEn: input.titleEn,
+            descriptionUr: input.descriptionUr,
+            categoryNameUr: category.nameUr,
+            categoryNameEn: category.nameEn,
+          }),
           // 🔴 status yahan NAHI. Maal DRAFT hi rehta hai — live karna ops ka faisla hai.
         },
       })

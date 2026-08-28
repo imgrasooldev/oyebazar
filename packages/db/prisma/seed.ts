@@ -10,8 +10,11 @@
 import { categoryPhoto, productPhoto } from './photos'
 import { CATALOGUE as SEED_CATALOGUE } from './seed-data'
 import { PrismaClient } from '@prisma/client'
+import { buildSearchText } from '@oyebazar/shared'
 
 const prisma = new PrismaClient()
+
+const SEED_DESCRIPTION = 'اصلی کوالٹی۔ تھوک ریٹ پر دستیاب۔ سنگل پیس بھی مل سکتا ہے۔'
 
 /**
  * Har category ke saath us ki subcategories aur maal.
@@ -153,8 +156,16 @@ async function main() {
           supplierId: supplier.id,
           titleUr: item.ur,
           titleEn: item.en,
-          descriptionUr: 'اصلی کوالٹی۔ تھوک ریٹ پر دستیاب۔ سنگل پیس بھی مل سکتا ہے۔',
+          descriptionUr: SEED_DESCRIPTION,
           categoryId: target.id,
+          // Talash ka khana — repository bhi yehi likhti hai (shared/search-terms.ts)
+          searchText: buildSearchText({
+            titleUr: item.ur,
+            titleEn: item.en,
+            descriptionUr: SEED_DESCRIPTION,
+            categoryNameUr: target.nameUr,
+            categoryNameEn: target.nameEn,
+          }),
           supplierPrice,
           bajiPrice,
           suggestedRetail: Math.round((bajiPrice * 1.35) / 50) * 50,

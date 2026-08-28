@@ -8,6 +8,7 @@
  */
 import type { PrismaClient } from '@prisma/client'
 import type { CategoryAdminRepository, CategoryNode } from '@oyebazar/core'
+import { buildSearchText } from '@oyebazar/shared'
 
 export class PrismaCategoryAdminRepository implements CategoryAdminRepository {
   constructor(private readonly db: PrismaClient) {}
@@ -124,6 +125,37 @@ export class PrismaCategoryAdminRepository implements CategoryAdminRepository {
         ...(input.imageUrl === undefined ? {} : { imageUrl: input.imageUrl }),
       },
     })
+
+    /*
+     * Is category ke maal ka "talash wala khana" dobara likhna.
+     *
+     * 🔴 Ye khana likhte WAQT banta hai (Product.searchText), aur us mein category ka
+     * naam bhi shamil hota hai. Naam badal kar isay chhor dene se talash chupke se
+     * purane naam par chalti rehti — koi error nahi aata, bas ops naya naam likh kar
+     * apna hi maal nahi dhoond pati aur samajhti hai ke maal gum ho gaya.
+     *
+     * Ginti chhoti hai (ek category ka maal) aur rename bohat kam hota hai, is liye
+     * seedha yahan — koi qatar, koi background job nahi.
+     */
+    const products = await this.db.product.findMany({
+      where: { categoryId: id },
+      select: { id: true, titleUr: true, titleEn: true, descriptionUr: true },
+    })
+
+    for (const product of products) {
+      await this.db.product.update({
+        where: { id: product.id },
+        data: {
+          searchText: buildSearchText({
+            titleUr: product.titleUr,
+            titleEn: product.titleEn,
+            descriptionUr: product.descriptionUr,
+            categoryNameUr: input.nameUr,
+            categoryNameEn: input.nameEn,
+          }),
+        },
+      })
+    }
   }
 
   /**

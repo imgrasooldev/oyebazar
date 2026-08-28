@@ -136,6 +136,13 @@ model Product {
   bajiPrice       Int // reseller ise dekhti hai (supplierPrice + fee)
   suggestedRetail Int
   status          ProductStatus @default(DRAFT)
+  /// Talash ka apna khana — saaf shuda (titleUr + titleEn + tafseel + category ka naam).
+  ///
+  /// 🔴 Sawal aur maal DONO ek hi tarah saaf hone chahiyen (packages/shared/search-terms.ts).
+  /// Sirf sawal saaf karne se mehnat zaya ho jati hai: Arabi "ك" ya zer-zabar wale naam
+  /// par likhne wale ko maal kabhi nahi milta. Ye qadar likhte waqt banti hai, parhte
+  /// waqt nahi — is liye har talash par DB ko kuch calculate nahi karna parta.
+  searchText      String        @default("")
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -519,6 +526,11 @@ model Order {
   @@index([resellerId, createdAt])
   @@index([supplierId, createdAt])
   @@index([confirmedAt, status])
+  /// Wapsi ka andaza — "isi number par pehle kya hua" aur "is ilaqe ka chalan kya hai".
+  /// Ye dono dukan ke har order-safhe par chalti hain; bina index ke poori table
+  /// scan hoti hai — aur wo safha wo sab se zyada kholta hai.
+  @@index([customerPhone, status])
+  @@index([area, status])
 }
 
 enum PaymentMethod {

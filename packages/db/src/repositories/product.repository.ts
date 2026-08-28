@@ -18,7 +18,7 @@ import type {
   RenderProductView,
   ResellerProductView,
 } from '@oyebazar/core'
-import { pkr, toPage, type Page } from '@oyebazar/shared'
+import { expandSearch, pkr, toPage, type Page } from '@oyebazar/shared'
 import {
   PRICING_PRODUCT_SELECT,
   PUBLIC_PRODUCT_SELECT,
@@ -340,7 +340,7 @@ export class PrismaProductRepository implements ProductRepository {
       ...(filters.categorySlug
         ? { category: await categoryFilter(this.db, filters.categorySlug) }
         : {}),
-      ...(filters.search ? { OR: searchClause(filters.search) } : {}),
+      ...(filters.search ? { AND: searchClause(filters.search) } : {}),
     }
   }
 
@@ -355,7 +355,7 @@ export class PrismaProductRepository implements ProductRepository {
       ...(filters.categorySlug
         ? { category: await categoryFilter(this.db, filters.categorySlug) }
         : {}),
-      ...(filters.search ? { OR: searchClause(filters.search) } : {}),
+      ...(filters.search ? { AND: searchClause(filters.search) } : {}),
       ...(filters.minPrice !== undefined || filters.maxPrice !== undefined
         ? {
             bajiPrice: {
@@ -369,11 +369,28 @@ export class PrismaProductRepository implements ProductRepository {
   }
 }
 
+/**
+ * Talash ki shart — sawal ke har lafz ke liye ek AND, us ke saathi lafzon ka OR.
+ *
+ * 🔴 Tarteeb ka faisla: bahar AND, andar OR.
+ *
+ *   "lawn suit"  →  AND[ OR[lawn, لان] , OR[suit, سوٹ, soot, تھری پیس] ]
+ *
+ * Sab kuch OR kar dene se do lafz likhne wala apne natije BARHA leta — saara lawn aur
+ * saare suit ek saath — halanke us ne do lafz isi liye likhe the ke natije tang hon.
+ *
+ * Mel `searchText` par hota hai, `titleUr`/`titleEn` par nahi: wo khana likhte waqt
+ * saaf kiya ja chuka hota hai, aur sawal bhi usi tarah saaf ho kar aata hai. Isi liye
+ * `mode: 'insensitive'` ki bhi zaroorat nahi rahi — dono taraf pehle se lower-case hain
+ * (aur us se Postgres trigram index bhi kaam ka reh jata hai).
+ */
 function searchClause(term: string): Prisma.ProductWhereInput[] {
-  return [
-    { titleUr: { contains: term, mode: 'insensitive' } },
-    { titleEn: { contains: term, mode: 'insensitive' } },
-  ]
+  const groups = expandSearch(term)
+  if (groups.length === 0) return []
+
+  return groups.map((group) => ({
+    OR: group.map((word) => ({ searchText: { contains: word } })),
+  }))
 }
 
 type PublicRow = {

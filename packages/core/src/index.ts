@@ -3,6 +3,7 @@ export * from './domain/views'
 export * from './domain/order-status'
 export * from './domain/order'
 export * from './domain/daily-drop'
+export * from './domain/rto-risk'
 
 // Ports (repository + infrastructure interfaces)
 export * from './ports'

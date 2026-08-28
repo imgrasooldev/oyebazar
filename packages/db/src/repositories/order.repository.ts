@@ -18,6 +18,7 @@ import type {
   PersistOrderInput,
   SupplierOrderView,
   ResellerOrderView,
+  OrderRiskFacts,
   CursorQuery,
   OrderStatus,
 } from '@oyebazar/core'
@@ -57,6 +58,8 @@ const SUPPLIER_SELECT = {
   orderNo: true,
   // RTO ka record isi se banta hai — dukan ko qubool karne se pehle
   resellerId: true,
+  // Magic link par login nahi hota — "main kaun hoon" ka jawab order se aata hai
+  supplierId: true,
   status: true,
   customerName: true,
   customerPhone: true,
@@ -65,6 +68,8 @@ const SUPPLIER_SELECT = {
   locationLat: true,
   locationLng: true,
   paymentMethod: true,
+  // Wapsi par yehi raqam jati hai — dukan ka apna rate, snapshot shuda
+  deliveryFee: true,
   total: true,
   createdAt: true,
   acceptedAt: true,
@@ -243,6 +248,7 @@ export class PrismaOrderRepository implements OrderRepository {
       id: row.id,
       orderNo: row.orderNo,
       resellerId: row.resellerId,
+      supplierId: row.supplierId,
       status: row.status,
       customerName: row.customerName,
       customerPhone: row.customerPhone,
@@ -251,6 +257,7 @@ export class PrismaOrderRepository implements OrderRepository {
       locationLat: row.locationLat,
       locationLng: row.locationLng,
       paymentMethod: row.paymentMethod,
+      deliveryFee: pkr(row.deliveryFee),
       total: pkr(row.total),
       createdAt: row.createdAt,
       acceptedAt: row.acceptedAt,
@@ -451,6 +458,103 @@ export class PrismaOrderRepository implements OrderRepository {
     return toPage(rows.map(toInternal), filters.limit, (o) => o.id)
   }
 
+  /**
+   * Wapsi ke andaze ka kachcha maal — teen chhoti query, chahe kitne hi order hon.
+   *
+   * 🔴 Har order par alag query BILKUL nahi: ye safha dukan wala din mein sab se zyada
+   * kholta hai, aur wahi ghalti stock wale safhe par pehle ho chuki hai (chalees maal =
+   * chalees chakkar). Yahan wo shuru se hi ek chakkar hai.
+   *
+   * Sirf MUKAMMAL hue order ginte hain (pohancha ya wapas aya). Raste wale shamil karne
+   * se har naya ilaqa aur har naya customer achha lagta hai — kyunke us ka anjaam abhi
+   * maloom hi nahi.
+   */
+  async riskFacts(input: {
+    supplierId: string
+    orderIds: readonly string[]
+  }): Promise<OrderRiskFacts> {
+    // Sirf MUKAMMAL hue order — raste wale ka anjaam abhi maloom hi nahi
+    const finished: Prisma.EnumOrderStatusFilter = { in: ['DELIVERED', 'RTO'] }
+
+    if (input.orderIds.length === 0) return { medianOrder: 0, byOrder: new Map() }
+
+    const targets = await this.db.order.findMany({
+      where: { id: { in: [...input.orderIds] }, supplierId: input.supplierId },
+      select: { id: true, customerPhone: true, area: true },
+    })
+    if (targets.length === 0) return { medianOrder: 0, byOrder: new Map() }
+
+    const phones = [...new Set(targets.map((row) => row.customerPhone))]
+    const areas = [...new Set(targets.map((row) => row.area))]
+
+    const [customerRows, areaRows, totals] = await Promise.all([
+      this.db.order.groupBy({
+        by: ['customerPhone', 'status'],
+        where: { customerPhone: { in: phones }, status: finished },
+        _count: { _all: true },
+      }),
+      this.db.order.groupBy({
+        by: ['area', 'status'],
+        where: { area: { in: areas }, status: finished },
+        _count: { _all: true },
+      }),
+      /*
+       * Darmiyana nikalne ke liye sirf totals — aur sirf aakhri 200.
+       *
+       * Hadd is liye ke ye safhe ke har khulne par chalta hai; aur nayi is liye ke
+       * "bara order" ka pemana dukan ke AAJ ke karobar se banna chahiye, us se nahi jo
+       * do saal pehle bikta tha.
+       */
+      this.db.order.findMany({
+        where: { supplierId: input.supplierId, status: finished },
+        select: { total: true },
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+      }),
+    ])
+
+    const tally = (
+      rows: readonly { status: OrderStatus; key: string; count: number }[],
+    ): Map<string, { delivered: number; rto: number }> => {
+      const map = new Map<string, { delivered: number; rto: number }>()
+      for (const row of rows) {
+        const bucket = map.get(row.key) ?? { delivered: 0, rto: 0 }
+        if (row.status === 'DELIVERED') bucket.delivered += row.count
+        else bucket.rto += row.count
+        map.set(row.key, bucket)
+      }
+      return map
+    }
+
+    const byPhone = tally(
+      customerRows.map((row) => ({
+        status: row.status,
+        key: row.customerPhone,
+        count: row._count._all,
+      })),
+    )
+    const byArea = tally(
+      areaRows.map((row) => ({ status: row.status, key: row.area, count: row._count._all })),
+    )
+    const none = { delivered: 0, rto: 0 }
+
+    const byOrder = new Map(
+      targets.map((row) => [
+        row.id,
+        {
+          /*
+           * 🔴 Ginti mein YE order khud shamil nahi ho sakta — wo abhi mukammal hua hi
+           * nahi (SENT_TO_SUPPLIER hai). Isi liye alag se nikalne ki zaroorat nahi.
+           */
+          customer: byPhone.get(row.customerPhone) ?? none,
+          area: byArea.get(row.area) ?? none,
+        },
+      ]),
+    )
+
+    return { medianOrder: median(totals.map((row) => row.total)), byOrder }
+  }
+
   async findPendingConfirmationBefore(cutoff: Date, limit: number): Promise<InternalOrderView[]> {
     const rows = await this.db.order.findMany({
       where: { status: 'PENDING_CONFIRM', createdAt: { lt: cutoff } },
@@ -499,4 +603,20 @@ export class PrismaOrderRepository implements OrderRepository {
       })),
     }
   }
+}
+
+/**
+ * Darmiyana — ausat nahi.
+ *
+ * Ek Rs 90,000 wala order ausat ko itna upar utha deta hai ke phir har aam order
+ * "chhota" lag ta hai aur "bara order" wali wajah kabhi lagti hi nahi. Darmiyane par
+ * ek order ka koi asar nahi parta.
+ */
+function median(values: readonly number[]): number {
+  if (values.length === 0) return 0
+  const sorted = [...values].sort((a, b) => a - b)
+  const middle = Math.floor(sorted.length / 2)
+  return sorted.length % 2 === 0
+    ? Math.round(((sorted[middle - 1] ?? 0) + (sorted[middle] ?? 0)) / 2)
+    : (sorted[middle] ?? 0)
 }

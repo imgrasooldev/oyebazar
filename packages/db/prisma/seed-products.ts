@@ -17,6 +17,7 @@
  *   node --env-file=<prod env> node_modules/tsx/dist/cli.mjs prisma/seed-products.ts
  */
 import { PrismaClient } from '@prisma/client'
+import { buildSearchText } from '@oyebazar/shared'
 import { CATALOGUE } from './seed-data'
 import { productPhoto } from './photos'
 
@@ -24,6 +25,8 @@ const prisma = new PrismaClient()
 
 /** Har sub-category par itni cheezein — 50 sub-category × 6 = ~300 */
 const PER_SUBCATEGORY = 6
+
+const DESCRIPTION = 'اصلی کوالٹی۔ تھوک ریٹ پر دستیاب۔ سنگل پیس بھی مل سکتا ہے۔'
 
 /**
  * Naam ke lawaahiq (suffix) — har category ke apne.
@@ -148,8 +151,16 @@ async function main(): Promise<void> {
             supplierId: supplier.id,
             titleUr,
             titleEn,
-            descriptionUr: 'اصلی کوالٹی۔ تھوک ریٹ پر دستیاب۔ سنگل پیس بھی مل سکتا ہے۔',
+            descriptionUr: DESCRIPTION,
             categoryId: target.id,
+            // Talash ka khana — repository bhi yehi likhti hai (shared/search-terms.ts)
+            searchText: buildSearchText({
+              titleUr,
+              titleEn,
+              descriptionUr: DESCRIPTION,
+              categoryNameUr: child.nameUr,
+              categoryNameEn: child.nameEn,
+            }),
             supplierPrice,
             bajiPrice,
             // Mashwara diya gaya rate — reseller isay badal sakti hai
