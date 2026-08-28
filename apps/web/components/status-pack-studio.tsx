@@ -186,6 +186,7 @@ export function StatusPackStudio({
     options.showPrice === false ? t('packNoPrice') : null,
     options.showName === false ? t('packNoName') : null,
     options.showPhone === false ? t('packNoPhone') : null,
+    options.showStock === false ? t('packNoStock') : null,
   ]
     .filter(Boolean)
     .join(' · ')
@@ -297,7 +298,14 @@ export function StatusPackStudio({
      *
      * Server par bhi yehi shart hai (dekhen defaults route) — ye sirf pehli deewar hai.
      */
-    const { note: _note, ...forever } = options
+    /*
+     * 🔴 `wasPrice` bhi bahar — wohi wajah jo `note` par likhi hai.
+     *
+     * Purana rate ISI sale ki baat hai. Default bana dene ka matlab hota ke har agle
+     * pack par ek kata hua number chhapta rehta jo ab sach hi nahi — aur reseller ko
+     * yaad bhi na rehta ke usay hatana hai. Wohi kharabi, doosri shakl mein.
+     */
+    const { note: _note, wasPrice: _wasPrice, ...forever } = options
 
     const res = await fetch('/api/v1/status-pack/defaults', {
       method: 'PUT',
@@ -560,6 +568,48 @@ export function StatusPackStudio({
               checked={options.showMark !== false}
               onChange={(value) => setOption('showMark', value)}
             />
+
+            {/*
+              Size, rang aur kitna bacha — EK switch, teen cheezon ke liye.
+
+              🔴 Teen alag switch banane ka matlab hota ke reseller teen faisle kare,
+              jabke ye teenon us EK sawal ka jawab hain jo customer rate ke baad poochhti
+              hai: "mera size mojood hai?" Jo baat saath parhi jati hai, wo saath hi
+              chunni chahiye.
+
+              Line khud data se banti hai — reseller isay likhti nahi, sirf haan ya na
+              kehti hai. Khatam shuda size us mein aata hi nahi (dekhen `stockLine`).
+            */}
+            <PackToggle
+              label={t('showStockOnPack')}
+              checked={options.showStock !== false}
+              onChange={(value) => setOption('showStock', value)}
+            />
+
+            {/*
+              Purana rate — kata hua.
+
+              🔴 Ye RESELLER likhti hai, hum nahi banate. Hum jaante hi nahi ke us ne
+              pehle kya rate rakha tha, aur andaze se koi number kaat kar dikhana JHOOT
+              hai — jo us ki apni sakh se jata hai, na ke hamari.
+
+              Khali chhorne par kuch nahi chhapta.
+            */}
+            <div>
+              <p className="text-[0.85rem] font-semibold">{t('wasPriceLabel')}</p>
+              <p className="mt-0.5 text-[0.76rem] text-ink-faint">{t('wasPriceHint')}</p>
+              <input
+                dir="ltr"
+                inputMode="numeric"
+                value={options.wasPrice ?? ''}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/[^0-9]/g, '')
+                  setOption('wasPrice', digits ? Number(digits) : undefined)
+                }}
+                placeholder={t('wasPricePlaceholder')}
+                className="field numeric mt-2 w-full text-[0.95rem]"
+              />
+            </div>
 
             {/*
               Is pack ki apni line — "صرف آج", "آخری 2 پیس".

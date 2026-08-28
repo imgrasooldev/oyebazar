@@ -41,8 +41,25 @@
           <div class="title">{{titleUr}}</div>
 
           <div class="price-row">
+            <!--
+              Purana rate — kata hua, asli rate ke SAATH.
+
+              🔴 Ye `.price-row` ke ANDAR hai, apna alag khaana nahi. Kata hua rate akela
+              be-maani hota hai; wo sirf asli rate ke saath kuch kehta hai. Alag element
+              banane ka matlab hota ke reseller dono ko alag alag ghaseet sakti — aur
+              phir tasveer par ek kata hua number kahin akela para rehta.
+
+              Khali ho to `hide-was` isay ghayab kar deta hai.
+            -->
+            <div class="was-price"><span class="ltr">{{wasPriceText}}</span></div>
             <div class="price">{{priceText}}</div>
           </div>
+
+          <!--
+            Maal ki tafseel — size, rang, kitna bacha. Qeemat ke theek neeche, kyunke
+            customer rate parhne ke FORAN baad yehi poochhti hai.
+          -->
+          <div class="stock">{{stockText}}</div>
 
           <div class="seller">
             <div class="seller-name">{{resellerName}}</div>

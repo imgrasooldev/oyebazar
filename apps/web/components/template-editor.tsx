@@ -156,6 +156,8 @@ const PREVIEW_BASE_CSS = `
 .tpl-stage .seller-phone { font-weight: 700; color: #fff; white-space: nowrap; }
 .tpl-stage .seller-phone .ltr { direction: ltr; font-family: system-ui, sans-serif; display: inline-block; }
 .tpl-stage .cta { line-height: 2.1; color: #fff; opacity: .92; white-space: nowrap; }
+/* Maal ki tafseel — base.css ke .stock se hoobahoo (dekhen upar wala note) */
+.tpl-stage .stock { line-height: 1.6; color: #fff; opacity: .9; font-weight: 600; white-space: nowrap; }
 
 /*
  * ---------------------------------------------------------------- angrezi pack
@@ -186,16 +188,17 @@ const PREVIEW_BASE_CSS = `
 .tpl-stage.lang-en.format-wide .badge { right: auto; left: 0; }
 `
 
-const ELEMENTS = ['badge', 'title', 'price', 'name', 'phone', 'cta', 'note'] as const
+const ELEMENTS = ['badge', 'title', 'price', 'stock', 'name', 'phone', 'cta', 'note'] as const
 type ElementKey = (typeof ELEMENTS)[number]
 
 const ELEMENT_LABEL: Record<
   ElementKey,
-  'elBadge' | 'elTitle' | 'elPrice' | 'elName' | 'elPhone' | 'elCta' | 'elNote'
+  'elBadge' | 'elTitle' | 'elPrice' | 'elStock' | 'elName' | 'elPhone' | 'elCta' | 'elNote'
 > = {
   badge: 'elBadge',
   title: 'elTitle',
   price: 'elPrice',
+  stock: 'elStock',
   name: 'elName',
   phone: 'elPhone',
   cta: 'elCta',
@@ -661,12 +664,14 @@ export function TemplateEditor({
           seller: 'Sadia Bibi',
           cta: 'Message to order',
           note: 'Today only',
+          stock: 'S · M · L · Only 2 left',
         }
       : {
           title: 'لان تھری پیس — پھولوں والا',
           seller: 'صادیہ بی بی',
           cta: 'آرڈر کے لیے میسج کریں',
           note: 'صرف آج',
+          stock: 'S · M · L · صرف 2 باقی',
         }
 
   /**
@@ -1901,6 +1906,25 @@ export function TemplateEditor({
                         <span className="ltr">0300 1234567</span>
                       </Handle>
                     </div>
+
+                    {/*
+                      Maal ki tafseel — size, rang, kitna bacha.
+
+                      🔴 Ye line pack banate waqt DATA se banti hai, template mein
+                      likhi nahi jati — magar us ki JAGAH template hi deti hai. Wohi
+                      wajah jo `note` par likhi hai: jagah tay na ho to wo custom
+                      template par kahin bhi gir jati hai.
+
+                      Namoona dikhate hain, khali dabba nahi — khali dabbe ko ungli se
+                      pakarna namumkin hai.
+                    */}
+                    <Handle
+                      k="stock"
+                      cssClass="stock"
+                      {...{ spec, selected, drag, zoom, startDrag, pick }}
+                    >
+                      {sample.stock}
+                    </Handle>
 
                     <Handle
                       k="cta"

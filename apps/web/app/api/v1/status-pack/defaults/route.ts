@@ -24,15 +24,18 @@ export async function PUT(request: Request) {
     const body = await parseBody(request, SavePackDefaultsSchema)
 
     /*
-     * 🔴 `note` yahan se NIKAL jata hai — chahe client kuch bhi bheje.
+     * 🔴 `note` aur `wasPrice` yahan se NIKAL jate hain — chahe client kuch bhi bheje.
      *
      * Wo ek pack ki apni line hai ("صرف آج", "آخری 2 پیس"), hamesha ki baat nahi. Default
      * ban jane ka matlab hai ke wo raat ki pre-generation aur subah ke broadcast samet
      * HAR aane wale pack par chhapti rahegi — aur reseller ko yaad bhi nahi rahega ke
      * usay hatana hai. Client bhi ise bhejta nahi, magar asli deewar yahan honi chahiye:
      * ye endpoint hai jo profile par likhta hai.
+     *
+     * Purana (kata hua) rate bilkul isi wajah se: wo ISI sale ki baat hai. Default ban
+     * jaye to har agle pack par ek kata hua number chhapta rehta jo ab sach hi nahi.
      */
-    const { templateKey, note: _note, ...options } = body
+    const { templateKey, note: _note, wasPrice: _wasPrice, ...options } = body
 
     const saved = await container.repositories.resellers.savePackDefaults(
       reseller.id,

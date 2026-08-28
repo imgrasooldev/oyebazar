@@ -189,6 +189,7 @@ export class PrismaProductRepository implements ProductRepository {
       coverImageUrl: images[0]?.url ?? null,
       images,
       categoryNameUr: row.category.nameUr,
+      variants: row.variants,
     }
   }
 

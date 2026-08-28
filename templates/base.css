@@ -321,6 +321,43 @@ body {
   display: none;
 }
 
+/*
+ * Purana rate — kata hua.
+ *
+ * 🔴 `direction: ltr` andar wale span par hai, is dabbe par nahi — wohi wajah jo
+ * number aur qeemat par likhi hai: `inset-inline-start` element ki APNI direction se
+ * naapta hai, aur custom template mein ghaseetne par ye ulti taraf chala jata.
+ *
+ * Halka aur chhota: ye asli rate ko dabana nahi chahiye, sirf us ke barabar khara ho kar
+ * ye batana hai ke pehle kya tha.
+ */
+.was-price {
+  font-size: calc(46px * var(--scale));
+  font-weight: 600;
+  opacity: 0.6;
+  text-decoration: line-through;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.was-price .ltr {
+  direction: ltr;
+  display: inline-block;
+}
+
+/*
+ * Maal ki tafseel — "S · M · L · صرف 2 باقی".
+ *
+ * 🔴 Ye qeemat se CHHOTI aur halki hai, jaan boojh kar. Ye jawab hai, dawa nahi:
+ * customer pehle rate dekhti hai, phir ye. Isay qeemat jitna bara karne ka matlab hota
+ * ke dono ek doosre se larte, aur nazar kisi ek par bhi na rukti.
+ */
+.stock {
+  font-size: calc(34px * var(--scale));
+  line-height: 1.6;
+  opacity: 0.9;
+  font-weight: 600;
+}
+
 .cta {
   font-size: calc(40px * var(--scale));
   line-height: 2.1;
@@ -403,6 +440,8 @@ body {
 .hide-name .seller-name,
 .hide-phone .seller-phone,
 .hide-price .price-row,
+.hide-was .was-price,
+.hide-stock .stock,
 .hide-seller .seller {
   display: none;
 }

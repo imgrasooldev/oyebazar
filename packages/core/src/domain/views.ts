@@ -98,6 +98,19 @@ export interface RenderProductView {
    */
   readonly images: readonly RenderImageView[]
   readonly categoryNameUr: string
+  /**
+   * Maal ki tafseel — size, rang, aur kitna bacha.
+   *
+   * 🔴 Ye pack par likhne ke liye hai, aur wajah bikri ki hai: rate ke BAAD customer ka
+   * agla sawal hamesha "large hai?" ya "aur rang?" hota hai. Har sawal WhatsApp par ek
+   * chakkar hai, aur har chakkar mein sauda tootne ka mauqa. Jo baat tasveer par likhi
+   * ho, wo poochhi hi nahi jati.
+   */
+  readonly variants: readonly {
+    readonly size: string | null
+    readonly colour: string | null
+    readonly stockQty: number
+  }[]
 }
 
 /**

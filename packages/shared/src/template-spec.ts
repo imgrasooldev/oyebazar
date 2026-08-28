@@ -392,6 +392,19 @@ export const TemplateSpecSchema = z.object({
      * jab line khali ho — yani jin packs par line nahi, un ki tasveer waisi ki waisi.
      */
     note: ElementSpec.default({ show: true, x: 4, y: 55, size: 40, pill: true }),
+    /**
+     * Maal ki tafseel — "S · M · L · صرف 2 باقی".
+     *
+     * 🔴 `.default(...)` wohi wajah se jo `note` par likhi hai: ye khana baad mein
+     * aaya, aur jo template pehle se mehfooz hain un ke spec mein hai hi nahi. Sirf
+     * `.optional()` rakhne ka natija ye hota ke custom template par is ki KOI jagah tay
+     * na hoti aur wo poori chaurai par safhe ke shuru mein gir jati — bilkul wahi
+     * kharabi jo `note` par pakri gayi thi.
+     *
+     * Jagah qeemat ke theek neeche: customer rate parhne ke FORAN baad yehi poochhti hai
+     * ("large hai?"), aur jawab wahin milna chahiye jahan sawal uthta hai.
+     */
+    stock: ElementSpec.default({ show: true, x: 4, y: 74, size: 26 }),
   }),
   /**
    * Reseller ke apne likhe hue text.
@@ -440,6 +453,14 @@ export const DEFAULT_TEMPLATE_SPEC: TemplateSpec = {
     phone: { show: true, x: 62, y: 85, size: 46 },
     cta: { show: true, x: 4, y: 91, size: 40 },
     note: { show: true, x: 4, y: 53, size: 40, pill: true },
+    /*
+     * Maal ki tafseel — qeemat (75%) aur naam (85%) ke DARMIYAN.
+     *
+     * 🔴 Jagah ittefaqi nahi: customer rate parhne ke foran baad "large hai?" poochhti
+     * hai, is liye jawab wahin hona chahiye jahan sawal uthta hai. Naam ke neeche daalne
+     * ka matlab hota ke wo nazar se guzar hi jati.
+     */
+    stock: { show: true, x: 4, y: 80, size: 34 },
   },
 }
 
@@ -598,6 +619,7 @@ const ELEMENT_SELECTOR: Record<keyof TemplateSpec['elements'], string> = {
   phone: '.seller-phone',
   cta: '.cta',
   note: '.note',
+  stock: '.stock',
 }
 
 /**
@@ -618,7 +640,7 @@ const INNER_SELECTOR: Partial<Record<keyof TemplateSpec['elements'], string>> = 
 }
 
 /** Neeche wali patti ke andar kaun kaun si cheezein aati hain. */
-const CARD_ELEMENTS = ['title', 'price', 'name', 'phone', 'cta'] as const
+const CARD_ELEMENTS = ['title', 'price', 'stock', 'name', 'phone', 'cta'] as const
 
 /**
  * Neeche wali patti.

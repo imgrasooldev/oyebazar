@@ -241,6 +241,7 @@ const DICTIONARY = {
   elName: { ur: 'آپ کا نام', en: 'Your name', rm: 'Apka naam' },
   elPhone: { ur: 'نمبر', en: 'Number', rm: 'Number' },
   elNote: { ur: 'پیک کی اپنی لائن', en: 'Pack line', rm: 'Pack ki apni line' },
+  elStock: { ur: 'سائز اور اسٹاک', en: 'Size and stock', rm: 'Size aur stock' },
   elCta: { ur: 'آرڈر والی لائن', en: 'Order line', rm: 'Order wali line' },
   saveTemplate: { ur: 'محفوظ کریں', en: 'Save', rm: 'Mehfooz karen' },
   savedTick: { ur: '✓ محفوظ ہو گیا', en: '✓ Saved', rm: '✓ Mehfooz ho gaya' },
@@ -1273,6 +1274,21 @@ const DICTIONARY = {
   packNoPrice: { ur: 'ریٹ نہیں', en: 'no price', rm: 'rate nahi' },
   packNoName: { ur: 'نام نہیں', en: 'no name', rm: 'naam nahi' },
   packNoPhone: { ur: 'نمبر نہیں', en: 'no number', rm: 'number nahi' },
+
+  // Maal ki tafseel aur purana rate — pack par
+  showStockOnPack: {
+    ur: 'سائز، رنگ اور کتنا باقی',
+    en: 'Size, colour and how many left',
+    rm: 'Size, rang aur kitna baqi',
+  },
+  wasPriceLabel: { ur: 'پرانا ریٹ (کٹا ہوا)', en: 'Old price (crossed out)', rm: 'Purana rate (kata hua)' },
+  wasPriceHint: {
+    ur: 'خالی چھوڑ دیں تو کچھ نہیں چھپے گا',
+    en: 'Leave empty and nothing prints',
+    rm: 'Khali chhor den to kuch nahi chhapega',
+  },
+  wasPricePlaceholder: { ur: 'مثلاً 3000', en: 'e.g. 3000', rm: 'misal 3000' },
+  packNoStock: { ur: 'سائز نہیں', en: 'no sizes', rm: 'size nahi' },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
   moneyByReseller: { ur: 'ریسیلر کے حساب سے', en: 'By reseller', rm: 'Reseller ke hisab se' },
   moneyEarnedTotal: { ur: 'کل کمائی', en: 'Total earned', rm: 'Kul kamai' },
