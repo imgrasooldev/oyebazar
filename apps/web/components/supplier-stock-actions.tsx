@@ -54,6 +54,9 @@ export function SupplierStockActions({
     transferFrom: string
     transferTo: string
     warehouse: string
+    batchNo: string
+    batchExpiry: string
+    batchExpiryNote: string
     save: string
     saving: string
   }
@@ -66,6 +69,12 @@ export function SupplierStockActions({
   // Naya maal
   const [inQty, setInQty] = useState('')
   const [inCost, setInCost] = useState('')
+  /*
+   * Khep ka number aur maddat — dono khali rehte hain jab tak dukan khud na bhare.
+   * Lawn ke suit ki koi maddat nahi hoti; wahan ye do khaane bhare hi nahi jate.
+   */
+  const [inBatch, setInBatch] = useState('')
+  const [inExpiry, setInExpiry] = useState('')
 
   // Zaya hua
   const [offQty, setOffQty] = useState('')
@@ -122,10 +131,19 @@ export function SupplierStockActions({
       qty,
       ...(cost !== undefined && Number.isInteger(cost) && cost >= 0 ? { unitCost: cost } : {}),
       ...(many && house ? { warehouseId: house } : {}),
+      ...(inBatch.trim() ? { batchNo: inBatch.trim() } : {}),
+      /*
+       * `<input type="date">` sirf "2026-08-29" deta hai. Usay seedha bhejne se server
+       * par wo aadhi raat UTC ban jata — aur Pakistan mein wo PICHHLA din hai. Din ke
+       * aakhir par le jate hain: maddat us din ke KHATAM hone tak chalti hai.
+       */
+      ...(inExpiry ? { expiryAt: new Date(`${inExpiry}T23:59:59.000Z`).toISOString() } : {}),
     })
     if (ok) {
       setInQty('')
       setInCost('')
+      setInBatch('')
+      setInExpiry('')
       setOpen(null)
     }
   }
@@ -281,6 +299,39 @@ export function SupplierStockActions({
               {pending ? labels.saving : labels.save}
             </button>
           </div>
+
+          {/*
+            Khep aur maddat — form ke AAKHIR mein, aur khali.
+
+            🔴 Ye do khaane rozana ke kaam ka hissa nahi hain: aksar dukanen inhen kabhi
+            nahi bharti (kapra, bartan), aur jo bharti hain wo un ke liye khud dhoondti
+            hain. Inhen upar rakhne ka matlab hai ke har dukan har dafa do fazool khaanon
+            se guzre — aur wohi cheez form ko chhorne ki wajah banti hai.
+          */}
+          <div className="flex flex-wrap items-end gap-2">
+            <Field label={labels.batchNo}>
+              <input
+                type="text"
+                maxLength={60}
+                value={inBatch}
+                onChange={(event) => setInBatch(event.target.value)}
+                className="min-h-tap w-32 rounded-card bg-paper px-3 text-[0.85rem]"
+              />
+            </Field>
+
+            <Field label={labels.batchExpiry}>
+              <input
+                type="date"
+                value={inExpiry}
+                onChange={(event) => setInExpiry(event.target.value)}
+                className="min-h-tap rounded-card bg-paper px-3 text-[0.85rem]"
+              />
+            </Field>
+          </div>
+
+          <p className="text-[0.72rem] leading-relaxed text-ink-faint">
+            {labels.batchExpiryNote}
+          </p>
 
           {/* 🔴 Lagat ke saath ye jumla hamesha — bina is ke bohat si dukanen ye khana
               khali chhor deti hain, aur wo un ka haq bhi hai magar aksar ghalat-fehmi hoti hai */}

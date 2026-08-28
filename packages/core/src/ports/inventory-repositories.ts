@@ -217,6 +217,15 @@ export interface StockLedgerRepository {
     note?: string | undefined
     /** Na den to dukan ka default godown — har dukan par theek ek hota hai */
     warehouseId?: string | undefined
+    /**
+     * Khep ka number aur maddat — DONO marzi ke.
+     *
+     * 🔴 Ye khaane bharne par ek `StockBatch` banti hai. Na bharen to kuch nahi banta
+     * aur sab kuch waise hi chalta hai — kapre wali dukan ke liye ye sawal banta hi
+     * nahi, aur us ke saamne ye khana rakhna har dafa ek fazool qadam hai.
+     */
+    batchNo?: string | undefined
+    expiryAt?: Date | undefined
     actorId: string
   }): Promise<number | null>
 
@@ -355,4 +364,59 @@ export interface WarehouseRepository {
     supplierId: string,
     variantIds: readonly string[],
   ): Promise<Map<string, WarehouseStockLine[]>>
+}
+
+// -------------------------------------------------------------------- khep
+
+/** Ek khep — jo aayi, jo bachi, aur kab tak theek hai. */
+export interface BatchView {
+  readonly id: string
+  readonly productId: string
+  readonly variantId: string
+  readonly titleUr: string
+  readonly titleEn: string
+  readonly skuCode: string
+  readonly size: string | null
+  readonly colour: string | null
+  readonly batchNo: string | null
+  readonly expiryAt: Date | null
+  readonly qtyIn: number
+  readonly qtyLeft: number
+  readonly unitCost: number | null
+  readonly warehouseName: string | null
+  readonly receivedAt: Date
+}
+
+export interface BatchRepository {
+  /** Ek cheez ki saari khepein — nayi se purani. */
+  listBatches(supplierId: string, variantId: string): Promise<BatchView[]>
+
+  /**
+   * Wo khepein jin ki maddat guzar chuki ya qareeb hai.
+   *
+   * 🔴 Sirf wo jin mein maal BACHA hua hai (`qtyLeft > 0`). Khatam ho chuki khep ki
+   * maddat par ishara dena wo shor hai jis par kuch kiya hi nahi ja sakta — aur aisa
+   * ek bhi ishara list ko un ke liye bekar bana deta hai jo waqai kaam ke hain.
+   *
+   * Tarteeb FEFO: jo pehle mari wo pehle.
+   */
+  expiringBatches(supplierId: string, before: Date, limit: number): Promise<BatchView[]>
+
+  /**
+   * Ek poori khep (ya us ka hissa) zaya likhna — maddat guzar gayi.
+   *
+   * 🔴 Ye `writeOff` se alag rasta NAHI hai: andar wohi amal chalta hai (ginti ghatti
+   * hai, godown se katti hai, aur register mein `DAMAGE` ki qatar banti hai). Farq sirf
+   * itna hai ke yahan wo KHEP maloom hai jis se maal gaya — aur wohi ek baat hai jo
+   * saal ke aakhir mein poochhi jati hai: "kitna maal maddat guzarne par zaya hua".
+   *
+   * @returns nayi kul ginti, ya null agar khep is dukan ki nahi ya itna maal us mein nahi
+   */
+  writeOffBatch(input: {
+    supplierId: string
+    batchId: string
+    qty: number
+    note: string
+    actorId: string
+  }): Promise<number | null>
 }

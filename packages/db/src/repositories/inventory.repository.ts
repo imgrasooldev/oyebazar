@@ -13,6 +13,8 @@
  */
 import type { PrismaClient, Prisma } from '@prisma/client'
 import type {
+  BatchRepository,
+  BatchView,
   InventoryLine,
   InventoryRepository,
   StockLedgerRepository,
@@ -25,7 +27,7 @@ import type {
   WarehouseStockLine,
   WarehouseView,
 } from '@oyebazar/core'
-import { nextAvgCost } from '@oyebazar/core'
+import { nextAvgCost, takeFefo } from '@oyebazar/core'
 
 /** Register ki qatar likhne ke liye — sab kuch ek hi jagah se. */
 type MoveInput = {
@@ -38,13 +40,14 @@ type MoveInput = {
   warehouseId?: string | null
   orderNo?: string | null
   unitCost?: number | null
+  batchId?: string | null
   note?: string | null
   actorType: string
   actorId?: string | null
 }
 
 export class PrismaInventoryRepository
-  implements InventoryRepository, StockLedgerRepository, WarehouseRepository
+  implements InventoryRepository, StockLedgerRepository, WarehouseRepository, BatchRepository
 {
   constructor(private readonly db: PrismaClient) {}
 
@@ -114,6 +117,19 @@ export class PrismaInventoryRepository
         line.qty,
       )
 
+      /*
+       * Khep se bhi utna hi maal nikal jata hai — FEFO tarteeb mein.
+       *
+       * 🔴 Ye BEST-EFFORT hai aur bikri ko KABHI nahi rokta. Khep mein poora maal na
+       * mile to bacha hua hissa chhoot jata hai aur order phir bhi lagta hai — kyunke
+       * bikri ka faisla upar `stockQty` ki shart par ho chuka hai. Jo dukan khep likhti
+       * hi nahi (kapra, bartan) us par ye qadam kuch karta hi nahi.
+       *
+       * Bina is ke `qtyLeft` bikri par ghatta hi nahi, aur maddat wali list us maal ka
+       * ishara deti rehti jo kab ka bik chuka hota — yani wo list jhooti ho jati.
+       */
+      await this.consumeBatches(tx, candidate.id, line.qty)
+
       let running = after?.stockQty ?? 0
       for (const part of [...taken].reverse()) {
         await this.writeMove(tx, {
@@ -173,6 +189,21 @@ export class PrismaInventoryRepository
        * aahista dukan mein muntaqil ho jata — kaghaz par, zameen par nahi.
        */
       const parts = await this.reservedPlaces(tx, variant.id, line.orderNo, line.qty)
+
+      /*
+       * Khep mein wapas — usi FEFO tarteeb mein jis se nikla tha.
+       *
+       * 🔴 Ye theek theek "wohi khep" nahi hai: bikri par hum ye mehfooz nahi karte ke
+       * maal kis khep se gaya (ek line kai khepon se ja sakti hai, aur us ka hisab
+       * register ko bhaari kar deta bina kisi asli faide ke). Is liye wapas usi tarteeb
+       * mein daalte hain jis se nikla tha, aur har khep ki hadd us ki apni `qtyIn` hai —
+       * koi khep apni aayi hui miqdar se zyada nahi ho sakti.
+       *
+       * Anjaam: mansookh order ke baad khep ki ginti thori kam par rah sakti hai. Wo
+       * mehfooz rukh hai — hum kabhi ye dawa nahi karte ke maal us se ZYADA taza hai
+       * jitna hai.
+       */
+      await this.restoreBatches(tx, variant.id, line.qty)
 
       let running = updated.stockQty
       for (const part of [...parts].reverse()) {
@@ -476,6 +507,8 @@ export class PrismaInventoryRepository
     unitCost?: number | undefined
     note?: string | undefined
     warehouseId?: string | undefined
+    batchNo?: string | undefined
+    expiryAt?: Date | undefined
     actorId: string
   }): Promise<number | null> {
     if (input.qty <= 0) return null
@@ -515,11 +548,37 @@ export class PrismaInventoryRepository
 
       await this.applyWarehouseDelta(tx, variant.id, warehouseId, input.qty)
 
+      /*
+       * Khep sirf tab banti hai jab dukan ne khep ka number YA maddat likhi ho.
+       *
+       * 🔴 Har stock-in par khali khep banana sab se bura anjaam deta: kapre wali dukan
+       * ke register mein saikron aisi qataren ban jatin jin par koi maddat hai hi nahi,
+       * aur maddat wali list unhen chhaan-ne mein khali dikhti rehti.
+       */
+      const batch =
+        input.batchNo || input.expiryAt
+          ? await tx.stockBatch.create({
+              data: {
+                supplierId: input.supplierId,
+                variantId: variant.id,
+                warehouseId,
+                batchNo: input.batchNo ?? null,
+                expiryAt: input.expiryAt ?? null,
+                qtyIn: input.qty,
+                qtyLeft: input.qty,
+                unitCost: input.unitCost ?? null,
+                note: input.note ?? null,
+              },
+              select: { id: true },
+            })
+          : null
+
       await this.writeMove(tx, {
         supplierId: input.supplierId,
         productId: variant.productId,
         variantId: variant.id,
         warehouseId,
+        batchId: batch?.id ?? null,
         delta: input.qty,
         balanceAfter,
         reason: 'STOCK_IN',
@@ -1146,6 +1205,225 @@ export class PrismaInventoryRepository
     return row.product.supplierId
   }
 
+  // ------------------------------------------------------------------- khep
+
+  async listBatches(supplierId: string, variantId: string): Promise<BatchView[]> {
+    const rows = await this.db.stockBatch.findMany({
+      // 🔴 supplierId hamesha shart mein — variant ki id URL mein nazar aati hai
+      where: { supplierId, variantId },
+      orderBy: [{ expiryAt: 'asc' }, { receivedAt: 'desc' }],
+      select: this.batchSelect(),
+    })
+    return rows.map((row) => this.toBatchView(row))
+  }
+
+  async expiringBatches(supplierId: string, before: Date, limit: number): Promise<BatchView[]> {
+    const rows = await this.db.stockBatch.findMany({
+      where: {
+        supplierId,
+        // Maddat likhi hui ho, aur wo is tareekh se pehle ki ho
+        expiryAt: { not: null, lte: before },
+        /*
+         * 🔴 Sirf wo khepein jin mein maal BACHA hua hai. Khatam ho chuki khep ki maddat
+         * par ishara dena wo shor hai jis par kuch kiya hi nahi ja sakta — aur aisa ek
+         * bhi ishara list ko un ke liye bekar bana deta hai jo waqai kaam ke hain.
+         */
+        qtyLeft: { gt: 0 },
+      },
+      // FEFO: jo pehle mari wo pehle
+      orderBy: { expiryAt: 'asc' },
+      take: limit,
+      select: this.batchSelect(),
+    })
+    return rows.map((row) => this.toBatchView(row))
+  }
+
+  async writeOffBatch(input: {
+    supplierId: string
+    batchId: string
+    qty: number
+    note: string
+    actorId: string
+  }): Promise<number | null> {
+    if (input.qty <= 0) return null
+
+    const batch = await this.db.stockBatch.findFirst({
+      where: { id: input.batchId, supplierId: input.supplierId },
+      select: {
+        id: true,
+        qtyLeft: true,
+        warehouseId: true,
+        variant: { select: { id: true, productId: true, stockQty: true } },
+      },
+    })
+    if (!batch || batch.qtyLeft < input.qty) return null
+
+    const balanceAfter = batch.variant.stockQty - input.qty
+    if (balanceAfter < 0) return null
+
+    await this.db.$transaction(async (tx) => {
+      /*
+       * Shart yahan bhi WHERE mein — beech mein koi order laga kar maal nikal le to ye
+       * update chalna hi nahi chahiye, warna ginti manfi mein chali jati hai. Wohi soch
+       * jo `reserve` aur `writeOff` par hai.
+       */
+      const { count } = await tx.productVariant.updateMany({
+        where: { id: batch.variant.id, stockQty: { gte: input.qty } },
+        data: { stockQty: { decrement: input.qty } },
+      })
+      if (count === 0) return
+
+      await tx.stockBatch.updateMany({
+        where: { id: batch.id, qtyLeft: { gte: input.qty } },
+        data: { qtyLeft: { decrement: input.qty } },
+      })
+
+      if (batch.warehouseId) {
+        await this.applyWarehouseDelta(tx, batch.variant.id, batch.warehouseId, -input.qty)
+      }
+
+      await this.writeMove(tx, {
+        supplierId: input.supplierId,
+        productId: batch.variant.productId,
+        variantId: batch.variant.id,
+        warehouseId: batch.warehouseId,
+        batchId: batch.id,
+        delta: -input.qty,
+        balanceAfter,
+        reason: 'DAMAGE',
+        note: input.note,
+        actorType: 'supplier',
+        actorId: input.actorId,
+      })
+    })
+
+    await this.syncProductStatus(batch.variant.productId)
+    return balanceAfter
+  }
+
+  // ------------------------------------------------------------ khep helpers
+
+  /**
+   * Khep se maal nikalna — FEFO, aur BEST-EFFORT.
+   *
+   * 🔴 Ye kuch bhi nahi rokta aur kabhi throw nahi karta. Khep mein poora maal na mile
+   * to bacha hua hissa chhoot jata hai — bikri ka faisla upar `stockQty` ki shart par ho
+   * chuka hota hai. Jo dukan khep likhti hi nahi, us par ye ek khali query hai.
+   *
+   * Tarteeb `domain/batch.ts` ke `takeFefo` se aati hai — wahan us ka test hai.
+   */
+  private async consumeBatches(
+    tx: Prisma.TransactionClient,
+    variantId: string,
+    qty: number,
+  ): Promise<void> {
+    const batches = await tx.stockBatch.findMany({
+      where: { variantId, qtyLeft: { gt: 0 } },
+      select: { id: true, expiryAt: true, receivedAt: true, qtyLeft: true },
+    })
+    if (batches.length === 0) return
+
+    for (const part of takeFefo(batches, qty).taken) {
+      await tx.stockBatch.updateMany({
+        where: { id: part.batch.id, qtyLeft: { gte: part.qty } },
+        data: { qtyLeft: { decrement: part.qty } },
+      })
+    }
+  }
+
+  /**
+   * Khep mein maal wapas — usi FEFO tarteeb mein jis se nikla tha.
+   *
+   * 🔴 Har khep ki hadd us ki apni `qtyIn` hai: koi khep apni aayi hui miqdar se zyada
+   * nahi ho sakti. Bina is hadd ke ek mansookh order khep ko us se bhara kar deta jitna
+   * wo kabhi thi hi nahi — aur us ke baad maddat ka hisab jhoot bolne lagta.
+   */
+  private async restoreBatches(
+    tx: Prisma.TransactionClient,
+    variantId: string,
+    qty: number,
+  ): Promise<void> {
+    const batches = await tx.stockBatch.findMany({
+      where: { variantId },
+      select: { id: true, expiryAt: true, receivedAt: true, qtyLeft: true, qtyIn: true },
+      orderBy: [{ expiryAt: 'asc' }, { receivedAt: 'asc' }],
+    })
+
+    let left = qty
+    for (const batch of batches) {
+      if (left <= 0) break
+      const room = batch.qtyIn - batch.qtyLeft
+      if (room <= 0) continue
+
+      const give = Math.min(room, left)
+      await tx.stockBatch.update({
+        where: { id: batch.id },
+        data: { qtyLeft: { increment: give } },
+      })
+      left -= give
+    }
+  }
+
+  private batchSelect() {
+    return {
+      id: true,
+      batchNo: true,
+      expiryAt: true,
+      qtyIn: true,
+      qtyLeft: true,
+      unitCost: true,
+      receivedAt: true,
+      warehouse: { select: { name: true } },
+      variant: {
+        select: {
+          id: true,
+          productId: true,
+          skuCode: true,
+          size: true,
+          colour: true,
+          product: { select: { titleUr: true, titleEn: true } },
+        },
+      },
+    } as const
+  }
+
+  private toBatchView(row: {
+    id: string
+    batchNo: string | null
+    expiryAt: Date | null
+    qtyIn: number
+    qtyLeft: number
+    unitCost: number | null
+    receivedAt: Date
+    warehouse: { name: string } | null
+    variant: {
+      id: string
+      productId: string
+      skuCode: string
+      size: string | null
+      colour: string | null
+      product: { titleUr: string; titleEn: string }
+    }
+  }): BatchView {
+    return {
+      id: row.id,
+      productId: row.variant.productId,
+      variantId: row.variant.id,
+      titleUr: row.variant.product.titleUr,
+      titleEn: row.variant.product.titleEn,
+      skuCode: row.variant.skuCode,
+      size: row.variant.size,
+      colour: row.variant.colour,
+      batchNo: row.batchNo,
+      expiryAt: row.expiryAt,
+      qtyIn: row.qtyIn,
+      qtyLeft: row.qtyLeft,
+      unitCost: row.unitCost,
+      warehouseName: row.warehouse?.name ?? null,
+      receivedAt: row.receivedAt,
+    }
+  }
+
   /**
    * Register ki ek qatar — hamesha usi transaction mein jis ne ginti badli.
    *
@@ -1167,6 +1445,7 @@ export class PrismaInventoryRepository
         reason: move.reason,
         orderNo: move.orderNo ?? null,
         unitCost: move.unitCost ?? null,
+        batchId: move.batchId ?? null,
         note: move.note ?? null,
         actorType: move.actorType,
         actorId: move.actorId ?? null,

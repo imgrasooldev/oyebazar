@@ -9,6 +9,7 @@ import type {
 import { StatTile, Widget } from '@/components/dash-kit'
 import { SupplierStockActions } from '@/components/supplier-stock-actions'
 import { SupplierWarehouses } from '@/components/supplier-warehouses'
+import { ExpiringBatches } from '@/components/expiring-batches'
 import { BoxesIcon, LayersIcon, MoneyIcon, ShieldIcon } from '@/components/icons'
 import { requireSupplier } from '@/lib/api/supplier-session'
 import { container } from '@/lib/container'
@@ -52,12 +53,13 @@ export default async function SupplierInventoryPage({
   const t = translator(locale)
   const search = query.q?.trim() || undefined
 
-  const [summary, low, all, moves, warehouses] = await Promise.all([
+  const [summary, low, all, moves, warehouses, expiring] = await Promise.all([
     container.inventory.summary(supplier.id),
     container.inventory.lowStock(supplier.id),
     container.inventory.allStock(supplier.id, search),
     container.inventory.moves({ supplierId: supplier.id, limit: 60 }),
     container.inventory.listWarehouses(supplier.id),
+    container.inventory.expiringStock(supplier.id),
   ])
 
   /*
@@ -146,6 +148,35 @@ export default async function SupplierInventoryPage({
           </ul>
         )}
       </Widget>
+
+      {/*
+        Maddat — aur ye khana SIRF us dukan ko dikhta hai jo khep likhti hai.
+
+        🔴 Khali hone par poora khana ghayab. Kapre, bartan aur jewellery wali dukanon ki
+        koi maddat hoti hi nahi; un ke saamne ek hamesha-khali khana rakhna unhen ye
+        sikhata hai ke is safhe par kuch khaane bemani hain — aur us ke baad wo baqi
+        khaanon ko bhi utni tawajjo nahi dete.
+
+        Ye "khatam ho raha hai" ke FORAN baad hai: dono ek hi sawal ke do rukh hain —
+        "kya cheez ab kaam ki nahi rahegi".
+      */}
+      {expiring.length > 0 && (
+        <Widget title={t('expiringTitle')} subtitle={t('expiringBody')}>
+          <ExpiringBatches
+            batches={expiring}
+            labels={{
+              expired: t('batchExpired'),
+              daysLeft: t('batchExpiringIn'),
+              daysAgo: t('batchExpiredAgo'),
+              left: t('batchLeft'),
+              writeOff: t('batchWriteOff'),
+              reason: t('writeOffReason'),
+              save: t('save'),
+              saving: t('saving'),
+            }}
+          />
+        </Widget>
+      )}
 
       {/*
         Saara maal — naya maal daalne ki asal jagah.
@@ -416,6 +447,9 @@ function actionLabels(t: ReturnType<typeof translator>) {
     transferFrom: t('transferFrom'),
     transferTo: t('transferTo'),
     warehouse: t('inWarehouse'),
+    batchNo: t('batchNo'),
+    batchExpiry: t('batchExpiry'),
+    batchExpiryNote: t('batchExpiryNote'),
     save: t('save'),
     saving: t('saving'),
   }

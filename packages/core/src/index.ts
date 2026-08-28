@@ -7,6 +7,7 @@ export * from './domain/order'
 export * from './domain/daily-drop'
 export * from './domain/rto-risk'
 export * from './domain/stock'
+export * from './domain/batch'
 export * from './domain/ops-flags'
 export * from './domain/pitch'
 

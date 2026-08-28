@@ -993,6 +993,26 @@ const DICTIONARY = {
   transferFrom: { ur: 'کہاں سے', en: 'From', rm: 'Kahan se' },
   transferTo: { ur: 'کہاں', en: 'To', rm: 'Kahan' },
   inWarehouse: { ur: 'گودام', en: 'Location', rm: 'Godown' },
+
+  // ---- Khep aur maddat — sirf us dukan ke liye jo ye likhti hai
+  expiringTitle: { ur: 'میعاد', en: 'Expiry', rm: 'Maddat' },
+  expiringBody: {
+    ur: 'جس مال کی میعاد گزر چکی یا قریب ہے — پہلے وہی نکالیں۔',
+    en: 'Stock that has expired or is close to it — move this first.',
+    rm: 'Jis maal ki maddat guzar chuki ya qareeb hai — pehle wohi nikalen.',
+  },
+  batchNo: { ur: 'کھیپ نمبر (مرضی)', en: 'Batch no. (optional)', rm: 'Khep number (marzi)' },
+  batchExpiry: { ur: 'میعاد (مرضی)', en: 'Expiry (optional)', rm: 'Maddat (marzi)' },
+  batchExpiryNote: {
+    ur: 'صرف اُس مال پر جس کی میعاد ہوتی ہے — کریانہ، کاسمیٹکس۔ کپڑے پر خالی چھوڑ دیں۔',
+    en: 'Only for stock that expires — grocery, cosmetics. Leave empty for fabric.',
+    rm: 'Sirf us maal par jis ki maddat hoti hai — kirana, cosmetics. Kapre par khali chhor den.',
+  },
+  batchExpired: { ur: 'میعاد گزر چکی', en: 'Expired', rm: 'Maddat guzar chuki' },
+  batchExpiringIn: { ur: 'دن باقی', en: 'days left', rm: 'din baqi' },
+  batchExpiredAgo: { ur: 'دن پہلے گزری', en: 'days ago', rm: 'din pehle guzri' },
+  batchWriteOff: { ur: 'ضائع لکھیں', en: 'Write off', rm: 'Zaya likhen' },
+  batchLeft: { ur: 'باقی', en: 'left', rm: 'baqi' },
   supplierDashboardNav: { ur: 'ہوم', en: 'Home', rm: 'Home' },
   navCollapse: { ur: 'پٹی سمیٹیں', rm: 'Patti sameten', en: 'Collapse' },
   navExpand: { ur: 'پٹی کھولیں', rm: 'Patti kholen', en: 'Expand' },

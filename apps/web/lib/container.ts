@@ -216,8 +216,10 @@ function build(): Container {
     }),
     inventory: new InventoryService(
       repositories.inventory,
-      // Wohi Prisma class dono port poore karti hai — port alag hain, adapter ek
+      // Wohi Prisma class teenon port poore karti hai — port alag hain, adapter ek
       repositories.inventory,
+      repositories.inventory,
+      clock,
       analytics,
       logger,
     ),

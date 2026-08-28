@@ -67,6 +67,7 @@ model Supplier {
   payouts      ResellerPayout[]
   stockMoves   StockMove[]
   warehouses   Warehouse[]
+  stockBatches StockBatch[]
 
   @@index([status, city])
   @@index([listedOnBazaar, status])
@@ -143,11 +144,11 @@ model Product {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  supplier      Supplier             @relation(fields: [supplierId], references: [id])
-  category      Category             @relation(fields: [categoryId], references: [id])
-  variants      ProductVariant[]
-  media         ProductMedia[]
-  priceRequests PriceChangeRequest[]
+  supplier        Supplier             @relation(fields: [supplierId], references: [id])
+  category        Category             @relation(fields: [categoryId], references: [id])
+  variants        ProductVariant[]
+  media           ProductMedia[]
+  priceRequests   PriceChangeRequest[]
   addressRequests AddressRequest[]
 
   @@index([status, categoryId])
@@ -191,6 +192,7 @@ model ProductVariant {
   media   ProductMedia[]
   moves   StockMove[]
   stock   VariantStock[]
+  batches StockBatch[]
 
   @@index([productId])
   // "Khatam hone wala maal" ki list — dukan ka safha isi par khara hai
@@ -222,6 +224,7 @@ model Warehouse {
   supplier Supplier       @relation(fields: [supplierId], references: [id], onDelete: Cascade)
   stock    VariantStock[]
   moves    StockMove[]
+  batches  StockBatch[]
 
   /// Ek dukan par ek naam ek hi dafa — warna "Store" naam ke do godown ban jate hain
   @@unique([supplierId, name])
@@ -255,6 +258,52 @@ model VariantStock {
   /// Ek cheez, ek godown, ek qatar
   @@unique([variantId, warehouseId])
   @@index([warehouseId])
+}
+
+/**
+ * Khep — ek dafa aaya hua maal, apni maddat ke saath.
+ * 🔴 Ye ginti ka TEESRA paimana NAHI hai. Bechne ka faisla `ProductVariant.stockQty` par
+ * hai (atomic shart) aur jagah `VariantStock` par; khep sirf NIGRANI ki cheez hai:
+ * "ye maal kab tak theek hai".
+ * Us faisle ki wajah bechne ke raste ki hai. Har naya taala us raste par wo jagah hai
+ * jahan ginti manfi mein ja sakti hai — aur wahi ek cheez hai jo do resellers ko ek hi
+ * aakhri piece bechne se rokti hai. Is liye:
+ * · khep kabhi bikri nahi rokti
+ * · khep ki ginti KAM ho sakti hai (dukan ne har cheez khep ke saath na daali ho), aur
+ * us soorat mein bhi sab theek chalta hai — bas us hissay par maddat ka ishara nahi
+ * 🔴 Aur kapre wali dukan par ye khana nazar bhi nahi aata. Lawn ke suit ki koi maddat
+ * nahi hoti; jo dukan khep likhti hi nahi, us ke liye ye poora hissa ghayab rehta hai.
+ */
+model StockBatch {
+  id          String  @id @default(cuid())
+  supplierId  String
+  variantId   String
+  /// Kis godown mein aayi — khali bhi ho sakta hai (purani qataren)
+  warehouseId String?
+
+  /// Dukan ka apna lot/batch number — jo dabbe par likha hota hai
+  batchNo  String?
+  /// Maddat — khali = is cheez par ye sawal banta hi nahi (kapra, bartan)
+  expiryAt DateTime?
+
+  /// Kitna aaya tha
+  qtyIn    Int
+  /// Kitna baqi hai — FEFO tarteeb mein ghatta hai
+  qtyLeft  Int
+  /// Is khep ka apna rate — `ProductVariant.avgCost` se alag, us khep ka sach
+  unitCost Int?
+
+  receivedAt DateTime @default(now())
+  note       String?
+
+  supplier  Supplier       @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  warehouse Warehouse?     @relation(fields: [warehouseId], references: [id])
+
+  /// FEFO: jo pehle kharab hogi wo pehle. Khali khep tarteeb mein aati hi nahi.
+  @@index([variantId, expiryAt])
+  /// "Kya maddat khatam hone wali hai" — dukan ka apna safha isi par khara hai
+  @@index([supplierId, expiryAt])
 }
 
 /**
@@ -292,7 +341,14 @@ model StockMove {
   orderNo  String?
   /// Naya maal aane par: ek piece kitne ka para. `avgCost` isi se banti hai.
   unitCost Int?
-  note     String?
+
+  /**
+   * Kis khep se nikla / kis khep mein aaya.
+   * Khali reh sakta hai aur wo aam soorat hai: jo dukan khep likhti hi nahi (kapra,
+   * bartan) us ki har qatar par ye khali hoga. Ye us par koi shart nahi lagata.
+   */
+  batchId String?
+  note    String?
 
   /**
    * Kis godown se / mein.
@@ -467,13 +523,13 @@ model Reseller {
   /// Khali = system ka default (`simple`). Studio aur raat ki pre-generation dono yahi dekhte hain.
   packTemplateKey String?
 
-  pricing     ResellerPricing[]
-  payouts     ResellerPayout[]
-  orders      Order[]
-  reviews     SupplierReview[]
-  statusPacks StatusPack[]
-  sessions    Session[]
-  templates   ResellerTemplate[]
+  pricing         ResellerPricing[]
+  payouts         ResellerPayout[]
+  orders          Order[]
+  reviews         SupplierReview[]
+  statusPacks     StatusPack[]
+  sessions        Session[]
+  templates       ResellerTemplate[]
   addressRequests AddressRequest[]
 
   @@index([status, city])
@@ -674,16 +730,16 @@ model Order {
    * magar WhatsApp ka link zaroor kholta hai. Token hi us ki chabi hai —
    * is liye wo lamba (32 bytes) aur sirf isi order par chalta hai.
    */
-  supplierToken    String?   @unique
-  dispatchedAt     DateTime?
+  supplierToken     String?      @unique
+  dispatchedAt      DateTime?
   /// kis courier ke haath — `self` ka matlab dukan ka apna rider (koi CN nahi)
-  courier          String?
+  courier           String?
   /// CN number, space/dash hata kar bara haroof mein
-  trackingNo       String?
-  deliveredAt      DateTime?
-  rtoReason        String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  trackingNo        String?
+  deliveredAt       DateTime?
+  rtoReason         String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 
   reseller  Reseller         @relation(fields: [resellerId], references: [id])
   supplier  Supplier         @relation(fields: [supplierId], references: [id])
@@ -1094,7 +1150,6 @@ model Event {
   @@index([actorId, createdAt])
 }
 
-
 /// Customer apna pata KHUD likhti hai — reseller ke haath se nahi.
 ///
 /// 🔴 Ye khaana RTO ke liye hai, sahulat ke liye nahi.
@@ -1131,8 +1186,8 @@ model AddressRequest {
 
   /// 🔴 Ek link se ek hi order. Warna wohi link dobara khol kar (ya forward kar ke)
   /// kai order ban sakte the — aur har order par dukan ka maal rok liya jata hai.
-  orderId   String?   @unique
-  usedAt    DateTime?
+  orderId String?   @unique
+  usedAt  DateTime?
 
   /// Purana link customer ke phone par pada reh jata hai. Bina hadd ke wo mahino baad
   /// khul kar us qeemat par order bana deta jo ab mojood hi nahi.

@@ -19,7 +19,10 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 import { stockHealth, stockValuation, type StockHealth } from '../domain/stock'
+import { EXPIRING_DAYS, batchState, daysLeft, type BatchState } from '../domain/batch'
 import type {
+  BatchRepository,
+  BatchView,
   InventoryLine,
   StockLedgerRepository,
   StockMoveView,
@@ -27,7 +30,7 @@ import type {
   WarehouseStockLine,
   WarehouseView,
 } from '../ports/inventory-repositories'
-import type { Analytics, Logger } from '../ports/infrastructure'
+import type { Analytics, Clock, Logger } from '../ports/infrastructure'
 import { ConflictError, NotFoundError, ValidationError } from '@oyebazar/shared'
 
 /** Ek dafa mein itni qataron se zyada nahi — register lamba hota rehta hai. */
@@ -36,6 +39,8 @@ const MOVES_LIMIT = 100
 const LOW_STOCK_LIMIT = 50
 /** Poore maal ki list ki hadd — is se aage safha khud hi na-qabil-e-parh ho jata hai. */
 const ALL_STOCK_LIMIT = 200
+/** Maddat wali list ki hadd. */
+const EXPIRING_LIMIT = 50
 
 /** Ginti ki hadd — wohi jo `setStockQuantity` par pehle se chal rahi hai. */
 const MAX_QTY = 100_000
@@ -43,6 +48,13 @@ const MAX_QTY = 100_000
 const MAX_UNIT_COST = 10_000_000
 
 export type InventoryLineView = InventoryLine & { readonly health: StockHealth }
+
+/** Ek khep — apne haal aur baqi dinon ke saath. */
+export type BatchLineView = BatchView & {
+  readonly state: BatchState
+  /** Maddat mein kitne din baqi — manfi = guzar chuki, null = maddat hai hi nahi */
+  readonly daysLeft: number | null
+}
 
 export type StockSummary = {
   /** Maal ki kul qeemat — sirf us hissay ki jis ki lagat maloom hai. */
@@ -67,6 +79,13 @@ export class InventoryService {
      * chhue.
      */
     private readonly warehouses: WarehouseRepository,
+    /*
+     * Khep alag port se — aur wo farq maani rakhta hai: ginti har dukan ka mauzu hai,
+     * khep sirf us dukan ka jo maddat wala maal bechti hai. Ek hi port mein daal dene se
+     * kapre wali dukan ke saamne bhi ye poora hissa aa jata.
+     */
+    private readonly batches: BatchRepository,
+    private readonly clock: Clock,
     private readonly analytics: Analytics,
     private readonly logger: Logger,
   ) {}
@@ -88,6 +107,8 @@ export class InventoryService {
     unitCost?: number | undefined
     note?: string | undefined
     warehouseId?: string | undefined
+    batchNo?: string | undefined
+    expiryAt?: Date | undefined
   }): Promise<number> {
     if (!Number.isInteger(input.qty) || input.qty <= 0 || input.qty > MAX_QTY) {
       throw new ValidationError('Ginti theek nahi')
@@ -98,6 +119,16 @@ export class InventoryService {
     ) {
       throw new ValidationError('Lagat theek nahi')
     }
+    /*
+     * 🔴 Guzri hui maddat wala maal andar nahi aata.
+     *
+     * Ye sakhti jaan boojh kar hai: aisa maal reseller ke status par ja kar customer tak
+     * pohanchta hai, aur us ka bhugtaan reseller ki sakh se hota hai. Jo maal pehle hi
+     * mar chuka ho usay "naya maal aaya" likhna us jhoot ki shuruaat hai.
+     */
+    if (input.expiryAt && input.expiryAt.getTime() < this.clock.now().getTime()) {
+      throw new ValidationError('Maddat guzar chuki hai — ye maal andar nahi daala ja sakta')
+    }
 
     const balance = await this.ledger.stockIn({
       supplierId: input.supplierId,
@@ -106,6 +137,8 @@ export class InventoryService {
       ...(input.unitCost === undefined ? {} : { unitCost: input.unitCost }),
       ...(input.note === undefined ? {} : { note: input.note.trim() }),
       ...(input.warehouseId === undefined ? {} : { warehouseId: input.warehouseId }),
+      ...(input.batchNo === undefined ? {} : { batchNo: input.batchNo.trim() }),
+      ...(input.expiryAt === undefined ? {} : { expiryAt: input.expiryAt }),
       actorId: input.supplierId,
     })
     if (balance === null) throw new NotFoundError('Variant', input.variantId)
@@ -256,6 +289,86 @@ export class InventoryService {
       ...line,
       health: stockHealth(line.stockQty, line.reorderLevel),
     }))
+  }
+
+  // ------------------------------------------------------------------- khep
+
+  /** Ek cheez ki saari khepein. */
+  async batchesFor(supplierId: string, variantId: string): Promise<BatchLineView[]> {
+    const now = this.clock.now()
+    const rows = await this.batches.listBatches(supplierId, variantId)
+    return rows.map((row) => this.withState(row, now))
+  }
+
+  /**
+   * Wo maal jis ki maddat guzar chuki ya qareeb hai.
+   *
+   * 🔴 Khali list yahan sab se AAM jawab hai — aur wo theek hai. Kapre, bartan, jewellery
+   * wali dukanen khep likhti hi nahi, aur un ke liye ye khana kabhi nazar nahi aata.
+   */
+  async expiringStock(supplierId: string): Promise<BatchLineView[]> {
+    const now = this.clock.now()
+    const before = new Date(now.getTime() + EXPIRING_DAYS * 86_400_000)
+
+    const rows = await this.batches.expiringBatches(supplierId, before, EXPIRING_LIMIT)
+    return rows.map((row) => this.withState(row, now))
+  }
+
+  /**
+   * Maddat guzar chuki khep zaya likhna.
+   *
+   * `note` yahan bhi LAZMI hai — wohi wajah jo `writeOff` par likhi hai. Farq sirf itna
+   * hai ke yahan wo KHEP maloom hai jis se maal gaya, aur wohi ek baat saal ke aakhir
+   * mein poochhi jati hai: "kitna maal maddat guzarne par zaya hua".
+   */
+  async writeOffBatch(input: {
+    supplierId: string
+    batchId: string
+    qty: number
+    note: string
+  }): Promise<number> {
+    if (!Number.isInteger(input.qty) || input.qty <= 0 || input.qty > MAX_QTY) {
+      throw new ValidationError('Ginti theek nahi')
+    }
+    const note = input.note.trim()
+    if (note.length < 3) throw new ValidationError('Wajah likhna zaroori hai')
+
+    const balance = await this.batches.writeOffBatch({
+      supplierId: input.supplierId,
+      batchId: input.batchId,
+      qty: input.qty,
+      note,
+      actorId: input.supplierId,
+    })
+    /*
+     * `null` ke teen matlab hain: khep is dukan ki nahi, us mein itna maal nahi, ya
+     * kul ginti hi kam par hai. Teenon par ek hi jawab — warna doosri dukan ki khep ki
+     * id aazma kar us ke bare mein kuch maloom kiya ja sakta hai.
+     */
+    if (balance === null) throw new NotFoundError('Batch', input.batchId)
+
+    await this.analytics.track({
+      name: 'batch_written_off',
+      actorType: 'supplier',
+      actorId: input.supplierId,
+      properties: { batchId: input.batchId, qty: input.qty },
+    })
+    this.logger.info('batch_written_off', {
+      supplierId: input.supplierId,
+      batchId: input.batchId,
+      qty: input.qty,
+      note,
+    })
+
+    return balance
+  }
+
+  private withState(row: BatchView, now: Date): BatchLineView {
+    return {
+      ...row,
+      state: batchState(row.expiryAt, now),
+      daysLeft: daysLeft(row.expiryAt, now),
+    }
   }
 
   // ----------------------------------------------------------------- godown

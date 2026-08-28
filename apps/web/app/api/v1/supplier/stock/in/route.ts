@@ -19,6 +19,15 @@ const StockInSchema = z
     qty: z.number().int().min(1).max(100_000),
     unitCost: z.number().int().min(0).max(10_000_000).optional(),
     note: z.string().trim().max(200).optional(),
+    /*
+     * Khep ka number aur maddat — DONO marzi ke.
+     *
+     * 🔴 Ye khaane bharne par ek khep banti hai; na bharen to kuch nahi banta aur sab
+     * waise hi chalta hai. Lawn ke suit ki koi maddat nahi hoti, aur us dukan ke saamne
+     * ye khana rakhna har dafa ek fazool qadam hai.
+     */
+    batchNo: z.string().trim().max(60).optional(),
+    expiryAt: z.string().datetime().optional(),
   })
   .strict()
 
@@ -34,6 +43,8 @@ export async function POST(request: Request) {
       qty: body.qty,
       ...(body.unitCost === undefined ? {} : { unitCost: body.unitCost }),
       ...(body.note === undefined ? {} : { note: body.note }),
+      ...(body.batchNo === undefined ? {} : { batchNo: body.batchNo }),
+      ...(body.expiryAt === undefined ? {} : { expiryAt: new Date(body.expiryAt) }),
     })
 
     return { ok: true, stockQty: balance }

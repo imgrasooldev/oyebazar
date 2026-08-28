@@ -12,6 +12,8 @@
 import { describe, expect, it } from 'vitest'
 import { InventoryService } from './inventory.service'
 import type {
+  BatchRepository,
+  BatchView,
   InventoryLine,
   StockLedgerRepository,
   StockMoveView,
@@ -99,16 +101,58 @@ class FakeWarehouses implements WarehouseRepository {
   }
 }
 
+const NOW = new Date('2026-08-29T00:00:00Z')
+const day = (n: number) => new Date(NOW.getTime() + n * 86_400_000)
+
+const batchRow = (over: Partial<BatchView> = {}): BatchView => ({
+  id: 'batch-1',
+  productId: 'p1',
+  variantId: 'v1',
+  titleUr: 'چائے',
+  titleEn: 'Tea',
+  skuCode: 'TEA-1',
+  size: null,
+  colour: null,
+  batchNo: 'L-42',
+  expiryAt: day(10),
+  qtyIn: 20,
+  qtyLeft: 12,
+  unitCost: 300,
+  warehouseName: 'دکان',
+  receivedAt: day(-40),
+  ...over,
+})
+
+class FakeBatches implements BatchRepository {
+  rows: BatchView[] = []
+  writeOffResult: number | null = 8
+  lastWriteOff: unknown = null
+
+  async listBatches() {
+    return this.rows
+  }
+  async expiringBatches() {
+    return this.rows
+  }
+  async writeOffBatch(input: unknown) {
+    this.lastWriteOff = input
+    return this.writeOffResult
+  }
+}
+
 const noopAnalytics = { track: async () => {} } as never
 const noopLogger = { info: () => {}, warn: () => {}, error: () => {} } as never
+const clock = { now: () => NOW } as never
 
 function build() {
   const ledger = new FakeLedger()
   const houses = new FakeWarehouses()
+  const batches = new FakeBatches()
   return {
     ledger,
     houses,
-    service: new InventoryService(ledger, houses, noopAnalytics, noopLogger),
+    batches,
+    service: new InventoryService(ledger, houses, batches, clock, noopAnalytics, noopLogger),
   }
 }
 
@@ -327,5 +371,82 @@ describe('godown', () => {
       }),
     ).resolves.toBeUndefined()
     expect(houses.lastTransfer).toMatchObject({ qty: 4, actorId: SUPPLIER })
+  })
+})
+
+describe('khep aur maddat', () => {
+  it('🔴 guzri hui maddat wala maal ANDAR nahi aata', async () => {
+    /*
+     * Aisa maal reseller ke status par ja kar customer tak pohanchta hai, aur us ka
+     * bhugtaan reseller ki sakh se hota hai. "Naya maal aaya" likhna us jhoot ki
+     * shuruaat hai.
+     */
+    const { service, ledger } = build()
+    await expect(
+      service.stockIn({ supplierId: SUPPLIER, variantId: 'v1', qty: 5, expiryAt: day(-1) }),
+    ).rejects.toThrow()
+    expect(ledger.lastStockIn).toBeNull()
+  })
+
+  it('aaj ki maddat qubool hai — abhi guzri nahi', async () => {
+    const { service } = build()
+    await expect(
+      service.stockIn({ supplierId: SUPPLIER, variantId: 'v1', qty: 5, expiryAt: day(1) }),
+    ).resolves.toBe(15)
+  })
+
+  it('🔴 khep ke khaane MARZI ke hain — na den to bhi maal chala jata hai', async () => {
+    // Kapre wali dukan ke liye ye sawal banta hi nahi
+    const { service, ledger } = build()
+    await service.stockIn({ supplierId: SUPPLIER, variantId: 'v1', qty: 5 })
+    expect(ledger.lastStockIn).not.toHaveProperty('expiryAt')
+    expect(ledger.lastStockIn).not.toHaveProperty('batchNo')
+  })
+
+  it('har khep par us ka haal aur baqi din lagte hain', async () => {
+    const { service, batches } = build()
+    batches.rows = [
+      batchRow({ id: 'mari', expiryAt: day(-2) }),
+      batchRow({ id: 'qareeb', expiryAt: day(5) }),
+      batchRow({ id: 'be-maddat', expiryAt: null }),
+    ]
+
+    const rows = await service.expiringStock(SUPPLIER)
+    expect(rows.map((r) => r.state)).toEqual(['expired', 'expiring', 'noExpiry'])
+    expect(rows.map((r) => r.daysLeft)).toEqual([-2, 5, null])
+  })
+
+  it('khep zaya karne par wajah LAZMI hai', async () => {
+    const { service, batches } = build()
+    await expect(
+      service.writeOffBatch({ supplierId: SUPPLIER, batchId: 'batch-1', qty: 2, note: '' }),
+    ).rejects.toThrow()
+    expect(batches.lastWriteOff).toBeNull()
+  })
+
+  it('🔴 doosri dukan ki khep — jawab wohi "nahi mila"', async () => {
+    const { service, batches } = build()
+    batches.writeOffResult = null
+    await expect(
+      service.writeOffBatch({
+        supplierId: SUPPLIER,
+        batchId: 'kisi-aur-ki',
+        qty: 2,
+        note: 'maddat guzar gayi',
+      }),
+    ).rejects.toThrow()
+  })
+
+  it('sahi soorat mein nayi kul ginti wapas milti hai', async () => {
+    const { service, batches } = build()
+    await expect(
+      service.writeOffBatch({
+        supplierId: SUPPLIER,
+        batchId: 'batch-1',
+        qty: 4,
+        note: '  maddat guzar gayi  ',
+      }),
+    ).resolves.toBe(8)
+    expect(batches.lastWriteOff).toMatchObject({ note: 'maddat guzar gayi', qty: 4 })
   })
 })
