@@ -133,7 +133,14 @@ SUPABASE_URL / SUPABASE_SERVICE_KEY / SUPABASE_BUCKET
 R2_PUBLIC_URL       tasveeron ka public prefix
 REDIS_URL           Upstash
 OPS_API_KEY         🔴 khali chhora to /api/v1/ops/* band rehte hain (fail closed)
+ANTHROPIC_API_KEY   MARZI ka — status ke lafz behtar karta hai, dekhen neeche
 ```
+
+🔴 `ANTHROPIC_API_KEY` ke baghair kuch BAND nahi hota. Reseller ko status ke teen jumle
+phir bhi milte hain — hamare apne khanon se (`packages/core/domain/pitch.ts`), muft aur
+har waqt. Key hone par wohi jumle Claude likhta hai, aur wo behtar hote hain. Aur agar
+key ho magar model us lamhe nakaam ho jaye, to jawab khud-ba-khud template par gir jata
+hai; reseller ke saamne khali jagah kabhi nahi aati.
 
 🔴 `NODE_ENV` haath se set **na** karen — Dockerfile khud `production` set karta hai.
 
@@ -186,6 +193,25 @@ flyctl deploy -c fly.worker.toml --remote-only
 
 # Migration lagi ya nahi — logs mein saaf likha hota hai
 flyctl logs -a oyebazar-web --no-tail | grep -i migration
+
+# 4) Backfill — SIRF un do migrations ke baad jo naye khaane laayi hain
+#
+# 🔴 Ye migration ka hissa nahi hain aur wo jaan boojh kar hai: ye lakhon qataren parhte
+# hain aur minton chalte hain. `release_command` ke andar rakhne se har deploy utni der
+# ruka rehta, aur nakaam hone par deploy bhi gir jata — halanke in ke baghair site
+# bilkul theek chalti hai, bas thori kam maloomat ke saath.
+#
+# Dono DOBARA chalane par kuch kharab nahi karte: jo qatar pehle se theek hai wo chhoot
+# jati hai.
+
+# Maal ka register — har us cheez par pehli (OPENING) qatar jo register banne se pehle
+# se pari thi, aur us ka godown. Is ke baghair har register beech se shuru hota hai.
+cd packages/db
+node --env-file=<env> node_modules/tsx/dist/cli.mjs prisma/backfill-stock-ledger.ts
+
+# Talash ka khana — zer-zabar hat te hain, Arabi huroof Urdu bante hain. Migration ne ek
+# KACHCHA jawab pehle hi daal diya hota hai, is liye talash us se pehle bhi chalti hai.
+node --env-file=<env> node_modules/tsx/dist/cli.mjs prisma/backfill-search.ts
 
 # 5) Domain
 flyctl certs add -a oyebazar-web oyebazar.com

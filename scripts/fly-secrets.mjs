@@ -46,6 +46,16 @@ const WEB_KEYS = [
   'OPS_API_KEY',
   'TRUST_CLOUDFLARE',
   'STATIC_OTP',
+  /*
+   * Status ke lafz — MARZI ka.
+   *
+   * 🔴 Na ho to kuch band nahi hota: reseller ko phir bhi teen jumle milte hain, hamare
+   * apne khanon se (dekhen `packages/core/domain/pitch.ts`). Ye key sirf un jumlon ko
+   * BEHTAR karti hai. Isi liye ye us list mein nahi jisay chhoot jane par deploy rukna
+   * chahiye — us se ulta nuqsan hota: log ek marzi ki cheez ko lazmi samajh kar deploy
+   * rok dete.
+   */
+  'ANTHROPIC_API_KEY',
 ]
 
 /*
