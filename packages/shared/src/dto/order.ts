@@ -91,6 +91,17 @@ export const ResellerOrderDTO = z
     confirmedAt: z.string().nullable(),
     confirmedBy: ConfirmedBySchema.nullable(),
     createdAt: z.string(),
+    /**
+     * Parcel — kis courier ke haath aur kaun sa CN.
+     *
+     * 🔴 Ye dukan ki shanakht nahi hai, parcel ki. Reseller ko dukan ka number phir bhi
+     * nahi milta; usay wo cheez milti hai jis se wo apni customer ka sawal "mera parcel
+     * kahan hai?" khud jawab de sake — bina dukan ko WhatsApp kiye aur bina jawab ka
+     * intezar kiye.
+     */
+    courier: z.string().nullable(),
+    trackingNo: z.string().nullable(),
+    dispatchedAt: z.string().nullable(),
     items: z.array(OrderLineDTO),
   })
   .strict()

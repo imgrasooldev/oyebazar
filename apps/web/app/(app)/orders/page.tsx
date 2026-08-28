@@ -8,6 +8,7 @@ import { OrderThread, type ThreadMessage } from '@/components/order-thread'
 import { requireReseller } from '@/lib/api/session'
 import { container } from '@/lib/container'
 import { orderStatusStyle } from '@/lib/order-status-style'
+import { ParcelLine } from '@/components/parcel-line'
 import { orderStatusLabel, translator, type Locale } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
 
@@ -163,6 +164,27 @@ function OrderRow({
           </li>
         ))}
       </ul>
+
+      {/*
+        Parcel — sirf jab maal waqai nikal chuka ho.
+
+        🔴 Us se pehle ye dikhana ulta nuqsan deta: reseller har baar dekhti ke khaana
+        khali hai aur samajhti ke dukan ne likhna bhool gaya, jabke abhi bhejne ka waqt
+        hi nahi aaya hota.
+      */}
+      {order.courier && (
+        <ParcelLine
+          courier={order.courier}
+          trackingNo={order.trackingNo}
+          labels={{
+            title: t('parcelTitle'),
+            self: t('parcelSelf'),
+            copy: t('parcelCopy'),
+            copied: t('parcelCopied'),
+            track: t('parcelTrack'),
+          }}
+        />
+      )}
 
       <div className="hairline" />
 

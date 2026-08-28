@@ -7,6 +7,7 @@
  * ke saare pack banna band ho jate hain aur subah bhejne ko kuch nahi hota.
  */
 import { describe, expect, it } from 'vitest'
+import { DEFAULT_TEMPLATE_SPEC } from '@oyebazar/shared'
 import { pkr } from '@oyebazar/shared'
 import { buildStatusPackHtml, setCustomTemplateLoader } from './template'
 
@@ -30,24 +31,16 @@ describe('🔴 gum shuda apna template', () => {
   })
 
   it('mojood template par wohi apna design chalta hai', async () => {
+    /*
+     * 🔴 Spec haath se NAHI banaya — default par ek rang badal diya.
+     *
+     * Pehle yahan poora spec likha hua tha, aur har naya element (jaise `stock`) is test
+     * ko torh deta tha — halanke test ka is se koi taalluq hi nahi. Ye test sirf ek baat
+     * poochhta hai: "mojood template par us ka apna rang chalta hai ya nahi?"
+     */
     setCustomTemplateLoader(async () => ({
-      version: 1 as const,
+      ...DEFAULT_TEMPLATE_SPEC,
       accent: '#123456',
-      accentText: '#ffffff',
-      card: 'none' as const,
-      scrim: 50,
-      frame: 0,
-      radius: 0,
-      badgeText: 'نیا',
-      elements: {
-        badge: { show: true, x: 4, y: 9, size: 44 },
-        title: { show: true, x: 4, y: 62, size: 64 },
-        price: { show: true, x: 4, y: 75, size: 78 },
-        name: { show: true, x: 4, y: 85, size: 46 },
-        phone: { show: true, x: 55, y: 85, size: 46 },
-        cta: { show: true, x: 4, y: 91, size: 40 },
-        note: { show: true, x: 4, y: 53, size: 40, pill: true },
-      },
     }))
 
     const html = await buildStatusPackHtml('custom:mojood-hai@1', data)

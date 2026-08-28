@@ -55,6 +55,16 @@ export interface ResellerOrderView {
   readonly confirmedAt: Date | null
   readonly confirmedBy: ConfirmedBy | null
   readonly createdAt: Date
+  /*
+   * Maal kis ke haath gaya, aur CN kya hai.
+   *
+   * 🔴 Ye do khaane reseller ke liye hain, hamare hisab ke liye nahi. Us ki customer
+   * ka sab se aam sawal "mera parcel kahan hai?" hai, aur ab tak us ka jawab reseller ke
+   * paas tha hi nahi — usay dukan ko WhatsApp karna parta tha aur jawab ka intezar.
+   */
+  readonly courier: string | null
+  readonly trackingNo: string | null
+  readonly dispatchedAt: Date | null
   readonly items: readonly ResellerOrderLineView[]
 }
 

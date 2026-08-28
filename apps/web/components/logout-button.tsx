@@ -21,7 +21,7 @@ export function LogoutButton({ label }: { label: string }) {
         })
       }
       aria-label={label}
-      className="inline-flex min-h-tap min-w-tap items-center justify-center gap-2 rounded-pill bg-paper-raised px-4 text-sm font-semibold text-ink-soft shadow-soft ring-1 ring-black/[0.06] transition hover:text-brand-700 hover:shadow-lift disabled:opacity-50"
+      className="inline-flex min-h-tap min-w-tap items-center justify-center gap-2 rounded-pill bg-paper-raised px-3 text-sm font-semibold text-ink-soft shadow-soft ring-1 ring-black/[0.06] transition hover:text-brand-700 hover:shadow-lift disabled:opacity-50 lg:min-h-0 lg:min-w-0 lg:py-1.5 lg:text-[0.82rem]"
     >
       <LogoutIcon className="h-4 w-4" />
       <span className="hidden sm:inline">{pending ? '…' : label}</span>

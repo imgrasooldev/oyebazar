@@ -45,22 +45,26 @@ export default async function SupplierPortalLayout({ children }: { children: Rea
       <RouteProgress />
 
       <header className="sticky top-0 z-30 bg-coal-900 text-white">
-        <div className="mx-auto flex max-w-shell items-center justify-between gap-3 px-5 py-3 lg:px-8">
+        <div className="mx-auto flex max-w-app items-center justify-between gap-3 px-4 py-2 lg:px-6">
+          {/* Naam aur "kis ka portal" — ek qatar mein; wajah reseller wale shell mein likhi hai */}
           <Link
             href="/supplier/dashboard"
-            className="flex min-h-tap flex-col justify-center leading-none"
+            className="flex min-h-tap items-center gap-2 leading-none lg:min-h-0"
           >
             <span className="font-nastaliq text-[1.15rem] font-bold text-brand-300">
               {locale === 'ur' ? BRAND.nameUr : BRAND.name}
             </span>
-            <span className="mt-1 text-[0.7rem] text-white/55">{t('wholesalerPortal')}</span>
+            <span aria-hidden="true" className="hidden h-3.5 w-px bg-white/20 sm:block" />
+            <span className="hidden text-[0.72rem] text-white/55 sm:block">
+              {t('wholesalerPortal')}
+            </span>
           </Link>
 
           <div className="flex items-center gap-2">
             {/* Dukan ka apna logo — DB mein pehle se tha, patti tak kabhi pohancha hi nahi */}
             <Link
               href="/supplier/dashboard"
-              className="flex min-h-tap items-center gap-2 rounded-pill px-1.5 transition hover:bg-white/10"
+              className="flex min-h-tap items-center gap-2 rounded-pill px-1.5 transition hover:bg-white/10 lg:min-h-0 lg:py-1"
               title={session.supplier.businessName}
             >
               <Avatar
@@ -88,7 +92,7 @@ export default async function SupplierPortalLayout({ children }: { children: Rea
           par header ke sath sath maal bhi katta hua nazar aata. Har khana `shrink-0`
           hai warna naam do lakeeron mein toot jate hain.
         */}
-        <nav className="mx-auto flex max-w-shell gap-1 overflow-x-auto px-5 lg:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <nav className="mx-auto flex max-w-app gap-1 overflow-x-auto px-4 lg:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {NAV.map((item) => (
             <Link
               key={item.href}
@@ -102,7 +106,7 @@ export default async function SupplierPortalLayout({ children }: { children: Rea
         </nav>
       </header>
 
-      <div className="mx-auto flex max-w-shell gap-8 px-5 py-6 lg:px-8">
+      <div className="mx-auto flex max-w-app gap-4 px-4 py-5 lg:gap-5 lg:px-6">
         {/* Side nav sirf bari screen par — phone par upar wali sarakti patti kaam karti hai */}
         <aside className="hidden shrink-0 lg:block">
           <PortalSidebar

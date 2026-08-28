@@ -1,0 +1,11 @@
+# 🔴 Migration ki SQL hamesha LF par.
+#
+# Prisma har migration ka SHA-256 `_prisma_migrations` mein rakhta hai aur har deploy
+# par milata hai. Ye machine `core.autocrlf=true` par hai — yani ek taaza clone par
+# yehi file CRLF ban jati, us ke bytes badal jate, checksum na milta, aur `migrate
+# deploy` ye keh kar ruk jata ke "migration badal di gayi hai" — jabke ek harf bhi na
+# badla hota.
+#
+# Ye us waqt pakri jati jab koi naye computer par pehli dafa deploy kar raha hota —
+# yani sab se buray waqt.
+*.sql text eol=lf

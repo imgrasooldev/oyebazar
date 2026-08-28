@@ -28,6 +28,13 @@ export interface SidebarItem {
  *    thi, aur maal ki qatarein us ke barabar tang ho jati thin. Ab ye simat kar sirf
  *    nishanon ki reh jati hai.
  *
+ * 🔴 Yahan `min-h-tap` (44px) NAHI hai — aur ye bhool nahi hai.
+ *
+ * Wo 44px ungli ka naap hai. Ye patti `hidden lg:block` hai, yani wo sirf us screen par
+ * bunti hai jahan mouse chal raha hota hai, aur mouse pixel par lagta hai. Us hadd ne
+ * saat khanon ko 308px lamba kar diya tha jabke unhein 260px chahiye — yani har safhe
+ * par pachas pixel khali, bina kisi faide ke.
+ *
  * 🔴 Band/khula browser ki yaadasht (localStorage) mein rehta hai, cookie mein nahi:
  * ye har banday ki apni pasand hai, us ke apne computer par — server ko is se koi
  * kaam nahi, aur cookie har request ke saath bhejna faaltu bojh hota.
@@ -67,8 +74,8 @@ export function PortalSidebar({
 
   return (
     <nav
-      className={`sticky top-24 flex flex-col gap-1 rounded-card bg-coal-900 p-2 text-white shadow-soft transition-[width] duration-200 ease-soft ${
-        collapsed ? 'w-[4.5rem]' : 'w-56'
+      className={`sticky top-20 flex flex-col gap-0.5 rounded-card bg-coal-900 p-1.5 text-white shadow-soft transition-[width] duration-200 ease-soft ${
+        collapsed ? 'w-[3.75rem]' : 'w-[13rem]'
       } ${ready ? '' : 'opacity-100'}`}
     >
       {items.map((item) => {
@@ -85,7 +92,7 @@ export function PortalSidebar({
             aria-current={active ? 'page' : undefined}
             // Band halat mein naam gayab hota hai, is liye tooltip lazmi
             title={collapsed ? item.label : undefined}
-            className={`flex min-h-tap items-center gap-3 rounded-card px-3 text-[0.92rem] font-semibold transition ${
+            className={`flex items-center gap-2.5 rounded-card px-2.5 py-2 text-[0.88rem] font-semibold transition ${
               active ? 'bg-brand-500 text-white shadow-lift' : 'text-white/65 hover:bg-white/10 hover:text-white'
             } ${collapsed ? 'justify-center' : ''}`}
           >
@@ -94,13 +101,13 @@ export function PortalSidebar({
         )
       })}
 
-      <span aria-hidden="true" className="my-1 h-px w-full bg-white/10" />
+      <span aria-hidden="true" className="my-0.5 h-px w-full bg-white/10" />
 
       <button
         type="button"
         onClick={toggle}
         aria-label={collapsed ? labels.expand : labels.collapse}
-        className={`flex min-h-tap items-center gap-3 rounded-card px-3 text-[0.82rem] font-semibold text-white/45 transition hover:bg-white/10 hover:text-white ${
+        className={`flex items-center gap-2.5 rounded-card px-2.5 py-2 text-[0.78rem] font-semibold text-white/45 transition hover:bg-white/10 hover:text-white ${
           collapsed ? 'justify-center' : ''
         }`}
       >
@@ -147,7 +154,7 @@ function NavItemBody({
 
   return (
     <>
-      <span className="shrink-0">{pending ? <Spinner /> : icon}</span>
+      <span className="shrink-0 [&>svg]:h-[1.15rem] [&>svg]:w-[1.15rem]">{pending ? <Spinner /> : icon}</span>
       {!collapsed && <span className="truncate">{label}</span>}
     </>
   )

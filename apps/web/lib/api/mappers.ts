@@ -94,7 +94,7 @@ export function toResellerProductListItemDTO(item: CatalogueItem): ResellerProdu
     listedAt: product.listedAt,
     // Dukan ki SHANAKHT — rabta nahi. Dekhen RESELLER_PRODUCT_SELECT ka note.
     supplier: product.supplier,
-  })
+  } satisfies ResellerProductListItem)
 }
 
 export function toResellerProductDetailDTO(item: CatalogueItem): ResellerProductDetail {
@@ -112,9 +112,12 @@ export function toResellerProductDetailDTO(item: CatalogueItem): ResellerProduct
     inStock: product.inStock,
     stockLeft: product.stockLeft,
     listedAt: product.listedAt,
-    media: product.media,
-    variants: product.variants,
-  })
+    // Dukan ki SHANAKHT — rabta nahi. Dekhen RESELLER_PRODUCT_SELECT ka note.
+    supplier: product.supplier,
+    // Domain se readonly aati hain; DTO ki apni copy — spread wahi karta hai
+    media: [...product.media],
+    variants: [...product.variants],
+  } satisfies ResellerProductDetail)
 }
 
 export function toStatusPackDTO(result: StatusPackResult): StatusPack {
@@ -195,6 +198,9 @@ export function toResellerOrderDTO(order: ResellerOrderView): ResellerOrder {
     confirmedAt: order.confirmedAt?.toISOString() ?? null,
     confirmedBy: order.confirmedBy,
     createdAt: order.createdAt.toISOString(),
+    courier: order.courier,
+    trackingNo: order.trackingNo,
+    dispatchedAt: order.dispatchedAt?.toISOString() ?? null,
     items: order.items.map((item) => ({
       productId: item.productId,
       titleUr: item.titleUr,
@@ -202,7 +208,7 @@ export function toResellerOrderDTO(order: ResellerOrderView): ResellerOrder {
       bajiPrice: item.bajiPrice,
       retailPrice: item.retailPrice,
     })),
-  })
+  } satisfies ResellerOrder)
 }
 
 /** Product views ko bina reseller pricing ke DTO banane ke liye (detail page). */

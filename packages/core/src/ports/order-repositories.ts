@@ -41,6 +41,15 @@ export interface OrderStatusChange {
   readonly confirmedBy?: ConfirmedBy | undefined
   /** REJECTED par wajah — reseller ko yehi dikhti hai */
   readonly rejectionReason?: string | undefined
+  /**
+   * DISPATCHED ke saath — courier aur CN.
+   *
+   * 🔴 Ye status ke SAATH ek hi update mein likha jata hai, alag call se nahi. Do
+   * alag likhaiyon ka matlab hota ke beech mein kuch toot jane par order "raste mein"
+   * to ho jata magar CN kahin likha hi na jata — aur phir kisi ko pata na chalta ke wo
+   * kahan reh gaya.
+   */
+  readonly shipment?: { courier: string; trackingNo: string | null } | undefined
 }
 
 export interface PendingConfirmationOrder {
@@ -112,6 +121,9 @@ export interface SupplierOrderView {
    * reseller ka paisa atka hota hai (DELIVERED tak us ka hissa khulta hi nahi).
    */
   readonly dispatchedAt: Date | null
+  /** Kis courier ke haath diya, aur CN — dukan ne khud likha tha */
+  readonly courier: string | null
+  readonly trackingNo: string | null
   readonly items: readonly {
     readonly titleUr: string
     readonly titleEn: string
@@ -161,6 +173,22 @@ export interface OrderRepository {
   }): Promise<PendingConfirmationOrder[]>
 
   markReminderSent(orderId: string, at: Date): Promise<void>
+
+  /**
+   * Ek number par poore platform ka record — kitne pohanche, kitne wapas aaye.
+   *
+   * 🔴 Sirf DO GINTIYAN wapas aati hain. Na koi naam, na koi order, na ye ke kis
+   * reseller ne bheja tha, aur na hi kitni resellers ne.
+   *
+   * Ye hadd is feature ki jaan hai. Agar reseller ko ye pata chal jaye ke "Ayesha ne
+   * Sadia se bhi liya tha", to hum ne ek customer ki khareedari ka record ek ajnabi ke
+   * saamne khol diya — aur wo customer kabhi hamare saamne aayi hi nahi, na us ne is ki
+   * ijazat di. Us ka nuqsan ek RTO se kahin bara hai.
+   *
+   * Ginti mein sirf MUKAMMAL order aate hain (pohancha ya wapas). Raste wale order ka
+   * abhi koi natija hai hi nahi.
+   */
+  outcomesForPhone(phoneKey: string): Promise<{ delivered: number; returned: number }>
 
   /**
    * Raste mein khare order — jin par dukan ne kuch likha hi nahi.

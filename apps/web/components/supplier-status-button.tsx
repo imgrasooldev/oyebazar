@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { COURIERS, SELF_COURIER, TRACKING_MIN, normaliseTracking } from '@oyebazar/shared'
 
 type Next = 'PACKED' | 'DISPATCHED' | 'DELIVERED' | 'RTO' | 'CANCELLED'
 
@@ -41,7 +42,14 @@ export function SupplierStatusButton({
   tone?: 'plain' | 'primary' | 'quiet' | 'danger'
   /** Chhoti si tanbeeh button ke neeche — jaise "is se paisa aap ke zimme likha jaye ga" */
   note?: string
-  labels: { reasonAsk: string; confirm: string; back: string }
+  labels: {
+    reasonAsk: string
+    confirm: string
+    back: string
+    courierAsk: string
+    cnAsk: string
+    cnHint: string
+  }
 }) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
@@ -49,8 +57,27 @@ export function SupplierStatusButton({
 
   // Wajah maangne wale qadam do halat mein rehte hain: band, aur khula hua
   const needsReason = toStatus === 'RTO' || toStatus === 'CANCELLED'
+
+  /*
+   * Courier bhi ab poochha jata hai — aur ye "ek aur khaana" nahi hai.
+   *
+   * 🔴 Pehle DISPATCHED ek tap tha, aur us ka natija ye tha ke maal courier ke paas
+   * chala jata aur uska koi nishan kahin likha hi na jata. Reseller apni customer ko
+   * kuch nahi bata sakti thi, aur jab parcel gum hota to dhoondhne ka koi sira hi na
+   * hota.
+   *
+   * Ek extra tap ki qeemat dukan deti hai, magar us ka faida usi ko milta hai: gum shuda
+   * parcel ka jhagra bhi usi ke sar aata hai.
+   */
+  const needsParcel = toStatus === 'DISPATCHED'
   const [asking, setAsking] = useState(false)
   const [reason, setReason] = useState('')
+  const [courier, setCourier] = useState<string | null>(null)
+  const [tracking, setTracking] = useState('')
+
+  const parcelReady =
+    courier !== null &&
+    (courier === SELF_COURIER || normaliseTracking(tracking).length >= TRACKING_MIN)
 
   async function run() {
     setPending(true)
@@ -59,7 +86,16 @@ export function SupplierStatusButton({
     const res = await fetch(endpoint ?? `/api/v1/supplier/orders/${orderNo}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ toStatus, ...(needsReason ? { reason: reason.trim() } : {}) }),
+      body: JSON.stringify({
+        toStatus,
+        ...(needsReason ? { reason: reason.trim() } : {}),
+        ...(needsParcel && courier
+          ? {
+              courier,
+              ...(courier === SELF_COURIER ? {} : { trackingNo: normaliseTracking(tracking) }),
+            }
+          : {}),
+      }),
     })
 
     setPending(false)
@@ -82,6 +118,78 @@ export function SupplierStatusButton({
         : tone === 'quiet'
           ? 'rounded-card px-3 py-2.5 text-[0.85rem] font-semibold text-ink-faint transition hover:text-ink'
           : 'btn-secondary !py-2.5 !text-[0.9rem]'
+
+  if (needsParcel && asking) {
+    return (
+      <span className="flex w-full flex-col gap-2 rounded-card bg-paper-sunken p-3">
+        <label className="text-[0.8rem] font-semibold text-ink-soft">{labels.courierAsk}</label>
+
+        <span className="flex flex-wrap gap-1.5">
+          {COURIERS.map((option) => (
+            <button
+              key={option.slug}
+              type="button"
+              onClick={() => {
+                setCourier(option.slug)
+                setError(null)
+              }}
+              className={
+                courier === option.slug
+                  ? 'rounded-pill bg-coal-900 px-3 py-1.5 text-[0.8rem] font-semibold text-white'
+                  : 'tap rounded-pill bg-paper-raised px-3 py-1.5 text-[0.8rem] font-semibold text-ink-soft ring-1 ring-line'
+              }
+            >
+              {option.name}
+            </button>
+          ))}
+        </span>
+
+        {/*
+          CN ka khaana sirf tab jab courier koi kampani ho.
+          Apna rider chuna ho to number maangna jhoot likhwana hai — aur phir har number
+          par shak karna parta.
+        */}
+        {courier !== null && courier !== SELF_COURIER && (
+          <>
+            <label className="mt-1 text-[0.8rem] font-semibold text-ink-soft">{labels.cnAsk}</label>
+            <input
+              autoFocus
+              dir="ltr"
+              value={tracking}
+              onChange={(event) => setTracking(event.target.value)}
+              maxLength={60}
+              inputMode="text"
+              autoCapitalize="characters"
+              className="field numeric !mt-0"
+            />
+            <span className="text-[0.72rem] text-ink-faint">{labels.cnHint}</span>
+          </>
+        )}
+
+        <span className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            disabled={pending || !parcelReady}
+            onClick={() => void run()}
+            className="btn-primary !py-2 !text-[0.85rem] disabled:opacity-40"
+          >
+            {pending ? '…' : labels.confirm}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setAsking(false)
+              setError(null)
+            }}
+            className="rounded-card px-3 py-2 text-[0.85rem] font-semibold text-ink-faint transition hover:text-ink"
+          >
+            {labels.back}
+          </button>
+        </span>
+        {error && <span className="text-[0.75rem] text-red-600">{error}</span>}
+      </span>
+    )
+  }
 
   if (needsReason && asking) {
     return (
@@ -126,7 +234,7 @@ export function SupplierStatusButton({
       <button
         type="button"
         disabled={pending}
-        onClick={() => (needsReason ? setAsking(true) : void run())}
+        onClick={() => (needsReason || needsParcel ? setAsking(true) : void run())}
         className={className}
       >
         {pending ? '…' : label}

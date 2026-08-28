@@ -108,6 +108,17 @@ describe('🔴 pack ki apni line defaults mein na jaye', () => {
       join(process.cwd(), 'app/api/v1/status-pack/defaults/route.ts'),
       'utf8',
     )
-    expect(source).toMatch(/const \{ templateKey, note: _note, \.\.\.options \} = body/)
+    /*
+     * 🔴 Regex JAAN BOOJH KAR dheela hai — poori satar par pin nahi.
+     *
+     * Pehle wo poori satar maangta tha, aur jis din route ne `wasPrice` bhi nikalna shuru
+     * kiya us din ye test toot gaya halanke jis cheez ki wo hifazat karta hai (`note`
+     * defaults mein na jaye) wo bilkul theek thi. Aisa test do dafa nuqsan deta hai: wo
+     * theek kaam par laal hota hai, aur us laal ko "pehle se toota hua hai" keh kar
+     * nazar-andaz kar diya jata hai — jis ke baad wo asli kharabi bhi nahi pakarta.
+     *
+     * Shart sirf itni hai: `note` body se NIKAL kar alag ho, aur `options` mein na jaye.
+     */
+    expect(source).toMatch(/const \{[^}]*note: _note[^}]*\.\.\.options \} = body/)
   })
 })

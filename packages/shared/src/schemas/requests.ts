@@ -250,6 +250,16 @@ export const PackOptionsSchema = z.object({
   note: z.string().trim().max(NOTE_MAX).optional(),
   /** Kinare par OyeBazar ka halka nishan — default laga hua. */
   showMark: z.boolean().optional(),
+  /** Size, rang aur kitna bacha — ek switch, teenon ke liye. Default laga hua. */
+  showStock: z.boolean().optional(),
+  /**
+   * Purana rate — qeemat ke saath kata hua.
+   *
+   * 🔴 Hadd yahan bhi lagti hai, sirf UI par nahi: ye qadar cache key mein jati hai
+   * aur SEEDHA tasveer par chhapti hai. Poora hindsa aur mosbat — "Rs 0" ya manfi rate
+   * kata hua dikhana be-maani hai.
+   */
+  wasPrice: z.number().int().positive().max(1_000_000).optional(),
 })
 
 export const GenerateStatusPackSchema = z.object({
@@ -298,6 +308,12 @@ export const CreateOrderSchema = z.object({
   lines: z.array(OrderLineInputSchema).min(1, 'Kam se kam ek item chahiye').max(20),
   deliveryFee: z.number().int().nonnegative().max(5_000).default(200),
   paymentMethod: z.enum(['COD', 'PREPAID']).default('COD'),
+  /**
+   * Agar ye order us link se bana jis par customer ne khud apna pata likha tha.
+   *
+   * Order banne ke BAAD wo link band kar diya jata hai — ek link, ek order.
+   */
+  pataToken: z.string().trim().min(10).max(200).optional(),
 })
 
 export const CancelOrderSchema = z.object({

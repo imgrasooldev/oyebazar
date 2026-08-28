@@ -13,11 +13,24 @@ const BodySchema = z
   .object({
     toStatus: z.enum(['PACKED', 'DISPATCHED', 'DELIVERED', 'RTO', 'CANCELLED']),
     reason: z.string().trim().min(3).max(200).optional(),
+    /*
+     * DISPATCHED ke saath — courier aur CN.
+     *
+     * Yahan sirf shakl dekhi jati hai; asal shart (kaun sa courier, aur CN kab lazmi
+     * hai) service ke andar `readShipment` mein hai — taake magic link wale raste par
+     * bhi wohi lage.
+     */
+    courier: z.string().trim().min(1).max(30).optional(),
+    trackingNo: z.string().trim().max(60).optional(),
   })
   .strict()
   .refine((body) => !['RTO', 'CANCELLED'].includes(body.toStatus) || Boolean(body.reason), {
     message: 'Wajah likhen — reseller ke customer ko yehi batana parta hai',
     path: ['reason'],
+  })
+  .refine((body) => body.toStatus !== 'DISPATCHED' || Boolean(body.courier), {
+    message: 'Courier chunen',
+    path: ['courier'],
   })
 
 /**
@@ -41,7 +54,7 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ orderNo: 
   return apiHandler(async () => {
     const { supplier } = await requireSupplier()
     const { orderNo } = await ctx.params
-    const { toStatus, reason } = await parseBody(request, BodySchema)
+    const { toStatus, reason, courier, trackingNo } = await parseBody(request, BodySchema)
 
     const order = await run()
 
@@ -50,7 +63,10 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ orderNo: 
         case 'PACKED':
           return container.orders.markPackedBySupplier(supplier.id, orderNo)
         case 'DISPATCHED':
-          return container.orders.markDispatchedBySupplier(supplier.id, orderNo)
+          return container.orders.markDispatchedBySupplier(supplier.id, orderNo, {
+            courier: courier ?? '',
+            ...(trackingNo ? { trackingNo } : {}),
+          })
         case 'DELIVERED':
           return container.orders.markDeliveredBySupplier(supplier.id, orderNo)
         case 'RTO':

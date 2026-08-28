@@ -74,6 +74,8 @@ const SUPPLIER_SELECT = {
   createdAt: true,
   acceptedAt: true,
   dispatchedAt: true,
+  courier: true,
+  trackingNo: true,
   items: {
     select: {
       qty: true,
@@ -97,6 +99,10 @@ const RESELLER_SELECT = {
   confirmedAt: true,
   confirmedBy: true,
   createdAt: true,
+  // Courier aur CN — dukan ki shanakht nahi, parcel ki. Reseller ka apna kaam.
+  dispatchedAt: true,
+  courier: true,
+  trackingNo: true,
   items: {
     select: {
       productId: true,
@@ -262,6 +268,8 @@ export class PrismaOrderRepository implements OrderRepository {
       createdAt: row.createdAt,
       acceptedAt: row.acceptedAt,
       dispatchedAt: row.dispatchedAt,
+      courier: row.courier,
+      trackingNo: row.trackingNo,
       items: row.items.map((item) => ({
         titleUr: titles.get(item.productId)?.titleUr ?? '',
         titleEn: titles.get(item.productId)?.titleEn ?? '',
@@ -294,7 +302,8 @@ export class PrismaOrderRepository implements OrderRepository {
       select: RESELLER_SELECT,
     })
     if (!row) return null
-    return this.toResellerView(row)
+    // Ek order — wohi helper, bas usi ke maal ke naam
+    return this.toResellerView(row, await this.titlesFor(row.items.map((i) => i.productId)))
   }
 
   async listForReseller(
@@ -309,7 +318,16 @@ export class PrismaOrderRepository implements OrderRepository {
       ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
     })
 
-    const views = await Promise.all(rows.map((row) => this.toResellerView(row)))
+    /*
+     * 🔴 Maal ke naam SAB orders ke liye EK query mein — pehle har order ki apni thi.
+     *
+     * `Promise.all(rows.map(...))` parallel dikhta hai magar wo N+1 hai: bees order =
+     * bees alag query. Saath saath chalne se DB par bojh kam nahi hota, sirf ek hi lamhe
+     * mein par jata hai — aur connection pool theek us waqt bharta hai jab safha sab se
+     * ziyada khulta hai.
+     */
+    const titles = await this.titlesFor(rows.flatMap((row) => row.items.map((i) => i.productId)))
+    const views = rows.map((row) => this.toResellerView(row, titles))
     return toPage(views, query.limit, (o) => o.id)
   }
 
@@ -339,7 +357,25 @@ export class PrismaOrderRepository implements OrderRepository {
           ...(change.to === 'REJECTED'
             ? { rejectedAt: change.at, rejectionReason: change.rejectionReason ?? change.note ?? null }
             : {}),
-          ...(change.to === 'DISPATCHED' ? { dispatchedAt: change.at } : {}),
+          /*
+           * Courier aur CN status ke SAATH, usi ek update mein.
+           *
+           * 🔴 Alag call se likhne ka matlab hota ke beech mein kuch toot jane par order
+           * "raste mein" ho jata magar CN kahin likha hi na jata — aur us soorat mein
+           * dobara likhne ka koi rasta bhi nahi tha, kyunke DISPATCHED se DISPATCHED
+           * wali transition mana hai.
+           */
+          ...(change.to === 'DISPATCHED'
+            ? {
+                dispatchedAt: change.at,
+                ...(change.shipment
+                  ? {
+                      courier: change.shipment.courier,
+                      trackingNo: change.shipment.trackingNo,
+                    }
+                  : {}),
+              }
+            : {}),
           ...(change.to === 'DELIVERED' ? { deliveredAt: change.at } : {}),
           ...(change.to === 'RTO' ? { rtoReason: change.note ?? null } : {}),
         },
@@ -390,6 +426,30 @@ export class PrismaOrderRepository implements OrderRepository {
 
   async markReminderSent(orderId: string, at: Date): Promise<void> {
     await this.db.order.update({ where: { id: orderId }, data: { reminderSentAt: at } })
+  }
+
+  async outcomesForPhone(phoneKey: string): Promise<{ delivered: number; returned: number }> {
+    /*
+     * 🔴 `groupBy` — sirf GINTI, koi row nahi.
+     *
+     * `findMany` se bhi ye kaam ho jata, magar us soorat mein doosri resellers ke order
+     * is process ki yaadasht mein aa jate: naam, pata, raqam, sab kuch. Jo data uthaya
+     * hi na jaye, wo galti se leak bhi nahi ho sakta. Hifazat wahan lagti hai jahan
+     * QUERY likhi jati hai, us ke baad wale mapper mein nahi.
+     *
+     * Aur sirf MUKAMMAL order: raste wale ka koi natija hai hi nahi, aur usay "abhi
+     * wapas nahi aaya" keh kar achha ginna ghalat jawab dega.
+     */
+    const grouped = await this.db.order.groupBy({
+      by: ['status'],
+      where: { customerPhone: phoneKey, status: { in: ['DELIVERED', 'RTO'] } },
+      _count: { _all: true },
+    })
+
+    const count = (status: 'DELIVERED' | 'RTO') =>
+      grouped.find((row) => row.status === status)?._count._all ?? 0
+
+    return { delivered: count('DELIVERED'), returned: count('RTO') }
   }
 
   async findStuckInTransit(options: {
@@ -566,14 +626,20 @@ export class PrismaOrderRepository implements OrderRepository {
   }
 
   /** Reseller view mein product ka title chahiye — items ke saath ek hi query mein. */
-  private async toResellerView(row: ResellerRow): Promise<ResellerOrderView> {
-    const productIds = row.items.map((i) => i.productId)
+  /** Maal ke naam — ek hi query, chahe kitne bhi order hon */
+  private async titlesFor(productIds: readonly string[]): Promise<Map<string, string>> {
+    if (productIds.length === 0) return new Map()
+
     const products = await this.db.product.findMany({
-      where: { id: { in: productIds } },
+      // Ek hi maal kai orders mein ho sakta hai — dohra id bhejne ka koi faida nahi
+      where: { id: { in: [...new Set(productIds)] } },
       select: { id: true, titleUr: true },
     })
-    const titles = new Map(products.map((p) => [p.id, p.titleUr]))
 
+    return new Map(products.map((p) => [p.id, p.titleUr]))
+  }
+
+  private toResellerView(row: ResellerRow, titles: Map<string, string>): ResellerOrderView {
     const myEarnings = row.items.reduce(
       (sum, item) => sum + (item.retailPriceSnapshot - item.bajiPriceSnapshot) * item.qty,
       0,
@@ -594,6 +660,9 @@ export class PrismaOrderRepository implements OrderRepository {
       confirmedAt: row.confirmedAt,
       confirmedBy: row.confirmedBy,
       createdAt: row.createdAt,
+      courier: row.courier,
+      trackingNo: row.trackingNo,
+      dispatchedAt: row.dispatchedAt,
       items: row.items.map((item) => ({
         productId: item.productId,
         titleUr: titles.get(item.productId) ?? '',

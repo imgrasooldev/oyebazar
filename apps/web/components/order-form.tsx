@@ -1,6 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { AskAddressButton } from '@/components/ask-address-button'
+import { PhoneRecordNote } from '@/components/phone-record-note'
 import { useState } from 'react'
 import { formatPkr, parseOrderText } from '@oyebazar/shared'
 import { translator, type Locale } from '@/lib/i18n'
@@ -30,6 +32,22 @@ interface Props {
   bajiPrice: number
   defaultRetailPrice: number
   locale: Locale
+  /**
+   * Customer ne khud apna pata bheja hai — us link se.
+   *
+   * 🔴 Ye khaane bhare hue aate hain aur reseller unhein badal SAKTI hai. Taala lagane
+   * ka koi faida nahi: agar customer ne kuch ghalat likha ho to theek karne ka rasta
+   * band karna sirf reseller ko phone uthane par majboor karta hai.
+   */
+  prefill?: {
+    token: string
+    customerName: string
+    customerPhone: string
+    customerAddress: string
+    area: string
+    locationLat: number | null
+    locationLng: number | null
+  }
 }
 
 /**
@@ -43,6 +61,7 @@ interface Props {
  */
 export function OrderForm({
   productId,
+  prefill,
   delivery,
   variants = [],
   title,
@@ -53,11 +72,22 @@ export function OrderForm({
   const t = translator(locale)
   const router = useRouter()
 
-  const [idempotencyKey] = useState(() => crypto.randomUUID())
-  const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [address, setAddress] = useState('')
-  const [area, setArea] = useState('')
+  /*
+   * 🔴 Jab pata us link se aaya ho, idempotency ki chabi TOKEN se banti hai — nayi
+   * random se nahi.
+   *
+   * Wajah: safha dobara khulne par (back button, do tab, ya reseller ka phone reload
+   * hone par) nayi random chabi banti aur wohi order DOBARA ban jata — customer ko do
+   * parcel aur do dafa COD. Token us link ke saath bandha hua hai, is liye har koshish
+   * ek hi chabi par girti hai aur server pehla wala order wapas de deta hai.
+   */
+  const [idempotencyKey] = useState(() =>
+    prefill ? `pata:${prefill.token}` : crypto.randomUUID(),
+  )
+  const [name, setName] = useState(prefill?.customerName ?? '')
+  const [phone, setPhone] = useState(prefill?.customerPhone ?? '')
+  const [address, setAddress] = useState(prefill?.customerAddress ?? '')
+  const [area, setArea] = useState(prefill?.area ?? '')
   const [qty, setQty] = useState(1)
   /*
    * Pehle se chuna hua: pehla wo jorha jis mein maal ho. Reseller aksar customer se
@@ -71,7 +101,11 @@ export function OrderForm({
   // Pehle se "isi sheher mein" — aksar order isi sheher ke hote hain
   const [outOfCity, setOutOfCity] = useState(false)
   const deliveryFee = outOfCity ? delivery.other : delivery.city
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
+    prefill?.locationLat != null && prefill.locationLng != null
+      ? { lat: prefill.locationLat, lng: prefill.locationLng }
+      : null,
+  )
   const [locationState, setLocationState] = useState<'idle' | 'getting' | 'failed'>('idle')
   const [pasted, setPasted] = useState('')
   // Kitne khaane paste se bhare — reseller ko dikhna chahiye ke kaam waqai hua
@@ -126,6 +160,8 @@ export function OrderForm({
         ],
         deliveryFee,
         paymentMethod: 'COD',
+        // Order banne ke baad wo link band ho jata hai — ek link, ek order
+        ...(prefill ? { pataToken: prefill.token } : {}),
       }),
     })
 
@@ -180,6 +216,46 @@ export function OrderForm({
       </div>
 
       {/*
+        Customer khud apna pata likh de — sab se saaf rasta.
+
+        🔴 Ye paste wale khaane se UPAR hai, aur ye tarteeb jaan boojh kar hai. Paste
+        behtar hai haath se type karne se, magar dono soorton mein pata WAHI rehta hai
+        jo customer ne WhatsApp par likha tha — us ki apni ghaltiyon samet, aur us ke
+        GPS pin ke baghair. Link us se ek darja aage hai: pata seedha us ke phone se
+        aata hai. Jo behtar hai wo pehle dikhna chahiye.
+
+        Neeche paste aur haath se likhna dono mojood rehte hain — customer link na khole
+        to kaam phir bhi ruk nahi sakta.
+      */}
+      {!prefill && (
+        <AskAddressButton
+          productId={productId}
+          {...(variantId ? { variantId } : {})}
+          qty={qty}
+          retailPrice={retailPrice}
+          labels={{
+            ask: t('askAddress'),
+            hint: t('askAddressHint'),
+            making: t('askAddressMaking'),
+            ready: t('askAddressReady'),
+            share: t('askAddressShare'),
+            copy: t('parcelCopy'),
+            copied: t('parcelCopied'),
+            failed: t('orderFailed'),
+          }}
+        />
+      )}
+
+      {/*
+        Customer ne khud pata bhej diya — reseller ko sirf dekh kar aage barhna hai.
+      */}
+      {prefill && (
+        <p className="rounded-card bg-accent-50 px-3 py-2.5 text-[0.82rem] font-semibold text-accent-700 ring-1 ring-accent-600/40">
+          {t('pataFromCustomer')}
+        </p>
+      )}
+
+      {/*
         🔴 Sab se bhaari qadam yehi tha: reseller ke paas ye maloomat PEHLE SE hoti hai
         (customer ne WhatsApp par likh bheji), aur usay phone ki chhoti screen par wohi
         cheez dobara type karni parti thi.
@@ -188,6 +264,14 @@ export function OrderForm({
         order khud ba khud NAHI banta. Wo khaane us ke saamne rehte hain aur wo unhen
         theek kar sakti hai: ye kisi asli bande ka pata hai aur us par parcel jayega.
       */}
+      {/*
+        Paste ka khaana tab chhup jata hai jab customer khud pata bhej chuki ho.
+
+        🔴 Do raste ek saath dikhana reseller ko rok deta hai: wo sochti hai ke shayad
+        yahan bhi kuch daalna hai. Jab kaam ho chuka ho to us ka auzaar hata dena chahiye
+        — warna wo auzaar ek sawal ban jata hai.
+      */}
+      {!prefill && (
       <label className="block rounded-card bg-paper-sunken p-3">
         <span className="text-sm font-semibold">{t('pasteMessage')}</span>
         <textarea
@@ -206,6 +290,7 @@ export function OrderForm({
           </span>
         )}
       </label>
+      )}
 
       <label className="block">
         <span className="text-sm font-semibold">{t('customerName')}</span>
@@ -228,6 +313,25 @@ export function OrderForm({
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           className="mt-2 w-full rounded-lg ring-1 ring-black/10 px-4 py-3"
+        />
+
+        {/*
+          Is number ka record — poore platform par.
+
+          🔴 Ye theek YAHAN hai, kisi alag safhe par nahi. Reseller ko ye baat us
+          lamhe chahiye jab wo number likh rahi hai aur order abhi laga nahi — us ke baad
+          batane ka matlab hai maal ja chuka aur khabar bekar.
+
+          Ye rokta nahi, sirf batata hai. Faisla us ka hai: advance mangwa le, call kar
+          le, ya bhej de.
+        */}
+        <PhoneRecordNote
+          phone={phone}
+          labels={{
+            risky: t('phoneRisky'),
+            riskyHint: t('phoneRiskyHint'),
+            clean: t('phoneClean'),
+          }}
         />
       </label>
 

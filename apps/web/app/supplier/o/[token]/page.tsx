@@ -70,6 +70,9 @@ export default async function SupplierOrderPage({
     reasonAsk: t('reasonAsk'),
     confirm: t('confirmAction'),
     back: t('backOut'),
+    courierAsk: t('courierAsk'),
+    cnAsk: t('cnAsk'),
+    cnHint: t('cnHint'),
   }
   /*
    * Wapsi ka andaza — sirf usi lamhe jab faisla abhi baqi ho.

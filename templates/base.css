@@ -321,6 +321,43 @@ body {
   display: none;
 }
 
+/*
+ * Purana rate — kata hua.
+ *
+ * 🔴 `direction: ltr` andar wale span par hai, is dabbe par nahi — wohi wajah jo
+ * number aur qeemat par likhi hai: `inset-inline-start` element ki APNI direction se
+ * naapta hai, aur custom template mein ghaseetne par ye ulti taraf chala jata.
+ *
+ * Halka aur chhota: ye asli rate ko dabana nahi chahiye, sirf us ke barabar khara ho kar
+ * ye batana hai ke pehle kya tha.
+ */
+.was-price {
+  font-size: calc(46px * var(--scale));
+  font-weight: 600;
+  opacity: 0.6;
+  text-decoration: line-through;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.was-price .ltr {
+  direction: ltr;
+  display: inline-block;
+}
+
+/*
+ * Maal ki tafseel — "S · M · L · صرف 2 باقی".
+ *
+ * 🔴 Ye qeemat se CHHOTI aur halki hai, jaan boojh kar. Ye jawab hai, dawa nahi:
+ * customer pehle rate dekhti hai, phir ye. Isay qeemat jitna bara karne ka matlab hota
+ * ke dono ek doosre se larte, aur nazar kisi ek par bhi na rukti.
+ */
+.stock {
+  font-size: calc(34px * var(--scale));
+  line-height: 1.6;
+  opacity: 0.9;
+  font-weight: 600;
+}
+
 .cta {
   font-size: calc(40px * var(--scale));
   line-height: 2.1;
@@ -399,12 +436,29 @@ body {
  * karta), is liye `minimal` ka safed card ya `frame` ka haashiya alag se theek nahi
  * karna parta.
  */
+/*
+ * 🔴 `!important` — aur ye jaan boojh kar hai, aalkasi nahi.
+ *
+ * Custom template ka CSS `.stage.custom .note` par lagta hai (specificity 0,3,0) aur wo
+ * `pillOn()` ke saath `display: inline-block` bhi laata hai. Ye rule (0,2,0) hai aur
+ * BAAD mein aane wale template CSS se haar jata tha — yani "chhupi hui" cheez chhupti
+ * hi nahi thi.
+ *
+ * Live par yehi pakra: reseller ne koi line nahi likhi thi, aur pack ke beech mein ek
+ * KHALI narangi dabba chhap gaya — pill ka background, andar kuch bhi nahi.
+ *
+ * Yahan `!important` sahi auzaar hai: ye qawaid template se ZYADA ikhtiyar rakhte hain.
+ * Template ye tay karta hai ke cheez KAHAN hai; ye tay karta hai ke wo hai bhi ya nahi.
+ * Us par koi template apni marzi nahi chala sakta.
+ */
 .hide-note .note,
 .hide-name .seller-name,
 .hide-phone .seller-phone,
 .hide-price .price-row,
+.hide-was .was-price,
+.hide-stock .stock,
 .hide-seller .seller {
-  display: none;
+  display: none !important;
 }
 
 /*

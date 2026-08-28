@@ -98,6 +98,19 @@ export interface RenderProductView {
    */
   readonly images: readonly RenderImageView[]
   readonly categoryNameUr: string
+  /**
+   * Maal ki tafseel — size, rang, aur kitna bacha.
+   *
+   * 🔴 Ye pack par likhne ke liye hai, aur wajah bikri ki hai: rate ke BAAD customer ka
+   * agla sawal hamesha "large hai?" ya "aur rang?" hota hai. Har sawal WhatsApp par ek
+   * chakkar hai, aur har chakkar mein sauda tootne ka mauqa. Jo baat tasveer par likhi
+   * ho, wo poochhi hi nahi jati.
+   */
+  readonly variants: readonly {
+    readonly size: string | null
+    readonly colour: string | null
+    readonly stockQty: number
+  }[]
 }
 
 /**
@@ -191,6 +204,20 @@ export interface PublicSupplierView {
   readonly memberSince: Date
   /** Aakhri baar naya maal kab laga — null agar abhi tak kuch live nahi */
   readonly lastListedAt: Date | null
+  /**
+   * Dukan ki apni shartein — delivery ka rate aur commission kab milta hai.
+   *
+   * 🔴 Ye reseller ka ASAL faisla hain, aur ab tak wo un ko dekhe baghair maal chunti
+   * thi. Delivery ka rate seedha us ke munafe se katta hai (customer se wo alag maang
+   * sakti hai, magar rate dukan ka hai), aur "kitne din baad paisa milega" wo ginti hai
+   * jis par us ka apna khareed ka chakkar chalta hai.
+   *
+   * Ye shartein hain, RABTA nahi — is liye inhen dikhane se bypass ka koi darwaza nahi
+   * khulta (phone/WhatsApp portal mein ab bhi nahi hai).
+   */
+  readonly deliveryFeeCity: number
+  readonly deliveryFeeOther: number
+  readonly payoutTermDays: number
 }
 
 export interface ResellerView {

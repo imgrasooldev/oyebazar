@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { NOTE_MAX, formatPkr, type PackKit, type PackKitAsset, type PackOptions } from '@oyebazar/shared'
 import { CopyIcon, DownloadIcon, SparkIcon } from '@/components/icons'
+import { SharePackButton } from '@/components/share-pack-button'
 import { translator, type Locale } from '@/lib/i18n'
 
 const TEMPLATE_NAMES: Record<string, Record<Locale, string>> = {
@@ -146,6 +147,50 @@ export function StatusPackStudio({
   const [savingDefaults, setSavingDefaults] = useState(false)
   const [defaultsSaved, setDefaultsSaved] = useState(false)
 
+  /*
+   * Design aur "image par kya dikhega" — ye SAB pehle har safhe par khule pade the.
+   *
+   * 🔴 Naap kar dekha: is ek safhe par 34 cheezein thin jin par faisla ho sakta tha.
+   * Jabke roz ka kaam teen tap ka hai — tasveer chuno, pack banao, bhejo.
+   *
+   * Aur asal baat ye hai ke wo 34 cheezein ek dafa ki hain, roz ki nahi. Reseller ek
+   * dafa apna template aur apne switch chunti hai, phir mahino wohi chalte hain — us ka
+   * apna default pehle se mehfooz hota hai. Har din, har maal par wohi 30 cheezein
+   * dobara dikhana usay kuch deta nahi, sirf asal button ko neeche dhakelta hai.
+   *
+   * Is liye kuch HATAYA nahi gaya — sab mojood hai, ek tap door. Farq sirf ye hai ke
+   * pehli nazar mein wo cheez saamne hai jo waqai roz karni hai.
+   *
+   * 🔴 Nayi reseller ke liye khula rehta hai. Jis ne abhi tak apna default chuna hi
+   * nahi, us ke saamne wo faisle chhupa dena usay ye batana hai ke "yahan kuch chunne ko
+   * hai hi nahi" — aur wo pehla pack us ke apne naam aur number ke baghair chala jata.
+   */
+  const [showSettings, setShowSettings] = useState(!defaultTemplateKey)
+
+  /*
+   * Band halat mein jo ek line dikhti hai — us mein wohi cheezein hain jo BADAL sakti
+   * hain aur jin ka asar tasveer par nazar aata hai.
+   *
+   * Jo band hai wo bhi likha jata hai ("rate nahi", "number nahi"), sirf jo khula hai wo
+   * nahi. 🔴 Us ki wajah tajurbe ki hai: reseller ka sab se aam sawal "mera number kyun
+   * nahi aaya?" hota hai, aur us ka jawab isi line mein hona chahiye — warna wo poora
+   * pack dobara banati hai ye samajhne ke liye ke hua kya tha.
+   */
+  const chosenTemplateName =
+    customTemplates.find((template) => template.key === templateKey)?.name ??
+    TEMPLATE_NAMES[templateKey]?.[locale] ??
+    templateKey
+
+  const chosenSummary = [
+    options.lang === 'en' ? t('packEnglish') : t('packUrdu'),
+    options.showPrice === false ? t('packNoPrice') : null,
+    options.showName === false ? t('packNoName') : null,
+    options.showPhone === false ? t('packNoPhone') : null,
+    options.showStock === false ? t('packNoStock') : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
   function setOption<K extends keyof PackOptions>(field: K, value: PackOptions[K]) {
     setOptions((current) => ({ ...current, [field]: value }))
     // Faisla badal gaya to purani kit ab is se mel nahi khati — usay hata dete hain,
@@ -253,7 +298,14 @@ export function StatusPackStudio({
      *
      * Server par bhi yehi shart hai (dekhen defaults route) — ye sirf pehli deewar hai.
      */
-    const { note: _note, ...forever } = options
+    /*
+     * 🔴 `wasPrice` bhi bahar — wohi wajah jo `note` par likhi hai.
+     *
+     * Purana rate ISI sale ki baat hai. Default bana dene ka matlab hota ke har agle
+     * pack par ek kata hua number chhapta rehta jo ab sach hi nahi — aur reseller ko
+     * yaad bhi na rehta ke usay hatana hai. Wohi kharabi, doosri shakl mein.
+     */
+    const { note: _note, wasPrice: _wasPrice, ...forever } = options
 
     const res = await fetch('/api/v1/status-pack/defaults', {
       method: 'PUT',
@@ -373,6 +425,36 @@ export function StatusPackStudio({
           </div>
         )}
 
+        {/*
+          Ek line jo batati hai ke abhi kya chuna hua hai — aur badalne ka rasta.
+
+          🔴 Chhupa dena aur BATA kar chhupana do alag cheezein hain. Agar yahan kuch na
+          likha hota to reseller ko pata hi na chalta ke us ka kaun sa design lagega, aur
+          wo har dafa "Badlein" daba kar tasdeeq karti — yani chhupane ka faida ulta ho
+          jata.
+        */}
+        {!showSettings && (
+          <button
+            type="button"
+            onClick={() => setShowSettings(true)}
+            className="flex w-full items-center justify-between gap-3 rounded-card bg-paper-sunken px-4 py-3 text-start transition hover:bg-paper-sunken/70"
+          >
+            <span className="min-w-0">
+              <span className="block truncate text-[0.88rem] font-semibold">
+                {chosenTemplateName}
+              </span>
+              <span className="mt-0.5 block truncate text-[0.76rem] text-ink-faint">
+                {chosenSummary}
+              </span>
+            </span>
+            <span className="shrink-0 text-[0.8rem] font-semibold text-brand-700">
+              {t('packChange')}
+            </span>
+          </button>
+        )}
+
+        {showSettings && (
+        <>
         {/* 2 — ٹیمپلیٹ */}
         <div>
           <div className="flex items-baseline justify-between gap-3">
@@ -488,6 +570,48 @@ export function StatusPackStudio({
             />
 
             {/*
+              Size, rang aur kitna bacha — EK switch, teen cheezon ke liye.
+
+              🔴 Teen alag switch banane ka matlab hota ke reseller teen faisle kare,
+              jabke ye teenon us EK sawal ka jawab hain jo customer rate ke baad poochhti
+              hai: "mera size mojood hai?" Jo baat saath parhi jati hai, wo saath hi
+              chunni chahiye.
+
+              Line khud data se banti hai — reseller isay likhti nahi, sirf haan ya na
+              kehti hai. Khatam shuda size us mein aata hi nahi (dekhen `stockLine`).
+            */}
+            <PackToggle
+              label={t('showStockOnPack')}
+              checked={options.showStock !== false}
+              onChange={(value) => setOption('showStock', value)}
+            />
+
+            {/*
+              Purana rate — kata hua.
+
+              🔴 Ye RESELLER likhti hai, hum nahi banate. Hum jaante hi nahi ke us ne
+              pehle kya rate rakha tha, aur andaze se koi number kaat kar dikhana JHOOT
+              hai — jo us ki apni sakh se jata hai, na ke hamari.
+
+              Khali chhorne par kuch nahi chhapta.
+            */}
+            <div>
+              <p className="text-[0.85rem] font-semibold">{t('wasPriceLabel')}</p>
+              <p className="mt-0.5 text-[0.76rem] text-ink-faint">{t('wasPriceHint')}</p>
+              <input
+                dir="ltr"
+                inputMode="numeric"
+                value={options.wasPrice ?? ''}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/[^0-9]/g, '')
+                  setOption('wasPrice', digits ? Number(digits) : undefined)
+                }}
+                placeholder={t('wasPricePlaceholder')}
+                className="field numeric mt-2 w-full text-[0.95rem]"
+              />
+            </div>
+
+            {/*
               Is pack ki apni line — "صرف آج", "آخری 2 پیس".
 
               🔴 Ye template ke apne text se ALAG hai, aur ishare mein wohi farq likha
@@ -525,6 +649,8 @@ export function StatusPackStudio({
             </button>
           </div>
         </div>
+        </>
+        )}
 
         {/* 4 — بنائیں */}
         <button
@@ -608,6 +734,24 @@ export function StatusPackStudio({
                       <DownloadIcon className="h-4 w-4" />
                       {t('download')}
                     </a>
+                  )}
+
+                  {/*
+                    Share — phone ka apna sheet, jis mein Status, Instagram aur Facebook
+                    sab aa jate hain.
+
+                    🔴 Ye download ki JAGAH nahi, us ke SAATH hai. Phone par share do tap
+                    bachata hai; computer par wo button bunta hi nahi (wahan file share
+                    hoti hi nahi) aur download hi wahid rasta rehta hai. Ek ko doosre se
+                    badal dena ek taraf ke logon ka kaam rok deta.
+                  */}
+                  {asset.imageUrl && (
+                    <SharePackButton
+                      packId={asset.packId}
+                      caption={current.caption}
+                      label={t('sharePack')}
+                      onShared={() => void markDownloaded(asset.packId)}
+                    />
                   )}
                 </li>
               ))}

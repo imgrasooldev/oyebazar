@@ -15,6 +15,8 @@ import {
   DEFAULT_TEMPLATE_KEY,
   PACK_FORMATS,
   formatPkr,
+  pkr,
+  stockLine,
   customTemplateId,
   templateSpecToCss,
   type PackFormatKey,
@@ -71,6 +73,13 @@ export interface TemplateData {
   readonly resellerName: string
   readonly resellerPhone: string
   readonly photoUrl: string | null
+  /**
+   * Maal ki tafseel — size, rang, kitna bacha.
+   *
+   * 🔴 Ikhtiyari: purane call karne wale ye nahi bhejte, aur un ka pack haraf ba
+   * haraf wohi rehna chahiye. Na aaye to line banti hi nahi.
+   */
+  readonly variants?: readonly { size: string | null; colour: string | null; stockQty: number }[]
 }
 
 /** Badge ka text template ke hisaab se — CSS variables se ye nahi ho sakta. */
@@ -378,6 +387,14 @@ export async function buildStatusPackHtml(
    * ho jata, `frame` ka haashiya waise ka waisa rehta). Class laga dene se har template
    * apne qawaid ke mutabiq khud simat jata hai.
    */
+  /*
+   * Maal ki tafseel ki line — data se banti hai, reseller ke likhe se nahi.
+   *
+   * 🔴 Zaban PACK ki, reseller ke UI ki nahi. Ye line customer parhti hai; wo Urdu
+   * pack par "صرف 2 باقی" hi parhegi, chahe reseller ka apna portal Roman par ho.
+   */
+  const stockText = data.variants ? stockLine(data.variants, options.lang) : null
+
   const hidden = [
     // Custom template ka apna bahao hai — har cheez wahin jahan reseller ne rakhi
     customSpec ? 'custom' : '',
@@ -396,6 +413,17 @@ export async function buildStatusPackHtml(
      */
     options.note ? '' : 'hide-note',
     options.showMark === false ? 'hide-mark' : '',
+    /*
+     * Maal ki tafseel — switch band ho, ya likhne ko kuch na ho.
+     *
+     * 🔴 `stockText` khali hone par bhi chhupana LAZMI hai, sirf switch dekhna kaafi
+     * nahi: jis maal ke variants hi na hon (ya sab khatam ho chuke hon) us par switch
+     * laga hua hota hai magar line khali hoti — aur khali dabba `flex gap` ke saath ek
+     * be-maqsad khitta bana deta hai.
+     */
+    options.showStock !== false && stockText ? '' : 'hide-stock',
+    // Purana rate — reseller ne likha ho to hi
+    options.wasPrice ? '' : 'hide-was',
   ]
     .filter(Boolean)
     .join(' ')
@@ -450,6 +478,10 @@ export async function buildStatusPackHtml(
     resellerName: escapeHtml(data.resellerName),
     // Reseller ka apna likha hua — escape LAZMI, ye seedha us ke haath se aata hai
     noteText: escapeHtml(options.note ?? ''),
+    // Data se bana hua — magar escape phir bhi, kyunke size/rang dukan ka likha hua hai
+    stockText: escapeHtml(stockText ?? ''),
+    // 🔴 Purana rate bhi LTR — "Rs 3,000" Urdu ke darmiyan ulta nahi hona chahiye
+    wasPriceText: escapeHtml(options.wasPrice ? formatPkr(pkr(options.wasPrice)) : ''),
     resellerPhone: escapeHtml(formatLocalPhone(data.resellerPhone)),
     /*
      * Reseller ka apna likha hua — warna zaban ke hisaab se hamara.

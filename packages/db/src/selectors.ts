@@ -93,6 +93,18 @@ export const RENDER_PRODUCT_SELECT = {
   titleUr: true,
   titleEn: true,
   category: { select: { nameUr: true } },
+  /*
+   * 🔴 Size, rang aur kitna bacha — pack par likhne ke liye.
+   *
+   * Ye khaane pehle yahan the hi nahi, yani wo maloomat pack tak pohanchti hi nahi thi.
+   * Aur wohi do sawal hain jo customer rate ke BAAD poochhti hai: "large hai?" aur "aur
+   * rang?" — har sawal WhatsApp par ek chakkar hai, aur har chakkar mein sauda tootne ka
+   * mauqa.
+   */
+  variants: {
+    select: { size: true, colour: true, stockQty: true },
+    orderBy: { skuCode: 'asc' as const },
+  },
   media: {
     where: { type: 'IMAGE' as const },
     select: { id: true, processedUrl: true, originalUrl: true, isStatusSource: true },
@@ -124,6 +136,10 @@ export const PUBLIC_SUPPLIER_SELECT = {
   address: true,
   logoUrl: true,
   createdAt: true,
+  // Dukan ki apni shartein — reseller inhi par faisla karti hai (dekhen view ka note)
+  deliveryFeeCity: true,
+  deliveryFeeOther: true,
+  payoutTermDays: true,
   // ntn / strn / phone / bankAccount / feeRateBps: kabhi public nahi
   _count: { select: { products: { where: { status: 'LIVE' } } } },
   // Aakhri live listing — "2 din pehle naya maal" isi se banta hai

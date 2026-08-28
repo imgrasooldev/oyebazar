@@ -124,6 +124,22 @@ async function main() {
       },
     })
 
+    /*
+     * 🔴 `path` yahan LAZMI hai — aur pehle chhoot gaya tha.
+     *
+     * Column ka default "/" hai, aur chhanni `path startsWith <us category ka path>`
+     * par chalti hai. Sab ka path "/" hone ka matlab tha ke har chhanni SAB kuch dikha
+     * deti thi. Koi error nahi, koi khali safha nahi — bas chhanni ka koi asar hi nahi.
+     * Ye us kism ki kharabi hai jo mahino nazar nahi aati.
+     *
+     * Id `create` ke BAAD hi milti hai, is liye ye alag `update` hai — wohi tareeqa jo
+     * ops ke safhe par bhi hai (dekhen CategoryAdminService).
+     */
+    await prisma.category.update({
+      where: { id: created.id },
+      data: { path: `/${created.id}/`, depth: 0 },
+    })
+
     const children = []
     for (const [childIndex, child] of category.children.entries()) {
       children.push(
@@ -136,9 +152,18 @@ async function main() {
             imageUrl: categoryPhoto(category.slug, 900, 600),
             sortOrder: childIndex,
             parentId: created.id,
+            // Jarh ka path + apni id — wahi shakl jo CategoryAdminService banati hai
+            depth: 1,
           },
         }),
       )
+    }
+
+    for (const child of children) {
+      await prisma.category.update({
+        where: { id: child.id },
+        data: { path: `/${created.id}/${child.id}/` },
+      })
     }
 
     for (const [itemIndex, item] of category.products.entries()) {

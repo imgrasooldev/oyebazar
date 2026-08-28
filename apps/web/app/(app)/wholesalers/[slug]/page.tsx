@@ -11,41 +11,86 @@
  *
  * Rabte ka number yahan jaan boojh kar nahi — dekhen `RESELLER_PRODUCT_SELECT` ka note.
  */
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { formatPkr } from '@oyebazar/shared'
 import { requireReseller } from '@/lib/api/session'
+import { toResellerProductListItemDTO } from '@/lib/api/mappers'
 import { container } from '@/lib/container'
 import { getLocale } from '@/lib/i18n-server'
-import { translator } from '@/lib/i18n'
-import Link from 'next/link'
+import { pickName, timeAgo, translator } from '@/lib/i18n'
 import { SupplierLogo } from '@/components/supplier-logo'
+import { ProductCard } from '@/components/product-card'
 
 export const dynamic = 'force-dynamic'
+
+/**
+ * Safhe ka apna unwan.
+ *
+ * 🔴 Bina is ke browser ki tab par poore site ka default chalta tha ("OyeBazar —
+ * Pakistan ke tasdeeq shuda wholesalers ki directory"). Reseller aksar do teen dukanein
+ * alag tabon mein khol kar moqabla karti hai — aur teenon tab bilkul ek jaisi dikhti
+ * thin, yani wo apni hi khuli hui dukan dhoondh nahi sakti thi.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const supplier = await container.bazaar.getSupplier(slug).catch(() => null)
+  return { title: supplier ? supplier.businessName : 'OyeBazar' }
+}
+
+/**
+ * Safhe par kitna maal.
+ *
+ * 🔴 Poori list yahan NAHI aati, aur ye kanjoosi nahi hai. Jis dukan ke paas 400 maal
+ * hon, us ka safha kholte hi 400 tasveerein utarna sasta phone hangwa deta hai — aur
+ * reseller ko yahan chhanni aur tarteeb bhi nahi milti (wo catalogue par hai). Yahan
+ * "ye dukan kya bechti hai" ka jawab chahiye; "in mein se kya chunna hai" ka jawab
+ * catalogue ka kaam hai, aur us ka rasta neeche khula hua hai.
+ */
+const PREVIEW = 12
 
 export default async function WholesalerPage({ params }: { params: Promise<{ slug: string }> }) {
   const { reseller } = await requireReseller()
   const { slug } = await params
   const locale = await getLocale()
   const t = translator(locale)
+  // Ek hi "abhi" poore safhe ke liye
+  const now = new Date()
 
   const supplier = await container.bazaar.getSupplier(slug).catch(() => null)
   if (!supplier) notFound()
 
   /*
-   * 🔴 Maal yahan DOBARA nahi dikhaya jata — reseller ko usi catalogue par bheja jata
-   * hai jo wo roz dekhti hai, bas dukan ki chhanni lagi hui.
+   * Maal ab YAHIN dikhta hai.
    *
-   * Yahan apna grid banane ka matlab hota ke maal ka card TEESRI dafa likha jaye (do
-   * dafa pehle se catalogue mein hai). Aur us naqal ka anjaam maloom hai: kal card ki
-   * oonchai ya rate ka hisaab ek jagah badalta aur baqi jagah purana reh jata. Us se
-   * bara faida ye hai ke reseller ko wahan apni saari chhanni aur tarteeb bhi mil jati
-   * hai — jo yahan dobara banani parti.
+   * Pehle yahan sirf ek button tha jo catalogue par bhej deta tha, aur us ke saath likhi
+   * wajah ye thi ke "maal ka card teesri dafa likhna parega". Aitraaz durust tha — magar
+   * us ka hal maal chhupa dena nahi tha. Card ab `ProductCard` mein ek hi jagah hai, aur
+   * dono safhe usi ko istemal karte hain.
    */
-  const goods = await container.catalogue.list(reseller.id, { limit: 1, supplierSlug: slug })
-  const rating = (await container.repositories.supplierReviews.ratingsForSlugs([slug])).get(slug)
+  const [goods, rating] = await Promise.all([
+    container.catalogue.list(reseller.id, { limit: PREVIEW, supplierSlug: slug }),
+    container.repositories.supplierReviews
+      .ratingsForSlugs([slug])
+      .then((map) => map.get(slug)),
+  ])
+
+  const items = goods.items.map(toResellerProductListItemDTO)
+
+  // Sirf haroof aur hindse — "Bolton Market · Karachi" aur "Bolton Market, Karachi" ek hi hain
+  const bare = (value: string) => value.toLowerCase().replace(/[^a-z0-9؀-ۿ]/g, '')
+  const known = bare(`${supplier.marketName ?? ''}${supplier.city}`)
+  const extraAddress =
+    supplier.address && bare(supplier.address) !== known ? supplier.address : null
 
   return (
-    <div>
-      <div className="flex items-center gap-3">
+    <div className="space-y-5">
+      <header className="flex items-start gap-3">
         <SupplierLogo name={supplier.businessName} logoUrl={supplier.logoUrl} size="lg" />
         <div className="min-w-0">
           <h1 className="truncate text-[1.35rem] font-bold tracking-tight">
@@ -55,8 +100,47 @@ export default async function WholesalerPage({ params }: { params: Promise<{ slu
             {supplier.marketName ? `${supplier.marketName} · ` : ''}
             {supplier.city}
           </p>
+          {/*
+            Pata sirf tab jab wo upar wali line se kuch ZYADA batata ho.
+
+            🔴 Bohat si dukanon ka `address` bilkul wohi hota hai jo mandi aur sheher —
+            "Bolton Market, Karachi" theek us line ke neeche jis par pehle se "Bolton
+            Market · Karachi" likha hai. Wo dobara likhna maloomat nahi deta, sirf ye
+            shak daalta hai ke shayad ye do alag cheezein hain.
+          */}
+          {extraAddress && (
+            <p className="mt-0.5 text-[0.8rem] text-ink-faint">{supplier.address}</p>
+          )}
         </div>
-      </div>
+      </header>
+
+      {/*
+        Dukan ki apni shartein — aur ye safhe par sitaron se PEHLE hain.
+
+        🔴 Sitare raye hain, ye SHART hai. Raye badalti rehti hai aur us mein doosron ka
+        tajurba bolta hai; ye do number seedha is reseller ke apne hisab mein jate hain:
+        delivery ka rate us ke munafe se katta hai, aur "kitne din baad paisa" wo ginti
+        hai jis par us ka apna khareed ka chakkar chalta hai. Jis cheez par hisab lagta
+        hai wo pehle aani chahiye.
+      */}
+      <section className="grid gap-2 sm:grid-cols-3">
+        <Fact
+          label={t('shopDeliveryCity')}
+          value={formatPkr(supplier.deliveryFeeCity)}
+        />
+        <Fact
+          label={t('shopDeliveryOther')}
+          value={formatPkr(supplier.deliveryFeeOther)}
+        />
+        <Fact
+          label={t('shopPayoutTerm')}
+          value={
+            supplier.payoutTermDays === 0
+              ? t('shopPayoutSameDay')
+              : `${supplier.payoutTermDays} ${t('days')}`
+          }
+        />
+      </section>
 
       {/*
         Sitare aur teenon sawal alag alag.
@@ -70,7 +154,7 @@ export default async function WholesalerPage({ params }: { params: Promise<{ slu
         chhaap deta hai jo bure number jaisa dikhta hai.
       */}
       {rating?.stars ? (
-        <section className="mt-4 rounded-card bg-paper-raised p-4 shadow-soft">
+        <section className="rounded-card bg-paper-raised p-4 shadow-soft">
           <p className="text-[1.1rem] font-bold text-accent-700">
             ★ <span dir="ltr" className="numeric">{rating.stars}</span>
             <span className="ms-2 text-[0.78rem] font-normal text-ink-faint">
@@ -95,23 +179,98 @@ export default async function WholesalerPage({ params }: { params: Promise<{ slu
           </dl>
         </section>
       ) : (
-        <p className="mt-4 text-[0.82rem] text-ink-faint">{t('reviewNotEnough')}</p>
+        <p className="text-[0.82rem] text-ink-faint">{t('reviewNotEnough')}</p>
       )}
 
       {supplier.bioUr && (
-        <p className="mt-3 text-[0.9rem] leading-relaxed text-ink-soft">{supplier.bioUr}</p>
+        <p className="text-[0.9rem] leading-relaxed text-ink-soft">{supplier.bioUr}</p>
       )}
 
-      {goods.items.length === 0 ? (
-        <p className="mt-6 text-[0.9rem] text-ink-soft">{t('wholesalerNoGoods')}</p>
+      {/*
+        Dukan kitni purani hai, kya kya bechti hai, aur naya maal kab laga.
+
+        🔴 "Naya maal kab laga" sab se kaam ki cheez hai aur aksar chhoot jati hai: jis
+        dukan ne teen mahine se kuch nahi laga, us ka catalogue bhara hua dikhta hai
+        magar wo waqai chal nahi rahi. Ye ek line reseller ko wo baat bata deti hai jo
+        maal ki ginti kabhi nahi batati.
+      */}
+      <section className="flex flex-wrap gap-1.5 text-[0.75rem]">
+        <span className="rounded-pill bg-paper-sunken px-3 py-1 text-ink-soft">
+          <span dir="ltr" className="numeric font-semibold">
+            {supplier.productCount}
+          </span>{' '}
+          {t('shopItems')}
+        </span>
+        <span className="rounded-pill bg-paper-sunken px-3 py-1 text-ink-soft">
+          {t('shopSince')} {timeAgo(locale, supplier.memberSince, now)}
+        </span>
+        {supplier.lastListedAt && (
+          <span className="rounded-pill bg-paper-sunken px-3 py-1 text-ink-soft">
+            {t('shopLastListed')} {timeAgo(locale, supplier.lastListedAt, now)}
+          </span>
+        )}
+        {supplier.categories.map((category) => (
+          <span
+            key={category.nameEn}
+            className="rounded-pill bg-paper-sunken px-3 py-1 text-ink-faint"
+          >
+            {pickName(locale, category)}
+          </span>
+        ))}
+      </section>
+
+      {items.length === 0 ? (
+        <p className="text-[0.9rem] text-ink-soft">{t('wholesalerNoGoods')}</p>
       ) : (
-        <Link
-          href={{ pathname: '/catalogue', query: { supplier: slug } }}
-          className="btn-primary mt-6 inline-flex"
-        >
-          {t('wholesalerGoods')}
-        </Link>
+        <section>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-[1.05rem] font-bold">{t('shopGoodsTitle')}</h2>
+            {/*
+              Poori list ka rasta — chhanni, tarteeb aur rate ki hadd sab wahan hain.
+              Yahan wo dobara banane ka matlab hota ke wo do jagah rakhni parti.
+            */}
+            {supplier.productCount > items.length && (
+              <Link
+                href={{ pathname: '/catalogue', query: { supplier: slug } }}
+                className="text-[0.82rem] font-semibold text-brand-700 underline"
+              >
+                {t('shopSeeAll')} (
+                <span dir="ltr" className="numeric">
+                  {supplier.productCount}
+                </span>
+                )
+              </Link>
+            )}
+          </div>
+
+          <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {items.map((item) => (
+              <ProductCard
+                key={item.id}
+                item={item}
+                locale={locale}
+                rating={rating}
+                now={now}
+                showSupplier={false}
+              />
+            ))}
+          </ul>
+        </section>
       )}
+    </div>
+  )
+}
+
+/** Ek shart — naam upar, qadar neeche. Teen ek qatar mein. */
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-card bg-paper-raised px-3 py-2.5 shadow-soft">
+      <p className="text-[0.72rem] font-semibold uppercase tracking-wider text-ink-faint">
+        {label}
+      </p>
+      <p dir="ltr" className="numeric mt-0.5 text-[1rem] font-bold">
+        {value}
+      </p>
     </div>
   )
 }

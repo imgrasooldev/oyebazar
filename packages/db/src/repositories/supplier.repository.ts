@@ -16,6 +16,7 @@ import type {
 } from '@oyebazar/core'
 import { toPage, type Page } from '@oyebazar/shared'
 import { PUBLIC_SUPPLIER_SELECT } from '../selectors'
+import { categoryFilter } from './product.repository'
 
 /**
  * Select se hi nikala hua — haath se likhi hui naql nahi.
@@ -116,13 +117,24 @@ export class PrismaSupplierRepository
 
   async findPublicList(filters: SupplierFilters): Promise<Page<PublicSupplierView>> {
     const rows = await this.db.supplier.findMany({
-      where: this.publicWhere(filters),
+      where: await this.publicWhere(filters),
       select: PUBLIC_SUPPLIER_SELECT,
       orderBy: [{ businessName: 'asc' }, { slug: 'asc' }],
       take: filters.limit + 1,
       ...(filters.cursor ? { cursor: { slug: filters.cursor }, skip: 1 } : {}),
     })
-    const views = await Promise.all(rows.map((row) => this.toView(row)))
+    /*
+     * 🔴 Categories SAB dukanon ki EK query mein — pehle har dukan ki apni query thi.
+     *
+     * `Promise.all(rows.map(toView))` dekhne mein parallel lagta hai, magar wo N+1 hai:
+     * 15 dukanein = 15 alag query, aur har ek ke andar `products.some` wala subquery
+     * bhi. Wo saath saath chalti bhi hain to bhi DB par bojh utna hi rehta hai, aur
+     * connection pool usi waqt bhar jata hai jab safha sab se zyada khulta hai.
+     *
+     * Ab ek hi query, aur groupbandi JS mein.
+     */
+    const byslug = await this.categoriesFor(rows.map((row) => row.slug))
+    const views = rows.map((row) => this.toView(row, byslug.get(row.slug) ?? []))
     return toPage(views, filters.limit, (s) => s.slug)
   }
 
@@ -131,7 +143,11 @@ export class PrismaSupplierRepository
       where: { slug, listedOnBazaar: true, status: 'VERIFIED' },
       select: PUBLIC_SUPPLIER_SELECT,
     })
-    return row ? this.toView(row) : null
+    if (!row) return null
+
+    // Ek dukan — wohi helper, bas ek hi slug ke saath
+    const byslug = await this.categoriesFor([row.slug])
+    return this.toView(row, byslug.get(row.slug) ?? [])
   }
 
   async listCities(): Promise<{ city: string; count: number }[]> {
@@ -144,13 +160,35 @@ export class PrismaSupplierRepository
     return grouped.map((g) => ({ city: g.city, count: g._count._all }))
   }
 
-  private publicWhere(filters: SupplierFilters): Prisma.SupplierWhereInput {
+  private async publicWhere(filters: SupplierFilters): Promise<Prisma.SupplierWhereInput> {
     return {
       listedOnBazaar: true,
       status: 'VERIFIED',
       ...(filters.city ? { city: { equals: filters.city, mode: 'insensitive' } } : {}),
+      /*
+       * 🔴 Yahan pehle `category: { slug }` tha — yani BILKUL wohi category, us ke neeche
+       * ka kuch nahi.
+       *
+       * Aur `/bazaar` ki patti par UPAR wali categories dikhti hain (Cosmetics, Apparel,
+       * Toys), jabke maal NEECHE wali par laga hota hai (Makeup, Lawn, Bridal Wear). Is
+       * liye har chhanni sifar deti thi — cosmetics par bhi, apparel par bhi, sab par.
+       *
+       * Aur wo chup chaap deti thi: koi error nahi, bas "koi dukan nahi mili". Theek us
+       * kharabi se `categoryFilter` ka apna comment mana karta hai — magar wo helper
+       * sirf maal wali query mein laga tha, yahan nahi. Ek usool, do jagah likha hua —
+       * aur ek jagah purani reh gayi.
+       *
+       * Ab dono ek hi helper istemal karte hain.
+       */
       ...(filters.categorySlug
-        ? { products: { some: { status: 'LIVE', category: { slug: filters.categorySlug } } } }
+        ? {
+            products: {
+              some: {
+                status: 'LIVE' as const,
+                category: await categoryFilter(this.db, filters.categorySlug),
+              },
+            },
+          }
         : {}),
       ...(filters.search
         ? {
@@ -179,12 +217,42 @@ export class PrismaSupplierRepository
     }
   }
 
-  private async toView(row: SupplierRow): Promise<PublicSupplierView> {
-    const categories = await this.db.category.findMany({
-      where: { products: { some: { supplier: { slug: row.slug }, status: 'LIVE' } } },
-      select: { nameUr: true, nameEn: true },
-      take: 6,
+  /**
+   * Kai dukanon ki categories — ek hi query mein.
+   *
+   * 🔴 `distinct` DB par lagta hai, JS mein nahi: ek dukan ke 400 maal ho sakte hain
+   * magar categories chhe. Bina `distinct` ke chaar hazar qatarein network par aatin
+   * taake un mein se saath alag naam nikale jayen.
+   */
+  private async categoriesFor(
+    slugs: readonly string[],
+  ): Promise<Map<string, { nameUr: string; nameEn: string }[]>> {
+    if (slugs.length === 0) return new Map()
+
+    const rows = await this.db.product.findMany({
+      where: { status: 'LIVE', supplier: { slug: { in: [...slugs] } } },
+      select: {
+        supplier: { select: { slug: true } },
+        category: { select: { nameUr: true, nameEn: true } },
+      },
+      distinct: ['supplierId', 'categoryId'],
     })
+
+    const byslug = new Map<string, { nameUr: string; nameEn: string }[]>()
+    for (const row of rows) {
+      const list = byslug.get(row.supplier.slug) ?? []
+      // Chhe se ziyada naam card par samate hi nahi — wahi hadd jo pehle `take: 6` thi
+      if (list.length < 6) list.push(row.category)
+      byslug.set(row.supplier.slug, list)
+    }
+
+    return byslug
+  }
+
+  private toView(
+    row: SupplierRow,
+    categories: { nameUr: string; nameEn: string }[],
+  ): PublicSupplierView {
     return {
       slug: row.slug,
       businessName: row.businessName,
@@ -199,6 +267,9 @@ export class PrismaSupplierRepository
       productCount: row._count.products,
       memberSince: row.createdAt,
       lastListedAt: row.products[0]?.createdAt ?? null,
+      deliveryFeeCity: row.deliveryFeeCity,
+      deliveryFeeOther: row.deliveryFeeOther,
+      payoutTermDays: row.payoutTermDays,
     }
   }
 }

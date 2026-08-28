@@ -5,6 +5,19 @@ primary_region = "sin"
 [build]
   dockerfile = "apps/web/Dockerfile"
 
+# 🔴 Migrations deploy se PEHLE — aur nakaam hone par deploy rok deti hain.
+#
+# Fly ye hukm ek alag, waqti machine par chalata hai (app ke apne secrets ke saath) aur
+# tabhi naya version live karta hai jab ye kamyab ho.
+#
+# Wajah tajurbe se hai: is se pehle code migration se PEHLE live ho gaya tha aur
+# production ne `Order.courier does not exist` dena shuru kar diya. Tarteeb yaad rakhne
+# ka bharosa aadmi par rakhna hi ghalti thi — ab wo tarteeb yahan likhi hui hai.
+#
+# Ek aur faida: prod ka DATABASE_URL kisi ke laptop par utarne ki zaroorat nahi rehti.
+[deploy]
+  release_command = "node /usr/local/lib/prisma-cli.js migrate deploy --schema /app/packages/db/prisma/schema.prisma"
+
 [env]
   NODE_ENV = "production"
   PORT = "3000"

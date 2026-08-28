@@ -42,6 +42,30 @@ COPY --from=build /app/apps/web/public ./apps/web/public
 # Prisma engine + generated client standalone trace mein aate hain
 COPY --from=build /app/node_modules/.pnpm ./node_modules/.pnpm
 
+# ---------------------------------------------------------------- migrations
+#
+# 🔴 Schema aur migrations ab IMAGE ke andar hain, aur ye jaan boojh kar hai.
+#
+# Pehle migrations sirf kisi ke apne computer se chalti thin, aur us ka natija ek dafa
+# saamne aa chuka: naya code deploy ho gaya aur us ka maanga hua column DB mein tha hi
+# nahi — har order ka safha `Order.courier does not exist` par gir gaya.
+#
+# Wo tarteeb ki ghalti thi, aur tarteeb yaad rakhne ka bharosa aadmi par nahi rakha ja
+# sakta. Ab wo tarteeb DHANCHE mein hai: Fly `release_command` deploy se PEHLE chalata
+# hai, purane version ke chalte hue, aur nakaam hone par naya code live hota hi nahi
+# (dekhen fly.web.toml).
+COPY --from=build /app/packages/db/prisma ./packages/db/prisma
+
+# Prisma ka CLI `.pnpm` ke andar version+hash wale naam par baithta hai, aur wo naam har
+# upgrade par badal jata hai. Usay yahin BUILD par hal kar ke ek pakke naam par le aate
+# hain — `release_command` mein wohi pakka naam likha hai.
+#
+# Symlink is liye ke node hamesha ASAL raasta hal karta hai, yani CLI apni deps wahin se
+# uthata hai jahan wo waqai padi hain.
+RUN ln -s "$(ls -d /app/node_modules/.pnpm/prisma@*/node_modules/prisma/build/index.js | head -1)" \
+      /usr/local/lib/prisma-cli.js \
+    && node /usr/local/lib/prisma-cli.js --version
+
 EXPOSE 3000
 ENV PORT=3000 HOSTNAME=0.0.0.0
 

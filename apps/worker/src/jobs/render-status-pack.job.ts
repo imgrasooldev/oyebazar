@@ -94,6 +94,8 @@ export async function handleRenderStatusPack(
       resellerName: options.name ?? reseller.name,
       resellerPhone: options.phone ?? reseller.whatsappPhone,
       photoUrl,
+      // Size, rang, kitna bacha — line worker banata hai, dekhen `stockLine`
+      variants: product.variants,
     },
     format,
     options,

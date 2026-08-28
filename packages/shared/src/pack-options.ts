@@ -55,6 +55,30 @@ export interface PackOptions {
    * rasta khula hai.
    */
   readonly showMark?: boolean | undefined
+  /**
+   * Maal ki tafseel — size, rang, aur kitna bacha.
+   *
+   * 🔴 EK switch, teen cheezon ke liye. Alag alag rakhne ka matlab hota ke reseller
+   * teen faisle kare — jabke ye teenon us ek sawal ka jawab hain jo customer rate ke
+   * baad poochhti hai: "mera size mojood hai?"
+   *
+   * Default ON: jo baat tasveer par likhi ho, wo WhatsApp par poochhi hi nahi jati — aur
+   * har na-poochha gaya sawal ek bacha hua sauda hai.
+   */
+  readonly showStock?: boolean | undefined
+  /**
+   * Purana rate — qeemat ke saath kata hua chhapta hai.
+   *
+   * 🔴 Ye RESELLER likhti hai, hum nahi banate. Hum ye jaante hi nahi ke us ne pehle
+   * kya rate rakha tha — aur andaze se koi number kaat kar dikhana jhoot hai, jo us ki
+   * apni sakh se jata hai.
+   *
+   * 🔴 Aur ye template ka alag khaana NAHI hai. Kata hua rate akela be-maani hota
+   * hai; wo sirf asli rate ke SAATH kuch kehta hai. Is liye wo `.price-row` ke andar
+   * rehta hai aur qeemat ke saath hi hilta hai — reseller usay alag ghaseet hi nahi
+   * sakti, aur ye rukawat nahi, hifazat hai.
+   */
+  readonly wasPrice?: number | undefined
 }
 
 export const DEFAULT_PACK_OPTIONS: PackOptions = {
@@ -75,6 +99,17 @@ export function packOptionsFrom(partial?: Partial<PackOptions> | null): PackOpti
     ...(partial?.phone?.trim() ? { phone: partial.phone.trim() } : {}),
     ...(partial?.note?.trim() ? { note: partial.note.trim().slice(0, NOTE_MAX) } : {}),
     showMark: partial?.showMark ?? true,
+    showStock: partial?.showStock ?? true,
+    /*
+     * Sirf mosbat aur poora hindsa. Sifar ya manfi "kata hua rate" ban hi nahi sakta,
+     * aur ghalat qadar ko chup chaap girana us se behtar hai ke pack par "Rs 0" chhap
+     * jaye.
+     */
+    ...(typeof partial?.wasPrice === 'number' &&
+    Number.isFinite(partial.wasPrice) &&
+    partial.wasPrice > 0
+      ? { wasPrice: Math.round(partial.wasPrice) }
+      : {}),
   }
 }
 
@@ -121,6 +156,13 @@ export function packOptionsKey(options: PackOptions): string {
    * jagah qaim rahen. Dekhen upar wala note: ye poori file ka bunyadi usool hai.
    */
   if (options.showMark === false) parts.push('m:0')
+  // Wohi usool: sirf BAND hone par key mein
+  if (options.showStock === false) parts.push('s:0')
+  /*
+   * 🔴 Purana rate cache key mein LAZMI hai — wo tasveer par chhapta hai. Is ke baghair
+   * reseller rate badal kar dobara banati aur usay purani tasveer wapas milti.
+   */
+  if (options.wasPrice) parts.push(`W:${options.wasPrice}`)
 
   return parts.join('|')
 }

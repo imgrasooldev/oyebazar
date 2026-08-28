@@ -241,6 +241,7 @@ const DICTIONARY = {
   elName: { ur: 'آپ کا نام', en: 'Your name', rm: 'Apka naam' },
   elPhone: { ur: 'نمبر', en: 'Number', rm: 'Number' },
   elNote: { ur: 'پیک کی اپنی لائن', en: 'Pack line', rm: 'Pack ki apni line' },
+  elStock: { ur: 'سائز اور اسٹاک', en: 'Size and stock', rm: 'Size aur stock' },
   elCta: { ur: 'آرڈر والی لائن', en: 'Order line', rm: 'Order wali line' },
   saveTemplate: { ur: 'محفوظ کریں', en: 'Save', rm: 'Mehfooz karen' },
   savedTick: { ur: '✓ محفوظ ہو گیا', en: '✓ Saved', rm: '✓ Mehfooz ho gaya' },
@@ -575,7 +576,6 @@ const DICTIONARY = {
   },
   wholesalersSearchHint: { ur: 'دکان یا شہر کا نام', en: 'Shop or city name', rm: 'Dukan ya sheher ka naam' },
   wholesalersEmpty: { ur: 'کوئی دکان نہیں ملی۔', en: 'No wholesalers found.', rm: 'Koi dukan nahi mili.' },
-  wholesalerGoods: { ur: 'اس دکان کا مال', en: 'Goods from this shop', rm: 'Is dukan ka maal' },
   wholesalerNoGoods: { ur: 'اس دکان کا کوئی مال ابھی دستیاب نہیں۔', en: 'No goods from this shop right now.', rm: 'Is dukan ka koi maal abhi dastyab nahi.' },
   reachTitle: { ur: 'آپ کا مال کہاں تک پہنچا', en: 'How far your goods reached', rm: 'Aap ka maal kahan tak pohancha' },
   reachHint: {
@@ -1202,6 +1202,206 @@ const DICTIONARY = {
   filterCity: { ur: 'شہر', en: 'City', rm: 'Sheher' },
   filterResults: { ur: 'نتائج', en: 'results', rm: 'natije' },
   moneyNav: { ur: 'پیسے', en: 'Money', rm: 'Paise' },
+
+  /*
+   * Phone ki neeche wali patti ke naam — SIRF us patti ke liye.
+   *
+   * 🔴 Ye alag is liye hain ke 360px ke phone par saat khane hain, yani har khane ko
+   * 51px milte hain. Us mein "Wholesalers" aur "Catalogue" poore nahi aate — wo "Wholesa…"
+   * aur "Catalog…" ban jate hain, aur teen nuqton ke sath dono ek jaise lagne lagte hain.
+   *
+   * Aur ye sirf jagah ka masla nahi tha: patti ka naam FEHRIST ka unwan nahi hota, wo
+   * ek lafz ka nishan hota hai. Har app yehi karta hai — safhe par "Wholesalers" likha
+   * rehta hai, patti par "Dukanein".
+   */
+  tabDashboard: { ur: 'ہوم', en: 'Home', rm: 'Home' },
+  tabCatalogue: { ur: 'مال', en: 'Stock', rm: 'Maal' },
+  tabWholesalers: { ur: 'دکانیں', en: 'Shops', rm: 'Dukan' },
+  tabTemplates: { ur: 'ڈیزائن', en: 'Design', rm: 'Design' },
+  tabOrders: { ur: 'آرڈر', en: 'Orders', rm: 'Order' },
+  tabMoney: { ur: 'پیسے', en: 'Money', rm: 'Paise' },
+  tabBazaar: { ur: 'بازار', en: 'Bazaar', rm: 'Bazaar' },
+
+  // Courier aur CN — dukan se dispatch ke waqt
+  courierAsk: {
+    ur: 'کس کورئیر کے ہاتھ؟',
+    en: 'Which courier?',
+    rm: 'Kis courier ke haath?',
+  },
+  cnAsk: { ur: 'CN نمبر', en: 'CN number', rm: 'CN number' },
+  cnHint: {
+    ur: 'وہی نمبر جو کورئیر کی رسید پر ہے۔ ریسیلر یہی نمبر اپنی گاہک کو بھیجے گی۔',
+    en: "The number on the courier receipt. The reseller passes it to her customer.",
+    rm: 'Wohi number jo courier ki rasid par hai. Reseller yehi number apni customer ko bhejegi.',
+  },
+  // Reseller ke order safhe par
+  parcelTitle: { ur: 'پارسل', en: 'Parcel', rm: 'Parcel' },
+  parcelSelf: {
+    ur: 'دکان کے اپنے رائیڈر کے ہاتھ — کوئی CN نمبر نہیں',
+    en: 'With the shop’s own rider — no CN number',
+    rm: 'Dukan ke apne rider ke haath — koi CN number nahi',
+  },
+  parcelCopy: { ur: 'کاپی', en: 'Copy', rm: 'Copy' },
+  parcelCopied: { ur: 'کاپی ہو گیا', en: 'Copied', rm: 'Copy ho gaya' },
+  parcelTrack: { ur: 'کورئیر کی سائٹ', en: 'Courier site', rm: 'Courier ki site' },
+  parcelNone: {
+    ur: 'دکان نے ابھی کورئیر نہیں لکھا',
+    en: 'The shop has not recorded a courier yet',
+    rm: 'Dukan ne abhi courier nahi likha',
+  },
+
+  // ---- Customer ka safha: apna pata khud likhein (/pata/<token>) ----
+  pataIntro: {
+    ur: 'اپنا پتہ لکھیں — پارسل اسی پتے پر آئے گا',
+    en: 'Write your address — the parcel comes to this address',
+    rm: 'Apna pata likhein — parcel isi pate par aayega',
+  },
+  pataName: { ur: 'آپ کا نام', en: 'Your name', rm: 'Aap ka naam' },
+  pataPhone: { ur: 'موبائل نمبر', en: 'Mobile number', rm: 'Mobile number' },
+  pataPhoneHint: {
+    ur: 'پارسل آنے سے پہلے کورئیر اسی نمبر پر کال کرے گا',
+    en: 'The courier calls this number before delivery',
+    rm: 'Parcel aane se pehle courier isi number par call karega',
+  },
+  pataAddress: { ur: 'پورا پتہ', en: 'Full address', rm: 'Poora pata' },
+  pataAddressHint: {
+    ur: 'گھر/دکان کا نمبر، گلی، اور کوئی نشانی — جتنا تفصیل سے لکھیں گی، پارسل اتنی آسانی سے پہنچے گا',
+    en: 'House/shop number, street, and a landmark — the more detail, the easier it arrives',
+    rm: 'Ghar/dukan ka number, gali, aur koi nishani — jitna tafseel se likhen gi, parcel utni asani se pohanchega',
+  },
+  pataArea: { ur: 'علاقہ / شہر', en: 'Area / city', rm: 'Ilaqa / sheher' },
+  pataPin: { ur: 'اپنی لوکیشن بھی بھیجیں', en: 'Share your location too', rm: 'Apni location bhi bhejein' },
+  pataPinBody: {
+    ur: 'لازمی نہیں — مگر لوکیشن بھیجنے سے کورئیر آپ کا گھر آسانی سے ڈھونڈ لیتا ہے',
+    en: 'Not required — but it helps the courier find you',
+    rm: 'Lazmi nahi — magar location bhejne se courier aap ka ghar asani se dhoondh leta hai',
+  },
+  pataPinGot: { ur: '✓ لوکیشن لگ گئی', en: '✓ Location added', rm: '✓ Location lag gayi' },
+  pataPinGetting: { ur: 'لوکیشن لی جا رہی ہے…', en: 'Getting location…', rm: 'Location li ja rahi hai…' },
+  pataPinFailed: { ur: 'دوبارہ کوشش کریں', en: 'Try again', rm: 'Dobara koshish karen' },
+  pataSubmit: { ur: 'پتہ بھیجیں', en: 'Send address', rm: 'Pata bhejein' },
+  pataSending: { ur: 'بھیجا جا رہا ہے…', en: 'Sending…', rm: 'Bheja ja raha hai…' },
+  pataDone: { ur: 'پتہ مل گیا، شکریہ', en: 'Address received, thank you', rm: 'Pata mil gaya, shukriya' },
+  pataDoneBody: {
+    ur: 'اب دکاندار آپ سے رابطہ کرے گی اور پارسل بھیج دے گی',
+    en: 'The seller will get in touch and send the parcel',
+    rm: 'Ab dukandar aap se rabta karegi aur parcel bhej degi',
+  },
+  pataUsedTitle: { ur: 'آرڈر بن چکا ہے', en: 'The order is placed', rm: 'Order ban chuka hai' },
+  pataUsedBody: {
+    ur: 'اس لنک پر آرڈر بن چکا ہے۔ کوئی مسئلہ ہو تو دکاندار سے واٹس ایپ پر بات کریں۔',
+    en: 'This link already has an order. If something is wrong, message the seller on WhatsApp.',
+    rm: 'Is link par order ban chuka hai. Koi masla ho to dukandar se WhatsApp par baat karen.',
+  },
+  pataExpiredTitle: { ur: 'یہ لنک پرانا ہو چکا', en: 'This link has expired', rm: 'Ye link purana ho chuka' },
+  pataExpiredBody: {
+    ur: 'دکاندار سے نیا لنک منگوا لیں',
+    en: 'Ask the seller for a new link',
+    rm: 'Dukandar se naya link mangwa len',
+  },
+  pataFailed: { ur: 'دوبارہ کوشش کریں', en: 'Please try again', rm: 'Dobara koshish karen' },
+  pataFooter: {
+    ur: 'آپ کا پتہ صرف یہ پارسل بھیجنے کے لیے استعمال ہوگا',
+    en: 'Your address is used only to send this parcel',
+    rm: 'Aap ka pata sirf ye parcel bhejne ke liye istemal hoga',
+  },
+
+  // ---- Reseller ki taraf: link banana aur bhara hua pata ----
+  askAddress: {
+    ur: 'کسٹمر سے پتہ منگوائیں',
+    en: 'Ask the customer for their address',
+    rm: 'Customer se pata mangwayen',
+  },
+  askAddressHint: {
+    ur: 'ایک لنک بھیجیں — کسٹمر اپنا پتہ اور لوکیشن خود لکھے گی۔ ہاتھ سے لکھنے میں ایک حرف غلط ہو تو پارسل واپس آ جاتا ہے۔',
+    en: 'Send a link — the customer writes their own address and location. One wrong letter typed by hand means the parcel comes back.',
+    rm: 'Ek link bhejein — customer apna pata aur location khud likhegi. Haath se likhne mein ek harf ghalat ho to parcel wapas aa jata hai.',
+  },
+  askAddressMaking: { ur: 'لنک بن رہا ہے…', en: 'Making the link…', rm: 'Link ban raha hai…' },
+  askAddressReady: {
+    ur: 'لنک تیار — کسٹمر کو بھیج دیں',
+    en: 'Link ready — send it to the customer',
+    rm: 'Link tayyar — customer ko bhej dein',
+  },
+  askAddressShare: {
+    ur: 'اپنا پتہ یہاں لکھ دیں تاکہ پارسل صحیح جگہ پہنچے:',
+    en: 'Please write your address here so the parcel reaches you:',
+    rm: 'Apna pata yahan likh dein taake parcel sahi jagah pohanche:',
+  },
+  pataFromCustomer: {
+    ur: '✓ یہ پتہ کسٹمر نے خود لکھا ہے',
+    en: '✓ The customer wrote this address themselves',
+    rm: '✓ Ye pata customer ne khud likha hai',
+  },
+  pataWaitingTitle: {
+    ur: 'کسٹمر نے پتہ بھیج دیا',
+    en: 'A customer sent their address',
+    rm: 'Customer ne pata bhej diya',
+  },
+  pataWaitingHint: {
+    ur: 'آرڈر بنانے کے لیے کھولیں',
+    en: 'Open to place the order',
+    rm: 'Order banane ke liye kholen',
+  },
+
+  // ---- Dukan ka safha (reseller portal) ----
+  shopDeliveryCity: { ur: 'ڈیلیوری — اسی شہر', en: 'Delivery — same city', rm: 'Delivery — isi sheher' },
+  shopDeliveryOther: { ur: 'ڈیلیوری — دوسرا شہر', en: 'Delivery — other city', rm: 'Delivery — doosra sheher' },
+  shopPayoutTerm: { ur: 'کمیشن کب ملے گا', en: 'Commission paid in', rm: 'Commission kab milega' },
+  shopPayoutSameDay: { ur: 'اسی دن', en: 'Same day', rm: 'Usi din' },
+  days: { ur: 'دن', en: 'days', rm: 'din' },
+  shopItems: { ur: 'مال', en: 'items', rm: 'maal' },
+  shopSince: { ur: 'اوئے بازار پر', en: 'On OyeBazar', rm: 'OyeBazar par' },
+  shopLastListed: { ur: 'نیا مال', en: 'New stock', rm: 'Naya maal' },
+  shopGoodsTitle: { ur: 'اس دکان کا مال', en: 'What this shop sells', rm: 'Is dukan ka maal' },
+  shopSeeAll: { ur: 'سارا مال دیکھیں', en: 'See all stock', rm: 'Sara maal dekhein' },
+
+  /*
+   * "Bhejein" — "Share" nahi.
+   *
+   * Ye button phone ka apna share sheet kholta hai, aur wahan se maal Status par,
+   * Instagram par ya Facebook par jata hai. Kisi ek jagah ka naam likhna baqi do ko
+   * chhupa deta.
+   */
+  sharePack: { ur: 'بھیجیں', en: 'Share', rm: 'Bhejein' },
+
+  // Pack ke faislay band halat mein — ek line, aur badalne ka rasta
+  packChange: { ur: 'بدلیں', en: 'Change', rm: 'Badlein' },
+  packNoPrice: { ur: 'ریٹ نہیں', en: 'no price', rm: 'rate nahi' },
+  packNoName: { ur: 'نام نہیں', en: 'no name', rm: 'naam nahi' },
+  packNoPhone: { ur: 'نمبر نہیں', en: 'no number', rm: 'number nahi' },
+
+  // Maal ki tafseel aur purana rate — pack par
+  showStockOnPack: {
+    ur: 'سائز، رنگ اور کتنا باقی',
+    en: 'Size, colour and how many left',
+    rm: 'Size, rang aur kitna baqi',
+  },
+  wasPriceLabel: { ur: 'پرانا ریٹ (کٹا ہوا)', en: 'Old price (crossed out)', rm: 'Purana rate (kata hua)' },
+  wasPriceHint: {
+    ur: 'خالی چھوڑ دیں تو کچھ نہیں چھپے گا',
+    en: 'Leave empty and nothing prints',
+    rm: 'Khali chhor den to kuch nahi chhapega',
+  },
+  wasPricePlaceholder: { ur: 'مثلاً 3000', en: 'e.g. 3000', rm: 'misal 3000' },
+  packNoStock: { ur: 'سائز نہیں', en: 'no sizes', rm: 'size nahi' },
+
+  // Number ka record — order lagate waqt
+  phoneRisky: {
+    ur: 'اس نمبر پر {total} میں سے {returned} پارسل واپس آ چکے ہیں',
+    en: '{returned} of {total} parcels to this number came back',
+    rm: 'Is number par {total} mein se {returned} parcel wapas aa chuke hain',
+  },
+  phoneRiskyHint: {
+    ur: 'بھیجنے سے پہلے کال کر لیں یا ایڈوانس منگوا لیں',
+    en: 'Call first, or ask for an advance before shipping',
+    rm: 'Bhejne se pehle call kar len ya advance mangwa len',
+  },
+  phoneClean: {
+    ur: 'اس نمبر پر {total} میں سے {n} پارسل پہنچ چکے ہیں',
+    en: '{n} of {total} parcels to this number arrived',
+    rm: 'Is number par {total} mein se {n} parcel pohanch chuke hain',
+  },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
   moneyByReseller: { ur: 'ریسیلر کے حساب سے', en: 'By reseller', rm: 'Reseller ke hisab se' },
   moneyEarnedTotal: { ur: 'کل کمائی', en: 'Total earned', rm: 'Kul kamai' },

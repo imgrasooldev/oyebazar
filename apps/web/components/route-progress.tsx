@@ -91,12 +91,67 @@ export function RouteProgress() {
     return () => clearTimeout(timer)
   }, [running])
 
+  /*
+   * Safhe ko halka karna — `<html>` par ek nishan, aur baqi kaam CSS ka.
+   *
+   * 🔴 BLUR nahi, sirf halka (opacity). `filter: blur()` poore safhe ki layer har frame
+   * par dobara rasterise karwata hai; 15 hazar wale Android par — yani theek us phone
+   * par jis ke liye ye app hai — wo lag deta hai. Natija ulta: jis cheez se safha TEZ
+   * mehsoos karana tha, wo usay SUST kar deti. Opacity compositor par chalti hai (GPU),
+   * aur us ka kharcha taqreeban sifar hai.
+   *
+   * Aur ek wajah: halka safha PARHA ja sakta hai, blur wala nahi. Us ek second mein
+   * purana safha abhi bhi kaam ka hai — banda samajh sakta hai ke us ne ghalat jagah
+   * click kar diya.
+   */
+  useEffect(() => {
+    const root = document.documentElement
+    if (running) root.dataset.navigating = ''
+    else delete root.dataset.navigating
+
+    return () => {
+      delete root.dataset.navigating
+    }
+  }, [running])
+
   if (!running) return null
 
   return (
+    <>
+      {/*
+        Beech wala nishan — magar DER se aata hai (CSS mein `animation-delay`).
+
+        🔴 Jo navigation 200ms mein ho jaye us par nishan dikhana nuqsan hai: wo ek
+        jhapki (flash)ban jata hai, aur jhapki "kuch kharab hua" parhi jati hai. Nishan
+        sirf us intezar ke liye hai jo waqai mehsoos hota hai.
+      */}
+      <span
+        aria-hidden="true"
+        className="route-spinner pointer-events-none fixed inset-0 z-40 flex items-center justify-center"
+      >
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-paper-raised shadow-lift">
+          <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 animate-spin text-brand-600">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" opacity="0.2" />
+            <path
+              d="M21 12a9 9 0 0 0-9-9"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            />
+          </svg>
+        </span>
+      </span>
+
     <span
       aria-hidden="true"
-      className="pointer-events-none fixed inset-x-0 top-0 z-50 h-0.5 overflow-hidden bg-brand-500/15"
+      /*
+        4px, 2px nahi.
+        🔴 2px ki lakeer safhe ke bilkul upar thi — theek wahan jahan click karne wale ki
+        nazar hoti hi nahi. Jo ishara dikhta na ho wo ishara nahi hota; us ki saari
+        mehnat rayegan jati hai. 4px abhi bhi halka hai magar aankh ke kone mein aa jata
+        hai.
+      */
+      className="pointer-events-none fixed inset-x-0 top-0 z-50 h-1 overflow-hidden bg-brand-500/15"
     >
       {/*
         Lakeer aage barhti hai magar kabhi 100% par nahi pohanchti — asal waqt hamein
@@ -105,5 +160,6 @@ export function RouteProgress() {
       */}
       <span className="route-progress block h-full w-full origin-left bg-brand-500 rtl:origin-right" />
     </span>
+    </>
   )
 }
