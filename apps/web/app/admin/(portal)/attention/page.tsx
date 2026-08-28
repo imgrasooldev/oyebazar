@@ -169,6 +169,7 @@ const KIND_LABEL: Record<OpsFlag['kind'], string> = {
   oddPrice: 'Odd price',
   oddTitle: 'Odd name',
   stockChurn: 'Stock churn',
+  unsellable: 'Cannot be sold',
 }
 
 /**
@@ -205,6 +206,9 @@ function sentence(flag: OpsFlag): string {
 
     case 'oddTitle':
       return TITLE_PROBLEM[String(v.problem)] ?? 'The name does not identify the product'
+
+    case 'unsellable':
+      return 'Live on Bazaar but has no stock at all — a reseller can post it and the order will be refused'
 
     case 'stockChurn':
       return `Count corrected by hand ${v.fixes} times in ${v.days} days — the number on screen may not be the number in the shop`

@@ -113,6 +113,20 @@ export interface OpsTriageRepository {
   /** LIVE maal ke naam — naam ki jaanch domain mein hoti hai, yahan sirf qataren. */
   liveProductTitles(limit: number): Promise<ProductFlagRow[]>
 
+  /**
+   * LIVE hai magar bik nahi sakta — koi variant hi nahi, ya sab ki ginti sifar.
+   *
+   * 🔴 Ye khamosh kharabi hai aur us ka bhugtaan RESELLER karti hai: maal Bazaar par
+   * mojood dikhta hai, wo us par apna status lagati hai, customer order karta hai, aur
+   * `reserve()` mana kar deta hai. Us lamhe wo apne customer ke saamne jhooti banti hai
+   * — aur wo customer dobara nahi aata.
+   *
+   * `syncProductStatus` ginti sifar hone par khud `OUT_OF_STOCK` kar deta hai, magar wo
+   * sirf UN raston par chalta hai jo repository se guzarte hain. Jo maal us se pehle ka
+   * hai, ya seedha DB mein daala gaya (seed, import), wo LIVE hi para reh jata hai.
+   */
+  unsellableProducts(limit: number): Promise<ProductFlagRow[]>
+
   /** Jis cheez ki ginti baar baar haath se badli ja rahi hai. */
   stockChurn(now: Date, days: number, minFixes: number, limit: number): Promise<StockChurnRow[]>
 }

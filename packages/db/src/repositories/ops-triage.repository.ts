@@ -306,6 +306,26 @@ export class PrismaOpsTriageRepository implements OpsTriageRepository {
     ).map((row) => this.toProductRow(row))
   }
 
+  async unsellableProducts(limit: number): Promise<ProductFlagRow[]> {
+    /*
+     * Do soorton mein maal bik nahi sakta, aur DONO dekhni parti hain:
+     *  · koi variant hi nahi bana (purana maal, ya seedha DB mein daala gaya)
+     *  · variants hain magar sab ki ginti sifar
+     *
+     * `every` khali list par `true` deta hai — is liye pehli soorat isi ek shart mein
+     * aa jati hai. Ye Prisma ki khoobi hai jise jaan boojh kar istemal kiya gaya hai;
+     * warna do query chalani partin.
+     */
+    const rows = await this.db.product.findMany({
+      where: { status: 'LIVE', variants: { every: { stockQty: { lte: 0 } } } },
+      orderBy: { createdAt: 'asc' },
+      take: limit,
+      select: this.productSelect(),
+    })
+
+    return rows.map((row) => this.toProductRow(row))
+  }
+
   async stockChurn(
     now: Date,
     days: number,

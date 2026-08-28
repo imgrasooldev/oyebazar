@@ -46,6 +46,7 @@ const LIMITS = {
   /** Naam har dafa nahi parhe jate — sirf haal hi ka maal (baqi pehle dekha ja chuka) */
   titles: 200,
   churn: 20,
+  unsellable: 30,
 } as const
 
 /** Wo khana jo `supplier-product.repository.ts` khud banata hai jab category na di jaye. */
@@ -73,8 +74,17 @@ export class OpsTriageService {
      * chalane se safha aath chakkaron jitna sust ho jata — jab ke wo safha subah sab se
      * pehle khola jata hai.
      */
-    const [disputed, overdue, orders, oddPrices, duplicates, uncategorised, titles, churn] =
-      await Promise.all([
+    const [
+      disputed,
+      overdue,
+      orders,
+      oddPrices,
+      duplicates,
+      uncategorised,
+      titles,
+      churn,
+      unsellable,
+    ] = await Promise.all([
         this.repo.disputedPayouts(LIMITS.disputed),
         this.repo.overduePayouts(now, LIMITS.overdue),
         this.repo.unansweredOrders(now, ORDER_ANSWER_HOURS, LIMITS.orders),
@@ -83,6 +93,7 @@ export class OpsTriageService {
         this.repo.uncategorisedProducts(FALLBACK_CATEGORY_SLUG, LIMITS.uncategorised),
         this.repo.liveProductTitles(LIMITS.titles),
         this.repo.stockChurn(now, CHURN_DAYS, CHURN_FIXES, LIMITS.churn),
+        this.repo.unsellableProducts(LIMITS.unsellable),
       ])
 
     const flags: OpsFlag[] = []
@@ -230,6 +241,25 @@ export class OpsTriageService {
         context: row.supplierName,
         values: { fixes: row.fixes, days: CHURN_DAYS },
         since: row.since,
+      })
+    }
+
+    for (const row of unsellable) {
+      flags.push({
+        /*
+         * `medium` — koi ABHI ruka hua nahi hai, magar ghalat khabar reseller tak pohanch
+         * rahi hai, aur wohi is darje ki tareef hai. Jis din wo us par status laga kar
+         * order le legi, us din wo `orderUnanswered` ya RTO ban kar upar aa jayega — us
+         * se pehle rok lena is safhe ka poora maqsad hai.
+         */
+        kind: 'unsellable',
+        severity: 'medium',
+        subject: 'product',
+        id: row.productId,
+        label: row.titleUr,
+        context: row.supplierName,
+        values: {},
+        since: row.createdAt,
       })
     }
 

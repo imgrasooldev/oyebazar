@@ -44,6 +44,8 @@ export type FlagKind =
   | 'oddTitle'
   /** Ginti baar baar haath se badli ja rahi hai */
   | 'stockChurn'
+  /** Safhe par LIVE hai magar us par order lag hi nahi sakta */
+  | 'unsellable'
 
 export type FlagSeverity = 'high' | 'medium' | 'low'
 

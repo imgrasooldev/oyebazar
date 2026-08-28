@@ -45,6 +45,7 @@ class FakeTriage implements OpsTriageRepository {
   uncategorised: ProductFlagRow[] = []
   titles: ProductFlagRow[] = []
   churn: StockChurnRow[] = []
+  unsellable: ProductFlagRow[] = []
 
   async disputedPayouts() {
     return this.disputed
@@ -69,6 +70,9 @@ class FakeTriage implements OpsTriageRepository {
   }
   async stockChurn() {
     return this.churn
+  }
+  async unsellableProducts() {
+    return this.unsellable
   }
 }
 
@@ -202,6 +206,20 @@ describe('phone — sirf wahan jahan agla qadam call hai', () => {
 
     expect(flags).toHaveLength(3)
     expect(flags.every((flag) => flag.action === undefined)).toBe(true)
+  })
+})
+
+describe('bik na sakne wala maal', () => {
+  it('🔴 LIVE magar bina stock ke maal pakra jata hai — reseller us par status laga sakti hai', async () => {
+    // Us ka anjaam: order aata hai, `reserve()` mana kar deta hai, aur wo apne customer
+    // ke saamne jhooti banti hai
+    const { flags } = await serviceWith((repo) => {
+      repo.unsellable = [product({ productId: 'gum-shuda' })]
+    }).flags()
+
+    expect(flags).toHaveLength(1)
+    expect(flags[0]?.kind).toBe('unsellable')
+    expect(flags[0]?.severity).toBe('medium')
   })
 })
 
