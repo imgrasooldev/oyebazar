@@ -24,8 +24,26 @@ import {
   ResellerProductListItemDTO,
 } from '@oyebazar/shared'
 
-/** Ye alfaz reseller ya public response mein kabhi nahi ja sakte. */
-const FORBIDDEN = ['supplierPrice', 'supplier_price', 'supplierId', 'ntn', 'strn', 'bankAccount', 'feeRateBps']
+/**
+ * Ye alfaz reseller ya public response mein kabhi nahi ja sakte.
+ *
+ * 🔴 `avgCost` aur `unitCost` (maal ki LAGAT) `supplierPrice` se bhi zyada hassas hain.
+ * `supplierPrice` se sirf hamara margin khulta hai; lagat se dukan ka MUNAFA khulta hai
+ * — aur jo bhi ye jaan le ke maal 180 ka aata hai aur 240 ka bikta hai, wo us dukan se
+ * mol bhao karne baith jata hai. Ye number sirf dukan ke apne safhe par chhapta hai
+ * (`/supplier/inventory`), aur kahin nahi.
+ */
+const FORBIDDEN = [
+  'supplierPrice',
+  'supplier_price',
+  'supplierId',
+  'avgCost',
+  'unitCost',
+  'ntn',
+  'strn',
+  'bankAccount',
+  'feeRateBps',
+]
 
 const REPO_ROOT = join(__dirname, '..', '..', '..', '..')
 

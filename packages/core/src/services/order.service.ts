@@ -175,6 +175,20 @@ export class OrderService {
      * Koi ek line na mile to pehle wali wapas chhor dete hain: adhoora reserve stock
      * hamesha ke liye kha jata aur kisi ko pata bhi na chalta.
      */
+    /*
+     * Order ka number maal rokne se PEHLE le lete hain.
+     *
+     * Wajah register hai: ginti order banne se pehle rok li jati hai (warna do
+     * resellers ek hi aakhri piece bech deti hain), aur us lamhe order ki id mojood hi
+     * nahi hoti. Number pehle le lene se har qatar us number ke saath likhi jati hai —
+     * aur jhagre ke din dukan wala wohi number dhoondta hai jo us ke saamne har jagah
+     * likha hota hai.
+     *
+     * Number "zaya" hone ka koi masla nahi: `Counter` sirf barhta hai, aur maal na
+     * milne par ek number chhoot jana kisi cheez ko nahi torta.
+     */
+    const orderNo = await this.orderNumbers.next()
+
     const reserved: OrderLineView[] = []
     for (const line of lines) {
       const ok = await this.inventory.reserve({
@@ -182,6 +196,7 @@ export class OrderService {
         qty: line.qty,
         // Jo variant customer ne chuna, ginti usi se — dekhen StockLine
         ...(line.variantId ? { variantId: line.variantId } : {}),
+        orderNo,
       })
       if (ok) {
         reserved.push(line)
@@ -189,13 +204,19 @@ export class OrderService {
       }
 
       for (const done of reserved) {
-        await this.inventory.release({ productId: done.productId, qty: done.qty })
+        await this.inventory.release({
+          productId: done.productId,
+          qty: done.qty,
+          // Wapas usi variant mein — aur register mein usi number ke saath
+          ...(done.variantId ? { variantId: done.variantId } : {}),
+          orderNo,
+        })
       }
       throw new OutOfStockError({ productId: line.productId })
     }
 
     const order = await this.orders.create({
-      orderNo: await this.orderNumbers.next(),
+      orderNo,
       resellerId: command.resellerId,
       supplierId,
       customer: command.customer,
@@ -469,7 +490,14 @@ export class OrderService {
     })
 
     await this.feeLedger.markWrittenOff(updated.id, `RTO: ${reason}`)
-    await this.releaseStock(updated)
+    /*
+     * 🔴 `RETURN_TO_SHELF` — `ORDER_RELEASED` nahi. Ginti dono soorton mein barhti hai,
+     * magar register mein ye do BILKUL alag waqiat hain: mansookh order ka maal dukan
+     * se nikla hi nahi tha; ye maal poora chakkar laga kar wapas aaya hai, us par
+     * kirchaya lag chuka hai aur aksar wo kharab bhi hota hai. Dono ek jaise likhe jaen
+     * to wapsi ka nuqsan is poori tareekh mein kahin nazar hi nahi aata.
+     */
+    await this.releaseStock(updated, 'RETURN_TO_SHELF')
     await this.notifyReseller(updated, 'baji_order_rto', {
       orderNo: updated.orderNo,
       reason,
@@ -770,14 +798,22 @@ export class OrderService {
    * Har nakaam order ke sath stock hamesha ke liye kam hota rehta to kuch hafton mein
    * poora catalogue "khatam" dikhne lagta, halanke dukan par maal para hota.
    */
-  private async releaseStock(order: InternalOrderView): Promise<void> {
+  private async releaseStock(
+    order: InternalOrderView,
+    reason: 'ORDER_RELEASED' | 'RETURN_TO_SHELF' = 'ORDER_RELEASED',
+  ): Promise<void> {
     for (const item of order.items) {
-      await this.inventory.release({
-        productId: item.productId,
-        qty: item.qty,
-        // Wapas usi variant mein jis se nikla tha
-        ...(item.variantId ? { variantId: item.variantId } : {}),
-      })
+      await this.inventory.release(
+        {
+          productId: item.productId,
+          qty: item.qty,
+          // Wapas usi variant mein jis se nikla tha
+          ...(item.variantId ? { variantId: item.variantId } : {}),
+          // Register mein qatar isi number se bandhti hai
+          orderNo: order.orderNo,
+        },
+        reason,
+      )
     }
   }
 
@@ -870,7 +906,7 @@ export class OrderService {
       note: reason,
     })
     await this.feeLedger.markWrittenOff(orderId, `RTO: ${reason}`)
-    await this.releaseStock(updated)
+    await this.releaseStock(updated, 'RETURN_TO_SHELF')
     await this.analytics.track({
       name: 'order_rto',
       actorType: 'ops',

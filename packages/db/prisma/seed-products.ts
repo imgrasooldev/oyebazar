@@ -179,6 +179,17 @@ async function main(): Promise<void> {
                 // SKU maal ke slug se banta hai — dukan wale ke apne register se mel khata hai
                 skuCode: `${slug}-${ci + 1}${si + 1}`.toUpperCase(),
                 stockQty: 6 + ((n + colour.length) % 10),
+                /*
+                 * Hadd aur lagat — taake maal ka register pehle din se kuch keh sake.
+                 *
+                 * 🔴 Lagat bechne ke rate se NIKALI gayi hai (75%), aur ye sirf seed
+                 * mein qabool hai. Asli dukan ki lagat sirf wo khud batati hai
+                 * (`stock/in` par) — us ka andaza lagana poori valuation ko ek jhoot par
+                 * khara kar deta, aur us ke baad wo number kabhi theek na hota kyunke
+                 * kisi ko pata hi na chalta ke wo andaza tha.
+                 */
+                reorderLevel: 4,
+                avgCost: Math.round((supplierPrice * 0.75) / 10) * 10,
               })),
             ),
           })
@@ -190,6 +201,8 @@ async function main(): Promise<void> {
               productId: product.id,
               skuCode: slug.toUpperCase(),
               stockQty: 12 + (n % 20),
+              reorderLevel: 6,
+              avgCost: Math.round((supplierPrice * 0.75) / 10) * 10,
             },
           })
         }

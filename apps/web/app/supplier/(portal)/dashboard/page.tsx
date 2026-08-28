@@ -71,6 +71,15 @@ export default async function SupplierDashboardPage() {
     container.repositories.supplierReviews.forSupplier(supplier.id),
   ])
 
+  /*
+   * Khatam hone wala maal — dashboard par SIRF ginti, list nahi.
+   *
+   * Ye safha "kya haal hai" ka jawab deta hai; list us safhe par hai jahan us par kaam
+   * bhi ho sakta hai (/supplier/inventory). Dono jagah list rakhne ka anjaam ye hota
+   * hai ke koi bhi jagah mukammal nahi rehti aur dukan wala har dafa dono kholta hai.
+   */
+  const stock = await container.inventory.summary(supplier.id)
+
   const orders = page.items
   const waiting = orders.filter((order) => order.status === 'SENT_TO_SUPPLIER')
   const running = orders.filter((order) => RUNNING.has(order.status))
@@ -246,6 +255,45 @@ export default async function SupplierDashboardPage() {
             </span>
           </span>
           <span className="text-[0.85rem] text-white/85">{t('supplierOrdersNav')} →</span>
+        </Link>
+      )}
+
+      {/*
+        Maal khatam hone ka ishara — order wale patti ke NEECHE.
+        Tarteeb maqsad se hai: upar wali qatar par kisi ka INTEZAR hai (customer khara
+        hai), ye us se kam foran ka kaam hai. Dono ko ek jaisa numaya karne se dono ka
+        asar barabar ho jata hai — aur phir na koi upar wala dabata hai na neeche wala.
+      */}
+      {stock.outCount + stock.lowCount > 0 && (
+        <Link
+          href="/supplier/inventory"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-card bg-paper-sunken px-5 py-3.5 transition hover:shadow-lift"
+        >
+          <span className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-card bg-white text-ink-soft">
+              <BoxesIcon className="h-4 w-4" />
+            </span>
+            <span className="text-[0.92rem] font-semibold">
+              {stock.outCount > 0 && (
+                <span className="text-red-700">
+                  <span dir="ltr" className="numeric">
+                    {stock.outCount}
+                  </span>{' '}
+                  {t('stockOutCount')}
+                </span>
+              )}
+              {stock.outCount > 0 && stock.lowCount > 0 && <span className="mx-2">·</span>}
+              {stock.lowCount > 0 && (
+                <span className="text-brand-800">
+                  <span dir="ltr" className="numeric">
+                    {stock.lowCount}
+                  </span>{' '}
+                  {t('stockLowCount')}
+                </span>
+              )}
+            </span>
+          </span>
+          <span className="text-[0.82rem] text-ink-faint">{t('inventoryNav')} →</span>
         </Link>
       )}
 

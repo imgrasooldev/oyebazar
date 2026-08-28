@@ -6,7 +6,7 @@ import { Avatar } from '@/components/avatar'
 import { PortalSidebar } from '@/components/portal-sidebar'
 import { RouteProgress } from '@/components/route-progress'
 import { SupplierLogoutButton } from '@/components/supplier-logout-button'
-import { BoxesIcon, GridIcon, ListIcon, MoneyIcon, ShieldIcon } from '@/components/icons'
+import { BoxesIcon, GridIcon, LayersIcon, ListIcon, MoneyIcon, ShieldIcon } from '@/components/icons'
 import { getSupplierOrNull } from '@/lib/api/supplier-session'
 import { translator } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
@@ -27,6 +27,8 @@ const NAV = [
   { href: '/supplier/dashboard', key: 'supplierDashboardNav', Icon: GridIcon },
   { href: '/supplier/orders', key: 'supplierOrdersNav', Icon: ListIcon },
   { href: '/supplier/stock', key: 'supplierStockNav', Icon: BoxesIcon },
+  // Maal ka andar wala hisab — /stock se alag safha, wajah us safhe ke sar par likhi hai
+  { href: '/supplier/inventory', key: 'inventoryNav', Icon: LayersIcon },
   { href: '/supplier/payouts', key: 'payoutsNav', Icon: MoneyIcon },
   { href: '/supplier/settings', key: 'shopRules', Icon: ShieldIcon },
 ] as const

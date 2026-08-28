@@ -4,6 +4,7 @@ export * from './domain/order-status'
 export * from './domain/order'
 export * from './domain/daily-drop'
 export * from './domain/rto-risk'
+export * from './domain/stock'
 
 // Ports (repository + infrastructure interfaces)
 export * from './ports'
@@ -34,3 +35,4 @@ export * from './services/broadcast.service'
 export * from './services/pregeneration.service'
 export * from './services/fee-invoice.service'
 export * from './services/order-reminder.service'
+export * from './services/inventory.service'

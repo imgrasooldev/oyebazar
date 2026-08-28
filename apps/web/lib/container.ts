@@ -11,6 +11,7 @@ import {
   CatalogueService,
   DailyDropService,
   FeeInvoiceService,
+  InventoryService,
   CategoryAdminService,
   OrderService,
   PayoutService,
@@ -64,6 +65,8 @@ export interface Container {
   readonly opsAuth: OpsAuthService
   readonly admin: AdminService
   readonly supplierCatalogue: SupplierCatalogueService
+  /** 🔴 Maal ka register aur lagat — dukan ke andar ka hisab, kisi aur ko nahi dikhta. */
+  readonly inventory: InventoryService
   /** 🔴 LIVE maal ka rate — dukan wala maangta hai, ops badalti hai. */
   readonly priceChanges: PriceChangeService
   /** Nayi dukan ki darkhwast — public form se aati hai, chalu ops karti hai. */
@@ -184,6 +187,7 @@ function build(): Container {
     ),
     payouts,
     categoryAdmin: new CategoryAdminService(repositories.categoryAdmin, analytics, logger),
+    inventory: new InventoryService(repositories.inventory, analytics, logger),
     orders: new OrderService(
       repositories.orders,
       repositories.products,
