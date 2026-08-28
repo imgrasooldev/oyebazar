@@ -1,29 +1,42 @@
 /**
  * Muqarrar (static) OTP ko login ke safhe par dikhane ke liye.
  *
- * Ye `dev-otp.ts` se JAAN BOOJH KAR alag hai, aur farq samajhna zaroori hai:
+ * 🔴 PRODUCTION MEIN AB YE KUCH NAHI DETA — aur wajah is file ke apne purane comment
+ * mein likhi hui thi: ye rasta sirf "us arse ke liye" tha "jab tak site ka pata girey
+ * huay logon tak na ho".
  *
- *   · `devOtpFor` NODE_ENV par bandh hai — production mein hamesha undefined. Wo asli
- *     OTP hai jo bhej diya gaya, aur us ka production mein dikhna hadsa hoga.
- *   · Ye wala `STATIC_OTP` par bandh hai — yani us switch par jo pehle se hifazat ka
- *     darwaza khol chuka hai. Ye koi naya raaz nahi kholta: jo code yahan chhapta hai,
- *     wohi code us switch ki wajah se HAR number par pehle se chal raha hai.
+ * Wo arsa khatam ho chuka. Site `oyebazar.com` par live hai, bazaar bina login ke khula
+ * hai aur Google par jata hai. Live jaanch kar dekha:
  *
- * 🔴 Phir bhi ye risk barhata hai, aur ye baat chhupani nahi chahiye: pehle code sirf
- * usay pata tha jise team ne khud bataya. Ab wo safhe par hai — yani jo bhi login ka
- * safha khole, wo kisi bhi mojood reseller ya dukan ke number se andar aa sakta hai.
- * Sirf us arse ke liye jab tak site ka pata girey huay logon tak na ho.
+ *     POST /api/v1/auth/otp/request  {"phone": "<koi bhi number>"}
+ *     → {"ok":true, ..., "staticOtp":"112233"}
  *
- * Do cheezein jaan boojh kar aisi hain:
+ * Yani koi bhi shakhs, kisi bhi reseller ya dukan ke number par, code MAANG kar sakta
+ * tha — aur hum khud usay de rahe the.
  *
- *   · `STATIC_OTP` khali karte hi ye khud ba khud gayab ho jata hai. Jo switch khatra
- *     paida karta hai, wohi switch us ka ailan bhi band karta hai — do jagah yaad
- *     rakhne ki zaroorat nahi.
- *   · **Ops (admin) is se BAHAR hai** — dekhen container.ts. Wahan ka code waise hi
- *     random rehta hai, is liye ye value wahan kaam bhi nahi karti aur bheji bhi nahi
- *     jati. Us darwaze ko is tarah kholna bilkul alag darja ka khatra hai.
+ * 🔴 Ye hifazat `STATIC_OTP` ke saath NAHI bandhi gayi, `NODE_ENV` ke saath bandhi hai.
+ *
+ * Purana tareeqa ye tha ke "switch khali karte hi ailan bhi band". Wo saaf lagta hai
+ * magar us ka matlab ye hai ke jab tak switch laga hai, ailan bhi laga hai — yani theek
+ * us waqt jab khatra mojood ho, us ka pata bhi aam ho. Ab dono alag hain: switch team ki
+ * sahulat hai, ailan bilkul band.
+ *
+ * Ye MASLE KA HAL NAHI, sirf us ka aelan band karna hai. Asal hal do qadam hai, aur
+ * dono is code se bahar:
+ *
+ *   1. `WHATSAPP_PROVIDER` set ho, taake asli OTP waqai pohanche
+ *   2. Us ke BAAD `STATIC_OTP` hataya jaye
+ *
+ * 🔴 Tarteeb ulti karna khud ko bahar kar dena hai: bina provider ke `STATIC_OTP` hatate
+ * hi kisi ko koi code nahi milega — team ko bhi nahi.
+ *
+ * Ye `dev-otp.ts` se alag hai: `devOtpFor` ASLI bheja hua code dikhata hai (aur wo
+ * production mein hamesha undefined hai). **Ops (admin) is se BAHAR hai** — dekhen
+ * container.ts; wahan ka code waise hi random rehta hai.
  */
 export function staticOtpHint(): string | undefined {
+  if (process.env.NODE_ENV === 'production') return undefined
+
   const code = process.env.STATIC_OTP?.trim()
   return code ? code : undefined
 }
