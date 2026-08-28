@@ -684,6 +684,9 @@ ${
 .stage.custom .title,
 .stage.custom .seller-name,
 .stage.custom .seller-phone,
+/* Maal ki tafseel — apne bhaiyon ke saath. Chhoot jane ka matlab hai safed likhai
+   safed card par, yani nazar hi na aana. */
+.stage.custom .stock,
 .stage.custom .cta { color: #111827; text-shadow: none; }
 /* Do dabbe ek doosre ke andar bhare hue lagte hain — qeemat ka apna dabba hata dete hain */
 .stage.custom .price { background: transparent; color: #111827; padding: 0; }
