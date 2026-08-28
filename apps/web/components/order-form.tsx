@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { AskAddressButton } from '@/components/ask-address-button'
+import { PhoneRecordNote } from '@/components/phone-record-note'
 import { useState } from 'react'
 import { formatPkr, parseOrderText } from '@oyebazar/shared'
 import { translator, type Locale } from '@/lib/i18n'
@@ -312,6 +313,25 @@ export function OrderForm({
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           className="mt-2 w-full rounded-lg ring-1 ring-black/10 px-4 py-3"
+        />
+
+        {/*
+          Is number ka record — poore platform par.
+
+          🔴 Ye theek YAHAN hai, kisi alag safhe par nahi. Reseller ko ye baat us
+          lamhe chahiye jab wo number likh rahi hai aur order abhi laga nahi — us ke baad
+          batane ka matlab hai maal ja chuka aur khabar bekar.
+
+          Ye rokta nahi, sirf batata hai. Faisla us ka hai: advance mangwa le, call kar
+          le, ya bhej de.
+        */}
+        <PhoneRecordNote
+          phone={phone}
+          labels={{
+            risky: t('phoneRisky'),
+            riskyHint: t('phoneRiskyHint'),
+            clean: t('phoneClean'),
+          }}
         />
       </label>
 

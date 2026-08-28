@@ -159,6 +159,22 @@ export interface OrderRepository {
   markReminderSent(orderId: string, at: Date): Promise<void>
 
   /**
+   * Ek number par poore platform ka record — kitne pohanche, kitne wapas aaye.
+   *
+   * 🔴 Sirf DO GINTIYAN wapas aati hain. Na koi naam, na koi order, na ye ke kis
+   * reseller ne bheja tha, aur na hi kitni resellers ne.
+   *
+   * Ye hadd is feature ki jaan hai. Agar reseller ko ye pata chal jaye ke "Ayesha ne
+   * Sadia se bhi liya tha", to hum ne ek customer ki khareedari ka record ek ajnabi ke
+   * saamne khol diya — aur wo customer kabhi hamare saamne aayi hi nahi, na us ne is ki
+   * ijazat di. Us ka nuqsan ek RTO se kahin bara hai.
+   *
+   * Ginti mein sirf MUKAMMAL order aate hain (pohancha ya wapas). Raste wale order ka
+   * abhi koi natija hai hi nahi.
+   */
+  outcomesForPhone(phoneKey: string): Promise<{ delivered: number; returned: number }>
+
+  /**
    * Raste mein khare order — jin par dukan ne kuch likha hi nahi.
    *
    * 🔴 Ye khoj paise ki hai, khabar ki nahi: reseller ka hissa DELIVERED par khulta hai.

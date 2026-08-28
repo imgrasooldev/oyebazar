@@ -525,6 +525,8 @@ model Order {
   @@index([resellerId, createdAt])
   @@index([supplierId, createdAt])
   @@index([confirmedAt, status])
+  /// Number ka record — reseller ke order lagate waqt chalta hai, is liye index lazmi
+  @@index([customerPhone, status])
 }
 
 enum PaymentMethod {

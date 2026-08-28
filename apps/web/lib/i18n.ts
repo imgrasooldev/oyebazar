@@ -1289,6 +1289,23 @@ const DICTIONARY = {
   },
   wasPricePlaceholder: { ur: 'مثلاً 3000', en: 'e.g. 3000', rm: 'misal 3000' },
   packNoStock: { ur: 'سائز نہیں', en: 'no sizes', rm: 'size nahi' },
+
+  // Number ka record — order lagate waqt
+  phoneRisky: {
+    ur: 'اس نمبر پر {total} میں سے {returned} پارسل واپس آ چکے ہیں',
+    en: '{returned} of {total} parcels to this number came back',
+    rm: 'Is number par {total} mein se {returned} parcel wapas aa chuke hain',
+  },
+  phoneRiskyHint: {
+    ur: 'بھیجنے سے پہلے کال کر لیں یا ایڈوانس منگوا لیں',
+    en: 'Call first, or ask for an advance before shipping',
+    rm: 'Bhejne se pehle call kar len ya advance mangwa len',
+  },
+  phoneClean: {
+    ur: 'اس نمبر پر {total} میں سے {n} پارسل پہنچ چکے ہیں',
+    en: '{n} of {total} parcels to this number arrived',
+    rm: 'Is number par {total} mein se {n} parcel pohanch chuke hain',
+  },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
   moneyByReseller: { ur: 'ریسیلر کے حساب سے', en: 'By reseller', rm: 'Reseller ke hisab se' },
   moneyEarnedTotal: { ur: 'کل کمائی', en: 'Total earned', rm: 'Kul kamai' },

@@ -421,6 +421,30 @@ export class PrismaOrderRepository implements OrderRepository {
     await this.db.order.update({ where: { id: orderId }, data: { reminderSentAt: at } })
   }
 
+  async outcomesForPhone(phoneKey: string): Promise<{ delivered: number; returned: number }> {
+    /*
+     * 🔴 `groupBy` — sirf GINTI, koi row nahi.
+     *
+     * `findMany` se bhi ye kaam ho jata, magar us soorat mein doosri resellers ke order
+     * is process ki yaadasht mein aa jate: naam, pata, raqam, sab kuch. Jo data uthaya
+     * hi na jaye, wo galti se leak bhi nahi ho sakta. Hifazat wahan lagti hai jahan
+     * QUERY likhi jati hai, us ke baad wale mapper mein nahi.
+     *
+     * Aur sirf MUKAMMAL order: raste wale ka koi natija hai hi nahi, aur usay "abhi
+     * wapas nahi aaya" keh kar achha ginna ghalat jawab dega.
+     */
+    const grouped = await this.db.order.groupBy({
+      by: ['status'],
+      where: { customerPhone: phoneKey, status: { in: ['DELIVERED', 'RTO'] } },
+      _count: { _all: true },
+    })
+
+    const count = (status: 'DELIVERED' | 'RTO') =>
+      grouped.find((row) => row.status === status)?._count._all ?? 0
+
+    return { delivered: count('DELIVERED'), returned: count('RTO') }
+  }
+
   async findStuckInTransit(options: {
     olderThan: Date
     limit: number

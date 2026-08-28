@@ -2,6 +2,7 @@
 export * from './domain/views'
 export * from './domain/order-status'
 export * from './domain/shipment'
+export * from './domain/phone-record'
 export * from './domain/order'
 export * from './domain/daily-drop'
 

@@ -28,6 +28,7 @@ import {
 } from '@oyebazar/shared'
 
 import { assertTransition, type OrderStatus } from '../domain/order-status'
+import { phoneKey, phoneRecord, type PhoneRecord } from '../domain/phone-record'
 import { readShipment } from '../domain/shipment'
 import type {
   ConfirmedBy,
@@ -920,6 +921,23 @@ export class OrderService {
       note: actor.note,
       ...(actor.shipment ? { shipment: actor.shipment } : {}),
     })
+  }
+
+  /**
+   * Ek number ka record — order lagane se PEHLE.
+   *
+   * 🔴 Ye reseller ko rokta NAHI, sirf batata hai. Faisla us ka hai.
+   *
+   * Rok lagane ka matlab hota ke hum ek aise shakhs ko black-list kar rahe hain jo kabhi
+   * hamare saamne aaya hi nahi aur jis ke paas safai ka koi rasta nahi. Aur wo aksar
+   * ghalat bhi hota: pichli teen wapsiyan kisi aur reseller ki ghalti se bhi ho sakti
+   * hain — ghalat pata, bura maal, ya courier.
+   *
+   * Reseller ko jo chahiye wo ijazat nahi, KHABAR hai: "is number par pehle bhi wapsi
+   * hui hai" — phir wo khud tay karti hai ke advance mangwaye, ya call kare, ya bhej de.
+   */
+  async phoneRecordFor(phone: string): Promise<PhoneRecord> {
+    return phoneRecord(await this.orders.outcomesForPhone(phoneKey(phone)))
   }
 
   // ------------------------------------------------------------------ reads
