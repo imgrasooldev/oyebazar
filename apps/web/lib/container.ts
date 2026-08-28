@@ -12,6 +12,7 @@ import {
   DailyDropService,
   FeeInvoiceService,
   InventoryService,
+  OpsTriageService,
   CategoryAdminService,
   OrderService,
   PayoutService,
@@ -67,6 +68,8 @@ export interface Container {
   readonly supplierCatalogue: SupplierCatalogueService
   /** 🔴 Maal ka register aur lagat — dukan ke andar ka hisab, kisi aur ko nahi dikhta. */
   readonly inventory: InventoryService
+  /** Ops ki chhanni — kya cheez abhi nazar maangti hai */
+  readonly opsTriage: OpsTriageService
   /** 🔴 LIVE maal ka rate — dukan wala maangta hai, ops badalti hai. */
   readonly priceChanges: PriceChangeService
   /** Nayi dukan ki darkhwast — public form se aati hai, chalu ops karti hai. */
@@ -187,6 +190,7 @@ function build(): Container {
     ),
     payouts,
     categoryAdmin: new CategoryAdminService(repositories.categoryAdmin, analytics, logger),
+    opsTriage: new OpsTriageService(repositories.opsTriage, clock),
     inventory: new InventoryService(
       repositories.inventory,
       // Wohi Prisma class dono port poore karti hai — port alag hain, adapter ek

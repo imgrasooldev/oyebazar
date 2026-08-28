@@ -33,6 +33,14 @@ export const dynamic = 'force-dynamic'
  */
 const TABS = [
   { href: '/admin', label: 'Dashboard', needs: 'REVIEWER', Icon: GridIcon },
+  /*
+   * Dashboard ke foran BAAD — pehle nahi.
+   *
+   * Dashboard batata hai ke karobar kaisa chal raha hai; ye batata hai ke abhi kya
+   * galat hai. Dono zaroori hain, magar pehla wo hona chahiye jise banda waise bhi
+   * kholta hai — warna dooosra safha rozana daraane wala pehla tassur ban jata hai.
+   */
+  { href: '/admin/attention', label: 'Needs attention', needs: 'REVIEWER', Icon: ShieldIcon },
   { href: '/admin/orders', label: 'Orders', needs: 'REVIEWER', Icon: ListIcon },
   { href: '/admin/suppliers', label: 'Wholesalers', needs: 'REVIEWER', Icon: StoreIcon },
   { href: '/admin/products', label: 'Products', needs: 'REVIEWER', Icon: BoxesIcon },

@@ -29,6 +29,7 @@ import { PrismaOrderRepository } from './repositories/order.repository'
 import { PrismaInventoryRepository } from './repositories/inventory.repository'
 import { PrismaPayoutRepository } from './repositories/payout.repository'
 import { PrismaMoneyLedgerRepository } from './repositories/money-ledger.repository'
+import { PrismaOpsTriageRepository } from './repositories/ops-triage.repository'
 import { PrismaCategoryAdminRepository } from './repositories/category-admin.repository'
 import { PrismaFeeLedgerRepository } from './repositories/fee-ledger.repository'
 import { PrismaOrderNumberGenerator } from './repositories/order-number'
@@ -60,6 +61,7 @@ export interface Repositories {
   inventory: PrismaInventoryRepository
   payouts: PrismaPayoutRepository
   moneyLedger: PrismaMoneyLedgerRepository
+  opsTriage: PrismaOpsTriageRepository
   categoryAdmin: PrismaCategoryAdminRepository
   feeLedger: PrismaFeeLedgerRepository
   orderNumbers: PrismaOrderNumberGenerator
@@ -91,6 +93,7 @@ export function createRepositories(client: PrismaClient = prisma): Repositories 
     inventory: new PrismaInventoryRepository(client),
     payouts: new PrismaPayoutRepository(client),
     moneyLedger: new PrismaMoneyLedgerRepository(client),
+    opsTriage: new PrismaOpsTriageRepository(client),
     categoryAdmin: new PrismaCategoryAdminRepository(client),
     feeLedger: new PrismaFeeLedgerRepository(client),
     orderNumbers: new PrismaOrderNumberGenerator(client),
@@ -116,6 +119,7 @@ export * from './repositories/otp.repository'
 export * from './repositories/category.repository'
 export * from './repositories/order.repository'
 export * from './repositories/inventory.repository'
+export * from './repositories/ops-triage.repository'
 export * from './repositories/payout.repository'
 export * from './repositories/money-ledger.repository'
 export * from './repositories/category-admin.repository'
