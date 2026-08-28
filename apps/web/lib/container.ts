@@ -13,6 +13,8 @@ import {
   FeeInvoiceService,
   InventoryService,
   OpsTriageService,
+  templatePitchWriter,
+  type PitchWriter,
   CategoryAdminService,
   OrderService,
   AddressRequestService,
@@ -40,6 +42,7 @@ import { ConsoleLogger, CryptoTokenGenerator, SystemClock } from './adapters/sys
 import { InMemoryRateLimiter } from './adapters/rate-limiter'
 import { StaticOtpTokens } from './static-otp-tokens'
 import { createMessagingProvider } from '@oyebazar/whatsapp'
+import { createPitchWriter } from '@oyebazar/ai'
 import { PrismaAnalytics } from './adapters/analytics'
 import { LoggingRenderQueue } from './adapters/render-queue'
 
@@ -71,6 +74,13 @@ export interface Container {
   readonly inventory: InventoryService
   /** Ops ki chhanni — kya cheez abhi nazar maangti hai */
   readonly opsTriage: OpsTriageService
+  /**
+   * Status ke lafz — Claude se agar key ho, warna hamare apne khanon se.
+   *
+   * 🔴 Ye kabhi `null` nahi hota. Key na hone par bhi reseller ko teen jumle milte hain
+   * — feature ka poora maqsad hi wo khali jagah bharna tha jahan wo ruk jati hai.
+   */
+  readonly pitch: PitchWriter
   /** 🔴 LIVE maal ka rate — dukan wala maangta hai, ops badalti hai. */
   readonly priceChanges: PriceChangeService
   /** Nayi dukan ki darkhwast — public form se aati hai, chalu ops karti hai. */
@@ -193,6 +203,12 @@ function build(): Container {
     payouts,
     categoryAdmin: new CategoryAdminService(repositories.categoryAdmin, analytics, logger),
     opsTriage: new OpsTriageService(repositories.opsTriage, clock),
+    pitch: createPitchWriter({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      fallback: templatePitchWriter(),
+      // Nakaami khamoshi se na guzre — warna koi kabhi nahi jaan paayega ke model band hai
+      onError: (error) => logger.warn('pitch_model_failed', { error: String(error) }),
+    }),
     inventory: new InventoryService(
       repositories.inventory,
       // Wohi Prisma class dono port poore karti hai — port alag hain, adapter ek

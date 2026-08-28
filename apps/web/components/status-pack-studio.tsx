@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { PitchSuggestions } from '@/components/pitch-suggestions'
 import { useMemo, useState } from 'react'
 import { NOTE_MAX, formatPkr, type PackKit, type PackKitAsset, type PackOptions } from '@oyebazar/shared'
 import { CopyIcon, DownloadIcon, SparkIcon } from '@/components/icons'
@@ -636,6 +637,23 @@ export function StatusPackStudio({
                 onChange={(e) => setOption('note', e.target.value)}
                 placeholder={t('packNotePlaceholder')}
                 className="field mt-2 w-full text-[0.95rem]"
+              />
+
+              {/*
+                Teen tajweez — THEEK isi khane ke neeche.
+                Yehi wo jagah hai jahan reseller ruk jati hai: tasveer ban chuki hai,
+                rate likha ja chuka hai, aur ab us ki apni baat likhni hai. Tajweez kahin
+                aur rakhne ka matlab hai ke wo us waqt nazar na aaye jab zaroorat ho.
+              */}
+              <PitchSuggestions
+                productId={productId}
+                onPick={(line) => setOption('note', line)}
+                labels={{
+                  ask: t('pitchAsk'),
+                  asking: t('pitchAsking'),
+                  again: t('pitchAgain'),
+                  failed: t('pitchFailed'),
+                }}
               />
             </div>
 

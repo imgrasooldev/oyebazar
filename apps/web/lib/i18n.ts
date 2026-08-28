@@ -894,6 +894,12 @@ const DICTIONARY = {
 
   // ---- Maal ka hisab (inventory) — dukan ke andar ka hisab, bahar kabhi nahi
   inventoryNav: { ur: 'مال کا حساب', en: 'Inventory', rm: 'Maal ka hisab' },
+
+  // ---- Status ke lafz — us khali khane ka jawab jahan reseller ruk jati hai
+  pitchAsk: { ur: 'کیا لکھوں؟ — تین جملے دیکھیں', en: 'Not sure what to write? — see 3 lines', rm: 'Kya likhoon? — teen jumle dekhen' },
+  pitchAsking: { ur: 'جملے بن رہے ہیں…', en: 'Writing…', rm: 'Jumle ban rahe hain…' },
+  pitchAgain: { ur: 'اور جملے دکھائیں', en: 'Show me others', rm: 'Aur jumle dikhayen' },
+  pitchFailed: { ur: 'ابھی نہیں ہو سکا — دوبارہ کوشش کریں', en: 'Could not do that — try again', rm: 'Abhi nahi ho saka — dobara koshish karen' },
   inventoryBody: {
     ur: 'کیا آیا، کیا گیا، اور ابھی کیا پڑا ہے۔ یہ حساب صرف آپ کو نظر آتا ہے۔',
     en: 'What came in, what went out, and what is left. Only you can see this.',

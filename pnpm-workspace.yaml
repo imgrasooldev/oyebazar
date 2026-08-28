@@ -14,3 +14,5 @@ allowBuilds:
   prisma: true
   sharp: true # image processing (worker)
   unrs-resolver: true # eslint resolver
+minimumReleaseAgeExclude:
+  - '@anthropic-ai/sdk@0.122.0'

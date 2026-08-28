@@ -16,6 +16,7 @@
   "dependencies": {
     "@fontsource-variable/inter": "^5.1.1",
     "@fontsource/noto-nastaliq-urdu": "^5.1.0",
+    "@oyebazar/ai": "workspace:*",
     "@oyebazar/core": "workspace:*",
     "@oyebazar/db": "workspace:*",
     "@oyebazar/queue": "workspace:*",

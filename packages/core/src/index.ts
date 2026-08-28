@@ -8,6 +8,7 @@ export * from './domain/daily-drop'
 export * from './domain/rto-risk'
 export * from './domain/stock'
 export * from './domain/ops-flags'
+export * from './domain/pitch'
 
 // Ports (repository + infrastructure interfaces)
 export * from './ports'
@@ -15,6 +16,7 @@ export * from './ports/order-repositories'
 export * from './ports/price-change-repositories'
 export * from './ports/daily-drop-repositories'
 export * from './ports/ops-triage-repositories'
+export * from './ports/pitch'
 
 // Services (application layer)
 export * from './services/asset-sweep'
@@ -43,3 +45,4 @@ export * from './services/fee-invoice.service'
 export * from './services/order-reminder.service'
 export * from './services/inventory.service'
 export * from './services/ops-triage.service'
+export * from './services/template-pitch'
