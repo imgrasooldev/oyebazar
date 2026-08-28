@@ -20,24 +20,29 @@
  */
 import { stockHealth, stockValuation, type StockHealth } from '../domain/stock'
 import type {
-  LowStockLine,
+  InventoryLine,
   StockLedgerRepository,
   StockMoveView,
+  WarehouseRepository,
+  WarehouseStockLine,
+  WarehouseView,
 } from '../ports/inventory-repositories'
 import type { Analytics, Logger } from '../ports/infrastructure'
-import { NotFoundError, ValidationError } from '@oyebazar/shared'
+import { ConflictError, NotFoundError, ValidationError } from '@oyebazar/shared'
 
 /** Ek dafa mein itni qataron se zyada nahi — register lamba hota rehta hai. */
 const MOVES_LIMIT = 100
 /** Khatam hone wale maal ki list ki hadd. */
 const LOW_STOCK_LIMIT = 50
+/** Poore maal ki list ki hadd — is se aage safha khud hi na-qabil-e-parh ho jata hai. */
+const ALL_STOCK_LIMIT = 200
 
 /** Ginti ki hadd — wohi jo `setStockQuantity` par pehle se chal rahi hai. */
 const MAX_QTY = 100_000
 /** Ek piece ki lagat ki upri hadd — is se upar ka number aksar ghalti hoti hai. */
 const MAX_UNIT_COST = 10_000_000
 
-export type LowStockView = LowStockLine & { readonly health: StockHealth }
+export type InventoryLineView = InventoryLine & { readonly health: StockHealth }
 
 export type StockSummary = {
   /** Maal ki kul qeemat — sirf us hissay ki jis ki lagat maloom hai. */
@@ -55,6 +60,13 @@ export type StockSummary = {
 export class InventoryService {
   constructor(
     private readonly ledger: StockLedgerRepository,
+    /*
+     * Godown alag port se aata hai halanke amal mein dono ek hi Prisma class hain.
+     * Wajah: "ginti kya hai" aur "wo kis jagah hai" do alag sawal hain, aur kal godown
+     * kisi doosri jagah se aa sakte hain (dukan ka apna nizam) bina ginti wale raste ko
+     * chhue.
+     */
+    private readonly warehouses: WarehouseRepository,
     private readonly analytics: Analytics,
     private readonly logger: Logger,
   ) {}
@@ -75,6 +87,7 @@ export class InventoryService {
     qty: number
     unitCost?: number | undefined
     note?: string | undefined
+    warehouseId?: string | undefined
   }): Promise<number> {
     if (!Number.isInteger(input.qty) || input.qty <= 0 || input.qty > MAX_QTY) {
       throw new ValidationError('Ginti theek nahi')
@@ -92,6 +105,7 @@ export class InventoryService {
       qty: input.qty,
       ...(input.unitCost === undefined ? {} : { unitCost: input.unitCost }),
       ...(input.note === undefined ? {} : { note: input.note.trim() }),
+      ...(input.warehouseId === undefined ? {} : { warehouseId: input.warehouseId }),
       actorId: input.supplierId,
     })
     if (balance === null) throw new NotFoundError('Variant', input.variantId)
@@ -129,6 +143,7 @@ export class InventoryService {
     variantId: string
     qty: number
     note: string
+    warehouseId?: string | undefined
   }): Promise<number> {
     if (!Number.isInteger(input.qty) || input.qty <= 0 || input.qty > MAX_QTY) {
       throw new ValidationError('Ginti theek nahi')
@@ -141,6 +156,7 @@ export class InventoryService {
       variantId: input.variantId,
       qty: input.qty,
       note,
+      ...(input.warehouseId === undefined ? {} : { warehouseId: input.warehouseId }),
       actorId: input.supplierId,
     })
     /*
@@ -208,12 +224,140 @@ export class InventoryService {
    * dukan ka safha, ops ki chhanni aur kal ka WhatsApp ishara, teenon ko wohi lafz
    * chahiye warna teen jagah teen alag pemane ban jate hain.
    */
-  async lowStock(supplierId: string): Promise<LowStockView[]> {
-    const lines = await this.ledger.lowStock(supplierId, LOW_STOCK_LIMIT)
+  lowStock(supplierId: string): Promise<InventoryLineView[]> {
+    return this.withHealth({ supplierId, onlyLow: true, limit: LOW_STOCK_LIMIT })
+  }
+
+  /**
+   * Poora maal — naya maal daalne ke liye.
+   *
+   * 🔴 Ye pehle nahi tha aur wo ek asli kami thi: naya maal sirf UN cheezon mein daala
+   * ja sakta tha jo khatam ho rahi hon. Yani jis din dukan wala das than utarta (jab
+   * maal khatam NAHI hua hota) us din us ke paas koi rasta hi nahi hota — aur wohi din
+   * is poore register ka sab se aam din hai.
+   */
+  allStock(supplierId: string, search?: string): Promise<InventoryLineView[]> {
+    return this.withHealth({
+      supplierId,
+      onlyLow: false,
+      limit: ALL_STOCK_LIMIT,
+      ...(search?.trim() ? { search: search.trim() } : {}),
+    })
+  }
+
+  private async withHealth(input: {
+    supplierId: string
+    onlyLow: boolean
+    limit: number
+    search?: string | undefined
+  }): Promise<InventoryLineView[]> {
+    const lines = await this.ledger.lines(input)
     return lines.map((line) => ({
       ...line,
       health: stockHealth(line.stockQty, line.reorderLevel),
     }))
+  }
+
+  // ----------------------------------------------------------------- godown
+
+  /** Naam ki hadd — is se lamba naam qatar mein katta hua nazar aata hai. */
+  private static readonly MAX_NAME = 40
+
+  listWarehouses(supplierId: string): Promise<WarehouseView[]> {
+    return this.warehouses.listWarehouses(supplierId)
+  }
+
+  stockByWarehouse(
+    supplierId: string,
+    variantIds: readonly string[],
+  ): Promise<Map<string, WarehouseStockLine[]>> {
+    return this.warehouses.stockByWarehouse(supplierId, variantIds)
+  }
+
+  async addWarehouse(input: { supplierId: string; name: string }): Promise<WarehouseView> {
+    const name = this.cleanName(input.name)
+
+    const created = await this.warehouses.addWarehouse({ supplierId: input.supplierId, name })
+    /*
+     * Isi naam ka godown pehle se hai. Chup chaap doosra bana dena sab se bura anjaam
+     * deta: "Store" naam ke do godown ban jate, ginti un mein bat jati, aur dukan wale
+     * ko khud pata na chalta ke maal kis mein daala tha.
+     */
+    if (!created) throw new ConflictError('Is naam ka godown pehle se hai')
+
+    this.logger.info('warehouse_added', { supplierId: input.supplierId, name })
+    return created
+  }
+
+  async renameWarehouse(input: {
+    supplierId: string
+    warehouseId: string
+    name: string
+  }): Promise<void> {
+    const ok = await this.warehouses.renameWarehouse({
+      supplierId: input.supplierId,
+      warehouseId: input.warehouseId,
+      name: this.cleanName(input.name),
+    })
+    if (!ok) throw new ConflictError('Naam badla nahi ja saka — shayad ye naam pehle se hai')
+  }
+
+  async setWarehouseActive(input: {
+    supplierId: string
+    warehouseId: string
+    isActive: boolean
+  }): Promise<void> {
+    const ok = await this.warehouses.setWarehouseActive(input)
+    /*
+     * `false` ke do matlab hain: godown is dukan ka nahi, ya wo DEFAULT hai (jise band
+     * karna mumkin hi nahi — dekhen port). Dono par ek hi jawab, warna doosri dukan ke
+     * godown ki id aazma kar us ke bare mein kuch maloom kiya ja sakta hai.
+     */
+    if (!ok) throw new ValidationError('Ye godown band nahi kiya ja sakta')
+  }
+
+  /**
+   * Maal ek godown se doosre.
+   *
+   * 🔴 Kul ginti bilkul nahi badalti — maal dukan hi mein rehta hai, sirf jagah badalti
+   * hai. Isi liye ye `stockIn` + `writeOff` ka jorha nahi ho sakta.
+   */
+  async transfer(input: {
+    supplierId: string
+    variantId: string
+    fromWarehouseId: string
+    toWarehouseId: string
+    qty: number
+  }): Promise<void> {
+    if (!Number.isInteger(input.qty) || input.qty <= 0 || input.qty > MAX_QTY) {
+      throw new ValidationError('Ginti theek nahi')
+    }
+    if (input.fromWarehouseId === input.toWarehouseId) {
+      throw new ValidationError('Dono godown ek hi hain')
+    }
+
+    const ok = await this.warehouses.transfer({ ...input, actorId: input.supplierId })
+    if (!ok) throw new ValidationError('Is godown mein itna maal nahi hai')
+
+    await this.analytics.track({
+      name: 'stock_transferred',
+      actorType: 'supplier',
+      actorId: input.supplierId,
+      properties: { variantId: input.variantId, qty: input.qty },
+    })
+    this.logger.info('stock_transferred', {
+      supplierId: input.supplierId,
+      variantId: input.variantId,
+      qty: input.qty,
+    })
+  }
+
+  private cleanName(raw: string): string {
+    const name = raw.trim()
+    if (name.length < 2 || name.length > InventoryService.MAX_NAME) {
+      throw new ValidationError('Godown ka naam theek nahi')
+    }
+    return name
   }
 
   /** Dukan ke poore maal ka khulasa — safhe ke upar wali qatar. */

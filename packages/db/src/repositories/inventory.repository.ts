@@ -13,14 +13,17 @@
  */
 import type { PrismaClient, Prisma } from '@prisma/client'
 import type {
+  InventoryLine,
   InventoryRepository,
-  LowStockLine,
   StockLedgerRepository,
   StockLevel,
   StockLine,
   StockMoveView,
   StockValueLine,
   VariantView,
+  WarehouseRepository,
+  WarehouseStockLine,
+  WarehouseView,
 } from '@oyebazar/core'
 import { nextAvgCost } from '@oyebazar/core'
 
@@ -32,6 +35,7 @@ type MoveInput = {
   delta: number
   balanceAfter: number
   reason: Prisma.StockMoveCreateInput['reason']
+  warehouseId?: string | null
   orderNo?: string | null
   unitCost?: number | null
   note?: string | null
@@ -39,7 +43,9 @@ type MoveInput = {
   actorId?: string | null
 }
 
-export class PrismaInventoryRepository implements InventoryRepository, StockLedgerRepository {
+export class PrismaInventoryRepository
+  implements InventoryRepository, StockLedgerRepository, WarehouseRepository
+{
   constructor(private readonly db: PrismaClient) {}
 
   /**
@@ -73,6 +79,16 @@ export class PrismaInventoryRepository implements InventoryRepository, StockLedg
 
       if (!candidate) return false
 
+      /*
+       * 🔴 Ye ek update DO kaam karta hai, aur dono zaroori hain:
+       *
+       *  1. Shart (`stockQty >= qty`) WHERE mein hai — wohi cheez do resellers ko ek hi
+       *     aakhri piece bechne se rokti hai.
+       *  2. Ye is variant ki qatar par TAALA bhi laga deta hai. Neeche godownon wala
+       *     loop usi taale ke saye mein chalta hai — is liye us dauran koi doosra amal
+       *     isi cheez ki ginti kisi godown mein nahi badal sakta. (Isi wajah se
+       *     `transfer` bhi is qatar ko chhoota hai, halanke wo kul ginti nahi badalta.)
+       */
       const { count } = await tx.productVariant.updateMany({
         where: { id: candidate.id, stockQty: { gte: line.qty } },
         data: { stockQty: { decrement: line.qty } },
@@ -84,16 +100,40 @@ export class PrismaInventoryRepository implements InventoryRepository, StockLedg
         select: { stockQty: true },
       })
 
-      await this.writeMove(tx, {
-        supplierId: candidate.product.supplierId,
-        productId: line.productId,
-        variantId: candidate.id,
-        delta: -line.qty,
-        balanceAfter: after?.stockQty ?? 0,
-        reason: 'ORDER_RESERVED',
-        orderNo: line.orderNo ?? null,
-        actorType: 'system',
-      })
+      /*
+       * Ab ye batana ke maal KIS godown se nikla.
+       *
+       * Ek order ki ek line kai godownon se poori ho sakti hai — das than mein se chhay
+       * dukan se aur chaar store se. Wo dukan par waqai hota hai, is liye register mein
+       * bhi waise hi likha jata hai: har godown ki apni qatar.
+       */
+      const taken = await this.takeFromWarehouses(
+        tx,
+        candidate.product.supplierId,
+        candidate.id,
+        line.qty,
+      )
+
+      let running = after?.stockQty ?? 0
+      for (const part of [...taken].reverse()) {
+        await this.writeMove(tx, {
+          supplierId: candidate.product.supplierId,
+          productId: line.productId,
+          variantId: candidate.id,
+          warehouseId: part.warehouseId,
+          delta: -part.qty,
+          /*
+           * `balanceAfter` KUL ginti hai, godown ki nahi — poore register mein wo ek hi
+           * cheez naapta hai. Isi liye qataren ulti tarteeb mein bhari jati hain: aakhri
+           * qatar par wo aakhri ginti aati hai jo update ke baad waqai bani.
+           */
+          balanceAfter: running,
+          reason: 'ORDER_RESERVED',
+          orderNo: line.orderNo ?? null,
+          actorType: 'system',
+        })
+        running += part.qty
+      }
 
       return true
     })
@@ -124,16 +164,32 @@ export class PrismaInventoryRepository implements InventoryRepository, StockLedg
         select: { stockQty: true },
       })
 
-      await this.writeMove(tx, {
-        supplierId: variant.product.supplierId,
-        productId: line.productId,
-        variantId: variant.id,
-        delta: line.qty,
-        balanceAfter: updated.stockQty,
-        reason,
-        orderNo: line.orderNo ?? null,
-        actorType: 'system',
-      })
+      /*
+       * Maal wapas USI godown mein jahan se nikla tha — aur ye register ka apna phal hai.
+       *
+       * Order par ye kahin mehfooz nahi ke maal kis jagah se utha tha; magar register
+       * mein hai (`ORDER_RESERVED` ki qataren, isi orderNo par). Bina us ke sab kuch
+       * default godown mein wapas girta, aur do char mahine mein store ka maal aahista
+       * aahista dukan mein muntaqil ho jata — kaghaz par, zameen par nahi.
+       */
+      const parts = await this.reservedPlaces(tx, variant.id, line.orderNo, line.qty)
+
+      let running = updated.stockQty
+      for (const part of [...parts].reverse()) {
+        await this.applyWarehouseDelta(tx, variant.id, part.warehouseId, part.qty)
+        await this.writeMove(tx, {
+          supplierId: variant.product.supplierId,
+          productId: line.productId,
+          variantId: variant.id,
+          warehouseId: part.warehouseId,
+          delta: part.qty,
+          balanceAfter: running,
+          reason,
+          orderNo: line.orderNo ?? null,
+          actorType: 'system',
+        })
+        running -= part.qty
+      }
     })
   }
 
@@ -173,10 +229,23 @@ export class PrismaInventoryRepository implements InventoryRepository, StockLedg
        */
       const delta = qty - (existing?.stockQty ?? 0)
       if (delta !== 0) {
+        /*
+         * Haath se durust ki hui ginti hamesha DEFAULT godown par lagti hai.
+         *
+         * Dukan wala jab "ab 4 hain" likhta hai to wo saamne wale maal ki baat kar raha
+         * hota hai — us se ye poochhna ke "kis godown ki baat kar rahe hain" us ek-tap
+         * wale kaam ko form bana deta, aur wo phir usay chhoota hi nahi. Jise waqai
+         * godown ke hisab se ginti theek karni ho, us ke liye transfer aur zaya hone ka
+         * apna rasta hai.
+         */
+        const warehouseId = await this.defaultWarehouseId(tx, supplierId)
+        await this.applyWarehouseDelta(tx, variantId, warehouseId, delta)
+
         await this.writeMove(tx, {
           supplierId,
           productId,
           variantId,
+          warehouseId,
           delta,
           balanceAfter: qty,
           reason: 'MANUAL_FIX',
@@ -268,10 +337,14 @@ export class PrismaInventoryRepository implements InventoryRepository, StockLedg
        * upar kuch na hota, jis se ye kabhi sabit na hota ke maal aya kahan se tha.
        */
       if (input.stockQty > 0) {
+        const warehouseId = await this.defaultWarehouseId(tx, input.supplierId)
+        await this.applyWarehouseDelta(tx, variant.id, warehouseId, input.stockQty)
+
         await this.writeMove(tx, {
           supplierId: input.supplierId,
           productId: input.productId,
           variantId: variant.id,
+          warehouseId,
           delta: input.stockQty,
           balanceAfter: input.stockQty,
           reason: 'OPENING',
@@ -318,11 +391,16 @@ export class PrismaInventoryRepository implements InventoryRepository, StockLedg
       })
 
       if (input.stockQty !== undefined && input.stockQty !== before.stockQty) {
+        const warehouseId = await this.defaultWarehouseId(tx, input.supplierId)
+        const delta = input.stockQty - before.stockQty
+        await this.applyWarehouseDelta(tx, input.variantId, warehouseId, delta)
+
         await this.writeMove(tx, {
           supplierId: input.supplierId,
           productId: before.productId,
           variantId: input.variantId,
-          delta: input.stockQty - before.stockQty,
+          warehouseId,
+          delta,
           balanceAfter: input.stockQty,
           reason: 'MANUAL_FIX',
           actorType: 'supplier',
@@ -397,6 +475,7 @@ export class PrismaInventoryRepository implements InventoryRepository, StockLedg
     qty: number
     unitCost?: number | undefined
     note?: string | undefined
+    warehouseId?: string | undefined
     actorId: string
   }): Promise<number | null> {
     if (input.qty <= 0) return null
@@ -410,6 +489,13 @@ export class PrismaInventoryRepository implements InventoryRepository, StockLedg
     const balanceAfter = variant.stockQty + input.qty
 
     await this.db.$transaction(async (tx) => {
+      /*
+       * Godown chuna hua ho to wohi — magar sirf agar wo ISI dukan ka aur CHALU ho.
+       * Band godown mein naya maal daalna wo soorat banata hai jahan maal aisi jagah
+       * para hai jise dukan wala apni list mein dekhta hi nahi.
+       */
+      const warehouseId = await this.pickWarehouse(tx, input.supplierId, input.warehouseId)
+
       await tx.productVariant.update({
         where: { id: variant.id },
         data: {
@@ -427,10 +513,13 @@ export class PrismaInventoryRepository implements InventoryRepository, StockLedg
         },
       })
 
+      await this.applyWarehouseDelta(tx, variant.id, warehouseId, input.qty)
+
       await this.writeMove(tx, {
         supplierId: input.supplierId,
         productId: variant.productId,
         variantId: variant.id,
+        warehouseId,
         delta: input.qty,
         balanceAfter,
         reason: 'STOCK_IN',
@@ -451,6 +540,7 @@ export class PrismaInventoryRepository implements InventoryRepository, StockLedg
     variantId: string
     qty: number
     note: string
+    warehouseId?: string | undefined
     actorId: string
   }): Promise<number | null> {
     if (input.qty <= 0) return null
@@ -474,17 +564,36 @@ export class PrismaInventoryRepository implements InventoryRepository, StockLedg
       })
       if (count === 0) return
 
-      await this.writeMove(tx, {
-        supplierId: input.supplierId,
-        productId: variant.productId,
-        variantId: variant.id,
-        delta: -input.qty,
-        balanceAfter,
-        reason: 'DAMAGE',
-        note: input.note,
-        actorType: 'supplier',
-        actorId: input.actorId,
-      })
+      /*
+       * Godown bataya gaya ho to sirf usi se — aur agar us mein itna maal na ho to
+       * kahin se nahi. Warna "store ka toota hua maal" chup chaap dukan ki ginti se
+       * kat jata, aur dono godownon ke number ghalat ho jate.
+       */
+      const parts = input.warehouseId
+        ? [{ warehouseId: input.warehouseId, qty: input.qty }]
+        : await this.takeFromWarehouses(tx, input.supplierId, variant.id, input.qty)
+
+      if (input.warehouseId) {
+        const ok = await this.applyWarehouseDelta(tx, variant.id, input.warehouseId, -input.qty)
+        if (!ok) throw new Error('Is godown mein itna maal nahi hai')
+      }
+
+      let running = balanceAfter
+      for (const part of [...parts].reverse()) {
+        await this.writeMove(tx, {
+          supplierId: input.supplierId,
+          productId: variant.productId,
+          variantId: variant.id,
+          warehouseId: part.warehouseId,
+          delta: -part.qty,
+          balanceAfter: running,
+          reason: 'DAMAGE',
+          note: input.note,
+          actorType: 'supplier',
+          actorId: input.actorId,
+        })
+        running += part.qty
+      }
     })
 
     await this.syncProductStatus(variant.productId)
@@ -530,6 +639,7 @@ export class PrismaInventoryRepository implements InventoryRepository, StockLedg
         note: true,
         actorType: true,
         createdAt: true,
+        warehouse: { select: { name: true } },
         variant: {
           select: {
             skuCode: true,
@@ -554,6 +664,7 @@ export class PrismaInventoryRepository implements InventoryRepository, StockLedg
       balanceAfter: row.balanceAfter,
       reason: row.reason,
       orderNo: row.orderNo,
+      warehouseName: row.warehouse?.name ?? null,
       unitCost: row.unitCost,
       note: row.note,
       actorType: row.actorType,
@@ -561,15 +672,27 @@ export class PrismaInventoryRepository implements InventoryRepository, StockLedg
     }))
   }
 
-  async lowStock(supplierId: string, limit: number): Promise<LowStockLine[]> {
+  async lines(input: {
+    supplierId: string
+    onlyLow: boolean
+    limit: number
+    search?: string | undefined
+  }): Promise<InventoryLine[]> {
     /*
-     * Do shartein OR se: khatam ho chuka maal, aur wo jo dukan ki apni hadd par aa gaya.
-     * `reorderLevel = 0` wale sirf khatam hone par aate hain — us ka matlab "ishara band"
-     * hai, "hadd sifar" nahi (dekhen `domain/stock.ts`).
+     * "Kam" ki do shartein OR se: khatam ho chuka maal, aur wo jo dukan ki apni hadd par
+     * aa gaya. `reorderLevel = 0` wale sirf khatam hone par aate hain — us ka matlab
+     * "ishara band" hai, "hadd sifar" nahi (dekhen `domain/stock.ts`).
      *
      * Sirf wo maal jo bikne ke qabil hai: DRAFT aur ARCHIVED par "manga lein" likhna
      * bekar hai — us maal ka koi order aana hi nahi.
+     *
+     * 🔴 Tarteeb dono soorton mein CHAAL par hai, ginti par nahi. "2 bache hain" us maal
+     * par bhi sach hai jo saal mein ek dafa bikta hai; upar wo aana chahiye jo waqai
+     * chal raha hai — warna dukan wala list ek dafa dekh kar dobara nahi kholta.
      */
+    const term = input.search?.trim()
+    const like = term ? `%${term.toLowerCase()}%` : null
+
     const rows = await this.db.$queryRaw<
       {
         productId: string
@@ -606,11 +729,21 @@ export class PrismaInventoryRepository implements InventoryRepository, StockLedg
              ), 0) AS "soldLast30"
       FROM "ProductVariant" v
       JOIN "Product" p ON p."id" = v."productId"
-      WHERE p."supplierId" = ${supplierId}
+      WHERE p."supplierId" = ${input.supplierId}
         AND p."status" IN ('LIVE', 'OUT_OF_STOCK')
-        AND (v."stockQty" <= 0 OR (v."reorderLevel" > 0 AND v."stockQty" <= v."reorderLevel"))
+        AND (
+          ${input.onlyLow}::boolean = false
+          OR v."stockQty" <= 0
+          OR (v."reorderLevel" > 0 AND v."stockQty" <= v."reorderLevel")
+        )
+        AND (
+          ${like}::text IS NULL
+          OR lower(p."titleUr") LIKE ${like}
+          OR lower(p."titleEn") LIKE ${like}
+          OR lower(v."skuCode") LIKE ${like}
+        )
       ORDER BY "soldLast30" DESC, v."stockQty" ASC
-      LIMIT ${limit}
+      LIMIT ${input.limit}
     `
 
     return rows.map((row) => ({
@@ -636,6 +769,383 @@ export class PrismaInventoryRepository implements InventoryRepository, StockLedg
     })
   }
 
+  // ----------------------------------------------------------------- godown
+
+  async listWarehouses(supplierId: string): Promise<WarehouseView[]> {
+    const rows = await this.db.warehouse.findMany({
+      where: { supplierId },
+      orderBy: [{ isDefault: 'desc' }, { sortOrder: 'asc' }, { name: 'asc' }],
+      select: {
+        id: true,
+        name: true,
+        isDefault: true,
+        isActive: true,
+        stock: { select: { qty: true } },
+      },
+    })
+
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      isDefault: row.isDefault,
+      isActive: row.isActive,
+      pieces: row.stock.reduce((sum, line) => sum + line.qty, 0),
+    }))
+  }
+
+  async addWarehouse(input: { supplierId: string; name: string }): Promise<WarehouseView | null> {
+    const clash = await this.db.warehouse.findFirst({
+      where: { supplierId: input.supplierId, name: input.name },
+      select: { id: true },
+    })
+    if (clash) return null
+
+    const count = await this.db.warehouse.count({ where: { supplierId: input.supplierId } })
+
+    const created = await this.db.warehouse.create({
+      data: {
+        supplierId: input.supplierId,
+        name: input.name,
+        /*
+         * Pehla godown khud-ba-khud default ban jata hai. Us ke baghair ek aisi dukan
+         * ban sakti hai jis ka koi default na ho — aur us par har wo amal chup chaap
+         * girta hai jo godown nahi maangta (ginti durust karna, naya variant).
+         */
+        isDefault: count === 0,
+        sortOrder: count,
+      },
+      select: { id: true, name: true, isDefault: true, isActive: true },
+    })
+
+    return { ...created, pieces: 0 }
+  }
+
+  async renameWarehouse(input: {
+    supplierId: string
+    warehouseId: string
+    name: string
+  }): Promise<boolean> {
+    const clash = await this.db.warehouse.findFirst({
+      where: { supplierId: input.supplierId, name: input.name, NOT: { id: input.warehouseId } },
+      select: { id: true },
+    })
+    if (clash) return false
+
+    const { count } = await this.db.warehouse.updateMany({
+      where: { id: input.warehouseId, supplierId: input.supplierId },
+      data: { name: input.name },
+    })
+    return count > 0
+  }
+
+  async setWarehouseActive(input: {
+    supplierId: string
+    warehouseId: string
+    isActive: boolean
+  }): Promise<boolean> {
+    const { count } = await this.db.warehouse.updateMany({
+      where: {
+        id: input.warehouseId,
+        supplierId: input.supplierId,
+        // 🔴 Default godown band nahi hota — wajah port mein likhi hai
+        ...(input.isActive ? {} : { isDefault: false }),
+      },
+      data: { isActive: input.isActive },
+    })
+    return count > 0
+  }
+
+  async transfer(input: {
+    supplierId: string
+    variantId: string
+    fromWarehouseId: string
+    toWarehouseId: string
+    qty: number
+    actorId: string
+  }): Promise<boolean> {
+    if (input.qty <= 0 || input.fromWarehouseId === input.toWarehouseId) return false
+
+    return this.db.$transaction(async (tx) => {
+      const variant = await tx.productVariant.findFirst({
+        where: { id: input.variantId, product: { supplierId: input.supplierId } },
+        select: { id: true, productId: true, stockQty: true },
+      })
+      if (!variant) return false
+
+      const houses = await tx.warehouse.findMany({
+        where: {
+          supplierId: input.supplierId,
+          id: { in: [input.fromWarehouseId, input.toWarehouseId] },
+        },
+        select: { id: true },
+      })
+      if (houses.length !== 2) return false
+
+      /*
+       * 🔴 Kul ginti nahi badalti — magar us qatar ko CHHOOTE zaroor hain.
+       *
+       * `stockQty + 0` ek bekar update lagta hai, hai nahi: wo isi variant ki qatar par
+       * wohi taala lagata hai jo `reserve` lagata hai. Bina us ke transfer aur reserve
+       * ek hi lamhe chal sakte hain, aur godown ki ginti manfi mein ja sakti hai —
+       * halanke kul ginti theek nazar aati rehti. Aisi kharabi mahinon chhupi rehti hai.
+       */
+      await tx.productVariant.update({
+        where: { id: variant.id },
+        data: { stockQty: { increment: 0 } },
+      })
+
+      const moved = await this.applyWarehouseDelta(
+        tx,
+        variant.id,
+        input.fromWarehouseId,
+        -input.qty,
+      )
+      if (!moved) return false
+
+      await this.applyWarehouseDelta(tx, variant.id, input.toWarehouseId, input.qty)
+
+      /*
+       * DO qataren, ek nahi — dono ek hi transaction mein. Ek qatar likhne se har godown
+       * ki apni tareekh adhoori reh jati: godown B ka register kholne par us mein wo
+       * maal aata hua nazar hi na aata.
+       */
+      for (const part of [
+        { warehouseId: input.fromWarehouseId, delta: -input.qty, reason: 'TRANSFER_OUT' as const },
+        { warehouseId: input.toWarehouseId, delta: input.qty, reason: 'TRANSFER_IN' as const },
+      ]) {
+        await this.writeMove(tx, {
+          supplierId: input.supplierId,
+          productId: variant.productId,
+          variantId: variant.id,
+          warehouseId: part.warehouseId,
+          delta: part.delta,
+          // Kul ginti badli hi nahi — dono qataron par wohi number
+          balanceAfter: variant.stockQty,
+          reason: part.reason,
+          actorType: 'supplier',
+          actorId: input.actorId,
+        })
+      }
+
+      return true
+    })
+  }
+
+  async stockByWarehouse(
+    supplierId: string,
+    variantIds: readonly string[],
+  ): Promise<Map<string, WarehouseStockLine[]>> {
+    const result = new Map<string, WarehouseStockLine[]>()
+    if (variantIds.length === 0) return result
+
+    const rows = await this.db.variantStock.findMany({
+      where: {
+        variantId: { in: [...variantIds] },
+        // 🔴 supplierId shart mein — variant ki id URL mein nazar aati hai
+        warehouse: { supplierId },
+      },
+      select: {
+        variantId: true,
+        qty: true,
+        warehouse: { select: { id: true, name: true, isDefault: true, sortOrder: true } },
+      },
+      orderBy: [{ warehouse: { isDefault: 'desc' } }, { warehouse: { sortOrder: 'asc' } }],
+    })
+
+    for (const row of rows) {
+      const list = result.get(row.variantId) ?? []
+      list.push({
+        warehouseId: row.warehouse.id,
+        warehouseName: row.warehouse.name,
+        qty: row.qty,
+      })
+      result.set(row.variantId, list)
+    }
+
+    return result
+  }
+
+  // ------------------------------------------------------- godown ke helpers
+
+  /**
+   * Dukan ka default godown — na ho to bana kar deta hai.
+   *
+   * 🔴 Ye kabhi `null` nahi lautata. Bina is ke har amal ko do soorton mein sochna parta
+   * ("godown hai ya nahi"), aur wohi jagah hai jahan kuch arse baad ek soorat bhool jati
+   * hai aur ginti chup chaap gum ho jati hai. Migration har mojooda dukan ko ye de chuki
+   * hai; ye us NAYI dukan ke liye hai jo us ke baad bani.
+   */
+  private async defaultWarehouseId(
+    tx: Prisma.TransactionClient,
+    supplierId: string,
+  ): Promise<string> {
+    const existing = await tx.warehouse.findFirst({
+      where: { supplierId, isDefault: true },
+      select: { id: true },
+    })
+    if (existing) return existing.id
+
+    const created = await tx.warehouse.create({
+      data: { supplierId, name: 'دکان', isDefault: true, sortOrder: 0 },
+      select: { id: true },
+    })
+    return created.id
+  }
+
+  /** Chuna hua godown — magar sirf agar wo isi dukan ka aur chalu ho. Warna default. */
+  private async pickWarehouse(
+    tx: Prisma.TransactionClient,
+    supplierId: string,
+    wanted: string | undefined,
+  ): Promise<string> {
+    if (wanted) {
+      const found = await tx.warehouse.findFirst({
+        where: { id: wanted, supplierId, isActive: true },
+        select: { id: true },
+      })
+      if (found) return found.id
+    }
+    return this.defaultWarehouseId(tx, supplierId)
+  }
+
+  /**
+   * Ek godown ki ginti barhana ya ghatana.
+   *
+   * Ghatate waqt shart (`qty >= …`) WHERE mein hai — wohi soch jo `reserve` par hai.
+   * Qatar mojood na ho to ban jati hai (sirf barhane par).
+   *
+   * @returns false agar us godown mein itna maal hai hi nahi
+   */
+  private async applyWarehouseDelta(
+    tx: Prisma.TransactionClient,
+    variantId: string,
+    warehouseId: string,
+    delta: number,
+  ): Promise<boolean> {
+    if (delta === 0) return true
+
+    if (delta > 0) {
+      await tx.variantStock.upsert({
+        where: { variantId_warehouseId: { variantId, warehouseId } },
+        create: { variantId, warehouseId, qty: delta },
+        update: { qty: { increment: delta } },
+      })
+      return true
+    }
+
+    const { count } = await tx.variantStock.updateMany({
+      where: { variantId, warehouseId, qty: { gte: -delta } },
+      data: { qty: { increment: delta } },
+    })
+    return count > 0
+  }
+
+  /**
+   * Itna maal godownon se nikaalna — default pehle, phir jis mein sab se zyada ho.
+   *
+   * Ek line kai godownon se poori ho sakti hai (das than: chhay dukan se, chaar store
+   * se) — dukan par wo waqai hota hai, is liye register mein bhi waise hi likha jata hai.
+   *
+   * 🔴 Ye sirf us taale ke saye mein bulaya jata hai jo `ProductVariant` ki qatar par
+   * lag chuka hota hai. Us ke baghair do reserve ek saath chal kar ek hi godown se do
+   * dafa maal nikaal sakte hain.
+   */
+  private async takeFromWarehouses(
+    tx: Prisma.TransactionClient,
+    supplierId: string,
+    variantId: string,
+    qty: number,
+  ): Promise<{ warehouseId: string; qty: number }[]> {
+    const rows = await tx.variantStock.findMany({
+      where: { variantId, qty: { gt: 0 }, warehouse: { supplierId } },
+      select: { warehouseId: true, qty: true, warehouse: { select: { isDefault: true } } },
+      orderBy: [{ warehouse: { isDefault: 'desc' } }, { qty: 'desc' }],
+    })
+
+    const taken: { warehouseId: string; qty: number }[] = []
+    let left = qty
+
+    for (const row of rows) {
+      if (left <= 0) break
+      const take = Math.min(row.qty, left)
+      await this.applyWarehouseDelta(tx, variantId, row.warehouseId, -take)
+      taken.push({ warehouseId: row.warehouseId, qty: take })
+      left -= take
+    }
+
+    /*
+     * Godownon ki ginti kul ginti se kam nikli — ye ho nahi sakta tha, magar agar ho
+     * jaye to baqi maal default godown par likhte hain, chhorte nahi.
+     *
+     * Wajah: kul ginti (`stockQty`) upar guarded update se ghat CHUKI hai. Yahan chup
+     * ho jane ka matlab hota ke register aur ginti alag ho gaye — aur jis register par
+     * bharosa na ho wo hone aur na hone mein barabar hai. Ye qatar wo farq SAAMNE le
+     * aati hai (godown ki ginti manfi ho kar), chhupati nahi.
+     */
+    if (left > 0) {
+      const fallback = await this.defaultWarehouseId(tx, supplierId)
+      await tx.variantStock.upsert({
+        where: { variantId_warehouseId: { variantId, warehouseId: fallback } },
+        create: { variantId, warehouseId: fallback, qty: -left },
+        update: { qty: { decrement: left } },
+      })
+      taken.push({ warehouseId: fallback, qty: left })
+    }
+
+    return taken
+  }
+
+  /**
+   * Ye maal kis kis godown se nikla tha — register se.
+   *
+   * Order par ye kahin mehfooz nahi; register mein hai. Ye us register ka apna phal hai:
+   * bina is ke wapas aya maal sab default godown mein girta, aur do char mahine mein
+   * store ka maal aahista aahista dukan mein muntaqil ho jata — kaghaz par.
+   */
+  private async reservedPlaces(
+    tx: Prisma.TransactionClient,
+    variantId: string,
+    orderNo: string | undefined,
+    qty: number,
+  ): Promise<{ warehouseId: string; qty: number }[]> {
+    if (orderNo) {
+      const rows = await tx.stockMove.findMany({
+        where: { variantId, orderNo, reason: 'ORDER_RESERVED', warehouseId: { not: null } },
+        select: { warehouseId: true, delta: true },
+        orderBy: { createdAt: 'asc' },
+      })
+
+      const places: { warehouseId: string; qty: number }[] = []
+      let left = qty
+
+      for (const row of rows) {
+        if (left <= 0) break
+        const take = Math.min(-row.delta, left)
+        if (take > 0) {
+          places.push({ warehouseId: row.warehouseId as string, qty: take })
+          left -= take
+        }
+      }
+
+      if (left > 0) {
+        places.push({ warehouseId: await this.defaultWarehouseId(tx, await this.supplierOf(tx, variantId)), qty: left })
+      }
+      if (places.length > 0) return places
+    }
+
+    // Purane order (register se pehle ke) — koi qatar nahi milti, to default godown
+    const supplierId = await this.supplierOf(tx, variantId)
+    return [{ warehouseId: await this.defaultWarehouseId(tx, supplierId), qty }]
+  }
+
+  private async supplierOf(tx: Prisma.TransactionClient, variantId: string): Promise<string> {
+    const row = await tx.productVariant.findUniqueOrThrow({
+      where: { id: variantId },
+      select: { product: { select: { supplierId: true } } },
+    })
+    return row.product.supplierId
+  }
+
   /**
    * Register ki ek qatar — hamesha usi transaction mein jis ne ginti badli.
    *
@@ -651,6 +1161,7 @@ export class PrismaInventoryRepository implements InventoryRepository, StockLedg
         supplierId: move.supplierId,
         productId: move.productId,
         variantId: move.variantId,
+        warehouseId: move.warehouseId ?? null,
         delta: move.delta,
         balanceAfter: move.balanceAfter,
         reason: move.reason,

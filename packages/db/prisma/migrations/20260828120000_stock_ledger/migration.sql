@@ -14,7 +14,10 @@ CREATE TYPE "StockMoveReason" AS ENUM (
   'ORDER_RELEASED',
   'RETURN_TO_SHELF',
   'MANUAL_FIX',
-  'DAMAGE'
+  'DAMAGE',
+  -- Ek godown se doosre — do qataren banti hain, dono ek hi transaction mein
+  'TRANSFER_OUT',
+  'TRANSFER_IN'
 );
 
 ALTER TABLE "ProductVariant" ADD COLUMN "reorderLevel" INTEGER NOT NULL DEFAULT 0;

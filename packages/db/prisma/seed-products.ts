@@ -116,6 +116,32 @@ async function main(): Promise<void> {
     process.exit(1)
   }
 
+  /*
+   * Har dukan ka default godown.
+   *
+   * 🔴 Ye lazmi hai, sajawat nahi: ginti do jagah likhi jati hai (`stockQty` aur
+   * `VariantStock`), aur dono ek doosre se mel khani chahiyen. Sirf `stockQty` bhar dene
+   * se `reserve` ko maal kisi godown mein milta hi nahi aur wo default godown ki ginti
+   * manfi kar deta — kul ginti theek nazar aati rehti aur kharabi chhupi rehti.
+   */
+  const warehouses = new Map<string, string>()
+  for (const supplier of suppliers) {
+    const existing = await prisma.warehouse.findFirst({
+      where: { supplierId: supplier.id, isDefault: true },
+      select: { id: true },
+    })
+    warehouses.set(
+      supplier.id,
+      existing?.id ??
+        (
+          await prisma.warehouse.create({
+            data: { supplierId: supplier.id, name: 'دکان', isDefault: true, sortOrder: 0 },
+            select: { id: true },
+          })
+        ).id,
+    )
+  }
+
   let made = 0
   let skipped = 0
   let index = 0
@@ -204,6 +230,28 @@ async function main(): Promise<void> {
               reorderLevel: 6,
               avgCost: Math.round((supplierPrice * 0.75) / 10) * 10,
             },
+          })
+        }
+
+        /*
+         * Maal ko us ki jagah par rakhna — variants ban chukne ke BAAD.
+         *
+         * `createMany` upar repository se nahi guzarta (seed jaan boojh kar seedha DB par
+         * likhti hai, taake wo tez aur deterministic rahe), is liye godown ki qataren
+         * yahan khud banti hain. Ginti wahi jo abhi variants mein daali gayi.
+         */
+        const warehouseId = warehouses.get(supplier.id)
+        if (warehouseId) {
+          const placed = await prisma.productVariant.findMany({
+            where: { productId: product.id },
+            select: { id: true, stockQty: true },
+          })
+          await prisma.variantStock.createMany({
+            data: placed.map((variant) => ({
+              variantId: variant.id,
+              warehouseId,
+              qty: variant.stockQty,
+            })),
           })
         }
 

@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import type { WarehouseStockLine, WarehouseView } from '@oyebazar/core'
 
 /**
  * Maal ki teen harkatein — ek hi jagah.
@@ -20,14 +21,25 @@ import { useState } from 'react'
  *
  * Ek hi khaana teenon ke liye rakhne se register mein sab "ginti badli" ban jata, aur
  * "is mahine kitna maal aaya" ya "kitna zaya hua" ka jawab kabhi nikaala hi na ja sakta.
+ *
+ * 🔴 Godown ka chunao SIRF tab nazar aata hai jab dukan ke paas ek se zyada ho. Aksar
+ * dukanon ka ek hi hota hai, aur un ke saamne ek aisa khana rakhna jis mein hamesha ek
+ * hi jawab ho — wo har dafa ek fazool qadam hai. Wahi soch chaaron jagah chalti hai:
+ * naya maal, zaya hona, muntaqili (jo ek godown par mojood hi nahi hoti), aur tafseel.
  */
 export function SupplierStockActions({
   variantId,
   reorderLevel,
+  warehouses,
+  places,
   labels,
 }: {
   variantId: string
   reorderLevel: number
+  /** Dukan ke chalu godown — ek se kam ho to godown ka koi khana nahi dikhta */
+  warehouses: readonly WarehouseView[]
+  /** Is cheez ka maal kis godown mein kitna — muntaqili ka pehla khana isi se bharta hai */
+  places: readonly WarehouseStockLine[]
   labels: {
     stockIn: string
     stockInQty: string
@@ -38,12 +50,16 @@ export function SupplierStockActions({
     writeOffReason: string
     reorderLabel: string
     reorderOff: string
+    transfer: string
+    transferFrom: string
+    transferTo: string
+    warehouse: string
     save: string
     saving: string
   }
 }) {
   const router = useRouter()
-  const [open, setOpen] = useState<'in' | 'off' | null>(null)
+  const [open, setOpen] = useState<'in' | 'off' | 'move' | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -57,6 +73,19 @@ export function SupplierStockActions({
 
   // Hadd
   const [level, setLevel] = useState(String(reorderLevel))
+
+  /*
+   * Godown ka chunao. Ek hi godown ho to ye poora hissa ghayab rehta hai aur server
+   * khud default par daal deta hai — yani saada dukan ke liye kuch badla hi nahi.
+   */
+  const many = warehouses.length > 1
+  const held = places.filter((place) => place.qty > 0)
+  const [house, setHouse] = useState(warehouses[0]?.id ?? '')
+  const [fromHouse, setFromHouse] = useState(held[0]?.warehouseId ?? '')
+  const [toHouse, setToHouse] = useState(
+    warehouses.find((row) => row.id !== held[0]?.warehouseId)?.id ?? '',
+  )
+  const [moveQty, setMoveQty] = useState('')
 
   async function send(url: string, method: 'POST' | 'PATCH', body: unknown): Promise<boolean> {
     setPending(true)
@@ -92,6 +121,7 @@ export function SupplierStockActions({
       variantId,
       qty,
       ...(cost !== undefined && Number.isInteger(cost) && cost >= 0 ? { unitCost: cost } : {}),
+      ...(many && house ? { warehouseId: house } : {}),
     })
     if (ok) {
       setInQty('')
@@ -108,10 +138,27 @@ export function SupplierStockActions({
       variantId,
       qty,
       note: offNote.trim(),
+      ...(many && house ? { warehouseId: house } : {}),
     })
     if (ok) {
       setOffQty('')
       setOffNote('')
+      setOpen(null)
+    }
+  }
+
+  async function move(): Promise<void> {
+    const qty = Number(moveQty)
+    if (!Number.isInteger(qty) || qty <= 0 || !fromHouse || !toHouse || fromHouse === toHouse) return
+
+    const ok = await send('/api/v1/supplier/stock/transfer', 'POST', {
+      variantId,
+      fromWarehouseId: fromHouse,
+      toWarehouseId: toHouse,
+      qty,
+    })
+    if (ok) {
+      setMoveQty('')
       setOpen(null)
     }
   }
@@ -146,6 +193,17 @@ export function SupplierStockActions({
         >
           {labels.writeOff}
         </button>
+
+        {/* Muntaqili ek godown wali dukan par hoti hi nahi — is liye button bhi nahi */}
+        {many && held.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setOpen(open === 'move' ? null : 'move')}
+            className="inline-flex min-h-tap items-center rounded-pill px-3 text-[0.76rem] font-semibold text-ink-faint transition hover:bg-paper-sunken hover:text-ink"
+          >
+            {labels.transfer}
+          </button>
+        )}
 
         <span className="flex items-center gap-1.5 text-[0.74rem] text-ink-faint">
           {labels.reorderLabel}
@@ -198,6 +256,22 @@ export function SupplierStockActions({
               />
             </Field>
 
+            {many && (
+              <Field label={labels.warehouse}>
+                <select
+                  value={house}
+                  onChange={(event) => setHouse(event.target.value)}
+                  className="min-h-tap rounded-card bg-paper px-3 text-[0.85rem]"
+                >
+                  {warehouses.map((row) => (
+                    <option key={row.id} value={row.id}>
+                      {row.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
+
             <button
               type="button"
               disabled={pending || Number(inQty) <= 0}
@@ -238,11 +312,86 @@ export function SupplierStockActions({
             />
           </Field>
 
+          {many && (
+            <Field label={labels.warehouse}>
+              <select
+                value={house}
+                onChange={(event) => setHouse(event.target.value)}
+                className="min-h-tap rounded-card bg-paper px-3 text-[0.85rem]"
+              >
+                {warehouses.map((row) => (
+                  <option key={row.id} value={row.id}>
+                    {row.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
+
           <button
             type="button"
             disabled={pending || Number(offQty) <= 0 || offNote.trim().length < 3}
             onClick={() => void writeOff()}
             className="inline-flex min-h-tap items-center rounded-pill bg-red-600 px-5 text-[0.8rem] font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+          >
+            {pending ? labels.saving : labels.save}
+          </button>
+        </div>
+      )}
+
+      {open === 'move' && (
+        <div className="flex flex-wrap items-end gap-2 rounded-card bg-paper-sunken p-3">
+          {/*
+            "Kahan se" wale khane mein sirf wo godown jin mein maal WAQAI para hai. Khali
+            godown se muntaqili ka koi matlab nahi, aur usay list mein rakhne ka anjaam
+            sirf ek nakaam koshish hai.
+          */}
+          <Field label={labels.transferFrom}>
+            <select
+              value={fromHouse}
+              onChange={(event) => setFromHouse(event.target.value)}
+              className="min-h-tap rounded-card bg-paper px-3 text-[0.85rem]"
+            >
+              {held.map((place) => (
+                <option key={place.warehouseId} value={place.warehouseId}>
+                  {place.warehouseName} ({place.qty})
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label={labels.transferTo}>
+            <select
+              value={toHouse}
+              onChange={(event) => setToHouse(event.target.value)}
+              className="min-h-tap rounded-card bg-paper px-3 text-[0.85rem]"
+            >
+              {warehouses
+                .filter((row) => row.id !== fromHouse)
+                .map((row) => (
+                  <option key={row.id} value={row.id}>
+                    {row.name}
+                  </option>
+                ))}
+            </select>
+          </Field>
+
+          <Field label={labels.stockInQty}>
+            <input
+              type="number"
+              min={1}
+              dir="ltr"
+              value={moveQty}
+              onChange={(event) => setMoveQty(event.target.value)}
+              className="numeric min-h-tap w-20 rounded-card bg-paper px-3 text-center font-bold"
+            />
+          </Field>
+
+          <button
+            type="button"
+            disabled={pending || Number(moveQty) <= 0 || !fromHouse || !toHouse}
+            onClick={() => void move()}
+            className="inline-flex min-h-tap items-center rounded-pill bg-coal-900 px-5 text-[0.8rem] font-semibold text-white disabled:opacity-50"
           >
             {pending ? labels.saving : labels.save}
           </button>

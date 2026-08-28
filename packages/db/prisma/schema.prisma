@@ -66,6 +66,7 @@ model Supplier {
   feeLedger    FeeLedger[]
   payouts      ResellerPayout[]
   stockMoves   StockMove[]
+  warehouses   Warehouse[]
 
   @@index([status, city])
   @@index([listedOnBazaar, status])
@@ -188,10 +189,71 @@ model ProductVariant {
   product Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
   media   ProductMedia[]
   moves   StockMove[]
+  stock   VariantStock[]
 
   @@index([productId])
   // "Khatam hone wala maal" ki list — dukan ka safha isi par khara hai
   @@index([stockQty])
+}
+
+/**
+ * Godown — dukan ki jagah jahan maal para hai.
+ * 🔴 Har dukan ka kam se kam EK godown hota hai (`isDefault`), chahe us ne kabhi is
+ * safhe ko khola bhi na ho. Ye "khali chhorne" wale raste se behtar hai: bina default
+ * ke har query ko do soorton mein sochna parta ("godown hai ya nahi"), aur wohi jagah
+ * hai jahan kuch arse baad ek soorat bhool jati hai aur ginti gum ho jati hai.
+ * Aam Pakistani thok dukan par do hi hote hain: saamne wali dukan, aur peechhe ka
+ * store. Is liye yahan koi darakht nahi (godown ke andar godown), sirf ek saadi list —
+ * aur us se aage jane ki zaroorat us din dekhi jayegi jis din waqai koi maange.
+ */
+model Warehouse {
+  id         String  @id @default(cuid())
+  supplierId String
+  name       String
+  /// Bina bataye maal yahin se nikalta hai — har dukan par theek EK
+  isDefault  Boolean @default(false)
+  /// Band godown mein naya maal nahi daala ja sakta; jo para hai wo phir bhi bikta hai
+  isActive   Boolean @default(true)
+  sortOrder  Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  supplier Supplier       @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  stock    VariantStock[]
+  moves    StockMove[]
+
+  /// Ek dukan par ek naam ek hi dafa — warna "Store" naam ke do godown ban jate hain
+  @@unique([supplierId, name])
+  @@index([supplierId, sortOrder])
+}
+
+/**
+ * Kis godown mein kitna — ginti ka ASAL sach.
+ * 🔴 `ProductVariant.stockQty` ab in qataron ka JAMA hai, aur wo usi transaction mein
+ * likha jata hai jis mein ye qatar badalti hai. Wo khaana mita kar sirf yahan se jama
+ * lagana zyada "saaf" lagta hai — magar wo bechne wale raste ko tor deta:
+ * · `reserve` ki shart (`stockQty >= qty`) ek hi row par ek hi atomic update hai; wohi
+ * cheez do resellers ko ek hi aakhri piece bechne se rokti hai. SUM par wo shart
+ * lagana mumkin nahi — aur us ke baghair stock manfi mein chala jata hai.
+ * · reseller ke catalogue ki har chhanni (`inStockOnly`), listing ka LIVE/OUT_OF_STOCK,
+ * aur "kitna bacha hai" — sab us ek khaane par khare hain.
+ * Is liye do jagah likha jata hai, magar KABHI alag nahi ho sakta: dono ek hi transaction
+ * mein badalte hain, aur register (`StockMove`) mein us ki qatar bhi wahin banti hai.
+ */
+model VariantStock {
+  id          String @id @default(cuid())
+  variantId   String
+  warehouseId String
+  qty         Int    @default(0)
+
+  updatedAt DateTime @updatedAt
+
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  warehouse Warehouse      @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  /// Ek cheez, ek godown, ek qatar
+  @@unique([variantId, warehouseId])
+  @@index([warehouseId])
 }
 
 /**
@@ -231,13 +293,23 @@ model StockMove {
   unitCost Int?
   note     String?
 
+  /**
+   * Kis godown se / mein.
+   * Purani qataron par khali hai (register godown se pehle bana tha) — aur wo khali
+   * jagah jaan boojh kar khali rehti hai. Unhen default godown ka naam de dena aisa
+   * dawa hota jo hum jante hi nahi; register ka poora faida usi baat mein hai ke us mein
+   * likha hua sirf wo ho jo waqai hua.
+   */
+  warehouseId String?
+
   /// supplier | ops | system — wohi lafz jo `OrderEvent.actorType` mein chalte hain
   actorType String
   actorId   String?
   createdAt DateTime @default(now())
 
-  supplier Supplier       @relation(fields: [supplierId], references: [id])
-  variant  ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  supplier  Supplier       @relation(fields: [supplierId], references: [id])
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  warehouse Warehouse?     @relation(fields: [warehouseId], references: [id])
 
   // Dukan ka register — naya sab se upar
   @@index([supplierId, createdAt])
@@ -263,6 +335,15 @@ enum StockMoveReason {
   MANUAL_FIX
   /// Toot gaya / kharab ho gaya / gum ho gaya
   DAMAGE
+
+  /// Ek godown se nikla
+  ///
+  /// 🔴 Transfer par DO qataren banti hain, ek nahi — dono ek hi transaction mein.
+  /// Ek qatar ("godown A se godown B") likhne se har godown ki apni tareekh adhoori reh
+  /// jati: godown B ka register kholne par us mein wo maal aata hua nazar hi na aata.
+  TRANSFER_OUT
+  /// Doosre godown mein aya
+  TRANSFER_IN
 }
 
 /// 🔴 LIVE maal ka rate badalne ki darkhwast — faisla ops ka hai, dukan wale ka nahi.

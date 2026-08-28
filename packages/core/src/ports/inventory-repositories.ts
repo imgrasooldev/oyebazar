@@ -144,6 +144,8 @@ export interface StockMoveView {
   readonly balanceAfter: number
   readonly reason: StockMoveReason
   readonly orderNo: string | null
+  /** Kis godown se / mein — purani qataron par khali (register godown se pehle bana tha) */
+  readonly warehouseName: string | null
   readonly unitCost: number | null
   readonly note: string | null
   readonly actorType: string
@@ -158,9 +160,18 @@ export type StockMoveReason =
   | 'RETURN_TO_SHELF'
   | 'MANUAL_FIX'
   | 'DAMAGE'
+  | 'TRANSFER_OUT'
+  | 'TRANSFER_IN'
 
-/** Khatam hone wala maal — dukan ki apni hadd par. */
-export interface LowStockLine {
+/**
+ * Maal ki ek qatar — ginti, hadd, lagat, aur chaal.
+ *
+ * 🔴 Ek hi shakl khatam hone wale maal ke liye bhi hai aur poore maal ke liye bhi. Do
+ * alag shaklen banane se do alag safhe bante, aur dukan wale ko do jagah do tarah ki
+ * qataren parhni partin — halanke sawal dono jagah wohi ek hai: "is cheez ka kya haal
+ * hai aur mujhe kya karna hai".
+ */
+export interface InventoryLine {
   readonly productId: string
   readonly variantId: string
   readonly slug: string
@@ -204,6 +215,8 @@ export interface StockLedgerRepository {
     qty: number
     unitCost?: number | undefined
     note?: string | undefined
+    /** Na den to dukan ka default godown — har dukan par theek ek hota hai */
+    warehouseId?: string | undefined
     actorId: string
   }): Promise<number | null>
 
@@ -222,6 +235,7 @@ export interface StockLedgerRepository {
     variantId: string
     qty: number
     note: string
+    warehouseId?: string | undefined
     actorId: string
   }): Promise<number | null>
 
@@ -246,9 +260,99 @@ export interface StockLedgerRepository {
     limit: number
   }): Promise<StockMoveView[]>
 
-  /** Khatam aur khatam hone wala maal — dukan ke apne safhe ke liye. */
-  lowStock(supplierId: string, limit: number): Promise<LowStockLine[]>
+  /**
+   * Maal ki qataren — poora maal, ya sirf wo jo khatam ho raha hai.
+   *
+   * 🔴 `onlyLow: false` wala rasta baad mein daala gaya aur wo ek asli kami thi: pehle
+   * naya maal sirf UN cheezon mein daala ja sakta tha jo khatam ho rahi hon. Yani jis
+   * din dukan wala das than utarta (jab maal khatam NAHI hua hota) us din us ke paas
+   * koi rasta hi nahi hota — aur wohi din is poore register ka sab se aam din hai.
+   */
+  lines(input: {
+    supplierId: string
+    onlyLow: boolean
+    limit: number
+    /** Naam ya SKU se chhanni — bari dukan par 300 qataron mein cheez dhoondna. */
+    search?: string | undefined
+  }): Promise<InventoryLine[]>
 
   /** Poori dukan ka maal — qeemat lagane ke liye. */
   valueLines(supplierId: string): Promise<StockValueLine[]>
+}
+
+// ------------------------------------------------------------------- godown
+
+export interface WarehouseView {
+  readonly id: string
+  readonly name: string
+  /** Bina bataye maal yahin se nikalta hai — har dukan par theek ek */
+  readonly isDefault: boolean
+  /** Band godown mein naya maal nahi aata; jo para hai wo phir bhi bikta hai */
+  readonly isActive: boolean
+  /** Is godown mein kul kitne piece pare hain */
+  readonly pieces: number
+}
+
+/** Ek cheez, ek godown, ek ginti. */
+export interface WarehouseStockLine {
+  readonly warehouseId: string
+  readonly warehouseName: string
+  readonly qty: number
+}
+
+export interface WarehouseRepository {
+  listWarehouses(supplierId: string): Promise<WarehouseView[]>
+
+  /**
+   * Naya godown.
+   *
+   * @returns null agar isi naam ka godown pehle se hai — "Store" naam ke do godown
+   *   banne se ginti do jagah bat jati hai aur dukan wale ko khud pata nahi chalta ke
+   *   maal kis mein daala tha.
+   */
+  addWarehouse(input: { supplierId: string; name: string }): Promise<WarehouseView | null>
+
+  renameWarehouse(input: {
+    supplierId: string
+    warehouseId: string
+    name: string
+  }): Promise<boolean>
+
+  /**
+   * Godown band / chalu.
+   *
+   * 🔴 Default godown band nahi hota. Wo wahid jagah hai jahan bina bataye maal jata
+   * hai; usay band karne par woh amal chup chaap kahin nahi girta — is liye ye rasta
+   * hi band hai.
+   */
+  setWarehouseActive(input: {
+    supplierId: string
+    warehouseId: string
+    isActive: boolean
+  }): Promise<boolean>
+
+  /**
+   * Maal ek godown se doosre.
+   *
+   * 🔴 Kul ginti (`ProductVariant.stockQty`) BILKUL nahi badalti — maal dukan hi mein
+   * rehta hai, sirf jagah badalti hai. Isi liye ye `stockIn` + `writeOff` ka jorha nahi
+   * ho sakta: wo do amal kul ginti ko pehle barha kar phir ghata dete, aur us beech
+   * mein aya hua order ghalat jawab paata.
+   *
+   * @returns false agar itna maal us godown mein hai hi nahi
+   */
+  transfer(input: {
+    supplierId: string
+    variantId: string
+    fromWarehouseId: string
+    toWarehouseId: string
+    qty: number
+    actorId: string
+  }): Promise<boolean>
+
+  /** Ek cheez kis kis godown mein kitni — safhe par tafseel ke liye. */
+  stockByWarehouse(
+    supplierId: string,
+    variantIds: readonly string[],
+  ): Promise<Map<string, WarehouseStockLine[]>>
 }

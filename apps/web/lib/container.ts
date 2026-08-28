@@ -187,7 +187,13 @@ function build(): Container {
     ),
     payouts,
     categoryAdmin: new CategoryAdminService(repositories.categoryAdmin, analytics, logger),
-    inventory: new InventoryService(repositories.inventory, analytics, logger),
+    inventory: new InventoryService(
+      repositories.inventory,
+      // Wohi Prisma class dono port poore karti hai — port alag hain, adapter ek
+      repositories.inventory,
+      analytics,
+      logger,
+    ),
     orders: new OrderService(
       repositories.orders,
       repositories.products,
