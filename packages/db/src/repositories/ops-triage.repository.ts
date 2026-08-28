@@ -38,8 +38,8 @@ export class PrismaOpsTriageRepository implements OpsTriageRepository {
         disputedAt: true,
         createdAt: true,
         order: { select: { orderNo: true } },
-        supplier: { select: { businessName: true } },
-        reseller: { select: { name: true } },
+        supplier: { select: { businessName: true, phone: true } },
+        reseller: { select: { name: true, whatsappPhone: true } },
       },
     })
 
@@ -48,7 +48,9 @@ export class PrismaOpsTriageRepository implements OpsTriageRepository {
       orderNo: row.order.orderNo,
       amount: row.amount,
       supplierName: row.supplier.businessName,
+      supplierPhone: row.supplier.phone,
       resellerName: row.reseller.name,
+      resellerPhone: row.reseller.whatsappPhone,
       note: row.disputeNote,
       // `disputedAt` DISPUTED par hamesha bhara hota hai; createdAt sirf ek mehfooz jawab
       disputedAt: row.disputedAt ?? row.createdAt,
@@ -76,7 +78,7 @@ export class PrismaOpsTriageRepository implements OpsTriageRepository {
         termDays: true,
         createdAt: true,
         order: { select: { orderNo: true } },
-        supplier: { select: { businessName: true } },
+        supplier: { select: { businessName: true, phone: true } },
         reseller: { select: { name: true } },
       },
     })
@@ -93,6 +95,7 @@ export class PrismaOpsTriageRepository implements OpsTriageRepository {
         orderNo: row.order.orderNo,
         amount: row.amount,
         supplierName: row.supplier.businessName,
+        supplierPhone: row.supplier.phone,
         resellerName: row.reseller.name,
         daysLate,
         since: new Date(due),
@@ -123,7 +126,7 @@ export class PrismaOpsTriageRepository implements OpsTriageRepository {
         orderNo: true,
         sentToSupplierAt: true,
         createdAt: true,
-        supplier: { select: { businessName: true } },
+        supplier: { select: { businessName: true, phone: true } },
         reseller: { select: { name: true } },
       },
     })
@@ -134,6 +137,7 @@ export class PrismaOpsTriageRepository implements OpsTriageRepository {
         orderId: row.id,
         orderNo: row.orderNo,
         supplierName: row.supplier.businessName,
+        supplierPhone: row.supplier.phone,
         resellerName: row.reseller.name,
         hoursWaiting: Math.floor((now.getTime() - since.getTime()) / MS_PER_HOUR),
         since,

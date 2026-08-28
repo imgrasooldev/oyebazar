@@ -55,6 +55,27 @@ export type FlagSubject =
   | 'reseller'
   | 'variant'
 
+/**
+ * Wo EK cheez jo is nishan par amal karne ke liye chahiye.
+ *
+ * 🔴 Ye "achhi baat" nahi, is poore safhe ki jaan hai. Aadha masla nishan lagane ka tha;
+ * doosra aadha ye ke nishan dekhne ke baad banda kya KARE. "BJ-1001, 83 ghante se jawab
+ * nahi" parh kar ops ka agla qadam dukan ko phone karna hai — aur wo number us waqt us
+ * ke saamne hona chahiye, teen safhe door nahi. Teen safhe door hone ka matlab amal ka
+ * na hona hai, kyunke ops ke paas bees aur qataren pari hoti hain.
+ *
+ * Sirf wahan jahan agla qadam WAQAI phone karna hai. Maal ke nishanon par phone ka koi
+ * kaam nahi (wahan safha kholna hai), aur har qatar par ek button chipka dena us button
+ * ko bemani bana deta hai.
+ */
+export interface FlagAction {
+  readonly kind: 'call'
+  /** E.164 without plus — wohi shakl jo poore nizam mein hai */
+  readonly phone: string
+  /** Kis ko — "dukan" ya "reseller" */
+  readonly who: 'supplier' | 'reseller'
+}
+
 export interface OpsFlag {
   readonly kind: FlagKind
   readonly severity: FlagSeverity
@@ -75,6 +96,8 @@ export interface OpsFlag {
    * yani jo cheez sab se zyada nazar-andaz hui hai wo sab se zyada nazar-andaz hoti rehti.
    */
   readonly since: Date
+  /** Agla qadam — sirf wahan jahan wo phone karna hai */
+  readonly action?: FlagAction | undefined
 }
 
 // ------------------------------------------------------------------ haddein

@@ -97,6 +97,14 @@ export class OpsTriageService {
         context: `${row.resellerName} · ${row.supplierName}`,
         values: { amount: row.amount, note: row.note ?? '' },
         since: row.disputedAt,
+        /*
+         * Jhagre mein DUKAN ka number — reseller ka nahi.
+         *
+         * Reseller apni baat pehle hi likh chuki hai (usi ne jhagra khola hai). Jo baat
+         * hamare paas nahi hai wo dukan ki taraf ka hai: paisa bheja ya nahi, aur TID
+         * kya hai. Faisla usi ek jawab par rukka hua hota hai.
+         */
+        action: { kind: 'call', phone: row.supplierPhone, who: 'supplier' },
       })
     }
 
@@ -113,6 +121,8 @@ export class OpsTriageService {
         context: `${row.resellerName} · ${row.supplierName}`,
         values: { amount: row.amount, days: row.daysLate },
         since: row.since,
+        // Paisa dukan ke paas hai — chase bhi usi ko karna hai
+        action: { kind: 'call', phone: row.supplierPhone, who: 'supplier' },
       })
     }
 
@@ -129,6 +139,7 @@ export class OpsTriageService {
         context: `${row.supplierName} · ${row.resellerName}`,
         values: { hours: row.hoursWaiting },
         since: row.since,
+        action: { kind: 'call', phone: row.supplierPhone, who: 'supplier' },
       })
     }
 

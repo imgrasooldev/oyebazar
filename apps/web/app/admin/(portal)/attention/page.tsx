@@ -1,10 +1,10 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import type { Route } from 'next'
-import { formatPkr } from '@oyebazar/shared'
+import { formatPhoneLocal, formatPkr, whatsappLink } from '@oyebazar/shared'
 import type { OpsFlag } from '@oyebazar/core'
 import { StatTile } from '@/components/dash-kit'
-import { ShieldIcon } from '@/components/icons'
+import { ShieldIcon, WhatsAppIcon } from '@/components/icons'
 import { requireOpsUser } from '@/lib/api/admin-session'
 import { container } from '@/lib/container'
 
@@ -22,9 +22,13 @@ export const dynamic = 'force-dynamic'
  * those are exactly the expensive ones: the disputed payout, the price with a missing
  * zero, the order a wholesaler has ignored for three days.
  *
- * 🔴 Nothing here acts on its own. Every row is a LINK to the page where the work
- * actually happens. A screen that both accuses and executes is the one people stop
- * trusting — and ops needs the surrounding context before deciding anyway.
+ * 🔴 Nothing here decides anything. Every row links to the page where the work actually
+ * happens — a screen that both accuses and executes is the one people stop trusting, and
+ * ops needs the surrounding context before deciding anyway.
+ *
+ * 🔴 But where the next step is simply "phone the wholesaler", the number is ON the row.
+ * That is the difference between a page that reports and a page that gets used: ops has
+ * twenty other rows waiting, and a number three pages away is a call that never happens.
  *
  * Angrezi mein — baqi admin ki tarah (dekhen (portal)/layout.tsx).
  */
@@ -90,39 +94,62 @@ export default async function AttentionPage() {
 function FlagRow({ flag }: { flag: OpsFlag }) {
   const tone = TONES[flag.severity]
 
+  /*
+   * 🔴 Qatar ab POORI ek link nahi hai — aur ye tabdeeli soch kar ki gayi.
+   *
+   * Pehle wo thi, aur us mein "call" wala button andar nahi rakha ja sakta tha (link ke
+   * andar link). Us se ye safha aadha reh jata: nishan dikhta, aur us par kaam karne ke
+   * liye teen safhe door jana parta — jab ke ops ke paas bees aur qataren pari hoti hain
+   * aur wo teesra safha khulta hi nahi.
+   */
   return (
-    <li>
-      <Link
-        href={hrefFor(flag)}
-        className="card flex flex-wrap items-start gap-3 p-4 transition hover:shadow-lift"
-      >
+    <li className="card flex flex-wrap items-start gap-3 p-4">
+      {/*
+        Rang ki patti — na ke ek aur badge. Qatar par pehle se do lafz hain (kism aur
+        naam); teesra badge us jagah ko bhar deta jahan asal khabar aani chahiye.
+      */}
+      <span className={`mt-1 w-1 shrink-0 self-stretch rounded-pill ${tone.bar}`} />
+
+      <div className="min-w-0 flex-1">
+        <p className="flex flex-wrap items-baseline gap-x-2">
+          <span className={`text-[0.72rem] font-bold uppercase tracking-wider ${tone.text}`}>
+            {KIND_LABEL[flag.kind]}
+          </span>
+          <span className="truncate font-semibold">{flag.label}</span>
+        </p>
+
+        <p className="mt-1 text-[0.85rem] leading-relaxed text-ink-soft">{sentence(flag)}</p>
+
+        {flag.context && <p className="mt-0.5 text-[0.78rem] text-ink-faint">{flag.context}</p>}
+      </div>
+
+      <div className="flex shrink-0 flex-wrap items-center gap-2 self-center">
         {/*
-          Rang ki patti — na ke ek aur badge. Qatar par pehle se do lafz hain (kism aur
-          naam); teesra badge us jagah ko bhar deta jahan asal khabar aani chahiye.
+          Phone sirf wahan jahan agla qadam WAQAI phone karna hai. Har qatar par ek button
+          chipka dena us button ko bemani bana deta hai — aur wo number bhi saath likha
+          hai, kyunke ops aksar apne apne phone se call karti hai, is screen se nahi.
         */}
-        <span className={`mt-1 h-full w-1 shrink-0 self-stretch rounded-pill ${tone.bar}`} />
-
-        <span className="min-w-0 flex-1">
-          <span className="flex flex-wrap items-baseline gap-x-2">
-            <span className={`text-[0.72rem] font-bold uppercase tracking-wider ${tone.text}`}>
-              {KIND_LABEL[flag.kind]}
+        {flag.action && (
+          <a
+            href={whatsappLink(flag.action.phone)}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-h-tap items-center gap-1.5 rounded-pill bg-accent-50 px-3.5 text-[0.78rem] font-semibold text-accent-700 transition hover:bg-accent-100"
+          >
+            <WhatsAppIcon className="h-4 w-4" />
+            <span dir="ltr" className="numeric">
+              {formatPhoneLocal(flag.action.phone)}
             </span>
-            <span className="truncate font-semibold">{flag.label}</span>
-          </span>
+          </a>
+        )}
 
-          <span className="mt-1 block text-[0.85rem] leading-relaxed text-ink-soft">
-            {sentence(flag)}
-          </span>
-
-          {flag.context && (
-            <span className="mt-0.5 block text-[0.78rem] text-ink-faint">{flag.context}</span>
-          )}
-        </span>
-
-        <span className="shrink-0 self-center text-[0.8rem] font-semibold text-brand-700">
+        <Link
+          href={hrefFor(flag)}
+          className="inline-flex min-h-tap items-center rounded-pill px-3 text-[0.8rem] font-semibold text-brand-700 transition hover:bg-brand-50"
+        >
           Open ›
-        </span>
-      </Link>
+        </Link>
+      </div>
     </li>
   )
 }

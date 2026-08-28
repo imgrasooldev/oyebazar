@@ -16,7 +16,9 @@ export interface DisputedPayoutFlag {
   readonly orderNo: string
   readonly amount: number
   readonly supplierName: string
+  readonly supplierPhone: string
   readonly resellerName: string
+  readonly resellerPhone: string
   readonly note: string | null
   readonly disputedAt: Date
 }
@@ -26,6 +28,8 @@ export interface OverduePayoutFlag {
   readonly orderNo: string
   readonly amount: number
   readonly supplierName: string
+  /** Paisa dukan ke paas hai — chase bhi usi ko karna hai */
+  readonly supplierPhone: string
   readonly resellerName: string
   /** Shart se kitne din aage — `termDays` ke SNAPSHOT par napa gaya */
   readonly daysLate: number
@@ -36,6 +40,8 @@ export interface UnansweredOrderFlag {
   readonly orderId: string
   readonly orderNo: string
   readonly supplierName: string
+  /** Jawab isi se maangna hai */
+  readonly supplierPhone: string
   readonly resellerName: string
   readonly hoursWaiting: number
   readonly since: Date
