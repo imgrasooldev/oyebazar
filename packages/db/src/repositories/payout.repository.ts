@@ -263,6 +263,24 @@ export class PrismaPayoutRepository implements PayoutRepository {
    * hadd row ke apne `termDays` se banti hai. Saari PENDING rows utha kar JS mein
    * chhanne se ek din wo query poori table le aati.
    */
+  async listUnconfirmedSent(before: Date): Promise<PayoutView[]> {
+    /*
+     * Dukan ka dawa purana ho chuka aur reseller ne kuch kaha hi nahi.
+     *
+     * `sentAt` par chhanti hai, `createdAt` par nahi: intezar us lamhe se ginna chahiye
+     * jab dukan ne paisa bhejne ka dawa kiya — us se pehle ka arsa dukan ka apna waqt
+     * tha, reseller ka nahi.
+     */
+    const rows = await this.db.resellerPayout.findMany({
+      where: { status: 'SENT', sentAt: { not: null, lte: before } },
+      orderBy: { sentAt: 'asc' },
+      select: PAYOUT_SELECT,
+      take: 200,
+    })
+
+    return rows.map(toView)
+  }
+
   async listOverduePending(now: Date): Promise<PayoutView[]> {
     const ids = await this.db.$queryRaw<{ id: string }[]>`
       SELECT "id" FROM "ResellerPayout"

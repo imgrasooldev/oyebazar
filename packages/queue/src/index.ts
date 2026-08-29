@@ -193,3 +193,4 @@ export async function registerDailySchedules(connection: Redis): Promise<void> {
 export type { RenderStatusPackJob }
 export { Queue, Worker, type Job } from 'bullmq'
 export type { Redis }
+export { RedisRateLimiter } from './rate-limiter'

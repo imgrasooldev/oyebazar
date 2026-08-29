@@ -89,6 +89,20 @@ export interface StockChurnRow {
   readonly since: Date
 }
 
+/**
+ * App ki kharabi — ek hi jaisi ghaltiyan ek qatar mein.
+ *
+ * 🔴 Har error alag qatar banane se list foran bekar ho jati hai: ek toota hua button
+ * ek hi ghante mein saikron qataren de sakta hai, aur un ke neeche wo cheezein dab jati
+ * hain jin par ops waqai kaam kar sakti hai. Ek jaisi ghaltiyan ek qatar, ginti ke saath.
+ */
+export interface AppErrorRow {
+  readonly message: string
+  readonly count: number
+  readonly firstAt: Date
+  readonly lastAt: Date
+}
+
 export interface OpsTriageRepository {
   /** Reseller keh rahi hai paise nahi mile. */
   disputedPayouts(limit: number): Promise<DisputedPayoutFlag[]>
@@ -122,6 +136,15 @@ export interface OpsTriageRepository {
 
   /** LIVE maal ke naam — naam ki jaanch domain mein hoti hai, yahan sirf qataren. */
   liveProductTitles(limit: number): Promise<ProductFlagRow[]>
+
+  /**
+   * App ki wo kharabiyan jo `since` ke baad hui.
+   *
+   * 🔴 Sirf HAAL ki — purani ghalti jo kab ki theek ho chuki, us par nishan lagana list
+   * ko us shor se bhar deta hai jise ops nazar-andaz karna seekh leti hai. Aur us ke
+   * baad wo asli kharabi bhi nahi dekhti.
+   */
+  appErrors(since: Date, limit: number): Promise<AppErrorRow[]>
 
   /**
    * LIVE hai magar bik nahi sakta — koi variant hi nahi, ya sab ki ginti sifar.

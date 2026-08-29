@@ -50,16 +50,36 @@ export async function runOrderMaintenance(container: WorkerContainer): Promise<{
   reminded: number
   cancelled: number
   transitAsked: number
+  payoutsChased: number
+  confirmsAsked: number
 }> {
   const reminder = await container.reminders.remindStale()
   const cancel = await container.reminders.autoCancelStale()
   // 4 din se raste mein khare order — dukan se poochho, warna reseller ka paisa atka rehta hai
   const transit = await container.reminders.remindStuckInTransit()
 
+  /*
+   * 🔴 Paison ki dono yaad-dihaniyan — aur pehli wali ek BUG ka hal hai.
+   *
+   * `remindOverdue()` mahinon se likhi hui thi aur us ke comment mein saaf likha tha
+   * "Worker se rozana chalti hai" — magar poore repo mein use kisi ne bulaya hi nahi
+   * tha. Yani code ye maanta tha ke wo chal rahi hai, aur baqaya paise chup chaap pare
+   * rehte the. Us ka koi nishan bhi nahi banta tha, kyunke nishan bhi usi ke chalne par
+   * banta.
+   *
+   * Doosri (`remindUnconfirmed`) us se ulti taraf hai: dukan keh chuki hai "bhej diye"
+   * aur reseller ne tasdeeq nahi ki. Wo soorat zyada khatarnak hai — dono taraf do alag
+   * hisab chalte rehte hain aur kisi ko lagta hi nahi ke kuch poochhna hai.
+   */
+  const payoutsChased = await container.payouts.remindOverdue()
+  const confirmsAsked = await container.payouts.remindUnconfirmed()
+
   return {
     reminded: reminder.reminded,
     cancelled: cancel.cancelled,
     transitAsked: transit.reminded,
+    payoutsChased,
+    confirmsAsked,
   }
 }
 

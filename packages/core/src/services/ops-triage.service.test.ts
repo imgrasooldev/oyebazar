@@ -12,6 +12,7 @@
 import { describe, expect, it } from 'vitest'
 import { OpsTriageService } from './ops-triage.service'
 import type {
+  AppErrorRow,
   DisputedPayoutFlag,
   DuplicateProductRow,
   OddPriceRow,
@@ -47,6 +48,7 @@ class FakeTriage implements OpsTriageRepository {
   titles: ProductFlagRow[] = []
   churn: StockChurnRow[] = []
   unsellable: ProductFlagRow[] = []
+  errors: AppErrorRow[] = []
 
   async disputedPayouts() {
     return this.disputed
@@ -74,6 +76,9 @@ class FakeTriage implements OpsTriageRepository {
   }
   async unsellableProducts() {
     return this.unsellable
+  }
+  async appErrors() {
+    return this.errors
   }
 }
 
@@ -318,5 +323,41 @@ describe('tarteeb aur ginti', () => {
 
     expect(flags).toHaveLength(1)
     expect(counts.high + counts.medium + counts.low).toBe(flags.length)
+  })
+})
+
+describe('app ki kharabi', () => {
+  it('🔴 ek hi jaisi ghaltiyan EK qatar mein — ginti ke saath', async () => {
+    /*
+     * Har error alag qatar banane se list foran bekar ho jati hai: ek toota hua button
+     * ek ghante mein saikron qataren de sakta hai, aur un ke neeche wo cheezein dab jati
+     * hain jin par ops waqai kaam kar sakti hai.
+     */
+    const { flags } = await serviceWith((repo) => {
+      repo.errors = [
+        {
+          message: 'Cannot read properties of undefined',
+          count: 42,
+          firstAt: new Date('2026-08-28T09:00:00Z'),
+          lastAt: new Date('2026-08-28T11:30:00Z'),
+        },
+      ]
+    }).flags()
+
+    expect(flags).toHaveLength(1)
+    expect(flags[0]?.kind).toBe('appError')
+    expect(flags[0]?.values.count).toBe(42)
+  })
+
+  it('🔴 ek dafa hone wali kharabi bhi `high` hai — ginti us ka darja tay nahi karti', async () => {
+    // Ek dafa ki kharabi bhi kisi EK bande ka kaam rok chuki hoti hai, aur wo banda
+    // aksar shikayat nahi karta — wo safha band kar ke chala jata hai
+    const { flags } = await serviceWith((repo) => {
+      repo.errors = [
+        { message: 'boom', count: 1, firstAt: NOW, lastAt: NOW },
+      ]
+    }).flags()
+
+    expect(flags[0]?.severity).toBe('high')
   })
 })

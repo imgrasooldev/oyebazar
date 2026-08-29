@@ -213,6 +213,26 @@ node --env-file=<env> node_modules/tsx/dist/cli.mjs prisma/backfill-stock-ledger
 # KACHCHA jawab pehle hi daal diya hota hai, is liye talash us se pehle bhi chalti hai.
 node --env-file=<env> node_modules/tsx/dist/cli.mjs prisma/backfill-search.ts
 
+# 4b) Data ki apni nakal — aur wo sawal jo backup se pehle poochha jata hai
+#
+# 🔴 Supabase khud backup leta hai (paid plan par point-in-time tak), aur WOHI asli
+# backup hai: poora schema, saari shartein, indexes. Neeche wali script us ka badal
+# NAHI hai.
+#
+# Ye us doosre sawal ka jawab hai: "agar aaj Supabase ka khaata hi na khule, to hamare
+# paas APNA kya hai?" Ye script har table ki ek JSON nakal aap ke apne computer par
+# rakh deti hai — jise parhne ke liye kisi vendor ki zaroorat nahi.
+#
+# 🔴 Aur wo backup backup NAHI hota jise kabhi restore kar ke na dekha gaya ho. Supabase
+# ka apna backup EK DAFA khud restore kar ke dekh lena chahiye (naye project mein) —
+# us se pehle wo sirf ek umeed hai, waada nahi.
+cd packages/db
+node --env-file=<env> node_modules/tsx/dist/cli.mjs prisma/export-data.ts
+
+# Nakal `.local/backups/<tareekh>/` mein girti hai — git se bahar.
+# 🔴 Us mein dukan ki LAGAT, customer ke phone number aur pate hote hain. Kisi ko na
+# bhejen, kisi cloud folder mein na rakhen.
+
 # 5) Domain
 flyctl certs add -a oyebazar-web oyebazar.com
 flyctl certs add -a oyebazar-web www.oyebazar.com

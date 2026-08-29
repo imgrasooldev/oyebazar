@@ -10,6 +10,7 @@
  */
 import type { PrismaClient } from '@prisma/client'
 import type {
+  AppErrorRow,
   DisputedPayoutFlag,
   DuplicateProductRow,
   OddPriceRow,
@@ -306,6 +307,37 @@ export class PrismaOpsTriageRepository implements OpsTriageRepository {
         select: this.productSelect(),
       })
     ).map((row) => this.toProductRow(row))
+  }
+
+  async appErrors(since: Date, limit: number): Promise<AppErrorRow[]> {
+    /*
+     * Ek jaise paighaam ek qatar mein — `properties->>'message'` par group.
+     *
+     * 🔴 Prisma ka `groupBy` JSON ke andar nahi jhank sakta, is liye raw SQL. Har error
+     * ko alag qatar banane se list foran bekar ho jati: ek toota hua button ek ghante
+     * mein saikron qataren de deta hai.
+     */
+    const rows = await this.db.$queryRaw<
+      { message: string; count: bigint; firstAt: Date; lastAt: Date }[]
+    >`
+      SELECT COALESCE(e."properties"->>'message', 'unknown') AS message,
+             COUNT(*)      AS count,
+             MIN(e."createdAt") AS "firstAt",
+             MAX(e."createdAt") AS "lastAt"
+      FROM "Event" e
+      WHERE e."name" = 'app_error'
+        AND e."createdAt" >= ${since}
+      GROUP BY 1
+      ORDER BY MAX(e."createdAt") DESC
+      LIMIT ${limit}
+    `
+
+    return rows.map((row) => ({
+      message: row.message,
+      count: Number(row.count),
+      firstAt: row.firstAt,
+      lastAt: row.lastAt,
+    }))
   }
 
   async unsellableProducts(limit: number): Promise<ProductFlagRow[]> {

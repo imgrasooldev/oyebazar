@@ -37,8 +37,9 @@ import {
 } from '@oyebazar/core'
 import { createRepositories, type Repositories } from '@oyebazar/db'
 import { createStorage, storageConfigFrom } from '@oyebazar/storage'
-import { BullMqRenderQueue, createRedisConnection } from '@oyebazar/queue'
-import { ConsoleLogger, CryptoTokenGenerator, SystemClock } from './adapters/system'
+import { BullMqRenderQueue, RedisRateLimiter, createRedisConnection } from '@oyebazar/queue'
+import { CryptoTokenGenerator, SystemClock } from './adapters/system'
+import { RecordingLogger } from './adapters/recording-logger'
 import { InMemoryRateLimiter } from './adapters/rate-limiter'
 import { StaticOtpTokens } from './static-otp-tokens'
 import { createMessagingProvider } from '@oyebazar/whatsapp'
@@ -111,7 +112,11 @@ function buildRenderQueue(logger: Logger): RenderQueue {
 function build(): Container {
   const repositories = createRepositories()
   const clock = new SystemClock()
-  const logger = new ConsoleLogger()
+  /*
+   * Logger jo kharabi ko DB mein bhi likhta hai — taake wo ops ke saamne aa sake.
+   * Console par sab kuch pehle ki tarah jata rehta hai; ye us ke ILAWA hai.
+   */
+  const logger = new RecordingLogger()
   const tokens = new CryptoTokenGenerator()
 
   /*
@@ -132,7 +137,26 @@ function build(): Container {
     })
   }
   const analytics = new PrismaAnalytics(logger)
-  const rateLimiter = new InMemoryRateLimiter()
+  /*
+   * Rate limiter — Redis par jab wo mojood ho.
+   *
+   * 🔴 Memory wala limiter har deploy par saaf ho jata tha, aur do machine par hadd
+   * chup chaap dugni kar deta. Us din wo waqai mehnga hoga jis din WhatsApp jurta hai:
+   * har OTP ek PAID message hai, yani hadd ka toot na seedha bill par lagta hai.
+   *
+   * Redis na ho to memory wala — aur wo soorat local aur test ki hai, jahan wo bilkul
+   * kaafi hai. Yahan bhi wohi tareeqa jo `RenderQueue` par pehle se chal raha hai.
+   */
+  const redisUrl = process.env.REDIS_URL
+  if (!redisUrl) {
+    logger.warn('rate_limiter_in_memory', {
+      reason: 'REDIS_URL set nahi',
+      note: 'Haddein har restart par saaf hongi — production mein ye kaafi nahi',
+    })
+  }
+  const rateLimiter = redisUrl
+    ? new RedisRateLimiter(createRedisConnection(redisUrl))
+    : new InMemoryRateLimiter()
   const messaging = createMessagingProvider(process.env, logger)
   const renderQueue = buildRenderQueue(logger)
 

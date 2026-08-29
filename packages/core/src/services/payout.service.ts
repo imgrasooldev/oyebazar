@@ -45,6 +45,16 @@ export interface PayoutActor {
   readonly id: string
 }
 
+/**
+ * Dukan ke "bhej diye" ke baad reseller se itni der mein tasdeeq maangi jati hai.
+ *
+ * 🔴 Do din, foran nahi. EasyPaisa/bank ka paisa aksar usi din nahi pohanchta, aur jis
+ * lamhe dukan "bhej diya" dabati hai us lamhe reseller se poochhna usay har dafa "abhi
+ * nahi aaye" kehne par majboor karta hai — aur us ke baad wo poochhna nazar-andaz karne
+ * lagti hai. Do din wo arsa hai jis mein paisa waqai pohanch chuka hota hai.
+ */
+const CONFIRM_WAIT_MS = 2 * 24 * 60 * 60 * 1000
+
 export class PayoutService {
   /**
    * `phones` sirf do function hain, poore repositories nahi.
@@ -398,6 +408,40 @@ export class PayoutService {
     return overdue.length
   }
 
+  /**
+   * Doosri taraf ki yaad-dihani — reseller se tasdeeq.
+   *
+   * ─────────────────────────────────────────────────────────────────────────────
+   * 🔴 Ye `remindOverdue` se ALAG soorat hai, aur zyada khatarnak.
+   *
+   * Baqaya (`PENDING`) par dono jante hain ke paisa aana baqi hai. Yahan dukan samajh
+   * chuki hai ke hisab band ho gaya, aur reseller ke khaate mein wo raqam abhi tak khuli
+   * pari hai. Koi na to shikayat karta hai na poochhta hai — bas do taraf do alag hisab
+   * chalte rehte hain.
+   *
+   * Aur jitna arsa guzarta hai, jhagra utna hi mushkil hota jata hai: `sentReference`
+   * (TID) purana ho jata hai, bank ka record dhoondna mushkil, aur dono ki yaadasht
+   * dhundli. Isi liye ye yaad-dihani jaldi jati hai — hisab band karwane ke liye nahi,
+   * balke us farq ko us waqt pakarne ke liye jab wo abhi hal ho sakta hai.
+   * ─────────────────────────────────────────────────────────────────────────────
+   */
+  async remindUnconfirmed(): Promise<number> {
+    const before = new Date(this.clock.now().getTime() - CONFIRM_WAIT_MS)
+    const waiting = await this.payouts.listUnconfirmedSent(before)
+
+    for (const payout of waiting) {
+      await this.messaging.sendTemplate({
+        to: await this.phones.reseller(payout.resellerId),
+        template: 'baji_payout_confirm',
+        params: { orderNo: payout.orderNo, amount: String(payout.amount) },
+      })
+    }
+
+    if (waiting.length > 0) {
+      this.logger.info('payout_confirm_reminders_sent', { count: waiting.length })
+    }
+    return waiting.length
+  }
 }
 
 /** Har halat ka matlab — UI teenon portal mein yehi lafz dikhati hai. */

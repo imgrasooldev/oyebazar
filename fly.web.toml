@@ -34,3 +34,24 @@ primary_region = "sin"
   auto_stop_machines = "suspend"
   auto_start_machines = true
   min_machines_running = 1
+
+  # 🔴 Is se pehle web par koi check tha hi nahi — Fly har deploy par khud kehta tha
+  # "No health checks found". Matlab app HANG ho jaye to Fly usay kabhi restart na karta:
+  # site mari padi rehti aur pata tab chalta jab koi shikayat kare.
+  #
+  # Naap soch kar rakhi hai — check ka kaam site ko bachana hai, marwana nahi:
+  #
+  #  · interval 30s  — har 30 second mein ek dastak. Is se tez rakhne ka koi faida nahi;
+  #                    hang aksar minton ka hota hai, second ka nahi.
+  #  · timeout 5s    — route khud 3s par DB chhor deta hai, is liye us ka apna jawab
+  #                    hamesha Fly ke sabr ke andar bana rehta hai (warna logs mein wajah
+  #                    likhi hi na jati).
+  #  · grace_period 20s — thanda start (Next + Prisma) is se kam mein poora nahi hota,
+  #                    aur us se pehle poochhne ka anjaam ye hota ke har deploy khud ko
+  #                    hi na-kamyab qarar de kar chakkar mein par jata.
+  [[http_service.checks]]
+    grace_period = "20s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/api/health"

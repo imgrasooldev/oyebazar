@@ -6,6 +6,7 @@ import {
   DailyDropService,
   FeeInvoiceService,
   OrderReminderService,
+  PayoutService,
   PregenerationService,
   type Analytics,
   type Logger,
@@ -57,6 +58,15 @@ export interface WorkerContainer {
   readonly pregeneration: PregenerationService
   readonly broadcast: BroadcastService
   readonly reminders: OrderReminderService
+  /**
+   * Paison ki yaad-dihani — dono taraf.
+   *
+   * 🔴 `PayoutService.remindOverdue()` pehle se likhi hui thi aur us ke comment mein
+   * likha tha "Worker se rozana chalti hai" — magar usay kisi ne kabhi bulaya hi nahi.
+   * Yani baqaya paise pare rehte the aur wo yaad-dihani jo un ke liye likhi gayi thi,
+   * ek dafa bhi nahi chali.
+   */
+  readonly payouts: PayoutService
   readonly feeInvoices: FeeInvoiceService
 }
 
@@ -114,6 +124,22 @@ export async function buildContainer(
     ),
     reminders: new OrderReminderService(
       repositories.orders,
+      messaging,
+      clock,
+      analytics,
+      logger,
+    ),
+    payouts: new PayoutService(
+      repositories.payouts,
+      repositories.moneyLedger,
+      /*
+       * Sirf do number chahiyen, poore repositories nahi — wohi ehtiyat jo web ke
+       * container par bhi hai (dekhen `PayoutService` ka constructor).
+       */
+      {
+        reseller: async (id) => (await repositories.resellers.findById(id))?.whatsappPhone ?? '',
+        supplier: async (id) => (await repositories.suppliers.findInternal(id))?.phone ?? '',
+      },
       messaging,
       clock,
       analytics,

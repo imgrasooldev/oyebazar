@@ -118,4 +118,16 @@ export interface PayoutRepository {
    * liye hadd har row ke apne `termDays` se banti hai.
    */
   listOverduePending(now: Date): Promise<PayoutView[]>
+
+  /**
+   * Wo raqmein jin par dukan keh chuki hai "bhej diye" — magar reseller ne tasdeeq nahi ki.
+   *
+   * 🔴 Ye baqaya se ALAG soorat hai, aur zyada khatarnak. Baqaya par dono jante hain ke
+   * paisa aana baqi hai. Yahan dukan samajhti hai ke hisab band ho gaya, aur reseller ke
+   * khaate mein wo raqam abhi tak khuli pari hai. Beech ka farq jitna barhta jata hai,
+   * jhagra utna hi mushkil hota jata hai — aur `sentReference` (TID) bhi utna hi purana.
+   *
+   * @param before is tareekh se pehle "bheja gaya" — us se nayi qataren abhi intezar ke qabil hain
+   */
+  listUnconfirmedSent(before: Date): Promise<PayoutView[]>
 }

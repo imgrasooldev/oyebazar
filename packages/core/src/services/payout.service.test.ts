@@ -99,6 +99,13 @@ class FakePayouts implements PayoutRepository {
   async summariseBySupplier() {
     return []
   }
+  async listUnconfirmedSent(before: Date) {
+    // Asli repo SQL mein chhanta hai; yahan wohi qaida JS mein
+    return this.rows.filter(
+      (r) => r.status === 'SENT' && r.sentAt !== null && r.sentAt.getTime() <= before.getTime(),
+    )
+  }
+
   async listOverduePending(now: Date) {
     // Asli repo SQL mein chhanta hai; yahan wohi qaida JS mein
     return this.rows.filter(
@@ -357,5 +364,50 @@ describe('dukan ka apna waada', () => {
     })
 
     expect(repo.created).toEqual([expect.objectContaining({ termDays: 5 })])
+  })
+})
+
+describe('tasdeeq ki yaad-dihani — doosri taraf', () => {
+  it('🔴 dukan ke "bhej diye" ke do din baad reseller se poochha jata hai', async () => {
+    /*
+     * Ye baqaya se ALAG soorat hai aur zyada khatarnak: dukan samajh chuki hai ke hisab
+     * band ho gaya, aur reseller ke khaate mein raqam abhi khuli pari hai. Koi shikayat
+     * nahi karta — bas do taraf do alag hisab chalte rehte hain.
+     */
+    const { service, repo, sent } = build()
+    repo.rows = [
+      makeRow({
+        id: 'purana',
+        status: 'SENT',
+        sentAt: new Date(NOW.getTime() - 3 * 86_400_000),
+      }),
+    ]
+
+    expect(await service.remindUnconfirmed()).toBe(1)
+    expect(sent).toHaveLength(1)
+    expect(sent[0]?.template).toBe('baji_payout_confirm')
+  })
+
+  it('🔴 abhi abhi bheji hui raqam par kuch nahi poochha jata', async () => {
+    /*
+     * EasyPaisa/bank ka paisa aksar usi din nahi pohanchta. Foran poochhne ka anjaam ye
+     * hota hai ke reseller har dafa "abhi nahi aaye" kehti hai — aur us ke baad wo
+     * poochhna nazar-andaz karne lagti hai.
+     */
+    const { service, repo, sent } = build()
+    repo.rows = [
+      makeRow({ id: 'naya', status: 'SENT', sentAt: new Date(NOW.getTime() - 3_600_000) }),
+    ]
+
+    expect(await service.remindUnconfirmed()).toBe(0)
+    expect(sent).toHaveLength(0)
+  })
+
+  it('jo hisab band ho chuka us par kuch nahi jata', async () => {
+    const { service, repo } = build()
+    repo.rows = [
+      makeRow({ status: 'SETTLED', sentAt: new Date(NOW.getTime() - 10 * 86_400_000) }),
+    ]
+    expect(await service.remindUnconfirmed()).toBe(0)
   })
 })

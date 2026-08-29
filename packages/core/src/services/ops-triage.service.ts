@@ -47,7 +47,18 @@ const LIMITS = {
   titles: 200,
   churn: 20,
   unsellable: 30,
+  errors: 20,
 } as const
+
+/**
+ * Kharabi kitne ghante peechhe tak dekhi jaye.
+ *
+ * 🔴 Chhoti khirki jaan boojh kar: purani ghalti jo kab ki theek ho chuki, us par nishan
+ * lagana list ko us shor se bhar deta hai jise ops nazar-andaz karna seekh leti hai —
+ * aur us ke baad wo asli kharabi bhi nahi dekhti. Chobees ghante wo arsa hai jis mein
+ * kuch kiya bhi ja sakta hai.
+ */
+const ERROR_WINDOW_HOURS = 24
 
 /** Wo khana jo `supplier-product.repository.ts` khud banata hai jab category na di jaye. */
 const FALLBACK_CATEGORY_SLUG = 'other'
@@ -92,6 +103,7 @@ export class OpsTriageService {
       titles,
       churn,
       unsellable,
+      errors,
     ] = await Promise.all([
         this.repo.disputedPayouts(LIMITS.disputed),
         this.repo.overduePayouts(now, LIMITS.overdue),
@@ -102,6 +114,10 @@ export class OpsTriageService {
         this.repo.liveProductTitles(LIMITS.titles),
         this.repo.stockChurn(now, CHURN_DAYS, CHURN_FIXES, LIMITS.churn),
         this.repo.unsellableProducts(LIMITS.unsellable),
+        this.repo.appErrors(
+          new Date(now.getTime() - ERROR_WINDOW_HOURS * 60 * 60 * 1000),
+          LIMITS.errors,
+        ),
       ])
 
     const flags: OpsFlag[] = []
@@ -283,6 +299,26 @@ export class OpsTriageService {
         context: row.supplierName,
         values: {},
         since: row.createdAt,
+      })
+    }
+
+    for (const row of errors) {
+      flags.push({
+        /*
+         * 🔴 `high` — aur ye us par nahi khara ke kitni dafa hui. Ek hi dafa hone wali
+         * kharabi bhi kisi EK bande ka kaam rok chuki hoti hai, aur wo banda aksar
+         * shikayat nahi karta — wo safha band kar ke chala jata hai. Ginti sirf ye batati
+         * hai ke masla kitna phaila hua hai, ye nahi ke wo ahem hai ya nahi.
+         */
+        kind: 'appError',
+        severity: 'high',
+        subject: 'order',
+        id: row.message.slice(0, 80),
+        label: row.message.slice(0, 80),
+        context: null,
+        values: { count: row.count },
+        // Purani se — sortFlags purane maslay ko upar rakhta hai
+        since: row.firstAt,
       })
     }
 

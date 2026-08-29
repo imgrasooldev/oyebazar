@@ -46,6 +46,8 @@ export type FlagKind =
   | 'stockChurn'
   /** Safhe par LIVE hai magar us par order lag hi nahi sakta */
   | 'unsellable'
+  /** App mein kharabi — koi safha ya button waqai toota hua hai */
+  | 'appError'
 
 export type FlagSeverity = 'high' | 'medium' | 'low'
 
