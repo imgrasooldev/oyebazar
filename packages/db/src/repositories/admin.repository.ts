@@ -19,7 +19,7 @@ import type {
   OpsUserRepository,
   OpsUserView,
 } from '@oyebazar/core'
-import { pkr } from '@oyebazar/shared'
+import { buildSearchText, pkr } from '@oyebazar/shared'
 
 const OPS_SELECT = {
   id: true,
@@ -293,6 +293,58 @@ export class PrismaAdminRepository implements AdminRepository {
 
   async setProductStatus(id: string, status: 'DRAFT' | 'LIVE' | 'ARCHIVED'): Promise<void> {
     await this.db.product.update({ where: { id }, data: { status } })
+  }
+
+  /**
+   * Naam aur khaana theek karo — aur TALASH ka khaana bhi saath.
+   *
+   * 🔴 `searchText` dobara banana yahan LAZMI hai, marzi ka nahi. Talash usi
+   * khaane par chalti hai, naam par nahi (dekhen `product.repository.ts`). Sirf naam
+   * badal dene ka matlab ye hota ke maal ka naya naam safhe par dikhta magar us naam
+   * se wo maal DHOONDA hi na ja sakta — aur wohi ek cheez hai jis ke liye naam theek
+   * kiya ja raha tha. Wo kharabi khamosh hoti hai: sab kuch theek dikhta hai.
+   *
+   * Category ka slug na mile to `false` — us surat mein kuch bhi nahi badalta, taake
+   * aadha kaam na ho jaye.
+   */
+  async setProductNaming(
+    id: string,
+    input: { titleUr: string; titleEn: string; categorySlug: string | null },
+  ): Promise<boolean> {
+    return this.db.$transaction(async (tx) => {
+      const product = await tx.product.findUnique({
+        where: { id },
+        select: { descriptionUr: true, category: { select: { id: true, nameUr: true, nameEn: true } } },
+      })
+      if (!product) return false
+
+      let category = product.category
+      if (input.categorySlug) {
+        const chosen = await tx.category.findUnique({
+          where: { slug: input.categorySlug },
+          select: { id: true, nameUr: true, nameEn: true },
+        })
+        if (!chosen) return false
+        category = chosen
+      }
+
+      await tx.product.update({
+        where: { id },
+        data: {
+          titleUr: input.titleUr,
+          titleEn: input.titleEn,
+          categoryId: category.id,
+          searchText: buildSearchText({
+            titleUr: input.titleUr,
+            titleEn: input.titleEn,
+            descriptionUr: product.descriptionUr,
+            categoryNameUr: category.nameUr,
+            categoryNameEn: category.nameEn,
+          }),
+        },
+      })
+      return true
+    })
   }
 
   // ------------------------------------------------------------------ resellers

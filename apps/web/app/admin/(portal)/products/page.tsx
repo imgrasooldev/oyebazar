@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { LazyImage } from '@/components/lazy-image'
 import { formatPkr } from '@oyebazar/shared'
 import { AdminPriceDecision } from '@/components/admin-price-decision'
+import { AdminFixNaming } from '@/components/admin-fix-naming'
 import { AdminRowAction } from '@/components/admin-row-action'
 import { requireOpsUser } from '@/lib/api/admin-session'
 import { container } from '@/lib/container'
@@ -22,10 +23,24 @@ export const dynamic = 'force-dynamic'
  */
 export default async function AdminProductsPage() {
   const { user } = await requireOpsUser()
-  const [products, priceRequests] = await Promise.all([
+  const [products, priceRequests, categories] = await Promise.all([
     container.admin.listProducts(user),
     container.priceChanges.listPending(),
+    container.repositories.categories.findAll(),
   ])
+
+  /*
+    🔴 Tasveer se tajweez mumkin hai ya nahi — SERVER par tay hota hai.
+
+    Jawab sirf yahan maloom hai (key lagi hai ya nahi). Client ka andaza lagane ka
+    matlab ye hota ke button har jagah dikhta, aur jahan key nahi hai wahan wo har dafa
+    nakaam hota — jo us button se bura hai jo hai hi nahi.
+  */
+  const canSuggest = container.describer !== null
+  const flatCategories = categories.map((category) => ({
+    slug: category.slug,
+    nameEn: category.nameEn,
+  }))
 
   const drafts = products.filter((product) => product.status === 'DRAFT')
   const rest = products.filter((product) => product.status !== 'DRAFT')
@@ -132,7 +147,7 @@ export default async function AdminProductsPage() {
           <h2 className="mb-3 rounded-card bg-brand-50 px-4 py-3 font-bold text-brand-800">
             Waiting for approval ({drafts.length})
           </h2>
-          <ProductList rows={drafts} />
+          <ProductList rows={drafts} categories={flatCategories} canSuggest={canSuggest} />
         </section>
       )}
 
@@ -140,7 +155,7 @@ export default async function AdminProductsPage() {
         <h2 className="mb-3 text-[0.72rem] font-bold uppercase tracking-[0.14em] text-ink-faint">
           All products
         </h2>
-        <ProductList rows={rest} />
+        <ProductList rows={rest} categories={flatCategories} canSuggest={canSuggest} />
       </section>
     </div>
   )
@@ -148,8 +163,12 @@ export default async function AdminProductsPage() {
 
 function ProductList({
   rows,
+  categories,
+  canSuggest,
 }: {
   rows: Awaited<ReturnType<typeof container.admin.listProducts>>
+  categories: readonly { slug: string; nameEn: string }[]
+  canSuggest: boolean
 }) {
   if (rows.length === 0) {
     return <p className="card p-6 text-center text-sm text-ink-soft">Nothing here.</p>
@@ -225,6 +244,21 @@ function ProductList({
                   confirmText={`Archive ${product.titleEn}? Resellers lose it from their catalogue.`}
                 />
               )}
+
+              {/*
+                Naam theek karna — Archive ke BAAD, aur halke andaz mein.
+
+                Ye rozana ka kaam nahi: aksar maal ka naam theek hota hai. Isay "Make
+                live" jitna numaya karne se wo do button dab jate jo har qatar par
+                waqai istemal hote hain.
+              */}
+              <AdminFixNaming
+                productId={product.id}
+                titleUr={product.titleUr}
+                titleEn={product.titleEn}
+                categories={categories}
+                canSuggest={canSuggest}
+              />
             </div>
           </li>
         )

@@ -302,6 +302,56 @@ export class AdminService {
     return this.admin.listResellers({ ...filter, limit: filter.limit ?? 100 })
   }
 
+  /**
+   * Maal ka naam aur khaana theek karo.
+   *
+   * 🔴 Ye rasta un DO NISHANON ka agla qadam hai jo chhanni pehle se lagati thi
+   * aur jin par ops kuch kar hi nahi sakti thi: `oddTitle` (aisa naam jis se maal
+   * pehchana hi nahi ja sakta) aur `uncategorised`.
+   *
+   * Jis nishan ka koi agla qadam na ho, wo teen hafte mein wo cheez ban jata hai jise
+   * koi nahi dekhta — aur us ke saath wo nishan bhi mar jate hain jin par kaam ho
+   * sakta tha.
+   *
+   * `manageProducts` par hai (MANAGER), wohi ijazat jo maal ko LIVE karne ki hai. Naam
+   * badalna usi darje ka faisla hai: dono soorton mein wo cheez badalti hai jo reseller
+   * ke saamne jati hai.
+   */
+  async setProductNaming(
+    actor: OpsUserView,
+    productId: string,
+    input: { titleUr: string; titleEn: string; categorySlug: string | null },
+  ): Promise<void> {
+    this.assertCan(actor, 'manageProducts')
+
+    const titleEn = input.titleEn.trim()
+    const titleUr = input.titleUr.trim()
+
+    /*
+     * Angrezi naam LAZMI, Urdu marzi ka — bilkul wohi qaida jo dukan ke apne form par
+     * hai. Do jagah do alag shartein rakhne ka matlab ye hota ke ops aisa maal bana
+     * deti jo dukan wala khud kabhi na bana pata, aur us farq ki wajah kisi ko na
+     * maloom hoti.
+     */
+    if (!titleEn) throw new ValidationError('Angrezi naam lazmi hai')
+    if (titleEn.length > 80 || titleUr.length > 80) {
+      throw new ValidationError('Naam 80 haroof se lamba nahi ho sakta')
+    }
+
+    const done = await this.admin.setProductNaming(productId, {
+      titleUr,
+      titleEn,
+      categorySlug: input.categorySlug,
+    })
+    if (!done) throw new NotFoundError('Product', productId)
+
+    await this.record(actor, 'admin_product_naming_changed', {
+      productId,
+      titleEn,
+      categorySlug: input.categorySlug ?? '',
+    })
+  }
+
   async setResellerStatus(
     actor: OpsUserView,
     resellerId: string,

@@ -135,6 +135,26 @@ export interface AdminRepository {
   listProducts(filter: { status?: string; limit: number }): Promise<AdminProductRow[]>
   setProductStatus(id: string, status: 'DRAFT' | 'LIVE' | 'ARCHIVED'): Promise<void>
 
+  /**
+   * Maal ka naam aur khaana theek karo.
+   *
+   * 🔴 Ye rasta pehle tha hi NAHI, aur us ki ghair-mojoodgi ne do nishan bekar
+   * kar rakhe the. Ops ki chhanni `oddTitle` (aisa naam jis se maal pehchana hi nahi ja
+   * sakta) aur `uncategorised` (koi khaana nahi) dono par nishan lagati thi — aur ops ke
+   * paas un mein se kisi ko theek karne ka koi rasta nahi tha. Admin API sirf halat
+   * (DRAFT/LIVE/ARCHIVED) badal sakti thi.
+   *
+   * Jis nishan ka koi agla qadam na ho, wo nishan teen hafte mein wo cheez ban jata hai
+   * jise koi nahi dekhta — aur us ke saath wo nishan bhi mar jate hain jin par kaam ho
+   * sakta tha.
+   *
+   * `categorySlug` na mile to `null` — dekhen service ka note.
+   */
+  setProductNaming(
+    id: string,
+    input: { titleUr: string; titleEn: string; categorySlug: string | null },
+  ): Promise<boolean>
+
   listResellers(filter: { status?: string; limit: number }): Promise<AdminResellerRow[]>
   setResellerStatus(id: string, status: 'ACTIVE' | 'LIMITED' | 'SUSPENDED'): Promise<void>
 }
