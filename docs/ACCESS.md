@@ -17,60 +17,129 @@ lagayen — baqi sab wohi rehta hai.
 
 ## 1. Saare logins — ek hi jadwal
 
-Dev machine ke test accounts. **Production par ye numbers mojood nahi.**
+Ye khaate `prisma/seed-accounts.ts` banata hai, aur wo **dev aur production DONO** par
+chalta hai (neeche §1.4 dekhen). Number DB mein E.164 mein rakha jata hai
+(`923004445566`), magar login par `03004445566` likhna kaafi hai — dono ek hi cheez hain.
 
-Number DB mein E.164 mein rakha jata hai (`923004445566`), magar login par `03004445566`
-likhna kaafi hai — dono ek hi cheez hain.
+### 1.1 Dukanein — 15, `/supplier/login`
 
-### Ops team — `/admin/login`
+Number ek qaide se banta hai: `03001000001` se `03001000015` — tarteeb wohi jo
+`seed-accounts.ts` ke `SUPPLIERS` mein hai.
+
+| # | Dukan | Login number | Sheher |
+|---|---|---|---|
+| 1 | فیصل فیبرکس | `03001000001` | Faisalabad |
+| 2 | شہزاد کلاتھ ہاؤس | `03001000002` | Lahore |
+| 3 | الکرم ٹیکسٹائل | `03001000003` | Karachi |
+| 4 | مدینہ سوٹ سینٹر | `03001000004` | Lahore |
+| 5 | گجرانوالہ اسٹیل ہاؤس | `03001000005` | Gujranwala |
+| 6 | ملتان ڈرائی فروٹ | `03001000006` | Multan |
+| 7 | سیالکوٹ اسپورٹس | `03001000007` | Sialkot |
+| 8 | پشاور کراکری ہاؤس | `03001000008` | Peshawar |
+| 9 | کریسنٹ کاسمیٹکس | `03001000009` | Karachi |
+| 10 | میٹرو ہوم سپلائیز | `03001000010` | Rawalpindi |
+| 11 | نور جیولری | `03001000011` | Lahore |
+| 12 | اقبال الیکٹرانکس | `03001000012` | Karachi |
+| 13 | چناب لان | `03001000013` | Faisalabad |
+| 14 | راوی کچن اسٹور | `03001000014` | Lahore |
+| 15 | سوات ہینڈی کرافٹس | `03001000015` | Mingora |
+
+### 1.2 Resellers — 12, `/login`
+
+`03002000001` se `03002000012`.
+
+| # | Naam | Login number | Sheher |
+|---|---|---|---|
+| 1 | صادیہ | `03002000001` | Rawalpindi |
+| 2 | حرا | `03002000002` | Lahore |
+| 3 | عائشہ | `03002000003` | Karachi |
+| 4 | مریم | `03002000004` | Lahore |
+| 5 | فاطمہ | `03002000005` | Karachi |
+| 6 | زینب | `03002000006` | Faisalabad |
+| 7 | ایمان | `03002000007` | Islamabad |
+| 8 | رابعہ | `03002000008` | Multan |
+| 9 | خدیجہ | `03002000009` | Peshawar |
+| 10 | ثنا | `03002000010` | Gujranwala |
+| 11 | امینہ | `03002000011` | Sialkot |
+| 12 | نورین | `03002000012` | Quetta |
+
+> **Reseller ke liye ye fehrist hadd nahi hai.** `/login` par KOI bhi naya number daalen —
+> naam aur sheher poochh kar khaata khud ban jata hai. Jitne chahiyen, utne.
+
+### 1.3 Ops team — 5, `/admin/login`
+
+Har darje ka apna khaata, kyunke ikhtiyar ki rok ek hi khaate se **test hi nahi ho
+sakti**: REVIEWER dekh sakta hai magar badal nahi sakta, COORDINATOR order aage barha
+sakta hai magar fee ko haath nahi laga sakta.
 
 | Naam | Login number | Darja | Kya kar sakta hai |
 |---|---|---|---|
 | Ghulam Rasool | `03004445566` | SUPER_ADMIN | Sab kuch — fee rate, invoice, team |
-| Ops Coordinator | `03004445577` | COORDINATOR | Order aage barhana |
-| Auditor Sahib | `03005556677` | REVIEWER | Sirf dekhna, badalna kuch nahi |
+| Ops Manager | `03004445567` | MANAGER | Dukanein aur maal manzoor karna, payouts |
+| Ops Coordinator | `03004445568` | COORDINATOR | Order aage barhana |
+| Ops Coordinator 2 | `03004445569` | COORDINATOR | Wohi — do bandon ka moqabla dekhne ko |
+| Auditor Sahib | `03004445570` | REVIEWER | Sirf dekhna, badalna kuch nahi |
 
-### Reseller — `/login`
+Is se ziyada chahiyen to script se:
 
-| Naam | Login number | Sheher |
-|---|---|---|
-| صادیہ | `03001234567` | Lahore |
-| عائشہ | `03009876543` | Karachi |
-| حرا | `03331112233` | Rawalpindi |
+```bash
+pnpm db:ops-user -- --name "Naya Banda" --email a@oyebazar.com --phone 03004445571 --role COORDINATOR
+```
 
-Naya reseller account khud-ba-khud ban jata hai — usi safhe par naya number daalen, naam
-aur sheher poochh kar andar aa jata hai.
+### 1.4 Ye khaate banaye kaise jate hain
 
-### Wholesaler — `/supplier/login`
+```bash
+pnpm --filter @oyebazar/db exec tsx prisma/seed-accounts.ts
+```
 
-Saari 13 dukanen VERIFIED aur Bazaar par listed hain.
+🔴 **Ye script idempotent hai** — jo khaata pehle se ho usay chhoo kar nahi
+guzarta (`findUnique` → `continue`). Is liye isay production par dobara chalana MEHFOOZ
+hai: nayi entries jurh jati hain, purane khaate aur un ka data waisa ka waisa rehta hai.
 
-| Dukan | Login number | Sheher |
-|---|---|---|
-| المدینہ فیبرکس | `03001200000` | Karachi |
-| نور ٹیکسٹائل | `03001200010` | Karachi |
-| شہزاد کلاتھ ہاؤس | `03001200020` | Lahore |
-| گلبرگ کلیکشن | `03001200030` | Lahore |
-| فیصل فیبرکس | `03001200040` | Faisalabad |
-| رحمان ٹریڈرز | `03001200050` | Karachi |
-| خان الیکٹرانکس | `03001200060` | Rawalpindi |
-| Crescent Cosmetics | `03001264508` | Karachi |
-| Metro Home Supplies | `03001222951` | Lahore |
-| Multan Dry Fruits & Spices | `03001299665` | Multan |
-| Peshawar Crockery House | `03001240160` | Peshawar |
-| Sialkot Sports Co. | `03001201884` | Sialkot |
-| Gujranwala Steel House | `03217654321` | Gujranwala |
+Production par chalane ke liye `DATABASE_URL` chahiye — dekhen `docs/DEPLOY.md`.
 
-### Dev par OTP kahan milta hai
+### 1.5 OTP kahan milta hai
 
-Do jagah, dono se kaam chal jata hai:
+**Dev par** do jagah, dono se kaam chal jata hai:
 
 1. **Safhe par hi** — login screen par ek kaale dabbe mein code likha aata hai aur khana
    pehle se bhara hota hai.
 2. **Terminal mein** — dev server ke log mein `whatsapp_template_dev` wali line.
 
-🔴 Production mein ye kabhi nahi aata. Do taale lage hain: `NODE_ENV`, aur messaging
-provider — dekhen `apps/web/__tests__/security/dev-otp.test.ts`.
+🔴 Ye asli code production mein kabhi nahi aata. Do taale lage hain: `NODE_ENV`,
+aur messaging provider — dekhen `apps/web/__tests__/security/dev-otp.test.ts`.
+
+**Production par** abhi `STATIC_OTP` naam ka ek Fly secret laga hua hai — yani har OTP
+wohi ek code hai. Wo qadar yahan JAAN BOOJH KAR nahi likhi. Team ke paas hai; `flyctl
+secrets list -a oyebazar-web` us ka hona to batata hai, qadar nahi.
+
+---
+
+## 🔴 1.6 Ek khula hua khatra — parh kar aage barhen
+
+Ye teen baatein ALAG ALAG bilkul theek hain, magar **saath mein** ek poora darwaza banati
+hain:
+
+1. Har dukan ka WhatsApp number `/bazaar` par **bina login** chhapta hai — directory ki
+   poori qeemat wohi hai, ye design hai.
+2. Seed mein dukan ka `phone` (jis se LOGIN hota hai) aur `whatsappPublic` (jo chhapta
+   hai) **ek hi qadar** hain.
+3. `STATIC_OTP` laga hone ka matlab hai ke har number par wohi ek code chalta hai.
+
+Yani koi bhi shakhs `/bazaar` khole, kisi dukan ka number parhe, `/supplier/login` par
+daale, wo code likhe — aur us dukan ke portal mein hai: order, customer ke pate, payout.
+**Koi andaruni maloomat darkar nahi.**
+
+Hal do qadam hai, aur **isi tarteeb mein**:
+
+1. `WHATSAPP_PROVIDER` set ho (WATI ka URL + key), taake asli OTP waqai pohanche
+2. **Us ke baad** `STATIC_OTP` hataya jaye
+
+🔴 Tarteeb ulti karna khud ko bahar kar dena hai: provider ke baghair `STATIC_OTP`
+hatate hi kisi ko koi code nahi milega — team ko bhi nahi.
+
+Us ke baad ye teen baatein bhi mil kar bhi bay-zarar ho jati hain, kyunke code phir sirf
+us number par pohanchta hai jo waqai us dukan ka hai.
 
 ---
 

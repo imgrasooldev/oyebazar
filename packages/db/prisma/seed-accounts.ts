@@ -46,14 +46,32 @@ const RESELLERS = [
   { name: 'صادیہ', city: 'Rawalpindi', area: 'Satellite Town' },
   { name: 'حرا', city: 'Lahore', area: 'Johar Town' },
   { name: 'عائشہ', city: 'Karachi', area: 'Gulshan-e-Iqbal' },
+  { name: 'مریم', city: 'Lahore', area: 'Model Town' },
+  { name: 'فاطمہ', city: 'Karachi', area: 'North Nazimabad' },
+  { name: 'زینب', city: 'Faisalabad', area: 'Peoples Colony' },
+  { name: 'ایمان', city: 'Islamabad', area: 'G-11' },
+  { name: 'رابعہ', city: 'Multan', area: 'Cantt' },
+  { name: 'خدیجہ', city: 'Peshawar', area: 'University Town' },
+  { name: 'ثنا', city: 'Gujranwala', area: 'Model Town' },
+  { name: 'امینہ', city: 'Sialkot', area: 'Cantt' },
+  { name: 'نورین', city: 'Quetta', area: 'Jinnah Town' },
 ]
 
-const ADMIN = {
-  name: 'Ghulam Rasool',
-  email: 'imgrasool@gmail.com',
-  phone: '923004445566',
-  role: 'SUPER_ADMIN' as const,
-}
+/**
+ * Ops ki team — har darje ka apna khaata.
+ *
+ * 🔴 Ek hi SUPER_ADMIN se ikhtiyar ki rok TEST hi nahi ho sakti. Poore nizam ka
+ * aadha usool ye hai ke REVIEWER dekh sakta hai magar badal nahi sakta, aur COORDINATOR
+ * order aage barha sakta hai magar fee ko haath nahi laga sakta. Us par bharosa karne se
+ * pehle wo chal kar dekhna parta hai — aur us ke liye har darje ka ek khaata chahiye.
+ */
+const OPS_TEAM = [
+  { name: 'Ghulam Rasool', email: 'imgrasool@gmail.com', phone: '923004445566', role: 'SUPER_ADMIN' as const },
+  { name: 'Ops Manager', email: 'manager@oyebazar.com', phone: '923004445567', role: 'MANAGER' as const },
+  { name: 'Ops Coordinator', email: 'coord@oyebazar.com', phone: '923004445568', role: 'COORDINATOR' as const },
+  { name: 'Ops Coordinator 2', email: 'coord2@oyebazar.com', phone: '923004445569', role: 'COORDINATOR' as const },
+  { name: 'Auditor Sahib', email: 'auditor@oyebazar.com', phone: '923004445570', role: 'REVIEWER' as const },
+]
 
 /** Karachi/Lahore ke aam rate — dukan apne settings se badal sakti hai. */
 const DELIVERY = { city: 200, other: 350 }
@@ -124,17 +142,19 @@ async function main(): Promise<void> {
     made += 1
   }
 
-  const adminExists = await prisma.opsUser.findUnique({ where: { phone: ADMIN.phone } })
-  if (adminExists) skipped += 1
-  else {
-    await prisma.opsUser.create({ data: { ...ADMIN, isActive: true } })
+  for (const member of OPS_TEAM) {
+    if (await prisma.opsUser.findUnique({ where: { phone: member.phone } })) {
+      skipped += 1
+      continue
+    }
+    await prisma.opsUser.create({ data: { ...member, isActive: true } })
     made += 1
   }
 
   console.log(`khaate: ${made} naye, ${skipped} pehle se mojood`)
   console.log('\ndukanen  :', SUPPLIERS.map((_, i) => supplierPhone(i)).join(', '))
   console.log('resellers:', RESELLERS.map((_, i) => resellerPhone(i)).join(', '))
-  console.log('admin    :', ADMIN.phone)
+  console.log('ops      :', OPS_TEAM.map((m) => `${m.phone} (${m.role})`).join(', '))
 
   await prisma.$disconnect()
 }
