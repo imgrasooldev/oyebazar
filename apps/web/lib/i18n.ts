@@ -1428,6 +1428,43 @@ const DICTIONARY = {
     en: '{n} of {total} parcels to this number arrived',
     rm: 'Is number par {total} mein se {n} parcel pohanch chuke hain',
   },
+
+  // ---- Nayi reseller ka pehla safha ----
+  firstRunTitle: {
+    ur: 'شروع یہاں سے کریں',
+    en: 'Start here',
+    rm: 'Shuru yahan se karen',
+  },
+  firstRunBody: {
+    ur: 'تین قدم، اور آج ہی آپ کا پہلا اسٹیٹس تیار',
+    en: 'Three steps, and your first status is ready today',
+    rm: 'Teen qadam, aur aaj hi aap ka pehla status tayyar',
+  },
+  firstRunStep1: {
+    ur: 'کیٹلاگ میں سے کوئی مال چنیں',
+    en: 'Pick something from the catalogue',
+    rm: 'Catalogue mein se koi maal chunen',
+  },
+  firstRunStep2: {
+    ur: 'ایک تپ میں اس کا اسٹیٹس پیک بنائیں',
+    en: 'Make its status pack in one tap',
+    rm: 'Ek tap mein us ka status pack banayen',
+  },
+  firstRunStep3: {
+    ur: 'وہ تصویر اپنے واٹس ایپ اسٹیٹس پر لگائیں',
+    en: 'Put that image on your WhatsApp status',
+    rm: 'Wo tasveer apne WhatsApp status par lagayen',
+  },
+  firstRunStep3Why: {
+    ur: 'یہی وہ قدم ہے جس سے آرڈر آتا ہے — پیک بنا لینا کافی نہیں',
+    en: 'This is the step that brings orders — making the pack is not enough',
+    rm: 'Yehi wo qadam hai jis se order aata hai — pack bana lena kaafi nahi',
+  },
+  firstRunCta: {
+    ur: 'کیٹلاگ کھولیں',
+    en: 'Open the catalogue',
+    rm: 'Catalogue kholen',
+  },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
   moneyByReseller: { ur: 'ریسیلر کے حساب سے', en: 'By reseller', rm: 'Reseller ke hisab se' },
   moneyEarnedTotal: { ur: 'کل کمائی', en: 'Total earned', rm: 'Kul kamai' },

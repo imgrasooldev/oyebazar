@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { LazyImage } from '@/components/lazy-image'
+import { FirstRun } from '@/components/first-run'
 import type { Metadata } from 'next'
 import { formatPkr } from '@oyebazar/shared'
 import { MiniBars, StatTile, Widget } from '@/components/dash-kit'
@@ -84,7 +85,19 @@ export default async function ResellerDashboard() {
   ])
   const myRecord = risk[0]
 
+
+
   const orders = ordersPage.items.map(toResellerOrderDTO)
+
+  /*
+   * Bilkul nayi reseller — abhi tak ek bhi pack nahi banaya aur ek bhi order nahi.
+   *
+   * 🔴 Aise mein ginti wale chaar card (`Rs 0`, `0`, `0`, `0`) dikhana nuqsan deta
+   * hai: wo kuch batate nahi, aur pehle din ka pehla tassur ye chhorte hain ke "yahan
+   * kuch hai hi nahi". Un ki jagah wo EK cheez honi chahiye jo usay karni hai.
+   */
+  const bilkulNayi = stats.packsMade === 0 && stats.ordersRunning === 0 &&
+    stats.ordersDelivered === 0 && orders.length === 0
 
   /*
    * Kamai ki chaal — do hafte.
@@ -231,6 +244,28 @@ export default async function ResellerDashboard() {
         Ye khana kaala hai aur baqi safed: is safhe par sab se bara sawal yehi hai, aur
         ek nazar mein pata chalna chahiye ke wo kahan likha hai.
       */}
+      {/*
+        Nayi reseller ko pehla qadam — ginti ke card ki JAGAH, un ke saath nahi.
+
+        🔴 Dono ek saath dikhane ka matlab hota ke wo pehle chaar sifar parhti, phir
+        neeche jaa kar samajhti ke karna kya hai. Pehla tassur wo chaar sifar hi bante,
+        aur wohi yaad rehta.
+      */}
+      {bilkulNayi && (
+        <FirstRun
+          labels={{
+            title: t('firstRunTitle'),
+            body: t('firstRunBody'),
+            step1: t('firstRunStep1'),
+            step2: t('firstRunStep2'),
+            step3: t('firstRunStep3'),
+            step3Why: t('firstRunStep3Why'),
+            cta: t('firstRunCta'),
+          }}
+        />
+      )}
+
+      {!bilkulNayi && (
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {/* Tarteeb StatTile jaisi — nishan aur naam ek qatar mein; wajah wahin likhi hai */}
         <div className="card bg-coal-900 p-4 text-white">
@@ -297,6 +332,7 @@ export default async function ResellerDashboard() {
         />
         )}
       </section>
+      )}
 
       {/*
         "Is hafte kya chal raha hai" — reseller ka rozana ka asal sawal.
