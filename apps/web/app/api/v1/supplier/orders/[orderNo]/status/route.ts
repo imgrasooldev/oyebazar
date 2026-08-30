@@ -22,6 +22,27 @@ const BodySchema = z
      */
     courier: z.string().trim().min(1).max(30).optional(),
     trackingNo: z.string().trim().max(60).optional(),
+    /*
+     * DELIVERED ke saath — adhoori wapsi.
+     *
+     * 🔴 Yehi wo lamha hai jab ye maloom hota hai. COD par customer parcel khol
+     * kar dekhta hai, do cheezein rakhta hai aur ek wapas kar deta hai — courier baqi
+     * maal aur do ka cash le kar aata hai. "Pohancha ya nahi" ka jawab wahan HAAN hai,
+     * magar poore order ka nahi.
+     *
+     * Marzi ka: aksar kuch wapas nahi aata, aur us surat mein ye khaana bhejna hi nahi
+     * chahiye.
+     */
+    returns: z
+      .array(
+        z.object({
+          productId: z.string().min(1),
+          variantId: z.string().min(1).nullable(),
+          qty: z.number().int().min(1),
+        }),
+      )
+      .max(20)
+      .optional(),
   })
   .strict()
   .refine((body) => !['RTO', 'CANCELLED'].includes(body.toStatus) || Boolean(body.reason), {
@@ -54,7 +75,7 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ orderNo: 
   return apiHandler(async () => {
     const { supplier } = await requireSupplier()
     const { orderNo } = await ctx.params
-    const { toStatus, reason, courier, trackingNo } = await parseBody(request, BodySchema)
+    const { toStatus, reason, courier, trackingNo, returns } = await parseBody(request, BodySchema)
 
     const order = await run()
 
@@ -68,7 +89,7 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ orderNo: 
             ...(trackingNo ? { trackingNo } : {}),
           })
         case 'DELIVERED':
-          return container.orders.markDeliveredBySupplier(supplier.id, orderNo)
+          return container.orders.markDeliveredBySupplier(supplier.id, orderNo, returns)
         case 'RTO':
           return container.orders.markRtoBySupplier(supplier.id, orderNo, reason ?? '')
         case 'CANCELLED':

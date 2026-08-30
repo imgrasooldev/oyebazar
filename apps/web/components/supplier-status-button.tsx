@@ -26,6 +26,7 @@ export function SupplierStatusButton({
   label,
   tone = 'plain',
   note,
+  items,
   labels,
 }: {
   orderNo: string
@@ -42,6 +43,21 @@ export function SupplierStatusButton({
   tone?: 'plain' | 'primary' | 'quiet' | 'danger'
   /** Chhoti si tanbeeh button ke neeche — jaise "is se paisa aap ke zimme likha jaye ga" */
   note?: string
+  /**
+   * Order ka maal — SIRF `DELIVERED` par kaam aata hai.
+   *
+   * 🔴 Ye is liye chahiye ke adhoori wapsi ka sawal maal ki fehrist ke baghair
+   * poochha hi nahi ja sakta: "kya kuch wapas aaya" ka jawab ek haan/na nahi hai, wo
+   * "kaunsa, kitna" hai. Na diya jaye to sawal poochha hi nahi jata aur button pehle
+   * jaisa ek tap rehta hai — jo un raston par theek hai jahan fehrist mojood nahi
+   * (magic link).
+   */
+  items?: readonly {
+    productId: string
+    variantId: string | null
+    qty: number
+    title: string
+  }[]
   labels: {
     reasonAsk: string
     confirm: string
@@ -49,6 +65,10 @@ export function SupplierStatusButton({
     courierAsk: string
     cnAsk: string
     cnHint: string
+    /** "Kuch wapas aaya?" — sirf DELIVERED par */
+    returnsAsk: string
+    returnsNone: string
+    returnsTotal: string
   }
 }) {
   const router = useRouter()
@@ -70,10 +90,22 @@ export function SupplierStatusButton({
    * parcel ka jhagra bhi usi ke sar aata hai.
    */
   const needsParcel = toStatus === 'DISPATCHED'
+
+  /*
+   * 🔴 Adhoori wapsi ka sawal SIRF tab poochha jata hai jab fehrist mojood ho.
+   *
+   * Is se pehle sirf do rukh the: sab pohancha (DELIVERED) ya sab wapas (RTO). Beech ki
+   * soorat mein dukan wale ko dono mein se ek jhoot likhna parta tha — aur dono ka
+   * bhugtaan kisi na kisi ne karna tha: DELIVERED likhne par reseller ko us maal ki
+   * kamai milti jo wapas aa chuka, aur RTO likhne par wo poori kamai se mehroom hoti jo
+   * us ne waqai kamai thi.
+   */
+  const canSplit = toStatus === 'DELIVERED' && (items?.length ?? 0) > 0
   const [asking, setAsking] = useState(false)
   const [reason, setReason] = useState('')
   const [courier, setCourier] = useState<string | null>(null)
   const [tracking, setTracking] = useState('')
+  const [returned, setReturned] = useState<Record<string, number>>({})
 
   const parcelReady =
     courier !== null &&
@@ -93,6 +125,24 @@ export function SupplierStatusButton({
           ? {
               courier,
               ...(courier === SELF_COURIER ? {} : { trackingNo: normaliseTracking(tracking) }),
+            }
+          : {}),
+        /*
+         * Sirf wo qatarein jin par ginti WAQAI likhi gayi ho.
+         *
+         * 🔴 `qty: 0` bhejna khali fehrist bhejne ke barabar nahi hai — server
+         * us par `returnedQty` ko 0 likh deta, jo aam soorat mein wohi hai magar us
+         * lamhe ek fazool likhai hai. Jo baat kehni hi nahi, wo bheji bhi nahi jati.
+         */
+        ...(canSplit
+          ? {
+              returns: (items ?? [])
+                .map((item) => ({
+                  productId: item.productId,
+                  variantId: item.variantId,
+                  qty: returned[`${item.productId}:${item.variantId ?? ''}`] ?? 0,
+                }))
+                .filter((entry) => entry.qty > 0),
             }
           : {}),
       }),
@@ -191,6 +241,84 @@ export function SupplierStatusButton({
     )
   }
 
+  if (canSplit && asking) {
+    const total = (items ?? []).reduce(
+      (sum, item) => sum + (returned[`${item.productId}:${item.variantId ?? ''}`] ?? 0),
+      0,
+    )
+
+    return (
+      <span className="flex w-full flex-col gap-2 rounded-card bg-paper-sunken p-3">
+        <label className="text-[0.8rem] font-semibold text-ink-soft">{labels.returnsAsk}</label>
+
+        {(items ?? []).map((item) => {
+          const key = `${item.productId}:${item.variantId ?? ''}`
+          return (
+            <span key={key} className="flex items-center gap-2">
+              <span className="min-w-0 flex-1 truncate text-[0.85rem]">{item.title}</span>
+              <span dir="ltr" className="numeric shrink-0 text-[0.78rem] text-ink-faint">
+                × {item.qty}
+              </span>
+              {/*
+                🔴 `max` bheje hue par bandha hai. Us se zyada wapas aana mumkin
+                hi nahi, aur us par kamai MANFI ho jati — yani reseller ke zimme paisa
+                nikal aata. Server par bhi wohi hadd lagi hui hai; ye sirf yahan tak
+                pohanchne se pehle rok deti hai.
+              */}
+              <input
+                type="number"
+                min={0}
+                max={item.qty}
+                dir="ltr"
+                value={returned[key] ?? 0}
+                onChange={(event) =>
+                  setReturned((current) => ({
+                    ...current,
+                    [key]: Math.max(0, Math.min(Number(event.target.value) || 0, item.qty)),
+                  }))
+                }
+                className="numeric min-h-tap w-16 shrink-0 rounded-card bg-paper px-2 text-center text-sm"
+              />
+            </span>
+          )
+        })}
+
+        {/*
+          Jumla wapsi — ek nazar mein.
+
+          Chaar qataron par alag alag number likhne ke baad banda bhool jata hai ke us
+          ne kul kitna likha. Ye wohi ek number hai jis par wo "haan" keh raha hai.
+        */}
+        <span className="text-[0.78rem] text-ink-faint">
+          {total > 0 ? labels.returnsTotal.replace('{n}', String(total)) : labels.returnsNone}
+        </span>
+
+        {error && <span className="text-[0.8rem] text-red-700">{error}</span>}
+
+        <span className="flex gap-2">
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => void run()}
+            className="btn-primary !py-2 !text-[0.85rem] disabled:opacity-50"
+          >
+            {labels.confirm}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setAsking(false)
+              setReturned({})
+            }}
+            className="px-2 text-[0.85rem] text-ink-faint"
+          >
+            {labels.back}
+          </button>
+        </span>
+      </span>
+    )
+  }
+
   if (needsReason && asking) {
     return (
       <span className="flex w-full flex-col gap-2 rounded-card bg-paper-sunken p-3">
@@ -234,7 +362,7 @@ export function SupplierStatusButton({
       <button
         type="button"
         disabled={pending}
-        onClick={() => (needsReason || needsParcel ? setAsking(true) : void run())}
+        onClick={() => (needsReason || needsParcel || canSplit ? setAsking(true) : void run())}
         className={className}
       >
         {pending ? '…' : label}

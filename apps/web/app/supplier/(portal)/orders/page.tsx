@@ -195,6 +195,9 @@ function Section({
     courierAsk: t('courierAsk'),
     cnAsk: t('cnAsk'),
     cnHint: t('cnHint'),
+    returnsAsk: t('returnsAsk'),
+    returnsNone: t('returnsNone'),
+    returnsTotal: t('returnsTotal'),
   }
 
   return (
@@ -272,6 +275,17 @@ function Section({
                   label={t('markDelivered')}
                   tone="primary"
                   note={t('deliveredOpensMoney')}
+                  /*
+                    Maal ki fehrist — isi se adhoori wapsi ka sawal bunta hai.
+                    Na di jaye to button pehle jaisa ek tap rehta hai (magic link wala
+                    rasta wahi rehta hai, kyunke wahan fehrist mojood nahi).
+                  */
+                  items={order.items.map((item) => ({
+                    productId: item.productId,
+                    variantId: item.variantId,
+                    qty: item.qty,
+                    title: locale === 'ur' ? item.titleUr : item.titleEn,
+                  }))}
                   labels={actionLabels}
                 />
                 <SupplierStatusButton

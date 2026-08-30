@@ -74,6 +74,18 @@ export default async function SupplierOrderPage({
     courierAsk: t('courierAsk'),
     cnAsk: t('cnAsk'),
     cnHint: t('cnHint'),
+    /*
+      Adhoori wapsi ke lafz yahan bhi jate hain — magar sawal yahan poochha NAHI jata.
+
+      Button ye sawal sirf tab poochhta hai jab usay maal ki fehrist di jaye, aur is
+      raste par wo nahi di jati: magic link ka safha bina login ke khulta hai aur wahan
+      maal ki tafseel dena us se ziyada dena hoga jitna is darwaze ka haq hai. Lafz
+      phir bhi yahan hain kyunke component ek hi hai — aur ek hi component rakhna is se
+      behtar hai ke do banayen jo kal alag ho jayen.
+    */
+    returnsAsk: t('returnsAsk'),
+    returnsNone: t('returnsNone'),
+    returnsTotal: t('returnsTotal'),
   }
   /*
    * Wapsi ka andaza — sirf usi lamhe jab faisla abhi baqi ho.

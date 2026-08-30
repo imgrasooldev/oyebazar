@@ -37,6 +37,7 @@ import type {
   OrderLineView,
   ResellerOrderView,
 } from '../domain/order'
+import { keptQty } from '../domain/order'
 import type {
   FeeLedgerRepository,
   OrderRepository,
@@ -145,6 +146,8 @@ export class OrderService {
         productId: line.productId,
         variantId: line.variantId ?? null,
         qty: line.qty,
+        // Naya order — abhi kuch wapas aaya hi nahi
+        returnedQty: 0,
         supplierPriceSnapshot: product.supplierPrice,
         bajiPriceSnapshot: product.bajiPrice,
         retailPriceSnapshot: line.retailPrice,
@@ -512,15 +515,69 @@ export class OrderService {
    * Yahi wo jagah hai jahan paisa banta hai: fee EARNED hoti hai aur reseller ka hissa
    * dukan ke zimme likha jata hai — dekhen afterDelivered().
    */
-  async markDeliveredBySupplier(supplierId: string, orderNo: string): Promise<InternalOrderView> {
+  async markDeliveredBySupplier(
+    supplierId: string,
+    orderNo: string,
+    /**
+     * Adhoori wapsi — kis maal ke kitne wapas aaye.
+     *
+     * 🔴 Yehi wo lamha hai jab ye maloom hota hai. Pakistan mein COD par customer
+     * parcel khol kar dekhta hai, do cheezein rakhta hai aur ek wapas kar deta hai —
+     * courier baqi maal aur us do ka cash le kar aata hai. Wahan tak "pohancha ya nahi"
+     * ka jawab HAAN hai, magar poore order ka nahi.
+     *
+     * Is se pehle sirf do rukh the: sab pohancha (DELIVERED) ya sab wapas (RTO). Beech
+     * ki soorat mein dukan wale ko dono mein se ek jhoot likhna parta tha — aur dono ka
+     * bhugtaan kisi na kisi ne karna tha: DELIVERED likhne par reseller ko us maal ki
+     * kamai milti jo wapas aa chuka, aur RTO likhne par wo poori kamai se mehroom hoti
+     * jo us ne waqai kamai thi.
+     */
+    returns?: readonly { productId: string; variantId: string | null; qty: number }[],
+  ): Promise<InternalOrderView> {
     const view = await this.orders.findForSupplier(supplierId, orderNo)
     if (!view) throw new NotFoundError('Order', orderNo)
+
+    /*
+     * 🔴 Wapsi PEHLE darj hoti hai, halat badalne se BHI pehle.
+     *
+     * `afterDelivered` reseller ka hisab kholta hai aur fee kamai likhta hai, aur dono
+     * `keptQty` par bante hain. Agar wapsi baad mein darj ho to wo hisab us maal par
+     * khul chuka hoga jo wapas aa gaya — aur us ke baad usay theek karne ka koi rasta
+     * nahi (payout khul chuka, khabar ja chuki).
+     *
+     * Yehi ghalti is repo par pehle bhi ho chuki hai, doosri shakl mein: code migration
+     * se pehle live ho gaya tha. Tarteeb ka bharosa aadmi ki yaadasht par rakhna hi
+     * ghalti thi — is liye wo yahan LIKHI hui hai.
+     */
+    if (returns && returns.length > 0) {
+      await this.orders.recordReturns(view.id, returns)
+    }
 
     const updated = await this.transition(view.id, 'DELIVERED', {
       actorType: 'supplier',
       actorId: supplierId,
       note: 'Wholesaler: maal pohanch gaya, cash mil gaya',
     })
+
+    /*
+     * Wapas aaya hua maal shelf par — poori RTO ki tarah, magar sirf utna.
+     *
+     * `RETURN_TO_SHELF` wohi wajah rakhta hai jo poori wapsi par likhi hui hai: ye maal
+     * poora chakkar laga kar aaya hai, us par kirchaya lag chuka hai. Register mein wo
+     * mansookh order se alag dikhna chahiye.
+     */
+    for (const item of updated.items) {
+      if (item.returnedQty <= 0) continue
+      await this.inventory.release(
+        {
+          productId: item.productId,
+          qty: item.returnedQty,
+          ...(item.variantId ? { variantId: item.variantId } : {}),
+          orderNo: updated.orderNo,
+        },
+        'RETURN_TO_SHELF',
+      )
+    }
 
     return this.afterDelivered(updated, { actorType: 'supplier', actorId: supplierId })
   }
@@ -905,8 +962,9 @@ export class OrderService {
 
   /** Reseller ka munafa: (us ka rate − hamara rate) × tadaad. */
   private resellerEarnings(order: InternalOrderView): Pkr {
+    // Wohi hisab jo `earningsOf` karta hai — do jagah do alag ginti nahi hone chahiye
     const total = order.items.reduce(
-      (sum, item) => sum + (item.retailPriceSnapshot - item.bajiPriceSnapshot) * item.qty,
+      (sum, item) => sum + (item.retailPriceSnapshot - item.bajiPriceSnapshot) * keptQty(item),
       0,
     )
     return pkr(Math.max(total, 0))
@@ -959,7 +1017,25 @@ export class OrderService {
     updated: InternalOrderView,
     actor: { actorType: 'ops' | 'supplier'; actorId: string },
   ): Promise<InternalOrderView> {
-    await this.feeLedger.markEarned(updated.id, this.clock.now())
+    /*
+     * Fee — adhoori wapsi par ghatti hui.
+     *
+     * 🔴 Hisab bheje hue aur rakhe hue maal ke NISBAT par hai, kyunke `bajiFee`
+     * poore order ka ek hi snapshot hai (har qatar ka apna hissa mehfooz nahi hota).
+     * Nisbat rate par hai, `bajiPrice` par nahi: rate order ke waqt tay hua tha aur usi
+     * par dukan ne razamandi di thi.
+     *
+     * Kuch wapas na aaya ho to hisab hota hi nahi — snapshot jaisa ka waisa.
+     */
+    const sent = updated.items.reduce((sum, item) => sum + item.qty, 0)
+    const kept = updated.items.reduce((sum, item) => sum + keptQty(item), 0)
+    const partial = kept < sent && sent > 0
+
+    await this.feeLedger.markEarned(
+      updated.id,
+      this.clock.now(),
+      partial ? Math.round((updated.bajiFee * kept) / sent) : undefined,
+    )
 
     // Reseller ka hissa ab wholesaler ke zimme — hisab khul gaya
     await this.payouts.openForDeliveredOrder({
@@ -1079,8 +1155,18 @@ export class OrderService {
   /** Reseller ka munafa — bajiPrice aur us ke retail ka farq. */
   static earningsOf(items: readonly OrderLineView[]): Pkr {
     if (items.length === 0) return pkr(0)
+    /*
+     * 🔴 `keptQty` — `qty` NAHI.
+     *
+     * Adhoori wapsi mein customer ne sirf wo maal rakha jis ka paisa diya, aur reseller
+     * ki kamai usi par banti hai. `qty` par ginne ka matlab ye hota ke us ka hisab us
+     * maal par khulta jo wapas aa chuka hai — aur us farq ka bhugtaan dukan wala karta,
+     * jis ne wo paisa kabhi wasool hi nahi kiya.
+     */
     return addPkr(
-      ...items.map((i) => multiplyPkr(subtractPkr(i.retailPriceSnapshot, i.bajiPriceSnapshot), i.qty)),
+      ...items.map((i) =>
+        multiplyPkr(subtractPkr(i.retailPriceSnapshot, i.bajiPriceSnapshot), keptQty(i)),
+      ),
     )
   }
 

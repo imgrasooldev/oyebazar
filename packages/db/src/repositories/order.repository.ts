@@ -40,6 +40,7 @@ const INTERNAL_SELECT = {
       productId: true,
       variantId: true,
       qty: true,
+      returnedQty: true,
       supplierPriceSnapshot: true,
       bajiPriceSnapshot: true,
       retailPriceSnapshot: true,
@@ -79,8 +80,11 @@ const SUPPLIER_SELECT = {
   items: {
     select: {
       qty: true,
+      returnedQty: true,
       supplierPriceSnapshot: true,
       productId: true,
+      // Adhoori wapsi isi jore par mel karti hai — dekhen `recordReturns`
+      variantId: true,
     },
   },
 } as const
@@ -107,6 +111,7 @@ const RESELLER_SELECT = {
     select: {
       productId: true,
       qty: true,
+      returnedQty: true,
       bajiPriceSnapshot: true,
       retailPriceSnapshot: true,
       // supplierPriceSnapshot: JAAN BOOJH KAR NAHI
@@ -133,6 +138,7 @@ function toInternal(row: InternalRow): InternalOrderView {
       productId: item.productId,
       variantId: item.variantId,
       qty: item.qty,
+      returnedQty: item.returnedQty,
       supplierPriceSnapshot: pkr(item.supplierPriceSnapshot),
       bajiPriceSnapshot: pkr(item.bajiPriceSnapshot),
       retailPriceSnapshot: pkr(item.retailPriceSnapshot),
@@ -272,9 +278,12 @@ export class PrismaOrderRepository implements OrderRepository {
       courier: row.courier,
       trackingNo: row.trackingNo,
       items: row.items.map((item) => ({
+        productId: item.productId,
+        variantId: item.variantId,
         titleUr: titles.get(item.productId)?.titleUr ?? '',
         titleEn: titles.get(item.productId)?.titleEn ?? '',
         qty: item.qty,
+        returnedQty: item.returnedQty,
         supplierPrice: pkr(item.supplierPriceSnapshot),
       })),
     }
@@ -333,6 +342,44 @@ export class PrismaOrderRepository implements OrderRepository {
   }
 
   /** 🔴 Status + audit event ek saath. Ek bhi kam hua to order ki tareekh jhooti ho jati hai. */
+  async recordReturns(
+    orderId: string,
+    returns: readonly { productId: string; variantId: string | null; qty: number }[],
+  ): Promise<void> {
+    if (returns.length === 0) return
+
+    await this.db.$transaction(async (tx) => {
+      const items = await tx.orderItem.findMany({
+        where: { orderId },
+        select: { id: true, productId: true, variantId: true, qty: true },
+      })
+
+      for (const entry of returns) {
+        const item = items.find(
+          (row) => row.productId === entry.productId && row.variantId === entry.variantId,
+        )
+        /*
+         * 🔴 Jo qatar mile hi na, us par CHUP CHAAP aage. Ye tabhi hota hai jab
+         * safha purana ho ya maal beech mein badal gaya ho — aur us par poora qadam
+         * girana us dukan wale ko rok deta jo baqi teen cheezon ki wapsi theek likh
+         * chuka hai.
+         */
+        if (!item) continue
+
+        /*
+         * 🔴 Wapsi bheje hue se ZYADA nahi ho sakti.
+         *
+         * Ye sirf ek ghalat likhi hui qadar se mumkin hai (ya purane safhe se), magar
+         * us par manfi kamai banti hai — yani reseller ke zimme paisa nikal aata. Hadd
+         * yahan lagti hai, dikhane wale par nahi: safha kal badal sakta hai, ye qaida
+         * nahi.
+         */
+        const qty = Math.max(0, Math.min(entry.qty, item.qty))
+        await tx.orderItem.update({ where: { id: item.id }, data: { returnedQty: qty } })
+      }
+    })
+  }
+
   async applyStatusChange(change: OrderStatusChange): Promise<InternalOrderView> {
     const [, updated] = await this.db.$transaction([
       this.db.orderEvent.create({

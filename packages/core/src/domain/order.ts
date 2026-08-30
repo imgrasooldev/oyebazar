@@ -33,9 +33,33 @@ export interface OrderLineView {
   readonly productId: string
   readonly variantId: string | null
   readonly qty: number
+  /**
+   * Kitne wapas aaye — adhoori wapsi.
+   *
+   * 🔴 `qty` se ALAG. `qty` wo hai jo bheja gaya (snapshot, kabhi nahi badalta);
+   * ye wo hai jo wapas aaya. Paisa dono ke FARQ par banta hai, aur wo farq har jagah ek
+   * hi jagah se nikalna chahiye — dekhen `keptQty()`.
+   */
+  readonly returnedQty: number
   readonly supplierPriceSnapshot: Pkr
   readonly bajiPriceSnapshot: Pkr
   readonly retailPriceSnapshot: Pkr
+}
+
+/**
+ * Kitne maal ka paisa bana — bheje hue mein se wapas aaye hue nikaal kar.
+ *
+ * 🔴 Ye ek hi jagah hai jahan ye hisab hota hai, aur wohi is function ki poori
+ * wajah hai. Reseller ki kamai, hamari fee aur register — teenon isi par khare hain.
+ * Teen jagah teen dafa likhne ka matlab ye hota ke kal ek jagah theek hoti aur do
+ * purani reh jatin, aur wo farq kisi ko mahinon nazar na aata: har number apni jagah
+ * theek DIKHTA rehta.
+ *
+ * `Math.max` is liye ke wapsi kabhi bheje hue se zyada na ho — wo sirf ek ghalat likhi
+ * hui qadar se hi mumkin hai, aur us par manfi paisa banane se behtar sifar hai.
+ */
+export function keptQty(line: { qty: number; returnedQty: number }): number {
+  return Math.max(line.qty - line.returnedQty, 0)
 }
 
 /** Reseller ko dikhne wala order — 🔴 is mein supplier ka koi zikr nahi. */

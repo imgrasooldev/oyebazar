@@ -31,7 +31,33 @@ export class PrismaFeeLedgerRepository implements FeeLedgerRepository {
     })
   }
 
-  async markEarned(orderId: string, at: Date): Promise<void> {
+  async markEarned(orderId: string, at: Date, amount?: number): Promise<void> {
+    /*
+     * Adhoori wapsi par fee GHATTI hai — magar kabhi BARHTI nahi.
+     *
+     * 🔴 `Math.min` lazmi hai. Fee ka rate order ke waqt tay ho chuka tha aur
+     * row par likha ja chuka hai; usay baad mein barhana wo cheez badalna hoga jis par
+     * dukan ne razamandi di thi. Ghatana hamesha jaiz hai — wo hamara apna hissa chhorna
+     * hai, kisi aur ka nahi.
+     */
+    if (amount !== undefined) {
+      const row = await this.db.feeLedger.findUnique({
+        where: { orderId },
+        select: { amount: true },
+      })
+      if (row) {
+        await this.db.feeLedger.updateMany({
+          where: { orderId, status: 'PENDING' },
+          data: {
+            status: 'EARNED',
+            earnedAt: at,
+            amount: Math.max(0, Math.min(amount, row.amount)),
+          },
+        })
+        return
+      }
+    }
+
     // Sirf PENDING se EARNED — pehle se invoiced ya written-off row ko chherna nahi
     await this.db.feeLedger.updateMany({
       where: { orderId, status: 'PENDING' },

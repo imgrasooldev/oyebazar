@@ -813,6 +813,7 @@ describe('earningsOf', () => {
         productId: 'p',
         variantId: null,
         qty: 2,
+        returnedQty: 0,
         supplierPriceSnapshot: pkr(2000),
         bajiPriceSnapshot: pkr(2100),
         retailPriceSnapshot: pkr(2800),

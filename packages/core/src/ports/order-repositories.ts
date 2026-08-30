@@ -134,9 +134,20 @@ export interface SupplierOrderView {
   readonly courier: string | null
   readonly trackingNo: string | null
   readonly items: readonly {
+    /**
+     * Maal ki shanakht — adhoori wapsi darj karne ke liye.
+     *
+     * 🔴 `OrderItem.id` NAHI. Wo andarooni id hai jis ka safhe par koi kaam
+     * nahi; ye do khaane wo hain jin par server mel karta hai (`recordReturns`), aur
+     * unhen bhejne se safhe ko us id ka ilm rakhna nahi parta jo us ki nahi hai.
+     */
+    readonly productId: string
+    readonly variantId: string | null
     readonly titleUr: string
     readonly titleEn: string
     readonly qty: number
+    /** Kitne wapas aaye — adhoori wapsi. `0` = kuch nahi. */
+    readonly returnedQty: number
     /** 🔴 wholesaler ka APNA price — reseller ka retail yahan kabhi nahi */
     readonly supplierPrice: Pkr
   }[]
@@ -170,6 +181,24 @@ export interface OrderRepository {
    * Alag alag hone par ek din event gum ho jayega aur order ki tareekh adhoori reh jayegi.
    */
   applyStatusChange(change: OrderStatusChange): Promise<InternalOrderView>
+
+  /**
+   * Adhoori wapsi darj karo — kis maal ke kitne wapas aaye.
+   *
+   * 🔴 Ye status BADALTA NAHI. Wapsi darj karna aur order ko "pohanch gaya"
+   * likhna do alag qadam hain, aur unhen alag rakhna zaroori hai: paisa `keptQty` par
+   * banta hai, aur wo hisab tabhi durust hoga jab wapsi PEHLE darj ho chuki ho. Ek hi
+   * qadam mein dono karne se tarteeb par bharosa aadmi ki yaadasht par chala jata —
+   * aur wohi ghalti yahan pehle bhi ho chuki hai (migration deploy se pehle).
+   *
+   * `productId` + `variantId` par mel hota hai, `OrderItem.id` par nahi: dukan wale ka
+   * safha maal DIKHATA hai, us ki andarooni id nahi, aur ek order mein ek hi maal ki
+   * do qatarein nahi hoteen.
+   */
+  recordReturns(
+    orderId: string,
+    returns: readonly { productId: string; variantId: string | null; qty: number }[],
+  ): Promise<void>
 
   /** Confirmation ka intezar kar rahe orders — reminder aur auto-cancel jobs ke liye. */
   findPendingConfirmationBefore(cutoff: Date, limit: number): Promise<InternalOrderView[]>
@@ -293,7 +322,18 @@ export interface FeeLedgerRepository {
    * 🔴 Invoice sirf EARNED rows par banti hai, PENDING par nahi: raste ka order abhi
    * kamai nahi hai aur wapas bhi aa sakta hai.
    */
-  markEarned(orderId: string, at: Date): Promise<void>
+  /**
+   * Fee kamai — aur adhoori wapsi par GHATTI hui.
+   *
+   * 🔴 `amount` marzi ka is liye hai ke aam soorat mein fee wohi rehti hai jo
+   * order ke waqt likhi gayi thi (snapshot). Sirf jab maal ka ek hissa wapas aaya ho,
+   * tab hum us par apni fee nahi le sakte — wo paisa dukan wale ne wasool hi nahi kiya.
+   *
+   * Ye row par likhi hui asal qadar se ZYADA kabhi nahi hoti (jaanch adapter mein hai):
+   * fee ka rate order ke waqt tay ho chuka tha, aur usay baad mein barhana wo cheez
+   * badalna hoga jis par dukan ne razamandi di thi.
+   */
+  markEarned(orderId: string, at: Date, amount?: number): Promise<void>
   markWrittenOff(orderId: string, reason: string): Promise<void>
   findByOrderId(orderId: string): Promise<{ amount: Pkr; status: string } | null>
 

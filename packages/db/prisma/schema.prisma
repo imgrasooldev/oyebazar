@@ -853,6 +853,17 @@ model OrderItem {
   productId String
   variantId String?
   qty       Int     @default(1)
+  /**
+   * Kitne WAPAS aaye — adhoori wapsi.
+   *
+   * 🔴 `qty` ko ghatate NAHI hain. Wo us waqt ka snapshot hai: itna maal bheja
+   * gaya tha, aur us par courier ka kharcha aur dukan ki mehnat lag chuki hai. Ghatane
+   * ka matlab hota ke teen mahine baad koi dekhe aur samajhe ke sirf do hi bheje gaye
+   * the — aur wapsi ka poora nuqsan tareekh se gayab ho jata.
+   *
+   * `0` = kuch wapas nahi aaya, aur wohi aam soorat hai.
+   */
+  returnedQty Int    @default(0)
 
   // 🔴 SNAPSHOTS — prices badalti rehti hain, history nahi badalni chahiye
   supplierPriceSnapshot Int

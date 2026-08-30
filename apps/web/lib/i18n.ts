@@ -1523,6 +1523,11 @@ const DICTIONARY = {
   inviteShare: { ur: 'واٹس ایپ پر بھیجیں', en: 'Send on WhatsApp', rm: 'WhatsApp par bhejen' },
   inviteCopied: { ur: '✓ کاپی ہو گیا', en: '✓ Copied', rm: '✓ Copy ho gaya' },
   inviteCount: { ur: '{n} بہنیں آ چکیں', en: '{n} joined', rm: '{n} behnen aa chukin' },
+
+  // Adhoori wapsi — delivery ke waqt
+  returnsAsk: { ur: 'کچھ واپس آیا؟ جو واپس آیا اُس کی گنتی لکھیں', en: 'Anything returned? Enter how many came back', rm: 'Kuch wapas aaya? Jo wapas aaya us ki ginti likhen' },
+  returnsNone: { ur: 'کچھ واپس نہیں آیا', en: 'Nothing came back', rm: 'Kuch wapas nahi aaya' },
+  returnsTotal: { ur: '{n} چیزیں واپس آئیں', en: '{n} came back', rm: '{n} cheezen wapas aayin' },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
   moneyByReseller: { ur: 'ریسیلر کے حساب سے', en: 'By reseller', rm: 'Reseller ke hisab se' },
   moneyEarnedTotal: { ur: 'کل کمائی', en: 'Total earned', rm: 'Kul kamai' },
