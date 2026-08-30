@@ -186,7 +186,7 @@ export default async function SupplierInventoryPage({
         jab us ke paas naya maal utra ho. Dono ko barabar numaya karne se pehli list ka
         poora maqsad khatam ho jata — wo isi liye upar hai ke us par nazar pare.
       */}
-      <Widget title={t('allStock')} subtitle={t('allStockBody')}>
+      <Widget title={t('allStock')} subtitle={`${t('allStockBody')} ${t('reorderLevelOff')}`}>
         {/*
           Talash ek saada form hai — koi JavaScript nahi. Bari dukan par 200 qataren
           hoti hain, aur phone par un mein scroll karna wohi kaam hai jise koi nahi karta.
@@ -292,10 +292,17 @@ function StockRow({
   const held = places.filter((place) => place.qty > 0)
 
   return (
-    <li className="space-y-2 py-3 first:pt-0 last:pb-0">
+    /*
+      🔴 `py-2` aur `space-y-1.5` — pehle `py-3 space-y-2` tha aur qatar 112px ki
+      banti thi. 34 qatarein = 3,793px; 400 SKU wali dukan par 45,000px.
+
+      Naap chhoti karna aadha hal hai; doosra aadha ye ke auzaar ab band rehte hain
+      (dekhen SupplierStockActions).
+    */
+    <li className="space-y-1.5 py-2 first:pt-0 last:pb-0">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate font-semibold">
+          <p className="truncate text-[0.92rem] font-semibold">
             {locale === 'ur' ? line.titleUr : line.titleEn}
             {(line.colour || line.size) && (
               <span className="ms-2 text-[0.8rem] font-normal text-ink-faint">
@@ -303,7 +310,7 @@ function StockRow({
               </span>
             )}
           </p>
-          <p className="mt-0.5 text-[0.78rem] text-ink-faint">
+          <p className="text-[0.76rem] text-ink-faint">
             {/*
               30 din ki chaal SAATH — bina us ke ye list bemani hai: "2 bache hain" us
               maal par bhi likha jata jo saal mein ek dafa bikta hai, aur aisi list dukan
@@ -403,7 +410,19 @@ function MoveRow({ move, locale }: { move: StockMoveView; locale: Locale }) {
         {move.warehouseName && (
           <span className="ms-1.5 text-[0.76rem] text-ink-faint">· {move.warehouseName}</span>
         )}
-        {move.note && (
+        {/*
+          🔴 OPENING par note NAHI dikhta.
+
+          Us par note kabhi dukan wale ka likha hua hota hi nahi — wo backfill ka ek
+          jama hua jumla hai ("Register shuru hone se pehle ka maal"), jo har us qatar
+          par ek jaisa para hai. Screenshot mein wo 34 dafa likha hua tha.
+
+          Aur wo kehta bhi wohi hai jo saath wala khaana pehle se keh raha hai: پہلی
+          گنتی. Note ka kaam wo batana hai jo wajah nahi bata sakti; jab wo bhi wohi
+          baat kahe to sirf qatar bhaari karta hai aur aankh us khaane ko parhna chhor
+          deti hai — us din bhi jab wahan asal mein kuch likha ho.
+        */}
+        {move.note && move.reason !== 'OPENING' && (
           <span className="ms-1.5 text-[0.76rem] text-ink-faint">— {move.note}</span>
         )}
       </td>
@@ -442,7 +461,7 @@ function actionLabels(t: ReturnType<typeof translator>) {
     writeOffQty: t('writeOffQty'),
     writeOffReason: t('writeOffReason'),
     reorderLabel: t('reorderLevelLabel'),
-    reorderOff: t('reorderLevelOff'),
+    change: t('stockChange'),
     transfer: t('transferAction'),
     transferFrom: t('transferFrom'),
     transferTo: t('transferTo'),

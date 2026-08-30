@@ -49,7 +49,8 @@ export function SupplierStockActions({
     writeOffQty: string
     writeOffReason: string
     reorderLabel: string
-    reorderOff: string
+    /** Band halat wala button — "Badlein" */
+    change: string
     transfer: string
     transferFrom: string
     transferTo: string
@@ -63,6 +64,18 @@ export function SupplierStockActions({
 }) {
   const router = useRouter()
   const [open, setOpen] = useState<'in' | 'off' | 'move' | null>(null)
+  /*
+   * Auzaar band halat mein — sirf ek chhota button.
+   *
+   * 🔴 Naapa: har qatar 112px thi aur 34 qatarein 3,793px ban rahi thin. Jis dukan
+   * ke 400 SKU hon us ke liye ye 45,000px hai — yani list PARHNE ke qabil hi nahi.
+   *
+   * Aur ye teen tehen har qatar par zaroorat nahi thin. Is safhe par dukan ka rozana ka
+   * sawal "kya khatam ho raha hai" hai, aur us ka jawab UPAR wale khaane mein pehle se
+   * hai. "Saara maal" wali list DEKHNE ke liye hai; auzaar sirf us qatar par chahiyen jis
+   * par wo waqai kuch kar rahi hai.
+   */
+  const [showTools, setShowTools] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -189,6 +202,18 @@ export function SupplierStockActions({
 
   const levelChanged = Number(level) !== reorderLevel
 
+  if (!showTools) {
+    return (
+      <button
+        type="button"
+        onClick={() => setShowTools(true)}
+        className="text-[0.76rem] font-semibold text-brand-700 underline decoration-dotted underline-offset-2"
+      >
+        {labels.change}
+      </button>
+    )
+  }
+
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
@@ -242,9 +267,7 @@ export function SupplierStockActions({
             >
               {pending ? labels.saving : labels.save}
             </button>
-          ) : (
-            <span className="text-[0.7rem]">{labels.reorderOff}</span>
-          )}
+          ) : null}
         </span>
       </div>
 

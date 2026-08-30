@@ -1465,6 +1465,9 @@ const DICTIONARY = {
     en: 'Open the catalogue',
     rm: 'Catalogue kholen',
   },
+
+  // Inventory ki qatar — band halat mein sirf ye button
+  stockChange: { ur: 'بدلیں', en: 'Change', rm: 'Badlein' },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
   moneyByReseller: { ur: 'ریسیلر کے حساب سے', en: 'By reseller', rm: 'Reseller ke hisab se' },
   moneyEarnedTotal: { ur: 'کل کمائی', en: 'Total earned', rm: 'Kul kamai' },
