@@ -58,21 +58,44 @@ Ek aur faida: prod ka `DATABASE_URL` kisi ke laptop par utarne ki zaroorat nahi.
 
 ## 5 · Abhi kya MOJOOD NAHI hai
 
-29 August tak — code se jaancha, andaza nahi:
+30 August tak — code se jaancha, andaza nahi:
 
 | | |
 |---|---|
-| Nayi reseller ka onboarding | ❌ login ke baad seedha khali dashboard |
-| `Customer` model | ❌ naam/number/pata sirf Order par strings hain |
 | Ek tasveer mein kai maal (collage) | ❌ ek pack = ek maal |
 | Rate ki hadd (price floor) | ❌ `suggestedRetail` sirf mashwara hai |
+| Adhoori wapsi (partial return) | ❌ `RTO` poora order wapas karta hai |
+| Customer ki apni fehrist ka safha | ⚠️ `Customer` model bana (30 Aug) magar browse karne ka safha nahi — sirf order ke form par pehchan aur pata bharna |
 | `Tier` (NEW/BRONZE/SILVER/GOLD) | ⚠️ column hai, sirf dikhaya jata hai — **mara hua** |
 | `Reseller.referredById` | ⚠️ column hai, kabhi parha ya likha nahi jata — **mara hua** |
+| `OrderMessage.photoUrl` | ⚠️ column hai, koi API usay leti hi nahi — **mara hua** |
 
 🔴 Mara hua code jo zinda dikhta ho, wo aam mare hue code se khatarnak hai: koi us par
 bharosa kar ke feature bana leta hai jo kabhi chala hi nahi.
 
-## 🔴 6 · Ek khula hua khatra
+**30 August ko ye ban gaya** (jadwal se hataya): nayi reseller ka onboarding, `Customer`
+model (+ backfill), dukan ke portal mein order ki guftagu, payout ki rasid, har card par
+bikri ki ginti, ops ka Activity daftar, order ki talash, aur AI se maal ke khaane.
+
+## 🔴 6 · AI abhi CHALA hi nahi hai
+
+`ANTHROPIC_API_KEY` production par **set nahi** hai. Nateeja:
+
+- Status ke jumle (`ClaudePitchWriter`) har dafa chup chaap template par girte hain — wo
+  model aaj tak ek dafa bhi nahi chala.
+- Tasveer se maal ke khaane bharne wala button (`ProductDescriber`) **dikhta hi nahi** —
+  `createProductDescriber()` key ke baghair `null` deta hai aur safhe us par button
+  chhupa dete hain.
+
+```bash
+flyctl secrets set ANTHROPIC_API_KEY=sk-ant-... -a oyebazar-web
+```
+
+🔴 Yani AI ke bare mein koi bhi baat "chal raha hai" ke tor par na likhen jab tak key na
+lage aur us par ek asli maal na chala liya jaye. Model ka jawab kaisa aata hai, ye abhi
+**kisi ne dekha hi nahi**.
+
+## 🔴 7 · Ek khula hua khatra
 
 `STATIC_OTP=112233` production par laga hua hai — yani har OTP wohi hai. API ab wo code
 **wapas nahi** deti (29 Aug), magar andaza lagaya ja sakta hai.
@@ -84,3 +107,13 @@ Hal do qadam hai, **isi tarteeb mein**:
 
 Ulta karna khud ko bahar kar dena hai — provider ke baghair kisi ko koi code nahi milega,
 team ko bhi nahi.
+
+Aur ek nateeja jo isi se nikalta hai: **ops ka login production mein khulta hi nahi.**
+Ops jaan boojh kar `STATIC_OTP` se BAHAR hai (`container.ts` — "Ops is se bahar hai"),
+aur provider na hone ki wajah se asli code sirf Fly ke log mein likha jata hai:
+
+```bash
+flyctl logs -a oyebazar-web --no-tail | grep baji_login_otp | tail -1
+```
+
+Ye chalne ka tareeqa nahi hai — jis din team barhegi, har banda malik ko phone karega.
