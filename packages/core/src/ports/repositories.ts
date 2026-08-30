@@ -195,6 +195,16 @@ export interface SupplierRepository {
 
 export interface ResellerRepository {
   findById(id: string): Promise<ResellerView | null>
+
+  /**
+   * Is ne kitni behnon ko bulaya — sirf GINTI.
+   *
+   * 🔴 Naam ya fehrist jaan boojh kar NAHI. Ye doosri reseller ke bare mein
+   * maloomat hai, aur us ne apna account is liye nahi banaya tha ke koi teesra us ka
+   * naam kisi aur ke safhe par dekhe. Ginti wo sab kuch keh deti hai jo bulane wali ko
+   * jaanna chahiye ("mera bulana kaam kar raha hai") aur us se ek lafz zyada nahi.
+   */
+  countReferred(resellerId: string): Promise<number>
   findByPhone(phoneE164: string): Promise<ResellerView | null>
   create(input: { name: string; whatsappPhone: string; city: string; area?: string }): Promise<ResellerView>
   touchLastActive(id: string, at: Date): Promise<void>

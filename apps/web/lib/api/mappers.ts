@@ -177,7 +177,6 @@ export function toResellerProfileDTO(reseller: ResellerView): ResellerProfile {
     whatsappPhoneMasked: maskPhone(reseller.whatsappPhone),
     city: reseller.city,
     area: reseller.area,
-    tier: reseller.tier,
     payoutAccountMasked: maskAccount(reseller.payoutAccount),
     joinedAt: reseller.createdAt.toISOString(),
   })

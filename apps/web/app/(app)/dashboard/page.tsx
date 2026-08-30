@@ -8,6 +8,7 @@ import { BoxesIcon, GridIcon, ListIcon, MoneyIcon, SparkIcon, WhatsAppIcon } fro
 import { ResellerPayoutReply } from '@/components/payout-actions'
 import { toResellerOrderDTO } from '@/lib/api/mappers'
 import { requireReseller } from '@/lib/api/session'
+import { InviteCard } from '@/components/invite-card'
 import { container } from '@/lib/container'
 import { reviewPeriod } from '@oyebazar/core'
 import { SupplierReviewForm } from '@/components/supplier-review-form'
@@ -58,6 +59,7 @@ export default async function ResellerDashboard() {
     pendingReview,
     waitingPata,
     repeatCustomers,
+    referred,
   ] = await Promise.all([
     container.repositories.resellerStats.summary(reseller.id, new Date()),
     container.orders.listForReseller(reseller.id, { limit: 5 }),
@@ -101,6 +103,8 @@ export default async function ResellerDashboard() {
      * poochhta hi nahi jab tak jawab us ke saamne na ho.
      */
     container.repositories.customers.topRepeat(reseller.id, 6),
+    // Is ke link se kitni behnen aayin — ginti, naam nahi (dekhen port ka note)
+    container.repositories.resellers.countReferred(reseller.id),
   ])
   const myRecord = risk[0]
 
@@ -424,6 +428,29 @@ export default async function ResellerDashboard() {
           </ul>
         </section>
       )}
+
+      {/*
+        Kisi behen ko bulayen — safhe par NEECHE ki taraf.
+
+        🔴 Ye rozana ka kaam nahi hai aur na hona chahiye. Upar rakhne se wo us
+        jagah le leta jahan aaj ka asal kaam hai (ruka hua pata, dukan ki raye, order),
+        aur reseller ko har roz ek aisi cheez dekhni parti jo us ne kal kar li thi.
+
+        Magar safhe par HONA zaroori hai: alag safhe par rakhne ka matlab hota ke wo
+        usay kabhi kholti hi nahi, aur ye poora rasta dobara mara hua ho jata — bilkul
+        waise jaise `referredById` mahinon tak para tha.
+      */}
+      <InviteCard
+        resellerId={reseller.id}
+        referred={referred}
+        labels={{
+          title: t('inviteTitle'),
+          body: t('inviteBody'),
+          share: t('inviteShare'),
+          copied: t('inviteCopied'),
+          count: t('inviteCount'),
+        }}
+      />
 
       {trending.length > 0 && (
         <section className="mt-8">

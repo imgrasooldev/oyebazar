@@ -358,7 +358,7 @@ export class PrismaAdminRepository implements AdminRepository {
         whatsappPhone: true,
         city: true,
         status: true,
-        tier: true,
+        referredById: true,
         lastActiveAt: true,
         createdAt: true,
         _count: { select: { orders: true } },
@@ -367,7 +367,30 @@ export class PrismaAdminRepository implements AdminRepository {
       take: filter.limit,
     })
 
-    return rows.map(({ _count, ...row }) => ({ ...row, orderCount: _count.orders }))
+    /*
+     * Bulane wali ka NAAM — ek hi query mein.
+     *
+     * 🔴 Har qatar ke liye alag `findUnique` chalana N+1 hai, aur is safhe par
+     * pachaas qatarein hoti hain. `Set` is liye ke ek behen aksar kai ko bulati hai:
+     * pachaas qatarein aksar paanch naamon ki hoti hain.
+     */
+    const referrerIds = [
+      ...new Set(rows.map((row) => row.referredById).filter((id): id is string => !!id)),
+    ]
+    const names = new Map<string, string>()
+    if (referrerIds.length > 0) {
+      const referrers = await this.db.reseller.findMany({
+        where: { id: { in: referrerIds } },
+        select: { id: true, name: true },
+      })
+      for (const referrer of referrers) names.set(referrer.id, referrer.name)
+    }
+
+    return rows.map(({ _count, referredById, ...row }) => ({
+      ...row,
+      referredByName: referredById ? (names.get(referredById) ?? null) : null,
+      orderCount: _count.orders,
+    }))
   }
 
   async setResellerStatus(

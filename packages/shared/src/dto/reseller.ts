@@ -1,7 +1,5 @@
 import { z } from 'zod'
 
-export const ResellerTierSchema = z.enum(['NEW', 'BRONZE', 'SILVER', 'GOLD'])
-
 /** /api/v1/me — profile + performance summary. Koi payout account plain text mein nahi. */
 export const ResellerProfileDTO = z
   .object({
@@ -11,7 +9,6 @@ export const ResellerProfileDTO = z
     whatsappPhoneMasked: z.string(),
     city: z.string(),
     area: z.string().nullable(),
-    tier: ResellerTierSchema,
     /** masked: ****4521 */
     payoutAccountMasked: z.string().nullable(),
     joinedAt: z.string(),

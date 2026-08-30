@@ -1,6 +1,6 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { translator, type Locale } from '@/lib/i18n'
 
@@ -19,6 +19,7 @@ type Step = 'phone' | 'code' | 'register'
 export function LoginForm({ locale }: { locale: Locale }) {
   const t = translator(locale)
   const router = useRouter()
+  const search = useSearchParams()
   const [step, setStep] = useState<Step>('phone')
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
@@ -104,7 +105,26 @@ export function LoginForm({ locale }: { locale: Locale }) {
     event.preventDefault()
     setError(null)
     startTransition(async () => {
-      const result = await post('/api/v1/auth/register', { phone, code, name, city })
+      /*
+       * Bulane wali ki id — PATE se, form se nahi.
+       *
+       * 🔴 Ye khaana kabhi form par nahi aana chahiye. Naya banda apni bulane
+       * wali ki id likh hi nahi sakta, aur usay poochhna un do khaanon mein teesra
+       * izafa hota jin ke bare mein schema par likha hai: "har extra khana ek aur wajah
+       * hai chhor jane ki".
+       *
+       * Ghalat ya purana `ref` par server chup chaap aage barh jata hai (dekhen
+       * AuthService) — link WhatsApp par forward hota hai aur kat jata hai, aur us par
+       * naye bande ko rok dena hamara sab se qeemti lamha zaya kar dena hai.
+       */
+      const ref = search.get('ref')?.trim()
+      const result = await post('/api/v1/auth/register', {
+        phone,
+        code,
+        name,
+        city,
+        ...(ref ? { referredById: ref } : {}),
+      })
       if (result.ok) router.replace('/dashboard')
       else setError(result.message ?? null)
     })

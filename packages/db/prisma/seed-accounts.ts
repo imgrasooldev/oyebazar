@@ -136,7 +136,6 @@ async function main(): Promise<void> {
         city: reseller.city,
         area: reseller.area,
         status: 'ACTIVE',
-        tier: 'NEW',
       },
     })
     made += 1

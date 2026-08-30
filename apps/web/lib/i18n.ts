@@ -1516,6 +1516,13 @@ const DICTIONARY = {
   // Dobara aane wale customer — reseller ka sab se bara asset
   repeatCustomers: { ur: 'آپ کے پرانے گاہک', en: 'Your repeat customers', rm: 'Aap ke purane grahak' },
   repeatCustomersBody: { ur: 'جنہوں نے ایک سے زیادہ بار خریدا۔ نئی خریداری سب سے اوپر۔', en: 'Bought from you more than once. Most recent first.', rm: 'Jinhon ne ek se ziyada baar khareeda. Nayi khareedari sab se upar.' },
+
+  // Kisi behen ko bulana — referredById ka doosra sira
+  inviteTitle: { ur: 'کسی بہن کو بلائیں', en: 'Invite another seller', rm: 'Kisi behen ko bulayen' },
+  inviteBody: { ur: 'گھر بیٹھے کمانا شروع کریں — تھوک کا مال، آپ کا اپنا ریٹ۔', en: 'Start earning from home — wholesale goods, your own price.', rm: 'Ghar baithe kamana shuru karen — thok ka maal, aap ka apna rate.' },
+  inviteShare: { ur: 'واٹس ایپ پر بھیجیں', en: 'Send on WhatsApp', rm: 'WhatsApp par bhejen' },
+  inviteCopied: { ur: '✓ کاپی ہو گیا', en: '✓ Copied', rm: '✓ Copy ho gaya' },
+  inviteCount: { ur: '{n} بہنیں آ چکیں', en: '{n} joined', rm: '{n} behnen aa chukin' },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
   moneyByReseller: { ur: 'ریسیلر کے حساب سے', en: 'By reseller', rm: 'Reseller ke hisab se' },
   moneyEarnedTotal: { ur: 'کل کمائی', en: 'Total earned', rm: 'Kul kamai' },

@@ -225,13 +225,15 @@ const RESELLERS = {
       whatsappPhone: '923001234567',
       city: 'Lahore',
       area: null,
-      tier: 'NEW' as const,
       status: 'ACTIVE' as const,
       payoutAccount: null,
       packDefaults: DEFAULT_PACK_OPTIONS,
       packTemplateKey: null,
       createdAt: NOW,
     }
+  },
+  async countReferred() {
+    return 0
   },
   async findByPhone() {
     return null

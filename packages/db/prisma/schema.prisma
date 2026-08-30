@@ -499,8 +499,18 @@ model Reseller {
   payoutMethod  PayoutMethod?
   payoutAccount String? // UI par hamesha masked
   status        ResellerStatus @default(ACTIVE)
-  tier          Tier           @default(NEW)
   codEnabled    Boolean        @default(true)
+  /**
+   * Kis behen ne bulaya — us ki apni `id`.
+   *
+   * 🔴 Ye khaana MAHINON tak mara hua para tha: banaya gaya, kabhi likha nahi
+   * gaya, kabhi parha nahi gaya. Aisa code jo zinda dikhta ho, aam mare hue code se
+   * khatarnak hai — koi us par bharosa kar ke feature bana leta hai jo chala hi nahi.
+   *
+   * Ab ye register ke waqt bharta hai (`/join?ref=<id>`) aur dashboard par dikhta hai.
+   * Alag "referral code" ka khaana jaan boojh kar nahi banaya: `id` pehle se mojood hai
+   * aur us ke jaanne se kuch milta nahi — wo sirf ye batati hai ke kis ne bulaya.
+   */
   referredById  String?
   lastActiveAt  DateTime?
   createdAt     DateTime       @default(now())
@@ -546,13 +556,6 @@ enum ResellerStatus {
 enum PayoutMethod {
   JAZZCASH
   EASYPAISA
-}
-
-enum Tier {
-  NEW
-  BRONZE
-  SILVER
-  GOLD
 }
 
 model ResellerPricing {

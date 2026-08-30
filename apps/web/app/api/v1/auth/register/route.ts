@@ -17,11 +17,11 @@ export const runtime = 'nodejs'
  */
 export async function POST(request: Request) {
   return apiHandler(async () => {
-    const { phone, code, name, city } = await parseBody(request, RegisterSchema)
+    const { phone, code, name, city, referredById } = await parseBody(request, RegisterSchema)
     const result = await container.auth.register(
       phone,
       code,
-      { name, city },
+      { name, city, ...(referredById ? { referredById } : {}) },
       { userAgent: request.headers.get('user-agent') ?? undefined },
     )
 

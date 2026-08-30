@@ -94,7 +94,17 @@ export interface AdminResellerRow {
   readonly whatsappPhone: string
   readonly city: string
   readonly status: 'ACTIVE' | 'LIMITED' | 'SUSPENDED'
-  readonly tier: string
+  /**
+   * Kis behen ne bulaya — naam, id nahi.
+   *
+   * 🔴 Ye khaana `tier` ki jagah aaya hai. Wo har qatar par 'NEW' chhapta tha
+   * (kyunke usay koi badalta hi nahi tha) aur us ka dikhna un numberon ka wazan bhi kam
+   * karta tha jo us ke saath khare hain aur sach bolte hain.
+   *
+   * Yahan naam jata hai, `referredById` nahi: ops ko wo jorna nahi chahiye jo hum jor
+   * kar de sakte hain.
+   */
+  readonly referredByName: string | null
   readonly orderCount: number
   readonly lastActiveAt: Date | null
   readonly createdAt: Date

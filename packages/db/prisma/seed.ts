@@ -223,7 +223,7 @@ async function main() {
   }
 
   for (const reseller of RESELLERS) {
-    await prisma.reseller.create({ data: { ...reseller, status: 'ACTIVE', tier: 'NEW' } })
+    await prisma.reseller.create({ data: { ...reseller, status: 'ACTIVE' } })
   }
 
   console.log('Seed mukammal:', {

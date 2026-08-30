@@ -152,7 +152,7 @@ export class AuthService {
   async register(
     phoneE164: string,
     code: string,
-    profile: { name: string; city: string; area?: string },
+    profile: { name: string; city: string; area?: string; referredById?: string | undefined },
     meta: { userAgent?: string },
   ): Promise<LoginResult> {
     const now = this.clock.now()
@@ -168,18 +168,36 @@ export class AuthService {
       return this.startSession(existing, now, meta)
     }
 
+    /*
+     * Bulane wali ki tasdeeq — aur na milne par CHUP CHAAP aage.
+     *
+     * 🔴 Ghalat ya purana `ref` par register ROKNA nahi chahiye. Ye id pate mein
+     * hoti hai: link WhatsApp par forward hota hai, kat jata hai, purana ho jata hai.
+     * Us par "ghalat link" keh kar naye bande ko rok dena hamara sab se qeemti lamha
+     * zaya kar dena hai — wo wapas nahi aata.
+     *
+     * Aur khud ko bulana bhi yahin rukta hai: ye us surat mein hota hai jab koi apna
+     * hi link kholta hai, aur us par rishta banane ka koi matlab nahi.
+     */
+    let referredById: string | undefined
+    if (profile.referredById) {
+      const referrer = await this.resellers.findById(profile.referredById)
+      if (referrer && referrer.whatsappPhone !== phoneE164) referredById = referrer.id
+    }
+
     const reseller = await this.resellers.create({
       name: profile.name,
       whatsappPhone: phoneE164,
       city: profile.city,
       ...(profile.area ? { area: profile.area } : {}),
+      ...(referredById ? { referredById } : {}),
     })
 
     await this.analytics.track({
       name: 'reseller_registered',
       actorType: 'reseller',
       actorId: reseller.id,
-      properties: { city: profile.city },
+      properties: { city: profile.city, referred: referredById ? 'yes' : 'no' },
     })
     this.logger.info('reseller_registered', { resellerId: reseller.id, city: profile.city })
 

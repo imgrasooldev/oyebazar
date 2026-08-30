@@ -47,10 +47,19 @@ export default async function AdminResellersPage() {
                   <dt className="text-ink-faint">Orders</dt>
                   <dd className="font-bold">{reseller.orderCount}</dd>
                 </div>
-                <div>
-                  <dt className="text-ink-faint">Tier</dt>
-                  <dd className="font-bold">{reseller.tier}</dd>
-                </div>
+                {/*
+                  Kis ne bulaya — `Tier` ki jagah.
+
+                  Wo khaana har qatar par 'NEW' chhapta tha, kyunke usay koi badalta hi
+                  nahi tha. Ye us ki jagah wo cheez hai jo har qatar par ALAG hoti hai
+                  aur jis se ops ko waqai kuch pata chalta hai.
+                */}
+                {reseller.referredByName && (
+                  <div dir="auto">
+                    <dt className="text-ink-faint">Invited by</dt>
+                    <dd className="font-bold">{reseller.referredByName}</dd>
+                  </div>
+                )}
               </dl>
 
               <div className="flex shrink-0 items-center gap-2">

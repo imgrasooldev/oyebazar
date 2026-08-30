@@ -8,7 +8,6 @@ const RESELLER_SELECT = {
   whatsappPhone: true,
   city: true,
   area: true,
-  tier: true,
   status: true,
   payoutAccount: true,
   packLang: true,
@@ -27,7 +26,6 @@ type Row = {
   whatsappPhone: string
   city: string
   area: string | null
-  tier: 'NEW' | 'BRONZE' | 'SILVER' | 'GOLD'
   status: 'ACTIVE' | 'LIMITED' | 'SUSPENDED'
   payoutAccount: string | null
   packLang: string
@@ -91,6 +89,7 @@ export class PrismaResellerRepository implements ResellerRepository {
     whatsappPhone: string
     city: string
     area?: string
+    referredById?: string
   }): Promise<ResellerView> {
     const row = await this.db.reseller.create({
       data: {
@@ -98,10 +97,15 @@ export class PrismaResellerRepository implements ResellerRepository {
         whatsappPhone: input.whatsappPhone,
         city: input.city,
         ...(input.area ? { area: input.area } : {}),
+        ...(input.referredById ? { referredById: input.referredById } : {}),
       },
       select: RESELLER_SELECT,
     })
     return toView(row)
+  }
+
+  async countReferred(resellerId: string): Promise<number> {
+    return this.db.reseller.count({ where: { referredById: resellerId } })
   }
 
   /** Throttled — AuthService har request par nahi, login par call karti hai. */

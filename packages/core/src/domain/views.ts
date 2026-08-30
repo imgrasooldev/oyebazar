@@ -226,7 +226,6 @@ export interface ResellerView {
   readonly whatsappPhone: string
   readonly city: string
   readonly area: string | null
-  readonly tier: 'NEW' | 'BRONZE' | 'SILVER' | 'GOLD'
   readonly status: 'ACTIVE' | 'LIMITED' | 'SUSPENDED'
   readonly payoutAccount: string | null
   /**

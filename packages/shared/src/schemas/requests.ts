@@ -179,6 +179,19 @@ export const RegisterSchema = z
     // area aur payout tab poochhte hain jab zaroorat parti hai.
     name: z.string().trim().min(2, 'Apna naam likhen').max(40),
     city: z.string().trim().min(2, 'Sheher likhen').max(40),
+    /**
+     * Kis behen ne bulaya — us ki `id`, link se.
+     *
+     * 🔴 Ye khaana form par NAHI hai aur kabhi nahi hona chahiye. Wo pate
+     * (`/?ref=…`) se aata hai aur chhupa hua chala jata hai. Naya banda apni bulane
+     * wali ki id likh hi nahi sakta, aur usay poochhna un do khaanon mein teesra
+     * izafa hota jin ke bare mein upar likha hai ke "har extra khana ek aur wajah hai
+     * chhor jane ki".
+     *
+     * Ghalat id par account phir bhi banta hai (dekhen AuthService) — bulane wale ka
+     * naam galat hona us se behtar hai ke koi register hi na ho sake.
+     */
+    referredById: z.string().trim().max(40).optional(),
   })
   .strict()
 
