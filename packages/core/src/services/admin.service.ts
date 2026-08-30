@@ -12,7 +12,7 @@
  * hain: ek ghalat click se supplier hamesha ke liye 0% par chala jata hai, aur invoice
  * banate hi ledger ki rows wapas nahi hoti.
  */
-import { ForbiddenError, ValidationError, type Pkr } from '@oyebazar/shared'
+import { ForbiddenError, NotFoundError, ValidationError, type Pkr } from '@oyebazar/shared'
 import type {
   AdminDashboardStats,
   AdminInvoiceRow,
@@ -255,8 +255,15 @@ export class AdminService {
       throw new ValidationError('Fee rate 0 se 20% ke darmiyan honi chahiye')
     }
 
-    await this.admin.setSupplierFeeRate(supplierId, feeRateBps)
-    await this.record(actor, 'admin_supplier_fee_changed', { supplierId, feeRateBps })
+    const from = await this.admin.setSupplierFeeRate(supplierId, feeRateBps)
+    if (from === null) throw new NotFoundError('Supplier', supplierId)
+
+    // "Kahan se kahan" — akela naya number daftar mein kuch nahi kehta
+    await this.record(actor, 'admin_supplier_fee_changed', {
+      supplierId,
+      from,
+      to: feeRateBps,
+    })
   }
 
   // ------------------------------------------------------------------- products

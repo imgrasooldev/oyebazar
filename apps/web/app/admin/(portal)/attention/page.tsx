@@ -170,6 +170,7 @@ const KIND_LABEL: Record<OpsFlag['kind'], string> = {
   payoutDisputed: 'Disputed',
   payoutOverdue: 'Overdue',
   orderUnanswered: 'No answer',
+  openIssue: 'Issue raised',
   duplicateProduct: 'Duplicate',
   uncategorised: 'No category',
   oddPrice: 'Odd price',
@@ -199,6 +200,20 @@ function sentence(flag: OpsFlag): string {
 
     case 'orderUnanswered':
       return `Sent to the wholesaler ${v.hours} hours ago and still unanswered — a customer is waiting`
+
+    /*
+      🔴 The reseller's own words carry this row, not a sentence we compose.
+
+      Every other flag is something we NOTICED. This one is something a person WROTE,
+      and paraphrasing it would be the one place on this page where we put words in
+      someone's mouth. Her sentence is also the only thing that tells ops whether this
+      is a wrong colour or a lost parcel — which is exactly the call this page exists
+      to let them make.
+
+      So the sentence here only carries the clock; `context` carries what she said.
+    */
+    case 'openIssue':
+      return `Open for ${v.hours} hours — she wrote this and nobody has closed it`
 
     case 'oddPrice':
       return `Rs ${Number(v.price).toLocaleString('en-PK')} against a ${String(

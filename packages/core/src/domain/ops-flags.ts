@@ -48,6 +48,8 @@ export type FlagKind =
   | 'unsellable'
   /** App mein kharabi — koi safha ya button waqai toota hua hai */
   | 'appError'
+  /** Reseller ne masla likha aur wo abhi tak khula para hai */
+  | 'openIssue'
 
 export type FlagSeverity = 'high' | 'medium' | 'low'
 
@@ -141,6 +143,28 @@ export const MIN_TITLE_LENGTH = 6
 /** Payout ka jhagra — hamesha sab se upar. Yahan do log aur asli paisa phansa hua hai. */
 export function payoutDisputedSeverity(): FlagSeverity {
   return 'high'
+}
+
+/**
+ * Khula hua masla — jitna purana, utna bhaari.
+ *
+ * 🔴 Ye har haal mein `high` NAHI hai, aur ye faisla soch kar hai. Payout ka
+ * jhagra hamesha high hai kyunke wahan paisa ruka hua hai aur us ka koi doosra rasta
+ * nahi. Masla likhne wali reseller ke paas WhatsApp bhi hai — wo pehle ghante mein
+ * intezar kar sakti hai. Har naye masle ko laal karne ka anjaam ye hota ke laal rang
+ * ka matlab hi khatam ho jata.
+ *
+ * Magar do din baad wo khamoshi kuch aur kehti hai: us ne likha aur kisi ne parha
+ * nahi. Wohi wo lamha hai jahan reseller dobara nahi likhti — aur ye poora nizam
+ * banane ka maqsad wahin khatam ho jata hai.
+ */
+export const ISSUE_OPEN_HOURS_MEDIUM = 4
+export const ISSUE_OPEN_HOURS_HIGH = 48
+
+export function openIssueSeverity(hoursOpen: number): FlagSeverity {
+  if (hoursOpen >= ISSUE_OPEN_HOURS_HIGH) return 'high'
+  if (hoursOpen >= ISSUE_OPEN_HOURS_MEDIUM) return 'medium'
+  return 'low'
 }
 
 /**

@@ -36,6 +36,23 @@ export interface OverduePayoutFlag {
   readonly since: Date
 }
 
+/**
+ * Khula hua masla — reseller ne likha, kisi ne band nahi kiya.
+ *
+ * 🔴 `body` yahan aata hai aur ye ahem hai: masle ki fehrist bina matn ke bekar
+ * hai. "BJ-1043 par masla" par ops ko safha kholna parta hai sirf ye jaanne ke liye ke
+ * baat kya hai — aur bees qataron par wo bees dafa karna parta. Chhanni ka poora
+ * maqsad hi ye hai ke ops yahan se TAY kar sake ke pehle kis par jana hai.
+ */
+export interface OpenIssueFlag {
+  readonly messageId: string
+  readonly orderId: string
+  readonly orderNo: string
+  readonly body: string
+  readonly hoursOpen: number
+  readonly since: Date
+}
+
 export interface UnansweredOrderFlag {
   readonly orderId: string
   readonly orderNo: string
@@ -118,6 +135,9 @@ export interface OpsTriageRepository {
 
   /** Dukan ne order ka jawab hi nahi diya — customer intezar mein hai. */
   unansweredOrders(now: Date, minHours: number, limit: number): Promise<UnansweredOrderFlag[]>
+
+  /** Khule hue masle — purane pehle. */
+  openIssues(now: Date, limit: number): Promise<OpenIssueFlag[]>
 
   /**
    * Rate jo apni category ke darmiyane se bohat door hai.

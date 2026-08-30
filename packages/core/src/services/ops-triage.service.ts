@@ -13,6 +13,7 @@
 import {
   countBySeverity,
   oddPriceSeverity,
+  openIssueSeverity,
   orderUnansweredSeverity,
   payoutDisputedSeverity,
   payoutOverdueSeverity,
@@ -48,6 +49,16 @@ const LIMITS = {
   churn: 20,
   unsellable: 30,
   errors: 20,
+  /*
+   * 🔴 Masle ki hadd sab se chhoti — 20.
+   *
+   * Wajah ye nahi ke wo kam ahem hain, ulta hai: har khula masla ek insaan hai jo
+   * jawab ka intezar kar raha hai, aur us par KAAM karna parta hai (parhna, faisla,
+   * band karna). Chalees payout ek nazar mein chhane ja sakte hain; chalees masle
+   * poora din hain. Jo hadd se bahar reh jayen wo agli dafa upar aa jate hain, kyunke
+   * tarteeb purane pehle hai.
+   */
+  openIssues: 20,
 } as const
 
 /**
@@ -104,6 +115,7 @@ export class OpsTriageService {
       churn,
       unsellable,
       errors,
+      openIssues,
     ] = await Promise.all([
         this.repo.disputedPayouts(LIMITS.disputed),
         this.repo.overduePayouts(now, LIMITS.overdue),
@@ -118,9 +130,38 @@ export class OpsTriageService {
           new Date(now.getTime() - ERROR_WINDOW_HOURS * 60 * 60 * 1000),
           LIMITS.errors,
         ),
+        this.repo.openIssues(now, LIMITS.openIssues),
       ])
 
     const flags: OpsFlag[] = []
+
+    /*
+     * Khule hue masle — sab se pehle jorte hain.
+     *
+     * 🔴 Tarteeb yahan koi maani nahi rakhti (`sortFlags` aakhir mein sab kuch
+     * darje aur umr par dobara lagata hai) — magar ye safhe par WAQAI pehle aane
+     * chahiyen jab darja barabar ho, aur wo `sortFlags` ka mustaqil rehna hai jo isay
+     * yaqeeni banata hai. Yahan pehle likhna sirf parhne wale ke liye hai.
+     */
+    for (const row of openIssues) {
+      flags.push({
+        kind: 'openIssue',
+        severity: openIssueSeverity(row.hoursOpen),
+        subject: 'order',
+        id: row.orderId,
+        label: row.orderNo,
+        /*
+         * Masle ka MATN hi context hai.
+         *
+         * Bina matn ke ops ko har qatar par order ka safha kholna parta sirf ye
+         * jaanne ke liye ke baat kya hai — aur bees qataron par bees dafa. Chhanni ka
+         * poora maqsad hi ye hai ke ops YAHAN SE tay kar sake ke pehle kis par jana hai.
+         */
+        context: row.body,
+        values: { hours: Math.round(row.hoursOpen) },
+        since: row.since,
+      })
+    }
 
     for (const row of disputed) {
       flags.push({

@@ -59,6 +59,9 @@ class FakeTriage implements OpsTriageRepository {
   async unansweredOrders() {
     return this.orders
   }
+  async openIssues() {
+    return []
+  }
   async oddPricedProducts() {
     return this.odd
   }

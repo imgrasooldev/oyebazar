@@ -18,6 +18,7 @@ import type {
   OverduePayoutFlag,
   ProductFlagRow,
   StockChurnRow,
+  OpenIssueFlag,
   UnansweredOrderFlag,
 } from '@oyebazar/core'
 
@@ -105,6 +106,40 @@ export class PrismaOpsTriageRepository implements OpsTriageRepository {
     }
 
     return late
+  }
+
+  /**
+   * Khule hue masle — purane pehle.
+   *
+   * 🔴 Sirf `ISSUE`, `NOTE` nahi. Aam guftagu ka masla hona zaroori nahi; agar
+   * har paighaam yahan aane lage to ye fehrist rozana ki bak-bak se bhar jayegi aur
+   * ops isay kholna chhor degi.
+   *
+   * `resolvedAt: null` — jo band ho chuka wo yahan nahi aata. Yehi wajah hai ke band
+   * karne ka rasta hona lazmi tha (`/api/v1/admin/order-messages/:id/resolve`); us ke
+   * baghair ye fehrist sirf barhti aur kabhi ghatti nahi.
+   */
+  async openIssues(now: Date, limit: number): Promise<OpenIssueFlag[]> {
+    const rows = await this.db.orderMessage.findMany({
+      where: { kind: 'ISSUE', resolvedAt: null },
+      orderBy: { createdAt: 'asc' },
+      take: limit,
+      select: {
+        id: true,
+        body: true,
+        createdAt: true,
+        order: { select: { id: true, orderNo: true } },
+      },
+    })
+
+    return rows.map((row) => ({
+      messageId: row.id,
+      orderId: row.order.id,
+      orderNo: row.order.orderNo,
+      body: row.body,
+      hoursOpen: (now.getTime() - row.createdAt.getTime()) / MS_PER_HOUR,
+      since: row.createdAt,
+    }))
   }
 
   async unansweredOrders(

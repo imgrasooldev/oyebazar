@@ -120,7 +120,17 @@ export interface AdminRepository {
   listSuppliers(filter: { status?: string; limit: number }): Promise<AdminSupplierRow[]>
   setSupplierStatus(id: string, status: 'PENDING' | 'VERIFIED' | 'SUSPENDED'): Promise<void>
   setSupplierListed(id: string, listed: boolean): Promise<void>
-  setSupplierFeeRate(id: string, feeRateBps: number): Promise<void>
+  /**
+   * Fee ka rate badle — aur PURANA rate wapas de.
+   *
+   * 🔴 Purani qadar isi liye wapas aati hai ke daftar mein "300 bps kar diya"
+   * likhna adhoora hai. Asal sawal hamesha ye hota hai ke KAHAN SE kahan gaya: 500 se
+   * 300 karna paisa dena hai, aur 200 se 300 karna paisa lena. Ek hi jumla dono ke liye
+   * likhna us daftar ko bekar kar deta hai jis par jawabdehi khari hai.
+   *
+   * Dukan na milne par `null` — us soorat mein kuch badla bhi nahi.
+   */
+  setSupplierFeeRate(id: string, feeRateBps: number): Promise<number | null>
 
   listProducts(filter: { status?: string; limit: number }): Promise<AdminProductRow[]>
   setProductStatus(id: string, status: 'DRAFT' | 'LIVE' | 'ARCHIVED'): Promise<void>

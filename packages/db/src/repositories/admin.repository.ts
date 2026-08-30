@@ -227,9 +227,26 @@ export class PrismaAdminRepository implements AdminRepository {
     await this.db.supplier.update({ where: { id }, data: { listedOnBazaar: listed } })
   }
 
-  async setSupplierFeeRate(id: string, feeRateBps: number): Promise<void> {
-    // Purane order ki fee snapshot par hai — naya rate sirf aage ke orders par lagta hai
-    await this.db.supplier.update({ where: { id }, data: { feeRateBps } })
+  async setSupplierFeeRate(id: string, feeRateBps: number): Promise<number | null> {
+    /*
+     * Purana rate PEHLE parhte hain — usi transaction mein.
+     *
+     * 🔴 Bahar parhne ka matlab hota ke do harkaton ke darmiyan koi teesra rate
+     * badal de, aur daftar mein wo "kahan se" likha jaye jo kabhi tha hi nahi. Ye
+     * soorat aam nahi hai, magar daftar ka poora faida usi din hai jis din koi us par
+     * sawal uthaye — aur us din "shayad theek hoga" ka koi wazan nahi.
+     */
+    return this.db.$transaction(async (tx) => {
+      const before = await tx.supplier.findUnique({
+        where: { id },
+        select: { feeRateBps: true },
+      })
+      if (!before) return null
+
+      // Purane order ki fee snapshot par hai — naya rate sirf aage ke orders par lagta hai
+      await tx.supplier.update({ where: { id }, data: { feeRateBps } })
+      return before.feeRateBps
+    })
   }
 
   // ------------------------------------------------------------------- products
