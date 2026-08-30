@@ -43,6 +43,16 @@ class FakeProducts implements Pick<ProductRepository, 'findForPricing'> {
 
 class FakeOrders implements Partial<OrderRepository> {
   readonly saved: InternalOrderView[] = []
+
+  /*
+    Bonus ka rasta yahan se guzarta hai (`awardBonuses`) magar us ke qaide is file mein
+    nahi jaanche jate — un ke apne test `domain/bonus.test.ts` mein hain. Yahan sirf
+    itna chahiye ke wo rasta bina ghalti ke guzar jaye, warna har delivery wala test
+    ek aisi warning likhta jo kisi kharabi ki nahi hoti.
+  */
+  async countDelivered(): Promise<number> {
+    return 1
+  }
   /** Jo kuch mehfooz karne bheja gaya — `saved` mein delivery ka khaana hai hi nahi */
   readonly persisted: PersistOrderInput[] = []
   readonly changes: OrderStatusChange[] = []
@@ -226,6 +236,7 @@ const RESELLERS = {
       city: 'Lahore',
       area: null,
       status: 'ACTIVE' as const,
+      referredById: null,
       payoutAccount: null,
       packDefaults: DEFAULT_PACK_OPTIONS,
       packTemplateKey: null,
@@ -307,12 +318,36 @@ function buildService(overrides?: {
     },
   }
 
+  /*
+    Bonus ka daftar — test mein khamosh.
+
+    Is file ke test order ke QAWAID par hain (rate, fee, stock, halat ki tabdeeli).
+    Bonus ke apne qaide `domain/bonus.ts` mein hain aur unhen wahin jaancha jana
+    chahiye; yahan ghusane se ye test un dono cheezon ka zimmedar ho jata jin mein se
+    kisi ka bhi wo asal maqsad nahi.
+  */
+  const bonuses = {
+    async open() {
+      return true
+    },
+    async totalsFor() {
+      return { earned: 0, pending: 0 }
+    },
+    async listPending() {
+      return []
+    },
+    async markPaid() {
+      return true
+    },
+  }
+
   const service = new OrderService(
     orders as unknown as OrderRepository,
     new FakeProducts(overrides?.products ?? [PRODUCT]) as unknown as ProductRepository,
     SUPPLIERS,
     RESELLERS,
     customers,
+    bonuses,
     fees,
     payouts as unknown as PayoutService,
     inventory,

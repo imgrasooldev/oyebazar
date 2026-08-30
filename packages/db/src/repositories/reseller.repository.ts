@@ -9,6 +9,7 @@ const RESELLER_SELECT = {
   city: true,
   area: true,
   status: true,
+  referredById: true,
   payoutAccount: true,
   packLang: true,
   packShowName: true,
@@ -27,6 +28,7 @@ type Row = {
   city: string
   area: string | null
   status: 'ACTIVE' | 'LIMITED' | 'SUSPENDED'
+  referredById: string | null
   payoutAccount: string | null
   packLang: string
   packShowName: boolean

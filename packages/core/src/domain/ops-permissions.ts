@@ -95,6 +95,24 @@ export const OPS_PERMISSIONS = {
     needs: 'MANAGER',
     label: 'Mark an invoice as paid',
   },
+  /*
+   * Bonus dena — MANAGER par, aur `markInvoicePaid` ke saath.
+   *
+   * 🔴 Ye alag ijazat is liye hai ke ye alag SIMT ka paisa hai. `markInvoicePaid`
+   * wo paisa hai jo hamare paas AAYA (dukan ne fee di); bonus wo hai jo hamare paas se
+   * JATA hai. Dono ek hi naam par rakhne ka matlab ye hota ke jis bande ko "wasooli
+   * likhna" ka kaam diya gaya wo chup chaap "paisa dena" bhi kar sakta — aur ye do
+   * bilkul alag darje ke ikhtiyar hain, chahe dono MANAGER par hi kyun na hon.
+   *
+   * MANAGER par (SUPER_ADMIN par nahi) kyunke ye rozana ka kaam hai aur raqam chhoti
+   * hai: pachas ya sau rupay. SUPER_ADMIN par rakhne ka matlab hota ke har hafte ki
+   * fehrist malik ke intezar mein khari rehti — aur wohi wo soorat hai jahan reseller
+   * ka bharosa jata hai, us raqam par nahi jo choti hai, us DER par jo lambi hai.
+   */
+  payBonus: {
+    needs: 'MANAGER',
+    label: 'Pay a reseller bonus',
+  },
   setFeeRate: {
     needs: 'SUPER_ADMIN',
     label: 'Change a wholesaler’s fee rate',

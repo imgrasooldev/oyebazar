@@ -60,6 +60,7 @@ export default async function ResellerDashboard() {
     waitingPata,
     repeatCustomers,
     referred,
+    bonus,
   ] = await Promise.all([
     container.repositories.resellerStats.summary(reseller.id, new Date()),
     container.orders.listForReseller(reseller.id, { limit: 5 }),
@@ -105,6 +106,8 @@ export default async function ResellerDashboard() {
     container.repositories.customers.topRepeat(reseller.id, 6),
     // Is ke link se kitni behnen aayin — ginti, naam nahi (dekhen port ka note)
     container.repositories.resellers.countReferred(reseller.id),
+    // Bonus — kitna bana aur kitna abhi baqi hai
+    container.repositories.bonuses.totalsFor(reseller.id),
   ])
   const myRecord = risk[0]
 
@@ -443,12 +446,17 @@ export default async function ResellerDashboard() {
       <InviteCard
         resellerId={reseller.id}
         referred={referred}
+        bonusEarned={bonus.earned}
+        bonusPending={bonus.pending}
         labels={{
           title: t('inviteTitle'),
           body: t('inviteBody'),
           share: t('inviteShare'),
           copied: t('inviteCopied'),
           count: t('inviteCount'),
+          bonus: t('bonusEarned'),
+          bonusPending: t('bonusPending'),
+          promise: t('bonusPromise'),
         }}
       />
 

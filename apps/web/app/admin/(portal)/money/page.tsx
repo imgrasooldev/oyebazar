@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
-import { formatPkr } from '@oyebazar/shared'
+import { formatPhoneLocal, formatPkr, whatsappLink } from '@oyebazar/shared'
 import { canDo } from '@oyebazar/core'
 import { AdminRowAction } from '@/components/admin-row-action'
 import { AdminPostAction } from '@/components/admin-post-action'
+import { AdminBonusPay } from '@/components/admin-bonus-pay'
 import { AdminPayoutDecision } from '@/components/admin-payout-decision'
 import { requireOpsUser } from '@/lib/api/admin-session'
 import { container } from '@/lib/container'
@@ -27,10 +28,19 @@ export const dynamic = 'force-dynamic'
  */
 export default async function AdminMoneyPage() {
   const { user } = await requireOpsUser()
-  const [money, payoutSummary, disputes] = await Promise.all([
+  const [money, payoutSummary, disputes, bonuses] = await Promise.all([
     container.admin.money(user),
     container.payouts.summariseBySupplier(),
     container.payouts.listDisputed(),
+    /*
+     * Bonus jo dena baqi hai.
+     *
+     * 🔴 Ye `Money` par hai, kisi alag safhe par nahi — kyunke ops ka sawal ek
+     * hi hai: "aaj kis ko paisa dena hai". Bonus ko alag safha dene ka matlab ye hota
+     * ke wo safha kabhi khola hi na jata aur ye qatarein mahinon khari rehteen, jab ke
+     * reseller ka bharosa raqam ki chhotai par nahi, us DER par toot ta hai.
+     */
+    container.repositories.bonuses.listPending(50),
   ])
 
   const pendingTotal = money.pending.reduce((sum, row) => sum + row.amount, 0)
@@ -186,6 +196,67 @@ export default async function AdminMoneyPage() {
         in dono ko saath dekhe baghair nahi hota, aur do screen par baant dena wo soorat
         banata hai jahan ops ek taraf dekh kar faisla kar leti hai.
       */}
+      {/*
+        Bonus jo dena baqi hai — jhagron se PEHLE.
+
+        🔴 Tarteeb soch kar hai. Jhagra ek faisla maangta hai (dono taraf ki baat
+        parhni parti hai); bonus sirf ek kaam maangta hai (paisa bhejo, TID likho). Aasan
+        kaam pehle rakhne ka faida ye hai ke wo waqai HO jata hai — mushkil faisle ke
+        neeche daba hua kaam har roz kal par chala jata hai.
+      */}
+      {bonuses.length > 0 && (
+        <section>
+          <div className="mb-4 flex items-baseline gap-2">
+            <h2 className="text-[1.05rem] font-bold">Bonus to pay</h2>
+            <span
+              dir="ltr"
+              className="numeric rounded-pill bg-paper-sunken px-2 py-0.5 text-[0.75rem] font-bold text-ink-soft"
+            >
+              {bonuses.length}
+            </span>
+          </div>
+
+          <ul className="card divide-y divide-paper-sunken px-4">
+            {bonuses.map((bonus) => (
+              <li key={bonus.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold">{bonus.resellerName}</span>
+                  <span className="block text-[0.76rem] text-ink-faint">
+                    {/*
+                      Kis baat ka bonus — aur kis order par.
+
+                      Bina is ke ops ko wo qatar sirf ek raqam dikhti hai, aur jis din
+                      koi poochhe "ye kis liye tha" us din jawab kahin nahi hota.
+                    */}
+                    {bonus.kind === 'REFERRAL' ? 'Invited a seller' : 'First orders'}
+                    <span className="mx-1.5">·</span>
+                    <span dir="ltr" className="numeric">
+                      {bonus.orderNo}
+                    </span>
+                  </span>
+                </span>
+
+                <a
+                  href={whatsappLink(bonus.resellerPhone, '')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  dir="ltr"
+                  className="numeric shrink-0 text-[0.8rem] font-semibold text-accent-700 underline decoration-dotted underline-offset-2"
+                >
+                  {formatPhoneLocal(bonus.resellerPhone)}
+                </a>
+
+                <span dir="ltr" className="numeric shrink-0 text-[1rem] font-bold">
+                  {formatPkr(bonus.amount)}
+                </span>
+
+                <AdminBonusPay bonusId={bonus.id} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {disputes.length > 0 && (
         <section>
           <h2 className="mb-3 text-[0.72rem] font-bold uppercase tracking-[0.14em] text-red-700">

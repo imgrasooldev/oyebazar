@@ -342,6 +342,10 @@ export class PrismaOrderRepository implements OrderRepository {
   }
 
   /** 🔴 Status + audit event ek saath. Ek bhi kam hua to order ki tareekh jhooti ho jati hai. */
+  async countDelivered(resellerId: string): Promise<number> {
+    return this.db.order.count({ where: { resellerId, status: 'DELIVERED' } })
+  }
+
   async recordReturns(
     orderId: string,
     returns: readonly { productId: string; variantId: string | null; qty: number }[],

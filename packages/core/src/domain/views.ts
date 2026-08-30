@@ -244,6 +244,8 @@ export interface ResellerView {
    */
   readonly packTemplateKey: string | null
   readonly createdAt: Date
+  /** Kis behen ne bulaya — bonus isi par khulta hai */
+  readonly referredById: string | null
 }
 
 export interface StatusPackView {

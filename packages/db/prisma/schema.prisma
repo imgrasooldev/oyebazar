@@ -537,6 +537,7 @@ model Reseller {
   payouts         ResellerPayout[]
   orders          Order[]
   customers       Customer[]
+  bonuses         ResellerBonus[] @relation("BonusEarner")
   reviews         SupplierReview[]
   statusPacks     StatusPack[]
   sessions        Session[]
@@ -556,6 +557,66 @@ enum ResellerStatus {
 enum PayoutMethod {
   JAZZCASH
   EASYPAISA
+}
+
+/**
+ * Reseller ka bonus — platform ki taraf se, dukan ki taraf se NAHI.
+ *
+ * 🔴 Ye `ResellerPayout` se BILKUL alag cheez hai aur dono ka alag rehna
+ * lazmi hai. Payout dukan ka paisa hai jo us ne wasool kiya aur reseller ko dena hai;
+ * bonus HAMARA kharcha hai. Ek hi table mein rakhne ka matlab ye hota ke koi din
+ * "reseller ko kitna dena hai" ka jawab do alag jeb milaa kar deta — aur jis din wo
+ * hisab bigarta, us din pata hi na chalta ke paisa kis ka tha.
+ */
+model ResellerBonus {
+  id         String      @id @default(cuid())
+  resellerId String
+  kind       BonusKind
+  /// Rupay — snapshot. Qaida kal badle to purani rows nahi badalteen.
+  amount     Int
+  /**
+   * Kis order par khula.
+   *
+   * 🔴 SIGNUP par ye us reseller ka apna order hai; REFERRAL par ye us NAYI
+   * behen ka pehla order hai jise is ne bulaya. Dono soorton mein wo ek asli, POHANCH
+   * chuka order hai — bonus kabhi lagaye hue order par nahi khulta.
+   */
+  orderId    String
+  /**
+   * Kaun aayi — sirf REFERRAL par.
+   *
+   * 🔴 `@unique` yehi shart nibhata hai ke ek bulai hui behen par bonus SIRF
+   * EK DAFA khule. Postgres mein kai `null` ek saath chal jate hain, is liye SIGNUP wali
+   * qatarein aapas mein nahi takratin.
+   */
+  fromResellerId String? @unique
+
+  status        BonusStatus @default(PENDING)
+  paidAt        DateTime?
+  /// EasyPaisa/bank ka TID — jhagre mein yehi ek cheez asli hai
+  paidReference String?
+  createdAt     DateTime    @default(now())
+
+  reseller Reseller @relation("BonusEarner", fields: [resellerId], references: [id], onDelete: Cascade)
+  order    Order    @relation(fields: [orderId], references: [id])
+
+  /// Ek order par ek hi qism ka bonus — dobara chalne par nayi qatar nahi banti
+  @@unique([kind, resellerId, orderId])
+  /// Ops ki screen: sab se purana baqaya sab se upar
+  @@index([status, createdAt])
+  @@index([resellerId, createdAt])
+}
+
+enum BonusKind {
+  /// Nayi reseller ke apne pehle order — 10 orderon tak
+  SIGNUP
+  /// Kisi ko bulane par — us ke pehle order par, ek dafa
+  REFERRAL
+}
+
+enum BonusStatus {
+  PENDING
+  PAID
 }
 
 model ResellerPricing {
@@ -807,6 +868,7 @@ model Order {
   reviews   SupplierReview[]
   feeLedger FeeLedger?
   payout    ResellerPayout?
+  bonuses   ResellerBonus[]
 
   @@index([status, createdAt])
   @@index([resellerId, createdAt])

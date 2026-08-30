@@ -183,6 +183,15 @@ export interface OrderRepository {
   applyStatusChange(change: OrderStatusChange): Promise<InternalOrderView>
 
   /**
+   * Is reseller ke kitne order POHANCH chuke hain.
+   *
+   * 🔴 Sirf ginti, koi qatar nahi. Signup bonus ka poora faisla isi ek adad par
+   * hai ("das tak"), aur us ke liye orderon ki fehrist laana wo maloomat kholna hoga jo
+   * is sawal ke liye chahiye hi nahi.
+   */
+  countDelivered(resellerId: string): Promise<number>
+
+  /**
    * Adhoori wapsi darj karo — kis maal ke kitne wapas aaye.
    *
    * 🔴 Ye status BADALTA NAHI. Wapsi darj karna aur order ko "pohanch gaya"

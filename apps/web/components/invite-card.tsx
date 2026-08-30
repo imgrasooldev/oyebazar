@@ -10,22 +10,32 @@ import { UsersIcon, WhatsAppIcon } from '@/components/icons'
  * likha nahi gaya, kabhi parha nahi gaya. Ye us khaane ka doosra sira hai — pehla sira
  * register ke waqt hai, jahan `?ref=` se wo bharta hai.
  *
- * 🔴 Ye ek WAADA nahi karta. Koi commission, koi inaam, koi "5 behnen bulao aur ye
- * milega" — kuch nahi. Aisa waada karna aasan hota aur us ka bhugtaan baad mein karna
- * parta: jis din wo inaam dena hota us din ya to paisa jata, ya wo behen dhoka khati
- * jise waada kiya gaya tha. Jab tak wo faisla malik na kare, ye sirf ek link hai.
+ * 🔴 Ye ab ek WAADA karta hai — Rs 100 jab bulai hui behen ka pehla order pohanche,
+ * aur us ke apne pehle das orderon par Rs 50 fi order. (Pehle yahan likha tha ke ye koi
+ * waada nahi karta; wo baat 30 August ko badal gayi aur ye note us ke saath badla gaya.)
  *
- * Aur ginti isi liye dikhti hai: jo bulati hai usay ye dikhna chahiye ke us ka bulana
- * KAAM kar raha hai. Bina ginti ke wo link ek dafa bhejti hai aur phir bhool jati hai.
+ * 🔴 Aur wo waada POHANCHE hue order par hai, lagaye hue par nahi. Ye shart is
+ * poore feature ki jaan hai: lagaye hue order par dena ye rasta khol deta hai — account
+ * banao, apne hi number par das order lagao, cancel kar do, paanch sau le lo. Qaide
+ * `domain/bonus.ts` mein hain aur wahan un ka test bhi hai.
+ *
+ * Ginti isi liye dikhti hai: jo bulati hai usay ye dikhna chahiye ke us ka bulana KAAM
+ * kar raha hai. Bina ginti ke wo link ek dafa bhejti hai aur phir bhool jati hai.
  */
 export function InviteCard({
   resellerId,
   referred,
+  bonusEarned,
+  bonusPending,
   labels,
 }: {
   resellerId: string
   /** Kitni behnen is ke link se aayin */
   referred: number
+  /** Kul bonus jo ab tak bana (mila hua + baqi) */
+  bonusEarned: number
+  /** Us mein se jo abhi milna baqi hai */
+  bonusPending: number
   labels: {
     title: string
     body: string
@@ -33,6 +43,12 @@ export function InviteCard({
     copied: string
     /** "{n} behnen aa chukin" */
     count: string
+    /** "Aap ka bonus: Rs {n}" */
+    bonus: string
+    /** "Rs {n} abhi milna baqi" */
+    bonusPending: string
+    /** Waada — kitna aur kaise */
+    promise: string
   }
 }) {
   const [copied, setCopied] = useState(false)
@@ -110,6 +126,36 @@ export function InviteCard({
           <span className="text-[0.82rem] font-semibold text-accent-700">
             {labels.count.replace('{n}', String(referred))}
           </span>
+        )}
+      </div>
+
+      {/*
+        Bonus — link ke NEECHE, alag patti mein.
+
+        🔴 Ye upar wale hisse se alag hai kyunke ye alag baat hai: upar wala
+        kaam hai (link bhejo), ye us ka aur us ke apne kaam ka natija hai. Ek saath
+        milaa dene se dono dab jate — aur bonus wo cheez hai jise reseller roz dekhna
+        chahti hai, chahe wo us din kisi ko na bulaye.
+
+        🔴 Bonus SIRF tab dikhta hai jab kuch bana ho. Sifar par "Rs 0" likhna
+        us ke bare mein kuch nahi kehta (har nayi reseller par wo sach hai) magar
+        parhne wali usay nakaami ki tarah parhti hai — aur uske baad wo us patti par
+        dobara nazar nahi daalti. Us jagah waada likha hai: kitna, aur kis par.
+      */}
+      <div className="border-t border-paper-sunken px-5 py-3">
+        {bonusEarned > 0 ? (
+          <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[0.85rem]">
+            <span className="font-semibold text-accent-700">
+              {labels.bonus.replace('{n}', String(bonusEarned))}
+            </span>
+            {bonusPending > 0 && (
+              <span className="text-[0.78rem] text-ink-faint">
+                {labels.bonusPending.replace('{n}', String(bonusPending))}
+              </span>
+            )}
+          </p>
+        ) : (
+          <p className="text-[0.8rem] leading-relaxed text-ink-faint">{labels.promise}</p>
         )}
       </div>
     </section>

@@ -38,6 +38,7 @@ import type {
   ResellerOrderView,
 } from '../domain/order'
 import { keptQty } from '../domain/order'
+import { REFERRAL_BONUS, signupBonusFor } from '../domain/bonus'
 import type {
   FeeLedgerRepository,
   OrderRepository,
@@ -49,6 +50,7 @@ import type { InventoryRepository } from '../ports/inventory-repositories'
 import type { PayoutService } from './payout.service'
 import type { CursorQuery, ProductRepository, ResellerRepository } from '../ports/repositories'
 import type { CustomerRepository } from '../ports/customer-repositories'
+import type { BonusRepository } from '../ports/bonus-repositories'
 import type {
   Analytics,
   Clock,
@@ -65,6 +67,7 @@ export class OrderService {
     private readonly suppliers: SupplierInternalRepository,
     private readonly resellers: ResellerRepository,
     private readonly customers: CustomerRepository,
+    private readonly bonuses: BonusRepository,
     private readonly feeLedger: FeeLedgerRepository,
     /**
      * Sirf ek method — poori PayoutService nahi.
@@ -961,6 +964,63 @@ export class OrderService {
   }
 
   /** Reseller ka munafa: (us ka rate − hamara rate) × tadaad. */
+  /**
+   * Bonus — signup aur referral, dono isi ek lamhe par.
+   *
+   * 🔴 Yahan hone ki wajah ye hai ke DELIVERED wo wahid lamha hai jab paisa
+   * ASLI ho jata hai: courier gaya, customer ne maal liya, cash wasool hua. Order lagne
+   * par bonus dena ye rasta khol deta hai — account banao, apne hi number par das order
+   * lagao, cancel kar do, paanch sau le lo. Ye farzi khadsha nahi; ye pehli cheez hai jo
+   * koi bhi aazmayega.
+   *
+   * 🔴 Nakaami yahan poore qadam ko NAHI girati. Order pohanch chuka hai, fee
+   * likhi ja chuki hai aur reseller ka hisab khul chuka hai — un sab ko bonus ki wajah
+   * se palatna us reseller ko saza dena hoga jis ne sab theek kiya. Bonus ek waada hai
+   * jo baad mein bhi poora ho sakta hai; pohancha hua order dobara nahi pohanchta.
+   */
+  private async awardBonuses(order: InternalOrderView): Promise<void> {
+    try {
+      const delivered = await this.orders.countDelivered(order.resellerId)
+
+      // Us ka apna signup bonus — pehle das pohanche hue orderon tak
+      const signup = signupBonusFor(delivered)
+      if (signup > 0) {
+        await this.bonuses.open({
+          resellerId: order.resellerId,
+          kind: 'SIGNUP',
+          amount: signup,
+          orderId: order.id,
+        })
+      }
+
+      /*
+       * Bulane wali ka bonus — SIRF pehle pohanche hue order par.
+       *
+       * 🔴 `delivered === 1` hi wo shart hai jo isay ek dafa rakhti hai; DB ka
+       * unique index (`fromResellerId`) doosri rukawat hai. Do rukawtein jaan boojh kar:
+       * pehli soch ko saaf rakhti hai, doosri us surat mein bachati hai jab do request
+       * ek saath aa jayen — aur wahan sirf DB hi rok sakta hai.
+       */
+      if (delivered === 1) {
+        const reseller = await this.resellers.findById(order.resellerId)
+        if (reseller?.referredById) {
+          await this.bonuses.open({
+            resellerId: reseller.referredById,
+            kind: 'REFERRAL',
+            amount: REFERRAL_BONUS,
+            orderId: order.id,
+            fromResellerId: reseller.id,
+          })
+        }
+      }
+    } catch (error) {
+      this.logger.warn('bonus_award_failed', {
+        orderNo: order.orderNo,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
   private resellerEarnings(order: InternalOrderView): Pkr {
     // Wohi hisab jo `earningsOf` karta hai — do jagah do alag ginti nahi hone chahiye
     const total = order.items.reduce(
@@ -1044,6 +1104,8 @@ export class OrderService {
       supplierId: updated.supplierId,
       amount: this.resellerEarnings(updated),
     })
+
+    await this.awardBonuses(updated)
 
     // Reseller ko khabar — aur usi paighaam mein us ki kamai, kyunke asal sawal wohi hai
     await this.notifyReseller(updated, 'baji_order_delivered', {

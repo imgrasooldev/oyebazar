@@ -15,6 +15,7 @@ import {
   PrismaAdminRepository,
   PrismaOpsUserRepository,
 } from './repositories/admin.repository'
+import { PrismaBonusRepository } from './repositories/bonus.repository'
 import { PrismaCustomerRepository } from './repositories/customer.repository'
 import { PrismaResellerRepository } from './repositories/reseller.repository'
 import { PrismaResellerStatsRepository } from './repositories/reseller-stats.repository'
@@ -64,6 +65,7 @@ export interface Repositories {
   categories: PrismaCategoryRepository
   orders: PrismaOrderRepository
   customers: PrismaCustomerRepository
+  bonuses: PrismaBonusRepository
   inventory: PrismaInventoryRepository
   payouts: PrismaPayoutRepository
   moneyLedger: PrismaMoneyLedgerRepository
@@ -99,6 +101,7 @@ export function createRepositories(client: PrismaClient = prisma): Repositories 
     categories: new PrismaCategoryRepository(client),
     orders: new PrismaOrderRepository(client),
     customers: new PrismaCustomerRepository(client),
+    bonuses: new PrismaBonusRepository(client),
     inventory: new PrismaInventoryRepository(client),
     payouts: new PrismaPayoutRepository(client),
     moneyLedger: new PrismaMoneyLedgerRepository(client),

@@ -9,6 +9,7 @@ export * from './domain/rto-risk'
 export * from './domain/stock'
 export * from './domain/batch'
 export * from './domain/ops-flags'
+export * from './domain/bonus'
 export * from './domain/pitch'
 
 // Ports (repository + infrastructure interfaces)
@@ -18,6 +19,7 @@ export * from './ports/price-change-repositories'
 export * from './ports/daily-drop-repositories'
 export * from './ports/ops-triage-repositories'
 export * from './ports/customer-repositories'
+export * from './ports/bonus-repositories'
 export * from './ports/pitch'
 export * from './ports/product-describer'
 
