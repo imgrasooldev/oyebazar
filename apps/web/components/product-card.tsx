@@ -366,12 +366,37 @@ export function ProductCard({
               baghair reseller apna rate andaze se lagati hai. Chhota rakhna usay
               chhupana nahi hai — usay us ki asal jagah dena hai.
             */}
-            <p className="mt-1 text-[0.7rem] leading-tight text-ink-faint">
+            {/*
+              🔴 `truncate` — ye line kabhi doosri satar par nahi jati.
+
+              Grid mein har card ki apni oonchai hoti hai. Jis card par ye line do
+              satar ki ho jaye wo apne saath waalon se ooncha ho jata hai, aur poori
+              satar ka neechla kinara toot jata hai — chhe card, teen alag oonchaiyan.
+              Wo be-tarteebi card ke andar ki kisi bhi kharabi se ziyada nazar aati hai.
+
+              Kat jane ka nuqsan yahan sab se kam hai: ye line faisle ka number nahi
+              (faisla munafe par hota hai), aur poori tafseel maal ke apne safhe par
+              mojood hai.
+            */}
+            <p className="mt-1 truncate text-[0.7rem] leading-tight text-ink-faint">
               {t('yourCost')}{' '}
               <span dir="ltr" className="numeric">
                 {formatPkr(item.bajiPrice)}
               </span>
-              {item.myRetailPrice !== null && (
+              {/*
+                🔴 Shart `myRetailPrice !== null` NAHI, balke numberon ka FARQ.
+
+                Pehli koshish mein maine ye shart lagayi thi ke "reseller ne apna rate
+                lagaya hai ya nahi" — aur wo ghalat tarah se sahi thi. Reseller apna
+                rate lagati hai aur aksar wohi lagati hai jo mashwara tha. Us soorat
+                mein card phir wohi ek number do naamon se chhapta hai: Rs 2,700 aur
+                "mashwara Rs 2,700".
+
+                Asal sawal ye nahi ke us ne rate lagaya ya nahi — asal sawal ye hai ke
+                do numberon mein FARQ hai ya nahi. Farq na ho to kehne ko kuch hai hi
+                nahi.
+              */}
+              {item.suggestedRetail !== myPrice && (
                 <>
                   <span className="mx-1">·</span>
                   {t('suggested')}{' '}
