@@ -20,6 +20,15 @@ export interface PersistOrderInput {
   readonly resellerId: string
   readonly supplierId: string
   readonly customer: CustomerDetails
+  /**
+   * Reseller ki fehrist mein us customer ki id.
+   *
+   * 🔴 `customer` ke SAATH hai, us ki jagah nahi. Ye rishta hai ("kaun"), aur
+   * `customer` snapshot hai ("us waqt kya likha tha"). Ek ko doosre se badalna wo
+   * cheez khatam kar deta jo jhagre ke din wahid sach hoti hai: parcel kis pate par
+   * gaya tha — chahe customer ne kal apna pata badal liya ho.
+   */
+  readonly customerId: string
   readonly lines: readonly OrderLineView[]
   readonly subtotal: Pkr
   readonly deliveryFee: Pkr

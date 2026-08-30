@@ -526,6 +526,7 @@ model Reseller {
   pricing         ResellerPricing[]
   payouts         ResellerPayout[]
   orders          Order[]
+  customers       Customer[]
   reviews         SupplierReview[]
   statusPacks     StatusPack[]
   sessions        Session[]
@@ -688,14 +689,67 @@ model DailyDropItem {
 
 // ============================================================ ORDERS
 
+/**
+ * Reseller ka apna customer — us ka sab se bara asset.
+ *
+ * 🔴 Ye REESELLER KE SAATH bandha hua hai, platform ke saath nahi
+ * (`@@unique([resellerId, phone])`). Ye faisla privacy ka hai, saholat ka nahi.
+ *
+ * Ek sanjha (global) customer rakhne ka matlab hota ke reseller A, B ke customer ka
+ * NAAM aur PATA dekh le — sirf us ka number likh kar. Wo hamara data nahi hai jo hum
+ * baant den; wo us aurat ki apni mehnat se bani hui fehrist hai. Aur wohi cheez
+ * platform ko sab se pehle chhorne ki wajah banti hai.
+ *
+ * Jo cheez SANJHI honi chahiye wo pehle se sanjhi hai aur alag rasta rakhti hai:
+ * `phoneRecord()` — us number par kitne order pohanche aur kitne wapas aaye. Wahan se
+ * sirf GINTI bahar jati hai, koi naam, koi pata, kisi doosre ka koi order nahi.
+ *
+ * 🔴 `Order` par customer ke khaane (naam, phone, pata) JYON KE TYON rehte
+ * hain, aur wo nakal nahi hai — wo SNAPSHOT hai. Customer kal apna pata badal le to
+ * purana parcel usi purane pate par gaya tha, aur jhagre ke din sawal yehi hota hai ke
+ * "us waqt kya likha tha". Yahan sirf AAKHRI haal rehta hai (agli dafa bharne ke liye);
+ * har order ka apna sach us ke apne khaanon mein.
+ */
+model Customer {
+  id         String @id @default(cuid())
+  resellerId String
+  /// Local shakl mein, wohi jo reseller ne likha — `phoneKey()` se guzra hua
+  phone      String
+  name       String
+  address    String
+  area       String
+
+  /// Aakhri dafa kab kuch khareeda — "purani customer" isi se maloom hoti hai
+  lastOrderAt DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  reseller Reseller @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+  orders   Order[]
+
+  /// Ek reseller ke haan ek number ek hi customer
+  @@unique([resellerId, phone])
+  /// Us ki apni fehrist — nayi khareedari sab se upar
+  @@index([resellerId, lastOrderAt])
+}
+
 model Order {
   id              String        @id @default(cuid())
   orderNo         String        @unique // BJ-1043
   resellerId      String
   supplierId      String
+  /**
+   * Customer ka SNAPSHOT — teen khaane jo kabhi nahi badalte.
+   *
+   * 🔴 Ye `Customer` ke aane ke BAAD bhi yahin hain aur yahin rahenge. Wahan
+   * sirf aakhri haal hai; yahan wo hai jo IS order ke waqt likha gaya tha. Parcel usi
+   * pate par gaya tha, aur wapsi ke jhagre mein sawal hamesha usi waqt ka hota hai.
+   */
   customerName    String
   customerPhone   String
   customerAddress String
+  /// Kis customer ka — purane order par `null` (backfill se pehle ke)
+  customerId      String?
   locationLat     Float? // 🔴 RTO ka sab se bara lever
   locationLng     Float?
   area            String
@@ -743,6 +797,7 @@ model Order {
 
   reseller  Reseller         @relation(fields: [resellerId], references: [id])
   supplier  Supplier         @relation(fields: [supplierId], references: [id])
+  customer  Customer?        @relation(fields: [customerId], references: [id])
   items     OrderItem[]
   events    OrderEvent[]
   messages  OrderMessage[]

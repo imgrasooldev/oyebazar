@@ -284,11 +284,30 @@ function buildService(overrides?: {
     },
   }
 
+  /*
+    Customer ki fehrist — test mein sirf itna ke id mil jaye.
+
+    Ye asal fehrist nahi banata: is file ke test order ke QAWAID par hain (rate,
+    fee, stock, halat ki tabdeeli), aur wahan customer ki id sirf ek string hai.
+    Us ka apna bartao (`phoneKey`, upsert) apni jagah janchna chahiye — yahan usay
+    ghusane se ye test un dono cheezon ke liye zimmedar ho jata jin mein se kisi
+    ka bhi wo asal maqsad nahi.
+  */
+  const customers = {
+    async findByPhone() {
+      return null
+    },
+    async upsertForOrder() {
+      return 'cust-1'
+    },
+  }
+
   const service = new OrderService(
     orders as unknown as OrderRepository,
     new FakeProducts(overrides?.products ?? [PRODUCT]) as unknown as ProductRepository,
     SUPPLIERS,
     RESELLERS,
+    customers,
     fees,
     payouts as unknown as PayoutService,
     inventory,

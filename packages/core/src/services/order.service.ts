@@ -47,6 +47,7 @@ import { assessRtoRisk, type RtoRisk } from '../domain/rto-risk'
 import type { InventoryRepository } from '../ports/inventory-repositories'
 import type { PayoutService } from './payout.service'
 import type { CursorQuery, ProductRepository, ResellerRepository } from '../ports/repositories'
+import type { CustomerRepository } from '../ports/customer-repositories'
 import type {
   Analytics,
   Clock,
@@ -62,6 +63,7 @@ export class OrderService {
     private readonly products: ProductRepository,
     private readonly suppliers: SupplierInternalRepository,
     private readonly resellers: ResellerRepository,
+    private readonly customers: CustomerRepository,
     private readonly feeLedger: FeeLedgerRepository,
     /**
      * Sirf ek method — poori PayoutService nahi.
@@ -219,10 +221,33 @@ export class OrderService {
       throw new OutOfStockError({ productId: line.productId })
     }
 
+    /*
+     * Customer ki fehrist — order banne ke SAATH.
+     *
+     * 🔴 Ye order banne se PEHLE hai, baad mein nahi. Baad mein rakhne ka matlab
+     * hota ke jis din ye qadam nakaam ho (ya koi naya rasta usay bhool jaye), us din
+     * order to ban jata magar customer fehrist mein na aata — aur reseller ko us ka
+     * pata teen mahine baad chalta jab wo poochhti ke "meri purani customer kahan gayi".
+     * Khamosh se toot'ne wala record us record se bura hai jo hai hi nahi.
+     *
+     * 🔴 Aur ye `Order` ke apne khaanon ki jagah NAHI leta. Wahan naam, phone
+     * aur pata us waqt ka SNAPSHOT hain — parcel usi pate par gaya tha. Yahan sirf
+     * aakhri haal hai, agli dafa form bharne ke liye.
+     */
+    const customerId = await this.customers.upsertForOrder({
+      resellerId: command.resellerId,
+      phone: command.customer.phone,
+      name: command.customer.name,
+      address: command.customer.address,
+      area: command.customer.area,
+      at: this.clock.now(),
+    })
+
     const order = await this.orders.create({
       orderNo,
       resellerId: command.resellerId,
       supplierId,
+      customerId,
       customer: command.customer,
       lines,
       subtotal,

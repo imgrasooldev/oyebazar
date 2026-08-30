@@ -15,6 +15,7 @@ import {
   PrismaAdminRepository,
   PrismaOpsUserRepository,
 } from './repositories/admin.repository'
+import { PrismaCustomerRepository } from './repositories/customer.repository'
 import { PrismaResellerRepository } from './repositories/reseller.repository'
 import { PrismaResellerStatsRepository } from './repositories/reseller-stats.repository'
 import { PrismaResellerPricingRepository } from './repositories/reseller-pricing.repository'
@@ -62,6 +63,7 @@ export interface Repositories {
   otpChallenges: PrismaOtpChallengeRepository
   categories: PrismaCategoryRepository
   orders: PrismaOrderRepository
+  customers: PrismaCustomerRepository
   inventory: PrismaInventoryRepository
   payouts: PrismaPayoutRepository
   moneyLedger: PrismaMoneyLedgerRepository
@@ -96,6 +98,7 @@ export function createRepositories(client: PrismaClient = prisma): Repositories 
     otpChallenges: new PrismaOtpChallengeRepository(client),
     categories: new PrismaCategoryRepository(client),
     orders: new PrismaOrderRepository(client),
+    customers: new PrismaCustomerRepository(client),
     inventory: new PrismaInventoryRepository(client),
     payouts: new PrismaPayoutRepository(client),
     moneyLedger: new PrismaMoneyLedgerRepository(client),

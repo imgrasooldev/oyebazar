@@ -149,6 +149,7 @@ export class PrismaOrderRepository implements OrderRepository {
         orderNo: input.orderNo,
         resellerId: input.resellerId,
         supplierId: input.supplierId,
+        customerId: input.customerId,
         customerName: input.customer.name,
         customerPhone: input.customer.phone,
         customerAddress: input.customer.address,

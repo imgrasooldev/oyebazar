@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { CategoryNode } from '@oyebazar/core'
 
 /**
@@ -79,6 +79,56 @@ export function CategoryTreeEditor({
   const [dragId, setDragId] = useState<string | null>(null)
   const [spot, setSpot] = useState<DropSpot>(null)
   const [editing, setEditing] = useState<string | null>(null)
+
+  /*
+   * 🔴 Drag ke waqt kinare par safha KHUD sarakta hai.
+   *
+   * HTML5 ka drag-and-drop ye kaam khud nahi karta. Nateeja ye tha ke jis category ko
+   * upar le jana ho, wo utni hi door ja sakti thi jitni screen par nazar aa rahi thi —
+   * aur category ka darakht poori screen se lamba hota hai. Yani neeche wali cheez ko
+   * sab se upar le jana MUMKIN hi nahi tha; banda uthata, kinare par pohanchta, aur
+   * chhor deta. Us ne ye samjha hota ke drag "kaam nahi karta".
+   *
+   * Raftaar kinare se faasle ke hisab se hai, ek muqarrar qadam nahi: hadd ke qareeb
+   * halki, bilkul kinare par poori. Muqarrar raftaar dono taraf se buri hoti hai —
+   * itni halki ke sabr khatam ho jaye, ya itni tez ke nishana guzar jaye.
+   *
+   * `y` shuru mein `null` hai, sifar nahi. Sifar ka matlab hota "sab se upar" aur
+   * safha uthate hi bhaagna shuru kar deta, chahe maus beech mein ho.
+   */
+  useEffect(() => {
+    if (!dragId) return
+
+    /** Kinare se itne px ke andar sarakna shuru — ungli/maus ke liye kushada hadd */
+    const EDGE = 120
+    /** Ek frame mein zyada se zyada itna — 60fps par taqreeban 1000px fi second */
+    const MAX_STEP = 16
+
+    let y: number | null = null
+    let frame = 0
+
+    const onOver = (event: DragEvent) => {
+      y = event.clientY
+    }
+
+    const tick = () => {
+      frame = requestAnimationFrame(tick)
+      if (y === null) return
+
+      const height = window.innerHeight
+      if (y < EDGE) window.scrollBy(0, -MAX_STEP * (1 - y / EDGE))
+      else if (y > height - EDGE) window.scrollBy(0, MAX_STEP * (1 - (height - y) / EDGE))
+    }
+
+    window.addEventListener('dragover', onOver)
+    frame = requestAnimationFrame(tick)
+
+    return () => {
+      window.removeEventListener('dragover', onOver)
+      cancelAnimationFrame(frame)
+    }
+  }, [dragId])
+
   const [addingUnder, setAddingUnder] = useState<string | null | undefined>(undefined)
   const [confirming, setConfirming] = useState<string | null>(null)
 

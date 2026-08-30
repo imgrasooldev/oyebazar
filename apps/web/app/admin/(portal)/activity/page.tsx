@@ -76,10 +76,18 @@ export default async function AdminActivityPage() {
               <span className="min-w-0 flex-1">
                 <span className="font-semibold">
                   {/*
-                    Naam na mile to `actorId` — "kisi ne" likhna jhoot hai, aur is
-                    safhe par jhoot us ke poore maqsad ko khatam kar deta hai.
+                    🔴 Naam na mile to kachchi id NAHI chhaapte.
+
+                    Pehli koshish mein yahan `actorId` chhap jata tha, aur safha aisa
+                    dikhta tha: "supplier:cmt3jedcc0002vdcocirhc5ms login". Wo qatarein
+                    purane code ki theen (dekhen repository ka note) aur ab chhanni se
+                    bahar hain — magar ek surat phir bhi bachti hai: wo ops member jise
+                    team se hata diya gaya ho.
+
+                    Us surat mein bhi kachchi id parhne wale ko kuch nahi deti. Jo baat
+                    wo waqai keh rahi hai, wohi likhi jani chahiye.
                   */}
-                  {row.actorName ?? row.actorId ?? '—'}
+                  {row.actorName ?? 'Hataya gaya member'}
                 </span>{' '}
                 <span className={HEAVY.has(row.name) ? 'font-semibold text-red-700' : 'text-ink-soft'}>
                   {SAYS[row.name] ?? row.name}

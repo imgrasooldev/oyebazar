@@ -1,4 +1,5 @@
 export * from './repositories'
+export * from './customer-repositories'
 export * from './infrastructure'
 export * from './supplier-portal-repositories'
 export * from './price-change-repositories'

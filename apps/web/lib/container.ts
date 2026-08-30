@@ -253,6 +253,7 @@ function build(): Container {
       repositories.products,
       repositories.suppliers,
       repositories.resellers,
+      repositories.customers,
       repositories.feeLedger,
       payouts,
       repositories.inventory,

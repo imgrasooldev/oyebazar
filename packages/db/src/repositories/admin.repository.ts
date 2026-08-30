@@ -350,7 +350,25 @@ export class PrismaAdminActivityRepository implements AdminActivityRepository {
     limit: number
   }): Promise<AdminActivityRow[]> {
     const rows = await this.db.event.findMany({
-      where: { ...(filters.actorType ? { actorType: filters.actorType } : {}) },
+      where: {
+        ...(filters.actorType ? { actorType: filters.actorType } : {}),
+        /*
+         * 🔴 Purani qatarein jo OPS ki nahi hain — bahar.
+         *
+         * `AnalyticsEvent.actorType` mein 'supplier' baad mein daala gaya. Us se pehle
+         * dukan wale ke har kaam par `actorType: 'ops'` likha jata tha aur asal farq
+         * `actorId: 'supplier:<id>'` mein chhupaya jata tha (dekhen us khaane ka apna
+         * note). Wo qatarein DB mein aaj bhi wesi hi pari hain.
+         *
+         * Nateeja jawabdehi wale safhe par ye tha ke "supplier:cmt3jed… login" bees
+         * dafa upar aa jata — ek aisi id jo kisi ops member ki hai hi nahi, aur jis se
+         * parhne wala sirf ye seekhta hai ke is safhe par bharosa nahi karna.
+         *
+         * Purani qatarein MITTI nahi ja rahin — wo apni jagah mehfooz hain. Ye safha
+         * ops ki jawabdehi ka hai, aur wo un mein se nahi.
+         */
+        ...(filters.actorType === 'ops' ? { NOT: { actorId: { startsWith: 'supplier:' } } } : {}),
+      },
       orderBy: { createdAt: 'desc' },
       take: filters.limit,
     })
