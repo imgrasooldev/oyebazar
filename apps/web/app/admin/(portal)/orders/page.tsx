@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { ORDER_STATUS_EN, formatPkr } from '@oyebazar/shared'
+import { IssueResolve } from '@/components/issue-resolve'
 import { AdminRowAction } from '@/components/admin-row-action'
 import { requireOpsUser } from '@/lib/api/admin-session'
 import { container } from '@/lib/container'
@@ -57,13 +58,16 @@ export default async function AdminOrdersPage() {
           </h2>
           <ul className="mt-2 space-y-2">
             {issues.map((issue) => (
-              <li key={issue.id} className="rounded-2xl bg-white px-3 py-2">
-                <p dir="ltr" className="numeric text-[0.72rem] font-semibold text-ink-faint">
-                  {issue.orderNo}
-                </p>
-                <p className="mt-0.5 whitespace-pre-line text-[0.86rem] leading-relaxed">
-                  {issue.body}
-                </p>
+              <li key={issue.id} className="flex items-start gap-3 rounded-2xl bg-white px-3 py-2">
+                <div className="min-w-0 flex-1">
+                  <p dir="ltr" className="numeric text-[0.72rem] font-semibold text-ink-faint">
+                    {issue.orderNo}
+                  </p>
+                  <p className="mt-0.5 whitespace-pre-line text-[0.86rem] leading-relaxed">
+                    {issue.body}
+                  </p>
+                </div>
+                <IssueResolve messageId={issue.id} label="ہو گیا" />
               </li>
             ))}
           </ul>
