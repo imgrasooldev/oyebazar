@@ -1497,6 +1497,10 @@ const DICTIONARY = {
 
   // Bikri ki ginti — 30 din (SALES_WINDOW_DAYS)
   soldRecently: { ur: 'اس مہینے بکے', en: 'sold this month', rm: 'is mahine bikay' },
+
+  // Purani customer — {n} us ke orderon ki ginti
+  customerRepeat: { ur: '{n} بار پہلے بھی', en: 'Ordered {n}× before', rm: '{n} baar pehle bhi' },
+  customerFill: { ur: 'پتہ بھر دیں', en: 'Fill address', rm: 'Pata bhar den' },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
   moneyByReseller: { ur: 'ریسیلر کے حساب سے', en: 'By reseller', rm: 'Reseller ke hisab se' },
   moneyEarnedTotal: { ur: 'کل کمائی', en: 'Total earned', rm: 'Kul kamai' },

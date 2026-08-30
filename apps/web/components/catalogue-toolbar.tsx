@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
+import { GridIcon, ListIcon } from '@/components/icons'
 import type { Route } from 'next'
 
 /**
@@ -79,24 +80,47 @@ export function CatalogueToolbar({
         */}
         <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-black/[0.08] sm:block" />
 
+        {/*
+          🔴 Shakl ka chunao LAFZ se nahi, NISHAN se.
+
+          Baqi tamam button us patti par ek FAISLA hain — "sasta pehle", "behtar
+          munafa" — aur wo lafzon ke baghair samajh nahi aate. Ye do us se alag hain:
+          ye faisla nahi, sirf yehi ke wohi cheez kis shakl mein dikhe. Un ke saath
+          "Grid" aur "List" likhna do baatein karta tha: patti ka aakhri hissa baqi ke
+          barabar bhaari lagta tha, aur "Grid" wo angrezi lafz hai jo hamari reseller ke
+          liye tasveer se ziyada kuch nahi kehta.
+
+          Nishan khud apni shakl bata deta hai — chaar khaane, ya qatarein.
+
+          🔴 `aria-label` aur `title` ab bhi wohi lafz rakhte hain. Nishan
+          dekhne wale ke liye hai; jo screen reader se parhta hai us ke liye "button"
+          ka koi matlab nahi banta, aur jo maus rok kar poochhna chahe usay bhi jawab
+          milna chahiye.
+        */}
         <span className="flex overflow-hidden rounded-pill bg-paper-sunken">
           <button
             type="button"
             onClick={() => set('view', null)}
-            className={`inline-flex min-h-tap items-center px-4 text-[0.78rem] font-semibold transition ${
+            aria-label={labels.viewGrid}
+            aria-pressed={view === 'grid'}
+            title={labels.viewGrid}
+            className={`inline-flex min-h-tap items-center px-3.5 transition ${
               view === 'grid' ? 'bg-brand-500 text-white' : 'text-ink-soft hover:text-ink'
             }`}
           >
-            {labels.viewGrid}
+            <GridIcon className="h-[1.05rem] w-[1.05rem]" />
           </button>
           <button
             type="button"
             onClick={() => set('view', 'list')}
-            className={`inline-flex min-h-tap items-center px-4 text-[0.78rem] font-semibold transition ${
+            aria-label={labels.viewList}
+            aria-pressed={view === 'list'}
+            title={labels.viewList}
+            className={`inline-flex min-h-tap items-center px-3.5 transition ${
               view === 'list' ? 'bg-brand-500 text-white' : 'text-ink-soft hover:text-ink'
             }`}
           >
-            {labels.viewList}
+            <ListIcon className="h-[1.05rem] w-[1.05rem]" />
           </button>
         </span>
       </div>

@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { AskAddressButton } from '@/components/ask-address-button'
+import { KnownCustomer } from '@/components/known-customer'
 import { PhoneRecordNote } from '@/components/phone-record-note'
 import { useState } from 'react'
 import { formatPkr, parseOrderText } from '@oyebazar/shared'
@@ -332,6 +333,25 @@ export function OrderForm({
             riskyHint: t('phoneRiskyHint'),
             clean: t('phoneClean'),
           }}
+        />
+
+        {/*
+          Meri purani customer — record wale jumle ke NEECHE.
+
+          🔴 Tarteeb soch kar hai. Upar wala jumla KHATRE ka hai (is number par kitne
+          parcel wapas aaye), aur wo pehle parhna chahiye: agar wo laal hai to reseller
+          shayad order lagaye hi na, aur us surat mein pata bharne ka koi maani nahi.
+          Ulta rakhne ka matlab hota ke wo pata bhar chuki hoti aur phir usay rokna
+          parta — aur us waqt log aksar ruk nahi'te.
+        */}
+        <KnownCustomer
+          phone={phone}
+          onFill={(customer) => {
+            setName(customer.name)
+            setAddress(customer.address)
+            setArea(customer.area)
+          }}
+          labels={{ repeat: t('customerRepeat'), fill: t('customerFill') }}
         />
       </label>
 
