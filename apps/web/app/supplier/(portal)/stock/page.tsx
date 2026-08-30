@@ -87,6 +87,8 @@ export default async function SupplierStockPage() {
         categories={categories}
         feeRateBps={internal?.feeRateBps ?? 500}
         locale={locale}
+        // Key na ho to sahulat mojood hi nahi — aur us surat mein button bhi nahi
+        canDescribe={container.describer !== null}
       />
 
       {/*

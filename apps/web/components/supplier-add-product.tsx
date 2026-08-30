@@ -24,10 +24,23 @@ export function SupplierAddProduct({
   categories,
   feeRateBps,
   locale,
+  canDescribe,
 }: {
   categories: CategoryGroup[]
   feeRateBps: number
   locale: Locale
+  /**
+   * Tasveer se bharne wali sahulat mojood hai ya nahi.
+   *
+   * 🔴 Ye SERVER se aata hai, kyunke jawab sirf wahin maloom hai (key lagi hai
+   * ya nahi). Client isay khud nahi jaan sakta, aur andaza lagane ka matlab ye hota ke
+   * button har jagah dikhta — aur jahan key nahi hai wahan wo har dafa nakaam hota.
+   *
+   * Ek aisa button jo har dafa kuch na kare, us button se BURA hai jo hai hi nahi:
+   * dukan wala usay teen dafa dabata hai aur phir poore safhe par bharosa chhor deta
+   * hai — us button par bhi jo waqai kaam karta hai.
+   */
+  canDescribe: boolean
 }) {
   const t = translator(locale)
   const router = useRouter()
@@ -337,7 +350,7 @@ export function SupplierAddProduct({
         jate hain.
       */}
       <DescribeFromPhoto
-        imageUrl={media[0]?.url ?? null}
+        imageUrl={canDescribe ? (media[0]?.url ?? null) : null}
         hint={() => {
           const element = formRef.current?.elements.namedItem('titleEn')
           return element instanceof HTMLInputElement ? element.value : ''
