@@ -166,14 +166,20 @@ export function ProductCard({
             </div>
 
             <div className="text-end">
+              {/*
+                Qatar wali shakl mein bhi wohi tarteeb jo card par hai: bara number
+                RATE, aur us ke neeche halki lagat. Do jagah do alag tarteeb rakhne ka
+                matlab hota ke view badalte hi reseller ko dobara dhoondhna parta ke
+                kaunsa number kahan hai.
+              */}
+              <p dir="ltr" className="numeric text-[1.05rem] font-bold">
+                {formatPkr(myPrice)}
+              </p>
               <p className="text-[0.72rem] text-ink-faint">
                 {t('yourCost')}{' '}
                 <span dir="ltr" className="numeric">
                   {formatPkr(item.bajiPrice)}
                 </span>
-              </p>
-              <p dir="ltr" className="numeric text-[1.05rem] font-bold">
-                {formatPkr(myPrice)}
               </p>
             </div>
 
@@ -261,7 +267,7 @@ export function ProductCard({
             hota hai.
           */}
           <div className="flex flex-1 flex-col px-3 pb-3 pt-2.5">
-            <p className="line-clamp-2 text-[0.85rem] font-semibold leading-snug">
+            <p className="line-clamp-1 text-[0.85rem] font-semibold leading-snug">
               {title}
             </p>
 
@@ -318,66 +324,68 @@ export function ProductCard({
             </Link>
             )}
 
-            <dl className="mt-2 space-y-0.5 text-[0.75rem] leading-tight">
-              <div className="flex items-baseline justify-between gap-2">
-                <dt className="shrink-0 text-ink-faint">{t('yourCost')}</dt>
-                <dd dir="ltr" className="numeric whitespace-nowrap text-ink-soft">
-                  {formatPkr(item.bajiPrice)}
-                </dd>
-              </div>
-              <div className="flex items-baseline justify-between gap-2">
-                <dt className="shrink-0 text-ink-faint">{t('suggested')}</dt>
-                <dd dir="ltr" className="numeric whitespace-nowrap text-ink-soft">
-                  {formatPkr(item.suggestedRetail)}
-                </dd>
-              </div>
-              <div className="flex items-baseline justify-between gap-2 pt-0.5">
-                <dt className="shrink-0 text-[0.72rem] font-semibold text-ink">
-                  {t('yourPriceShort')}
-                </dt>
-                <dd
-                  dir="ltr"
-                  className="numeric whitespace-nowrap text-[0.95rem] font-bold"
-                >
-                  {formatPkr(myPrice)}
-                </dd>
-              </div>
-            </dl>
+            {/*
+              🔴 RATE aur MUNAFA ek hi qatar mein — pehle yahan CHAAR number thay:
+              lagat, mashwara, mera rate, aur munafa; teen alag qatarein aur ek sabz
+              dabba. Un sab ne mil kar card ko itna lamba kar diya tha ke 1680px ki
+              screen par bhi ek nazar mein sirf ek satar aati thi.
+
+              🔴 Aur un chaar mein se EK har dafa fazool tha: `myPrice` ki tareef hi
+              `myRetailPrice ?? suggestedRetail` hai. Jab tak reseller apna rate na
+              lagaye, "mashwara" aur "mera rate" BILKUL wohi ek number hote hain — aur
+              card wo number do dafa, do alag naamon se chhapta tha. Wohi cheez do naam
+              se dekh kar parhne wali ye sochti hai ke un mein koi farq hai jo usay
+              samajh nahi aa raha.
+
+              Ab mashwara sirf tab dikhta hai jab wo waqai ALAG ho — yani jab reseller
+              ne apna rate lagaya ho. Usi lamhe wo moqable ka number ban jata hai, aur
+              usi lamhe us ka dikhna kaam ka hai.
+            */}
+            <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+              <span dir="ltr" className="numeric whitespace-nowrap text-[1.05rem] font-bold">
+                {formatPkr(myPrice)}
+              </span>
+              {/*
+                Munafa apni sabz goli mein — aur ye card ka sab se numaya number rehna
+                chahiye. Pehle ye poori chaurai ka dabba tha (46px), jis mein lafz upar
+                aur hindsa neeche likha jata tha. Wazan wahi hai, jagah nahi:
+                sabz zameen aur mota hindsa aankh ko pehle yehi dikhate hain.
+              */}
+              <span
+                dir="ltr"
+                className="numeric whitespace-nowrap rounded-pill bg-accent-50 px-2 py-0.5 text-[0.88rem] font-bold text-accent-700"
+              >
+                +{formatPkr(profit)}
+              </span>
+            </div>
 
             {/*
-              Munafa aur button ek hi qatar mein thay — 214px ke card mein dono
-              samate nahi the aur button ke lafz toot jate the. Ab munafa apni
-              line mein (chhota, sabz) aur button poori chaurai par: ek nazar
-              mein saaf, aur ungli ke liye bara nishana.
-            */}
-            <div className="mt-auto pt-2">
-              {/*
-                Munafa — card ka sab se numaya number.
-                Pehle ye ek chhoti si goli thi aur "+Rs 350" par lafz bhi nahi
-                tha. Reseller ke liye YEHI faisla hai (baqi do number us tak
-                pohanchne ka rasta hain), is liye ab poori chaurai par apna
-                khaana, bara hindsa aur sabz zameen.
-              */}
-              <div className="rounded-card bg-accent-50 px-3 py-1.5">
-                {/*
-                  Lafz upar, hindsa neeche — saath rakhte to 180px ke card mein
-                  dono toot jate the ("YOUR / PROFIT" aur "+Rs / 350"). Tootа hua
-                  number parhne mein sab se buri cheez hai.
-                */}
-                <span className="block text-[0.75rem] font-semibold text-accent-700/70">
-                  {t('yourProfit')}
-                </span>
-                <span
-                  dir="ltr"
-                  className="numeric mt-0.5 block whitespace-nowrap text-[1.1rem] font-bold leading-none text-accent-700"
-                >
-                  +{formatPkr(profit)}
-                </span>
-              </div>
+              Lagat — halki, ek line, aur RATE ke NEECHE.
 
+              Ye faisle ka number nahi (faisla munafe par hota hai), magar us ke
+              baghair reseller apna rate andaze se lagati hai. Chhota rakhna usay
+              chhupana nahi hai — usay us ki asal jagah dena hai.
+            */}
+            <p className="mt-1 text-[0.7rem] leading-tight text-ink-faint">
+              {t('yourCost')}{' '}
+              <span dir="ltr" className="numeric">
+                {formatPkr(item.bajiPrice)}
+              </span>
+              {item.myRetailPrice !== null && (
+                <>
+                  <span className="mx-1">·</span>
+                  {t('suggested')}{' '}
+                  <span dir="ltr" className="numeric">
+                    {formatPkr(item.suggestedRetail)}
+                  </span>
+                </>
+              )}
+            </p>
+
+            <div className="mt-auto pt-2">
               <Link
                 href={`/catalogue/${item.id}`}
-                className="btn-primary mt-2 w-full !px-2 !py-1.5 !text-[0.78rem]"
+                className="btn-primary w-full !px-2 !py-1.5 !text-[0.78rem]"
               >
                 {t('makePackShort')}
               </Link>
