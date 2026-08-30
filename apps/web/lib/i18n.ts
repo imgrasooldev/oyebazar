@@ -1501,6 +1501,12 @@ const DICTIONARY = {
   // Purani customer — {n} us ke orderon ki ginti
   customerRepeat: { ur: '{n} بار پہلے بھی', en: 'Ordered {n}× before', rm: '{n} baar pehle bhi' },
   customerFill: { ur: 'پتہ بھر دیں', en: 'Fill address', rm: 'Pata bhar den' },
+
+  // Tasveer se maal ke khaane bharna
+  describeFromPhoto: { ur: 'تصویر سے بھر دیں', en: 'Fill from photo', rm: 'Tasveer se bhar den' },
+  describeWorking: { ur: 'تصویر دیکھی جا رہی ہے…', en: 'Reading the photo…', rm: 'Tasveer dekhi ja rahi hai…' },
+  describeFailed: { ur: 'نہیں ہو سکا — ہاتھ سے لکھ دیں', en: "Didn't work — type it yourself", rm: 'Nahi ho saka — haath se likh den' },
+  describeNote: { ur: 'نام اور تفصیل خود بھر جائیں گے۔ بھیجنے سے پہلے دیکھ کر ٹھیک کر لیں — لکھا ہوا آپ کی دکان کے نام سے چھپتا ہے۔', en: 'Name and details get filled in. Check them before saving — what goes out carries your shop name.', rm: 'Naam aur tafseel khud bhar jayenge. Bhejne se pehle dekh kar theek kar len — likha hua aap ki dukan ke naam se chhapta hai.' },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
   moneyByReseller: { ur: 'ریسیلر کے حساب سے', en: 'By reseller', rm: 'Reseller ke hisab se' },
   moneyEarnedTotal: { ur: 'کل کمائی', en: 'Total earned', rm: 'Kul kamai' },

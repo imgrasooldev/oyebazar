@@ -15,6 +15,7 @@ import {
   OpsTriageService,
   templatePitchWriter,
   type PitchWriter,
+  type ProductDescriber,
   CategoryAdminService,
   OrderService,
   AddressRequestService,
@@ -43,7 +44,7 @@ import { RecordingLogger } from './adapters/recording-logger'
 import { InMemoryRateLimiter } from './adapters/rate-limiter'
 import { StaticOtpTokens } from './static-otp-tokens'
 import { createMessagingProvider } from '@oyebazar/whatsapp'
-import { createPitchWriter } from '@oyebazar/ai'
+import { createPitchWriter, createProductDescriber } from '@oyebazar/ai'
 import { PrismaAnalytics } from './adapters/analytics'
 import { LoggingRenderQueue } from './adapters/render-queue'
 
@@ -82,6 +83,15 @@ export interface Container {
    * — feature ka poora maqsad hi wo khali jagah bharna tha jahan wo ruk jati hai.
    */
   readonly pitch: PitchWriter
+  /**
+   * Tasveer se maal ka bayan — ya `null`.
+   *
+   * 🔴 `null` ho sakta hai, aur bulane wale ko us ka HISAB rakhna hai. Key na ho
+   * to ye feature mojood hi nahi, aur us surat mein safhe par button bhi nahi dikhna
+   * chahiye. Ek aisa button jo har dafa kuch na kare, us button se bura hai jo hai hi
+   * nahi — banda usay teen dafa dabata hai aur phir poore safhe par bharosa chhor deta.
+   */
+  readonly describer: ProductDescriber | null
   /** 🔴 LIVE maal ka rate — dukan wala maangta hai, ops badalti hai. */
   readonly priceChanges: PriceChangeService
   /** Nayi dukan ki darkhwast — public form se aati hai, chalu ops karti hai. */
@@ -237,6 +247,10 @@ function build(): Container {
       fallback: templatePitchWriter(),
       // Nakaami khamoshi se na guzre — warna koi kabhi nahi jaan paayega ke model band hai
       onError: (error) => logger.warn('pitch_model_failed', { error: String(error) }),
+    }),
+    describer: createProductDescriber({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      onError: (error) => logger.warn('describer_model_failed', { error: String(error) }),
     }),
     inventory: new InventoryService(
       repositories.inventory,

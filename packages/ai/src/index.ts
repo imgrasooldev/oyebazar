@@ -11,3 +11,5 @@
 export { ClaudePitchWriter, createPitchWriter } from './claude-pitch-writer'
 export type { ClaudePitchWriterOptions } from './claude-pitch-writer'
 export { hasAmount, withoutAmounts } from './no-amounts'
+export { ClaudeProductDescriber, createProductDescriber } from './claude-product-describer'
+export type { ClaudeProductDescriberOptions } from './claude-product-describer'

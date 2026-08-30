@@ -17,7 +17,9 @@ export * from './ports/order-repositories'
 export * from './ports/price-change-repositories'
 export * from './ports/daily-drop-repositories'
 export * from './ports/ops-triage-repositories'
+export * from './ports/customer-repositories'
 export * from './ports/pitch'
+export * from './ports/product-describer'
 
 // Services (application layer)
 export * from './services/asset-sweep'

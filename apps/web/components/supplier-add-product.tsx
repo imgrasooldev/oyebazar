@@ -1,9 +1,10 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { formatPkr } from '@oyebazar/shared'
 import { CategorySelect, type CategoryGroup } from '@/components/category-select'
+import { DescribeFromPhoto } from '@/components/describe-from-photo'
 import { MediaUploader, type UploadedMedia } from '@/components/media-uploader'
 import { translator, type Locale } from '@/lib/i18n'
 
@@ -34,6 +35,24 @@ export function SupplierAddProduct({
   const [open, setOpen] = useState(false)
   const [price, setPrice] = useState(0)
   const [media, setMedia] = useState<UploadedMedia[]>([])
+  /*
+    🔴 Form uncontrolled hai (khaane `name` par chalte hain, FormData se parhe
+    jate hain) — aur wo jaan boojh kar hai: yahan bees se zyada khaane hain aur har ek
+    ko React ki halat banane se safha har harf par dobara bunta.
+
+    Is liye AI ka bhara hua matn bhi seedha DOM par jata hai. Ye imperative lagta hai,
+    magar us se choti qeemat wali surat ye hoti ke poora form controlled bana diya jaye
+    — sirf us ek button ki khatir jo shayad das mein se ek dafa dabaya jaye.
+  */
+  const formRef = useRef<HTMLFormElement>(null)
+
+  function fill(field: string, value: string) {
+    if (!value) return
+    const element = formRef.current?.elements.namedItem(field)
+    if (element instanceof HTMLInputElement || element instanceof HTMLSelectElement) {
+      element.value = value
+    }
+  }
   /*
    * Rang/size — band rakhe hue, aur khali.
    *
@@ -142,7 +161,7 @@ export function SupplierAddProduct({
   }
 
   return (
-    <form onSubmit={submit} className="card space-y-4 p-5">
+    <form ref={formRef} onSubmit={submit} className="card space-y-4 p-5">
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block">
           <span className="text-sm font-semibold">
@@ -304,6 +323,38 @@ export function SupplierAddProduct({
       </details>
 
       <MediaUploader media={media} onChange={setMedia} locale={locale} disabled={pending} />
+
+      {/*
+        Tasveer se khaane bharna — theek TASVEER KE NEECHE.
+
+        🔴 Ye jagah is button ki poori qeemat hai. Upar rakhne ka matlab hota ke
+        wo us waqt dikhta jab tasveer hai hi nahi — yani dabane par kuch na hota. Aur
+        neeche "Save" ke paas rakhne ka matlab hota ke dukan wala khaane KHUD bhar chuka
+        hota aur phir ye button us ka likha hua badal deta.
+
+        Yahan, tasveer chadhte hi, wo theek us lamhe saamne aata hai jab agla kaam
+        chaar khaane bharna hai — aur wohi wo lamha hai jahan log safha chhor kar chale
+        jate hain.
+      */}
+      <DescribeFromPhoto
+        imageUrl={media[0]?.url ?? null}
+        hint={() => {
+          const element = formRef.current?.elements.namedItem('titleEn')
+          return element instanceof HTMLInputElement ? element.value : ''
+        }}
+        onDraft={(draft) => {
+          fill('titleUr', draft.titleUr)
+          fill('titleEn', draft.titleEn)
+          fill('descriptionUr', draft.descriptionUr)
+          if (draft.categorySlug) fill('categorySlug', draft.categorySlug)
+        }}
+        labels={{
+          action: t('describeFromPhoto'),
+          working: t('describeWorking'),
+          failed: t('describeFailed'),
+          note: t('describeNote'),
+        }}
+      />
 
       <label className="block">
         <span className="text-sm font-semibold">{t('detailsOptional')}</span>
