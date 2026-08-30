@@ -502,13 +502,39 @@ export class PrismaOrderRepository implements OrderRepository {
   async listForOps(filters: {
     status?: OrderStatus | undefined
     supplierId?: string | undefined
+    search?: string | undefined
     limit: number
     cursor?: string | undefined
   }): Promise<Page<InternalOrderView>> {
+    /*
+     * Talash — order ka number YA customer ka phone.
+     *
+     * 🔴 Sirf ye do khaane, aur ye hadd jaan boojh kar hai. Customer ka NAAM
+     * shamil karne ka matlab hota ke "Ayesha" par teen sau qatarein aayen aur ops ko
+     * un mein se chunna pare — yani talash ne kaam asaan nahi, ek naya kaam banaya.
+     * Number aur phone dono aise hain jo ya to milte hain ya nahi.
+     *
+     * Phone se `-` aur khali jagah hata di jati hai: log usay "0300-1234567" aur
+     * "0300 1234567" dono tarah likhte hain, aur DB mein wo ek hi shakl mein para hai.
+     * Bina is ke talash us shakhs par nakaam hoti jis ne number theek likha ho.
+     *
+     * `mode: 'insensitive'` sirf order ke number par — "bj-1043" bhi milna chahiye.
+     */
+    const search = filters.search?.trim()
+    const phoneish = search?.replace(/[\s-]/g, '')
+
     const rows = await this.db.order.findMany({
       where: {
         ...(filters.status ? { status: filters.status } : {}),
         ...(filters.supplierId ? { supplierId: filters.supplierId } : {}),
+        ...(search
+          ? {
+              OR: [
+                { orderNo: { contains: search, mode: 'insensitive' as const } },
+                ...(phoneish ? [{ customerPhone: { contains: phoneish } }] : []),
+              ],
+            }
+          : {}),
       },
       select: INTERNAL_SELECT,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],

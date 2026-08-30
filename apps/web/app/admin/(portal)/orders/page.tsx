@@ -22,8 +22,13 @@ export const dynamic = 'force-dynamic'
  * yahan se bhi bina reseller ki tasdeeq ke order wholesaler ko nahi ja sakta — admin
  * hone ka matlab qawaid se bahar hona nahi hai.
  */
-export default async function AdminOrdersPage() {
+export default async function AdminOrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>
+}) {
   const { user } = await requireOpsUser()
+  const search = (await searchParams).q?.trim() ?? ''
 
   // Admin ki list INTERNAL view hai — is mein hamari fee bhi dikhti hai
   /*
@@ -35,7 +40,19 @@ export default async function AdminOrdersPage() {
    * poora nizam banane ka koi maqsad nahi bachta.
    */
   const [page, issues] = await Promise.all([
-    container.repositories.orders.listForOps({ limit: 60 }),
+    /*
+     * Talash hone par hadd BARHI hui — 60 se 200.
+     *
+     * 🔴 Bina talash ke 60 sahi hai: wo safha rozana ka kaam hai aur nayi
+     * qatarein hi kaam ki hoti hain. Magar talash ke waqt sawal ulta hota hai — "wo
+     * order jo teen hafte pehle tha" — aur wahan 60 ki hadd wo cheez chhupa deti hai
+     * jise dhoondha hi is liye ja raha hai. Jawab "nahi mila" aa jata, halanke wo
+     * mojood hota.
+     */
+    container.repositories.orders.listForOps({
+      limit: search ? 200 : 60,
+      ...(search ? { search } : {}),
+    }),
     container.repositories.orderMessages.openIssues(20),
   ])
   const orders = page.items
@@ -51,6 +68,56 @@ export default async function AdminOrdersPage() {
 
   return (
     <div className="space-y-8">
+      {/*
+        Talash — safhe ke sab se upar.
+
+        🔴 Ye khaana masle wali laal patti se bhi UPAR hai, aur ye tarteeb jaan
+        boojh kar hai. Log is safhe par do wajhon se aate hain: ya rozana ka kaam
+        nipatane (neeche ki listein), ya kisi ke poochhne par EK order dhoondhne. Doosri
+        soorat mein koi phone par intezar kar raha hota hai — aur usi soorat mein talash
+        ka khaana neeche hona sab se ziyada mehnga parta hai.
+
+        Form saada `GET` hai, koi JavaScript nahi: pata (URL) mein talash likhi rehti
+        hai, yani ops usay kisi ko bhej sakti hai aur safha refresh karne par talash
+        gum nahi hoti.
+      */}
+      <form method="GET" className="card flex flex-wrap items-center gap-2 p-3">
+        <input
+          name="q"
+          defaultValue={search}
+          dir="ltr"
+          placeholder="BJ-1043  ya  03001234567"
+          className="min-h-tap min-w-[12rem] flex-1 rounded-card bg-paper-sunken px-3 text-sm"
+        />
+        <button
+          type="submit"
+          className="inline-flex min-h-tap items-center rounded-pill bg-brand-500 px-5 text-[0.8rem] font-semibold text-white transition hover:bg-brand-700"
+        >
+          Search
+        </button>
+        {search && (
+          <>
+            <span className="text-[0.8rem] text-ink-soft">
+              &ldquo;{search}&rdquo; par{' '}
+              <span dir="ltr" className="numeric font-bold">
+                {orders.length}
+              </span>
+            </span>
+            {/*
+              Nikalne ka rasta — warna ops talash mein PHANS jati hai.
+
+              Khali khaana chhor kar Search dabana bhi chalta hai, magar wo ek chhupa
+              hua tareeqa hai. Jo cheez ek qadam se hoti ho, us ke liye do qadam ka
+              andaza lagwana wo jagah hai jahan log safha chhor kar naye tab mein
+              dobara kholte hain.
+            */}
+            <a href="/admin/orders" className="text-[0.8rem] font-semibold text-brand-700 underline">
+              Clear
+            </a>
+          </>
+        )}
+      </form>
+
       {issues.length > 0 && (
         <section className="mb-6 rounded-card bg-red-50 p-4 ring-1 ring-red-200">
           <h2 className="text-[0.95rem] font-bold text-red-800">

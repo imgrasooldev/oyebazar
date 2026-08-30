@@ -208,6 +208,14 @@ export interface OrderRepository {
   listForOps(filters: {
     status?: OrderStatus | undefined
     supplierId?: string | undefined
+    /**
+     * Order ka number ya customer ka phone.
+     *
+     * 🔴 Support ka pehla sawal hamesha yehi hota hai — "BJ-1043 ka kya bana?"
+     * ya "0300… wale customer ka order kahan hai?" — aur is ke baghair ops ke paas
+     * sirf aakhri 60 order the. 61 wa order ka jawab "mujhe nahi milta" tha.
+     */
+    search?: string | undefined
     limit: number
     cursor?: string | undefined
   }): Promise<Page<InternalOrderView>>

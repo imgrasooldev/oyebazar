@@ -48,6 +48,17 @@ const TABS = [
   { href: '/admin/drop', label: 'Daily drop', needs: 'REVIEWER', Icon: SparkIcon },
   { href: '/admin/resellers', label: 'Resellers', needs: 'REVIEWER', Icon: UsersIcon },
   { href: '/admin/money', label: 'Money', needs: 'REVIEWER', Icon: MoneyIcon },
+  /*
+   * Activity — Team ke SAATH, sab se neeche.
+   *
+   * Ye rozana ka safha nahi: isay tab kholte hain jab kuch ho chuka ho aur poochhna ho
+   * ke kis ne kiya. Upar rakhne se wo har roz ki nazar mein aa kar apni ahmiyat kho
+   * deta, aur wo jagah le leta jahan asal kaam ke safhe hone chahiyen.
+   *
+   * REVIEWER par is liye ke ye poora darja hi "dekhta hai, badalta nahi" ke liye hai —
+   * auditor aur investor. Jawabdehi ka daftar unhi se chhupana ulta hoga.
+   */
+  { href: '/admin/activity', label: 'Activity', needs: 'REVIEWER', Icon: ListIcon },
   { href: '/admin/team', label: 'Team', needs: 'SUPER_ADMIN', Icon: ShieldIcon },
 ] as const
 

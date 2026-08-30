@@ -128,3 +128,36 @@ export interface AdminRepository {
   listResellers(filter: { status?: string; limit: number }): Promise<AdminResellerRow[]>
   setResellerStatus(id: string, status: 'ACTIVE' | 'LIMITED' | 'SUSPENDED'): Promise<void>
 }
+
+/**
+ * Ek darj shuda harkat — kis ne kya kiya, kab.
+ *
+ * 🔴 `actorName` yahan is liye hai ke `Event` table mein sirf `actorId` para hai,
+ * aur ek fehrist jis mein "cmt3je…8f ne dukan mo'attal ki" likha ho, wo fehrist koi
+ * nahi kholta. Jawabdehi ka poora maqsad NAAM par khara hai — bina naam ke ye sirf
+ * mehfooz kiya hua kachra hai.
+ *
+ * Naam na milne par `null` (ops user mit gaya ya harkat kisi aur ne ki) — us soorat
+ * mein dikhane wala `actorId` khud dikha de, kyunke "kisi ne" likhna jhoot hai.
+ */
+export interface AdminActivityRow {
+  readonly id: string
+  readonly name: string
+  readonly actorType: string
+  readonly actorId: string | null
+  readonly actorName: string | null
+  readonly properties: Record<string, unknown>
+  readonly createdAt: Date
+}
+
+export interface AdminActivityRepository {
+  /**
+   * Aakhri harkatein — nayi pehle.
+   *
+   * 🔴 `actorType` ki chhanni lazmi tarah wo cheez hai jis ke baghair ye safha
+   * bekar ho jata: `Event` table mein reseller aur dukan ke waqiat bhi jate hain
+   * (hazaron rozana), aur un ke darmiyan ops ki dus harkatein gum ho jati hain. Ye
+   * safha jawabdehi ka hai, trafik ka nahi.
+   */
+  recent(filters: { actorType?: string | undefined; limit: number }): Promise<AdminActivityRow[]>
+}

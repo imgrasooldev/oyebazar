@@ -7,6 +7,8 @@
  */
 import type { PrismaClient } from '@prisma/client'
 import type {
+  AdminActivityRepository,
+  AdminActivityRow,
   AdminDashboardStats,
   AdminInvoiceRow,
   AdminProductRow,
@@ -312,5 +314,54 @@ export class PrismaAdminRepository implements AdminRepository {
         await tx.session.deleteMany({ where: { resellerId: id } })
       }
     })
+  }
+}
+
+/**
+ * Ops ki harkaton ka daftar — sirf PARHNE ke liye.
+ *
+ * 🔴 Likhna is class ka kaam nahi. Har harkat pehle se `AdminService.record()`
+ * ke zariye `Event` table mein jati hai; ye sirf wahi wapas laati hai. Do jagah se
+ * likhne ka matlab ye hota ke kal koi ek raste par nishan lagana bhool jata, aur wo
+ * daftar jis par jawabdehi khari hai, chup chaap adhoora ho jata.
+ */
+export class PrismaAdminActivityRepository implements AdminActivityRepository {
+  constructor(private readonly db: PrismaClient) {}
+
+  async recent(filters: {
+    actorType?: string | undefined
+    limit: number
+  }): Promise<AdminActivityRow[]> {
+    const rows = await this.db.event.findMany({
+      where: { ...(filters.actorType ? { actorType: filters.actorType } : {}) },
+      orderBy: { createdAt: 'desc' },
+      take: filters.limit,
+    })
+    if (rows.length === 0) return []
+
+    /*
+     * Naam ek hi query mein — har qatar ke liye alag lana N+1 hai, aur is safhe par
+     * pachaas qatarein hoti hain. `Set` is liye ke ek hi banda aksar kai harkatein
+     * karta hai; bees qatarein aksar teen naamon ki hoti hain.
+     */
+    const actorIds = [...new Set(rows.map((row) => row.actorId).filter((id): id is string => !!id))]
+    const names = new Map<string, string>()
+    if (actorIds.length > 0) {
+      const users = await this.db.opsUser.findMany({
+        where: { id: { in: actorIds } },
+        select: { id: true, name: true },
+      })
+      for (const user of users) names.set(user.id, user.name)
+    }
+
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      actorType: row.actorType,
+      actorId: row.actorId,
+      actorName: row.actorId ? (names.get(row.actorId) ?? null) : null,
+      properties: (row.properties ?? {}) as Record<string, unknown>,
+      createdAt: row.createdAt,
+    }))
   }
 }
