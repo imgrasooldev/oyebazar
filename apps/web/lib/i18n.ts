@@ -502,7 +502,27 @@ const DICTIONARY = {
   todaysPack: { ur: 'آج کا اسٹیٹس پیک', en: 'Today’s status pack', rm: 'Aaj ka status pack' },
   packsReady: { ur: 'تصویریں تیار ہیں — بس ڈاؤن لوڈ کریں', en: 'images ready — just download', rm: 'tasveerein tayyar — bas download karen' },
   allStock: { ur: 'سارا مال', en: 'All stock', rm: 'Saara maal' },
-  yourCost: { ur: 'آپ کی لاگت', en: 'Your cost', rm: 'Aap ki lagat' },
+  /*
+   * 🔴 English "Your cost" se "You pay" — aur Urdu/Roman jaisa tha waisa hi.
+   *
+   * Ye number dukan ka rate hai (`bajiPrice`), jo reseller dukan ko deti hai. Naam
+   * "Wholesaler price" rakhna ghalat na hota, magar us se do cheezein bigarti theen:
+   *
+   *   1. Card par teen number ek hi kahani kehte hain — "aap ki lagat", "aap ka rate",
+   *      "aap ka munafa". Beech wale ko "dukan ka rate" kar dene se wo jumla toot jata:
+   *      do "aap ka" aur ek "dukan ka", aur parhne wali ko har dafa tay karna parta ke
+   *      ab kis ke nuqta-e-nazar se dekh rahi hai.
+   *   2. Wo do lafz hain aur ye line 250px ke card par pehle hi truncate hoti hai.
+   *
+   * Asal kharabi sirf ENGLISH mein thi: "Your cost" ko naya banda platform ki fees
+   * samajh sakta tha — kis cheez ki cost? "You pay" wo shuba khatam kar deta hai,
+   * kyunke wo ek zimmedari batata hai, dukan ke bare mein khabar nahi. Aur wo "Your
+   * cost" se CHHOTA bhi hai.
+   *
+   * Urdu ka لاگت aur Roman ka "lagat" thok ki apni zaban ke lafz hain — un mein ye
+   * shuba tha hi nahi, is liye unhen chherna sirf tabdeeli ke liye tabdeeli hoti.
+   */
+  yourCost: { ur: 'آپ کی لاگت', en: 'You pay', rm: 'Aap ki lagat' },
   yourPrice: { ur: 'آپ کا ریٹ', en: 'Your price', rm: 'Aap ka rate' },
   suggested: { ur: 'تجویز', en: 'suggested', rm: 'tajweez' },
   outOfStock: { ur: 'ابھی ختم ہے', en: 'Out of stock', rm: 'Abhi khatam hai' },
