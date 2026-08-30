@@ -65,17 +65,17 @@ Ek aur faida: prod ka `DATABASE_URL` kisi ke laptop par utarne ki zaroorat nahi.
 | Ek tasveer mein kai maal (collage) | ❌ ek pack = ek maal |
 | Rate ki hadd (price floor) | ❌ `suggestedRetail` sirf mashwara hai |
 | Adhoori wapsi (partial return) | ❌ `RTO` poora order wapas karta hai |
-| Customer ki apni fehrist ka safha | ⚠️ `Customer` model bana (30 Aug) magar browse karne ka safha nahi — sirf order ke form par pehchan aur pata bharna |
 | `Tier` (NEW/BRONZE/SILVER/GOLD) | ⚠️ column hai, sirf dikhaya jata hai — **mara hua** |
 | `Reseller.referredById` | ⚠️ column hai, kabhi parha ya likha nahi jata — **mara hua** |
-| `OrderMessage.photoUrl` | ⚠️ column hai, koi API usay leti hi nahi — **mara hua** |
 
 🔴 Mara hua code jo zinda dikhta ho, wo aam mare hue code se khatarnak hai: koi us par
 bharosa kar ke feature bana leta hai jo kabhi chala hi nahi.
 
 **30 August ko ye ban gaya** (jadwal se hataya): nayi reseller ka onboarding, `Customer`
 model (+ backfill), dukan ke portal mein order ki guftagu, payout ki rasid, har card par
-bikri ki ginti, ops ka Activity daftar, order ki talash, aur AI se maal ke khaane.
+bikri ki ginti, ops ka Activity daftar, order ki talash, AI se maal ke khaane, ops ka
+`Fix name`, order ki guftagu par TASVEER (`photoUrl` ab zinda hai), aur dashboard par
+dobara aane wale customer.
 
 ## 🔴 6 · AI abhi CHALA hi nahi hai
 

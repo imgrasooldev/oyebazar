@@ -26,6 +26,15 @@ export type ThreadMessage = {
   kind: 'NOTE' | 'ISSUE'
   authorType: 'reseller' | 'supplier' | 'ops'
   body: string
+  /**
+   * Maal ki tasveer — "aisa aaya hai".
+   *
+   * 🔴 Ye khaana DB mein pehle se tha aur usay koi API leti hi nahi thi: mara
+   * hua code jo zinda dikhta tha. Ab reseller apne paighaam ke saath tasveer bhej sakti
+   * hai, kyunke jhagre ke din lafz kaam nahi aate — "rang ghalat hai" ke muqable mein
+   * "wohi bheja tha" khara ho jata hai aur ops ke paas faisle ka koi zariya nahi hota.
+   */
+  photoUrl?: string | null
 }
 
 export function OrderThread({
@@ -47,6 +56,10 @@ export function OrderThread({
     issueBadge: string
     empty: string
     failed: string
+    /** "Tasveer lagayen" — sirf us taraf jahan masla utha sakta hai */
+    photoAdd: string
+    photoAdded: string
+    photoView: string
     /*
      * 🔴 Naam LIKHNE WALE ke hisaab se hain, "aap/doosra" ke hisaab se nahi.
      *
@@ -63,6 +76,34 @@ export function OrderThread({
   const [body, setBody] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(false)
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+
+  /*
+   * Tasveer PEHLE chadhti hai, "bhejo" dabane par nahi.
+   *
+   * 🔴 Dono ek saath karne ka matlab hota ke 3G par reseller button daba kar
+   * pandrah second khari rahe aur usay pata na chale ke kya ho raha hai — aur upload
+   * nakaam hone par us ka LIKHA HUA matn bhi zaya ho jata. Alag karne se nakaami sirf
+   * tasveer ki hoti hai, poore paighaam ki nahi. Wohi tareeqa payout ki rasid par bhi
+   * chal raha hai.
+   */
+  async function upload(file: File) {
+    setUploading(true)
+    setError(false)
+
+    const form = new FormData()
+    form.append('file', file)
+    const res = await fetch('/api/v1/media', { method: 'POST', body: form }).catch(() => null)
+
+    setUploading(false)
+    if (!res?.ok) {
+      setError(true)
+      return
+    }
+    const data = (await res.json()) as { url?: string }
+    if (data.url) setPhotoUrl(data.url)
+  }
 
   async function send(kind: 'NOTE' | 'ISSUE') {
     const text = body.trim()
@@ -74,7 +115,7 @@ export function OrderThread({
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kind, body: text }),
+      body: JSON.stringify({ kind, body: text, ...(photoUrl ? { photoUrl } : {}) }),
     }).catch(() => null)
 
     setBusy(false)
@@ -91,6 +132,7 @@ export function OrderThread({
      */
     setMessages((current) => [...current, data.message])
     setBody('')
+    setPhotoUrl(null)
   }
 
   const who = (type: ThreadMessage['authorType']) =>
@@ -123,6 +165,29 @@ export function OrderThread({
               <p className="mt-0.5 whitespace-pre-line text-[0.88rem] leading-relaxed">
                 {message.body}
               </p>
+
+              {/*
+                Tasveer ka LINK, chipki hui tasveer nahi.
+
+                🔴 Ye faisla soch kar hai. Order ke safhe par bees paighaam ho
+                sakte hain, aur har ek ke saath poori tasveer laadne ka matlab ye hota
+                ke 3G par safha khulta hi na — us bande ke liye bhi jo sirf ek jumla
+                parhne aaya hai. Jise tasveer dekhni hai wo ek click kar leta hai.
+
+                `rel` ke dono hisse lazmi: `noopener` ke baghair khula hua safha
+                `window.opener` se hamare safhe ka pata badal sakta hai, aur ye pata
+                storage ka hai — hamesha hamara nahi rehne wala.
+              */}
+              {message.photoUrl && (
+                <a
+                  href={message.photoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 inline-block text-[0.8rem] font-semibold text-brand-700 underline decoration-dotted underline-offset-2"
+                >
+                  {labels.photoView}
+                </a>
+              )}
             </li>
           ))}
         </ul>
@@ -139,7 +204,34 @@ export function OrderThread({
 
       {error && <p className="mt-1.5 text-[0.8rem] text-red-700">{labels.failed}</p>}
 
-      <div className="mt-2 flex flex-wrap gap-2">
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        {/*
+          Tasveer lagana — SIRF us taraf jahan masla utha sakta hai.
+
+          🔴 Ye wohi hadd hai jo `canRaiseIssue` par hai, aur us ki wajah bhi
+          wohi: masla wo uthata hai jis ka nuqsan hota hai (us ka customer, us ka
+          paisa), aur tasveer us masle ka SABOOOT hai. Dukan sirf jawab deti hai.
+
+          Aur ek amali wajah bhi hai: dukan ke DO darwaze hain (portal, aur WhatsApp ka
+          magic link jahan koi login hi nahi hota). Sirf portal ko tasveer dena do
+          raston par do alag qaide bana deta — aur phir qaida wo ban jata jo raste ne
+          ittefaqan banaya, na ke jo hum ne socha.
+        */}
+        {canRaiseIssue && (
+          <label className="inline-flex min-h-tap cursor-pointer items-center rounded-pill px-3 text-[0.78rem] font-semibold text-brand-700 underline decoration-dotted underline-offset-2 transition hover:bg-brand-50">
+            <input
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                if (file) void upload(file)
+              }}
+            />
+            {uploading ? '…' : photoUrl ? labels.photoAdded : labels.photoAdd}
+          </label>
+        )}
+
         <button
           type="button"
           onClick={() => void send('NOTE')}

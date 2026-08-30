@@ -71,6 +71,7 @@ export default async function SupplierOrdersPage() {
         kind: m.kind,
         authorType: m.authorType,
         body: m.body,
+        photoUrl: m.photoUrl,
       })),
     ]),
   )
@@ -425,6 +426,9 @@ function OrderCard({
           raiseIssue: t('threadRaiseIssue'),
           issueBadge: t('threadIssueBadge'),
           empty: t('threadEmpty'),
+          photoAdd: t('threadPhotoAdd'),
+          photoAdded: t('threadPhotoAdded'),
+          photoView: t('threadPhotoView'),
           failed: t('threadFailed'),
           /*
              🔴 Naam LIKHNE WALE ke hisaab se — "aap/doosra" ke hisaab se nahi.

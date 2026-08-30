@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { ValidationError } from '@oyebazar/shared'
 import { apiHandler, parseBody } from '@/lib/api/handler'
 import { requireReseller } from '@/lib/api/session'
 import { container } from '@/lib/container'
@@ -27,6 +28,17 @@ const BodySchema = z.object({
    * hai.
    */
   body: z.string().trim().min(1).max(1000),
+  /**
+   * Maal ki tasveer — "aisa aaya hai".
+   *
+   * 🔴 Jhagre ke din lafz kaam nahi aate. Reseller likhti hai "rang ghalat hai",
+   * dukan likhta hai "wohi bheja tha", aur ops ke paas faisla karne ka koi zariya nahi
+   * hota. Ek tasveer wo poora jhagra ek lamhe mein khatam kar deti hai.
+   *
+   * Marzi ka: har paighaam ke saath tasveer nahi hoti, aur lazmi karne se aam baat
+   * likhna hi mushkil ho jata.
+   */
+  photoUrl: z.string().url().max(500).optional(),
 })
 
 export async function POST(request: Request, ctx: { params: Promise<{ orderNo: string }> }) {
@@ -42,12 +54,32 @@ export async function POST(request: Request, ctx: { params: Promise<{ orderNo: s
      */
     const order = await container.orders.getForReseller(orderNo, reseller.id)
 
+    /*
+     * 🔴 Tasveer ka pata HAMARA hona lazmi hai, aur ISI reseller ka.
+     *
+     * Bahar ka link lene ka matlab hota ke koi order ke safhe par kisi bhi pate ki
+     * tasveer chipka de — aur us pate wale ko har us bande ka IP aur waqt mil jata jo
+     * wo safha kholta hai, ops samet.
+     *
+     * Jaanch banawati nahi: `publicUrl` wohi function hai jo upload ke waqt pata banata
+     * hai (`/api/v1/media`), aur us mein `reseller.id` khud hum lagate hain — client ka
+     * bheja hua naam kabhi istemal nahi hota. Yani ye prefix sirf usi tasveer par ban
+     * sakta hai jo isi reseller ne hamare hi darwaze se bheji ho.
+     */
+    if (input.photoUrl) {
+      const mine = container.storage.publicUrl(`order-photos/${reseller.id}/`)
+      if (!input.photoUrl.startsWith(mine)) {
+        throw new ValidationError('Tasveer isi jagah se bhejen')
+      }
+    }
+
     const message = await container.repositories.orderMessages.add({
       orderId: order.id,
       kind: input.kind,
       authorType: 'reseller',
       authorId: reseller.id,
       body: input.body,
+      ...(input.photoUrl ? { photoUrl: input.photoUrl } : {}),
     })
 
     return { ok: true, message }

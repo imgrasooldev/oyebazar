@@ -2,9 +2,9 @@ import Link from 'next/link'
 import { LazyImage } from '@/components/lazy-image'
 import { FirstRun } from '@/components/first-run'
 import type { Metadata } from 'next'
-import { formatPkr } from '@oyebazar/shared'
+import { formatPkr, whatsappLink } from '@oyebazar/shared'
 import { MiniBars, StatTile, Widget } from '@/components/dash-kit'
-import { BoxesIcon, GridIcon, ListIcon, MoneyIcon, SparkIcon } from '@/components/icons'
+import { BoxesIcon, GridIcon, ListIcon, MoneyIcon, SparkIcon, WhatsAppIcon } from '@/components/icons'
 import { ResellerPayoutReply } from '@/components/payout-actions'
 import { toResellerOrderDTO } from '@/lib/api/mappers'
 import { requireReseller } from '@/lib/api/session'
@@ -48,8 +48,17 @@ export default async function ResellerDashboard() {
    */
   const trendingSince = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
 
-  const [stats, ordersPage, payouts, payoutTotals, risk, trending, pendingReview, waitingPata] =
-    await Promise.all([
+  const [
+    stats,
+    ordersPage,
+    payouts,
+    payoutTotals,
+    risk,
+    trending,
+    pendingReview,
+    waitingPata,
+    repeatCustomers,
+  ] = await Promise.all([
     container.repositories.resellerStats.summary(reseller.id, new Date()),
     container.orders.listForReseller(reseller.id, { limit: 5 }),
     container.payouts.listForReseller(reseller.id),
@@ -82,6 +91,16 @@ export default async function ResellerDashboard() {
      * rehta aur customer intezar karti rehti ke parcel kab aayega.
      */
     container.addressRequests.listWaiting(reseller.id, 5),
+    /*
+     * Wo customer jo DOBARA aaye.
+     *
+     * 🔴 Ye dashboard par hai, kisi alag safhe par nahi — aur nav mein bhi nahi.
+     * Nav mein pehle se saat khaane hain aur aathwan phone ki patti par thoosne se
+     * baqi saat bhi chhote ho jate. Magar asal wajah us se behtar hai: ye fehrist koi
+     * KHOLNE nahi jata. Wo sawal jo ye jawab deti hai ("kaun wapas aaya") banda tab tak
+     * poochhta hi nahi jab tak jawab us ke saamne na ho.
+     */
+    container.repositories.customers.topRepeat(reseller.id, 6),
   ])
   const myRecord = risk[0]
 
@@ -345,6 +364,67 @@ export default async function ResellerDashboard() {
         ka becha hua maal ek reseller ke pandrah order se ziyada maani rakhta hai, kyunke
         wo ye batata hai ke maal chal raha hai, koi ek achhi customer nahi.
       */}
+      {/*
+        Wo customer jo DOBARA aaye.
+
+        🔴 Ye trending se PEHLE hai, aur ye tarteeb soch kar hai. Trending ka
+        jawab hai "kya bik raha hai" — wo har reseller ke liye ek jaisa hai aur kisi
+        bhi din liya ja sakta hai. Ye fehrist SIRF is ke apne kaam se bani hai, aur wo
+        cheez batati hai jo kahin aur likhi hi nahi: kaun wapas aaya.
+
+        Naya customer dhoondhne mein us ka poora din jata hai; purana wapas aane wala
+        usay muft milta hai — magar sirf tab jab wo usay YAAD ho. Us ke WhatsApp mein
+        saikron chat hain aur wahan "ye teesri dafa hai" kahin likha hua nahi hota.
+      */}
+      {repeatCustomers.length > 0 && (
+        <section>
+          <h2 className="text-[1.05rem] font-bold tracking-tight">{t('repeatCustomers')}</h2>
+          <p className="mt-1 text-[0.82rem] text-ink-soft">{t('repeatCustomersBody')}</p>
+
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {repeatCustomers.map((customer) => (
+              <li
+                key={customer.id}
+                className="card flex items-center gap-3 p-3"
+              >
+                <span
+                  dir="ltr"
+                  className="numeric flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-50 text-[0.85rem] font-bold text-accent-700"
+                  aria-hidden="true"
+                >
+                  {customer.orderCount}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[0.9rem] font-semibold">
+                    {customer.name}
+                  </span>
+                  <span className="block truncate text-[0.76rem] text-ink-faint">
+                    {customer.area}
+                  </span>
+                </span>
+                {/*
+                  🔴 Number par seedha WhatsApp — kyunke agla qadam yehi hai.
+
+                  Fehrist dekh kar reseller ko jo karna hai wo "naam parhna" nahi, BAAT
+                  karna hai. Number dikha kar chhor dena us se copy karwata, WhatsApp
+                  kholwata, chat dhoondhwata — aur har qadam par log girte hain. Wohi
+                  soch `ask-address-button` par pehle se likhi hui hai.
+                */}
+                <a
+                  href={whatsappLink(customer.phone, '')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={customer.name}
+                  className="shrink-0 rounded-pill bg-accent-50 p-2 text-accent-700 transition hover:bg-accent-500 hover:text-white"
+                >
+                  <WhatsAppIcon className="h-4 w-4" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {trending.length > 0 && (
         <section className="mt-8">
           <h2 className="text-[1.05rem] font-bold">{t('trendingTitle')}</h2>

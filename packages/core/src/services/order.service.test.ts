@@ -297,6 +297,9 @@ function buildService(overrides?: {
     async findByPhone() {
       return null
     },
+    async topRepeat() {
+      return []
+    },
     async upsertForOrder() {
       return 'cust-1'
     },

@@ -53,6 +53,7 @@ export default async function SupplierOrderPage({
         kind: m.kind,
         authorType: m.authorType,
         body: m.body,
+        photoUrl: m.photoUrl,
       }))
     : []
   if (!order) notFound()
@@ -203,6 +204,9 @@ export default async function SupplierOrderPage({
               raiseIssue: t('threadRaiseIssue'),
               issueBadge: t('threadIssueBadge'),
               empty: t('threadEmpty'),
+              photoAdd: t('threadPhotoAdd'),
+              photoAdded: t('threadPhotoAdded'),
+              photoView: t('threadPhotoView'),
               failed: t('threadFailed'),
               reseller: t('threadReseller'),
               supplier: t('threadYou'),

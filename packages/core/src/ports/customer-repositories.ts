@@ -40,6 +40,16 @@ export interface CustomerRepository {
    * shakl hi kaam ki hai. Jo baat mehfooz rehni chahiye wo `Order` par pehle se rehti
    * hai — us waqt ka snapshot, jhagre ke din ka wahid sach.
    */
+  /**
+   * Wo customer jo DOBARA aaye — nayi khareedari sab se upar.
+   *
+   * 🔴 Sirf wo jin ke do ya us se zyada order hain. Ek dafa khareedne wale ki
+   * fehrist "customer ki fehrist" nahi hoti, wo order ki fehrist hi hoti hai dobara —
+   * aur wo pehle se `/orders` par mojood hai. Is fehrist ki poori qeemat us sawal mein
+   * hai jo kahin aur se nahi milta: KAUN WAPAS AAYA.
+   */
+  topRepeat(resellerId: string, limit: number): Promise<readonly CustomerView[]>
+
   upsertForOrder(input: {
     resellerId: string
     phone: string

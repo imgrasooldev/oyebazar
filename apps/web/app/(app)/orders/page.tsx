@@ -48,6 +48,7 @@ export default async function OrdersPage() {
         kind: m.kind,
         authorType: m.authorType,
         body: m.body,
+        photoUrl: m.photoUrl,
       })),
     ]),
   )
@@ -220,6 +221,9 @@ function OrderRow({
           raiseIssue: t('threadRaiseIssue'),
           issueBadge: t('threadIssueBadge'),
           empty: t('threadEmpty'),
+          photoAdd: t('threadPhotoAdd'),
+          photoAdded: t('threadPhotoAdded'),
+          photoView: t('threadPhotoView'),
           failed: t('threadFailed'),
           reseller: t('threadYou'),
           supplier: t('threadShop'),

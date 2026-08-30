@@ -33,6 +33,38 @@ export class PrismaCustomerRepository implements CustomerRepository {
     return { ...rest, orderCount: _count.orders }
   }
 
+  async topRepeat(resellerId: string, limit: number): Promise<readonly CustomerView[]> {
+    /*
+     * Ginti par chhanni SQL mein nahi ho sakti (Prisma `_count` par `where` nahi deta),
+     * is liye thora ziyada laa kar yahan chhanti jati hai.
+     *
+     * 🔴 `limit * 4` — andaza nahi, ek hadd hai. Aksar reseller ke haan chaar
+     * mein se ek customer dobara aata hai; is se ziyada laane ka matlab har dafa ek
+     * bari query, aur kam laane ka matlab fehrist khali dikhti jab ke customer mojood
+     * hain. Jo bache wo agli dafa upar aa jate hain, kyunke tarteeb nayi khareedari
+     * par hai.
+     */
+    const rows = await this.db.customer.findMany({
+      where: { resellerId },
+      orderBy: { lastOrderAt: 'desc' },
+      take: limit * 4,
+      select: {
+        id: true,
+        phone: true,
+        name: true,
+        address: true,
+        area: true,
+        lastOrderAt: true,
+        _count: { select: { orders: true } },
+      },
+    })
+
+    return rows
+      .filter((row) => row._count.orders > 1)
+      .slice(0, limit)
+      .map(({ _count, ...rest }) => ({ ...rest, orderCount: _count.orders }))
+  }
+
   async upsertForOrder(input: {
     resellerId: string
     phone: string

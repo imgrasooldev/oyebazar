@@ -1507,6 +1507,15 @@ const DICTIONARY = {
   describeWorking: { ur: 'تصویر دیکھی جا رہی ہے…', en: 'Reading the photo…', rm: 'Tasveer dekhi ja rahi hai…' },
   describeFailed: { ur: 'نہیں ہو سکا — ہاتھ سے لکھ دیں', en: "Didn't work — type it yourself", rm: 'Nahi ho saka — haath se likh den' },
   describeNote: { ur: 'نام اور تفصیل خود بھر جائیں گے۔ بھیجنے سے پہلے دیکھ کر ٹھیک کر لیں — لکھا ہوا آپ کی دکان کے نام سے چھپتا ہے۔', en: 'Name and details get filled in. Check them before saving — what goes out carries your shop name.', rm: 'Naam aur tafseel khud bhar jayenge. Bhejne se pehle dekh kar theek kar len — likha hua aap ki dukan ke naam se chhapta hai.' },
+
+  // Order ki guftagu par tasveer — jhagre ka sab se bhaari sabooot
+  threadPhotoAdd: { ur: '📷 تصویر لگائیں', en: '📷 Add photo', rm: '📷 Tasveer lagayen' },
+  threadPhotoAdded: { ur: '✓ تصویر لگ گئی', en: '✓ Photo added', rm: '✓ Tasveer lag gayi' },
+  threadPhotoView: { ur: 'تصویر دیکھیں', en: 'View photo', rm: 'Tasveer dekhen' },
+
+  // Dobara aane wale customer — reseller ka sab se bara asset
+  repeatCustomers: { ur: 'آپ کے پرانے گاہک', en: 'Your repeat customers', rm: 'Aap ke purane grahak' },
+  repeatCustomersBody: { ur: 'جنہوں نے ایک سے زیادہ بار خریدا۔ نئی خریداری سب سے اوپر۔', en: 'Bought from you more than once. Most recent first.', rm: 'Jinhon ne ek se ziyada baar khareeda. Nayi khareedari sab se upar.' },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
   moneyByReseller: { ur: 'ریسیلر کے حساب سے', en: 'By reseller', rm: 'Reseller ke hisab se' },
   moneyEarnedTotal: { ur: 'کل کمائی', en: 'Total earned', rm: 'Kul kamai' },
