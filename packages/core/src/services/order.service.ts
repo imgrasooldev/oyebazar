@@ -38,7 +38,7 @@ import type {
   ResellerOrderView,
 } from '../domain/order'
 import { keptQty } from '../domain/order'
-import { REFERRAL_BONUS, signupBonusFor } from '../domain/bonus'
+import { referralBonusFor, signupBonusFor } from '../domain/bonus'
 import type {
   FeeLedgerRepository,
   OrderRepository,
@@ -1004,13 +1004,29 @@ export class OrderService {
       if (delivered === 1) {
         const reseller = await this.resellers.findById(order.resellerId)
         if (reseller?.referredById) {
-          await this.bonuses.open({
-            resellerId: reseller.referredById,
-            kind: 'REFERRAL',
-            amount: REFERRAL_BONUS,
-            orderId: order.id,
-            fromResellerId: reseller.id,
-          })
+          /*
+           * 🔴 Bonus is order par hamari APNI FEE se nikalta hai, us se zyada
+           * kabhi nahi — aur ye poori scheme ki bunyad hai. Agar hum us bikri par saath
+           * rupay kamayen aur sau de den to wo bonus nahi, nuqsan hai; aur wo nuqsan
+           * har naye bande ke saath barhta hai.
+           *
+           * Fee YAHAN tak aa chuki hoti hai kyunke `markEarned` upar chal chuka hai —
+           * aur wo adhoori wapsi par pehle hi ghat chuki hoti hai. Yani bonus us paise
+           * se nikalta hai jo WAQAI aaya, us se nahi jo order lagte waqt likha gaya tha.
+           */
+          const fee = await this.feeLedger.findByOrderId(order.id)
+          const given = await this.bonuses.countByKind('REFERRAL')
+          const amount = referralBonusFor(fee?.amount ?? 0, given)
+
+          if (amount > 0) {
+            await this.bonuses.open({
+              resellerId: reseller.referredById,
+              kind: 'REFERRAL',
+              amount,
+              orderId: order.id,
+              fromResellerId: reseller.id,
+            })
+          }
         }
       }
     } catch (error) {

@@ -37,6 +37,38 @@ export const SIGNUP_BONUS_TOTAL = SIGNUP_BONUS_PER_ORDER * SIGNUP_BONUS_ORDERS
 export const REFERRAL_BONUS = 100
 
 /**
+ * Kul itne referral bonus — us ke baad scheme BAND.
+ *
+ * 🔴 Ye ginti BONUSON ki hai, resellerON ki nahi. Farq ahem hai: "pehli do sau
+ * behnen" wali hadd par kharcha khula rehta (wo do sau behnen mil kar hazaron ko bula
+ * sakti hain), jab ke ye hadd seedha kharche par lagti hai — teen sau × zyada se zyada
+ * sau rupay = tees hazar, aur us se ek rupya ziyada nahi.
+ *
+ * Aur ye hadd is liye hai ke ye scheme SHURU ke logon ke liye hai. Us ka maqsad pehla
+ * halqa banana hai, hamesha ka commission dena nahi — aur jo scheme kabhi khatam na ho
+ * wo kharche mein us tarah barhti hai jis ka andaza pehle din nahi lagta.
+ */
+export const REFERRAL_BONUS_LIMIT = 300
+
+/**
+ * Bulane wali ko is order par kitna bonus banta hai.
+ *
+ * 🔴 Bonus us order par hamari APNI FEE se nikalta hai, aur us se zyada kabhi
+ * nahi. Ye poori scheme ki bunyad hai: agar hum us bikri par saath rupay kamayen aur
+ * sau de den, to wo bonus nahi — wo nuqsan hai, aur wo nuqsan har naye bande ke saath
+ * barhta hai. Is shart ke saath scheme khud apna kharcha uthati hai.
+ *
+ * Fee sifar ho (mansookh, ya wapsi par likh di gayi) to bonus bhi sifar — us surat mein
+ * bikri hui hi nahi.
+ *
+ * `Math.floor` nahi chahiye: dono adad poore rupay hain.
+ */
+export function referralBonusFor(feeEarned: number, alreadyGiven: number): number {
+  if (alreadyGiven >= REFERRAL_BONUS_LIMIT) return 0
+  return Math.max(0, Math.min(REFERRAL_BONUS, feeEarned))
+}
+
+/**
  * Is order par signup bonus banta hai ya nahi.
  *
  * `deliveredCount` mein ye order KHUD shamil hai — yani pehle delivered order par ye 1

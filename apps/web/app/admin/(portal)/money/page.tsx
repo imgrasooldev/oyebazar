@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { formatPhoneLocal, formatPkr, whatsappLink } from '@oyebazar/shared'
+import { REFERRAL_BONUS_LIMIT } from '@oyebazar/core'
 import { canDo } from '@oyebazar/core'
 import { AdminRowAction } from '@/components/admin-row-action'
 import { AdminPostAction } from '@/components/admin-post-action'
@@ -28,7 +29,7 @@ export const dynamic = 'force-dynamic'
  */
 export default async function AdminMoneyPage() {
   const { user } = await requireOpsUser()
-  const [money, payoutSummary, disputes, bonuses] = await Promise.all([
+  const [money, payoutSummary, disputes, bonuses, referralsGiven] = await Promise.all([
     container.admin.money(user),
     container.payouts.summariseBySupplier(),
     container.payouts.listDisputed(),
@@ -41,6 +42,14 @@ export default async function AdminMoneyPage() {
      * reseller ka bharosa raqam ki chhotai par nahi, us DER par toot ta hai.
      */
     container.repositories.bonuses.listPending(50),
+    /*
+     * Referral wali scheme mein kitni jagah baqi hai.
+     *
+     * 🔴 Ops ko ye dikhna chahiye, warna scheme chup chaap band ho jati hai aur
+     * pata us din chalta hai jab koi poochhta hai "mera bonus kyun nahi aaya". Hadd ka
+     * hona theek hai; us ka chhupa hua hona nahi.
+     */
+    container.repositories.bonuses.countByKind('REFERRAL'),
   ])
 
   const pendingTotal = money.pending.reduce((sum, row) => sum + row.amount, 0)
@@ -213,6 +222,24 @@ export default async function AdminMoneyPage() {
               className="numeric rounded-pill bg-paper-sunken px-2 py-0.5 text-[0.75rem] font-bold text-ink-soft"
             >
               {bonuses.length}
+            </span>
+
+            {/*
+              Referral scheme ki baqi jagah — sar-name ke saath.
+
+              Hadd ka hona theek hai; us ka CHHUPA hua hona nahi. Bina is ke scheme ek
+              din chup chaap band ho jati aur pata us din chalta jab koi poochhta ke
+              "mera bonus kyun nahi aaya".
+            */}
+            <span className="text-[0.78rem] text-ink-faint">
+              referral:{' '}
+              <span dir="ltr" className="numeric font-semibold">
+                {referralsGiven}
+              </span>
+              /
+              <span dir="ltr" className="numeric">
+                {REFERRAL_BONUS_LIMIT}
+              </span>
             </span>
           </div>
 

@@ -330,6 +330,9 @@ function buildService(overrides?: {
     async open() {
       return true
     },
+    async countByKind() {
+      return 0
+    },
     async totalsFor() {
       return { earned: 0, pending: 0 }
     },

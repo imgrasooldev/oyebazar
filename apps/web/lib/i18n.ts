@@ -1532,7 +1532,7 @@ const DICTIONARY = {
   // Bonus — signup aur referral
   bonusEarned: { ur: 'آپ کا بونس: Rs {n}', en: 'Your bonus: Rs {n}', rm: 'Aap ka bonus: Rs {n}' },
   bonusPending: { ur: 'Rs {n} ملنا باقی', en: 'Rs {n} still to come', rm: 'Rs {n} milna baqi' },
-  bonusPromise: { ur: 'پہلے ۱۰ آرڈر پہنچنے پر Rs ۵۰ فی آرڈر — کُل Rs ۵۰۰۔ اور جو بہن آپ کے لنک سے آئے، اُس کا پہلا آرڈر پہنچنے پر Rs ۱۰۰۔', en: 'Rs 50 for each of your first 10 delivered orders — Rs 500 in all. Plus Rs 100 when someone you invited gets their first delivery.', rm: 'Pehle 10 order pohanchne par Rs 50 fi order — kul Rs 500. Aur jo behen aap ke link se aaye, us ka pehla order pohanchne par Rs 100.' },
+  bonusPromise: { ur: 'پہلے ۱۰ آرڈر پہنچنے پر Rs ۵۰ فی آرڈر — کُل Rs ۵۰۰۔ اور جو بہن آپ کے لنک سے آئے، اُس کا پہلا آرڈر پہنچنے پر Rs ۱۰۰ تک (شروع کے کچھ لوگوں کے لیے)۔', en: 'Rs 50 for each of your first 10 delivered orders — Rs 500 in all. Plus up to Rs 100 when someone you invited gets their first delivery (early joiners only).', rm: 'Pehle 10 order pohanchne par Rs 50 fi order — kul Rs 500. Aur jo behen aap ke link se aaye, us ka pehla order pohanchne par Rs 100 tak (shuru ke kuch logon ke liye).' },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
   moneyByReseller: { ur: 'ریسیلر کے حساب سے', en: 'By reseller', rm: 'Reseller ke hisab se' },
   moneyEarnedTotal: { ur: 'کل کمائی', en: 'Total earned', rm: 'Kul kamai' },

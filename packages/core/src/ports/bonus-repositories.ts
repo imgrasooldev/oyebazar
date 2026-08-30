@@ -48,6 +48,16 @@ export interface BonusRepository {
     fromResellerId?: string | undefined
   }): Promise<boolean>
 
+  /**
+   * Ab tak kitne bonus is qism ke diye ja chuke.
+   *
+   * 🔴 Referral wali scheme ki hadd isi par lagti hai (`REFERRAL_BONUS_LIMIT`).
+   * Ginti BONUSON ki hai, resellerON ki nahi: "pehli do sau behnen" wali hadd par
+   * kharcha khula rehta hai (wo do sau mil kar hazaron ko bula sakti hain), jab ke ye
+   * seedha kharche par lagti hai.
+   */
+  countByKind(kind: BonusKind): Promise<number>
+
   /** Is reseller ka kitna bana, aur kitna abhi baqi hai. */
   totalsFor(resellerId: string): Promise<{ earned: number; pending: number }>
 

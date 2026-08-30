@@ -55,6 +55,17 @@ export class PrismaBonusRepository implements BonusRepository {
     }
   }
 
+  async countByKind(kind: BonusKind): Promise<number> {
+    /*
+     * PAID aur PENDING dono ginte hain.
+     *
+     * 🔴 Sirf PAID ginne ka matlab ye hota ke jab tak ops paisa na bheje, hadd
+     * lagti hi nahi — aur us darmiyan hazaron bonus khul sakte hain. Waada khulte hi
+     * ban jata hai, dene ke waqt nahi; hadd bhi wahin lagni chahiye.
+     */
+    return this.db.resellerBonus.count({ where: { kind } })
+  }
+
   async totalsFor(resellerId: string): Promise<{ earned: number; pending: number }> {
     const groups = await this.db.resellerBonus.groupBy({
       by: ['status'],

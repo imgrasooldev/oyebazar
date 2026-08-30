@@ -63,8 +63,7 @@ Ek aur faida: prod ka `DATABASE_URL` kisi ke laptop par utarne ki zaroorat nahi.
 | | |
 |---|---|
 | Ek tasveer mein kai maal (collage) | ❌ ek pack = ek maal |
-| Rate ki hadd (price floor) | ❌ `suggestedRetail` sirf mashwara hai |
-| Adhoori wapsi (partial return) | ❌ `RTO` poora order wapas karta hai |
+| Rate ki hadd (MAP) | ❌ dukan ki taraf se koi hadd nahi. (Reseller `bajiPrice` se neeche nahi ja sakti — wo `pricing.service.ts` mein pehle se hai.) |
 
 🔴 Mara hua code jo zinda dikhta ho, wo aam mare hue code se khatarnak hai: koi us par
 bharosa kar ke feature bana leta hai jo kabhi chala hi nahi.
@@ -74,7 +73,9 @@ model (+ backfill), dukan ke portal mein order ki guftagu, payout ki rasid, har 
 bikri ki ginti, ops ka Activity daftar, order ki talash, AI se maal ke khaane, ops ka
 `Fix name`, order ki guftagu par TASVEER (`photoUrl` ab zinda hai), dashboard par dobara
 aane wale customer, aur `referredById` (ab zinda — `/?ref=<id>`). `Tier` MITA diya gaya:
-wo har qatar par 'NEW' chhapta tha aur kabhi badalta hi nahi tha.
+wo har qatar par 'NEW' chhapta tha aur kabhi badalta hi nahi tha. Saath: adhoori wapsi
+(`OrderItem.returnedQty`), aur bonus (signup Rs 500, referral Rs 100 tak — fee se, aur
+sirf pehle 300).
 
 ## 🔴 6 · AI abhi CHALA hi nahi hai
 

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   REFERRAL_BONUS,
+  REFERRAL_BONUS_LIMIT,
+  referralBonusFor,
   SIGNUP_BONUS_ORDERS,
   SIGNUP_BONUS_PER_ORDER,
   SIGNUP_BONUS_TOTAL,
@@ -59,5 +61,54 @@ describe('raqmen', () => {
   it('signup 500, referral 100', () => {
     expect(SIGNUP_BONUS_TOTAL).toBe(500)
     expect(REFERRAL_BONUS).toBe(100)
+  })
+})
+
+describe('referralBonusFor', () => {
+  /*
+   * 🔴 Ye poori scheme ki bunyad hai: bonus us bikri ki APNI fee se nikalta hai.
+   *
+   * Agar hum us order par saath rupay kamayen aur sau de den, to wo bonus nahi — wo
+   * nuqsan hai, aur wo nuqsan har naye bande ke saath barhta hai. Is shart ke saath
+   * scheme khud apna kharcha uthati hai.
+   */
+  it('fee poori ho to poora bonus', () => {
+    expect(referralBonusFor(250, 0)).toBe(REFERRAL_BONUS)
+  })
+
+  it('fee kam ho to sirf utna jitna bikri ne diya', () => {
+    expect(referralBonusFor(60, 0)).toBe(60)
+  })
+
+  it('fee sifar ho to kuch nahi — bikri hui hi nahi', () => {
+    expect(referralBonusFor(0, 0)).toBe(0)
+  })
+
+  /*
+   * 🔴 Hadd ke THEEK par band — us par, us se pehle nahi.
+   *
+   * `>=` bajaye `>` likhne se ek bonus zyada nikal jata, aur us qism ki ghalti kabhi
+   * kisi ek qatar par nazar nahi aati.
+   */
+  it('hadd tak khula rehta hai', () => {
+    expect(referralBonusFor(500, REFERRAL_BONUS_LIMIT - 1)).toBe(REFERRAL_BONUS)
+  })
+
+  it('hadd par pohanch kar band', () => {
+    expect(referralBonusFor(500, REFERRAL_BONUS_LIMIT)).toBe(0)
+  })
+
+  it('hadd se aage bhi band', () => {
+    expect(referralBonusFor(500, REFERRAL_BONUS_LIMIT + 50)).toBe(0)
+  })
+
+  /*
+   * Poori scheme ka sab se bara mumkin kharcha — ek adad mein.
+   *
+   * 🔴 Ye test us number ko nazar mein rakhta hai. Hadd ya raqam badle to ye girta hai
+   * aur naya kharcha review mein saamne aata hai, chup chaap live nahi jata.
+   */
+  it('kul kharcha 30,000 se zyada nahi', () => {
+    expect(REFERRAL_BONUS * REFERRAL_BONUS_LIMIT).toBe(30_000)
   })
 })
