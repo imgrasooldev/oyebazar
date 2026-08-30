@@ -16,7 +16,27 @@ import type {
 export interface CatalogueItem {
   readonly product: ResellerProductView
   readonly myRetailPrice: Pkr | null
+  /**
+   * Pichhle mahine kitne order — `null` ka matlab "abhi maloom nahi", `0` ka matlab
+   * "koi nahi".
+   *
+   * 🔴 Ye farq dikhane wale ke liye hai. `0` likh dena naye maal ko maar deta
+   * hai: jo cheez kal listed hui us par sifar likha hoga aur reseller usay chhor
+   * degi — halanke sifar us ke bare mein kuch kehta hi nahi. Jahan ginti na ho, wahan
+   * kuch na likhna hi sahi jawab hai.
+   */
+  readonly orders?: number | null
 }
+
+/**
+ * Bikri ki ginti kitne din ki — 30.
+ *
+ * 🔴 Ye wohi arsa hai jo `trending` rail ka hai, aur mel lazmi hai. Rail par
+ * "30 din" ke number aur usi maal ke card par "7 din" ke number ek saath dikhte hain,
+ * aur reseller ke liye wo do alag dawe ban jate hain. Ek hi jagah likha hai taake kal
+ * badalna pare to dono jagah ek saath badle.
+ */
+export const SALES_WINDOW_DAYS = 30
 
 export class CatalogueService {
   constructor(
@@ -64,16 +84,26 @@ export class CatalogueService {
     const page = await this.products.findResellerList(filters)
     if (page.items.length === 0) return { items: [], nextCursor: page.nextCursor }
 
-    // N+1 se bachne ke liye ek hi query mein saare prices — junior yahan loop na lagaye
-    const prices = await this.pricing.findMany(
-      resellerId,
-      page.items.map((p) => p.id),
-    )
+    const ids = page.items.map((p) => p.id)
+
+    /*
+     * Rate aur bikri — do query, SAATH.
+     *
+     * 🔴 Har maal ki apni ginti laana N+1 hai aur is safhe par bees card hote
+     * hain. Aur ye do ek doosre ka intezar nahi karte, is liye `Promise.all` — warna
+     * safha do baar Singapore ja kar aata hai jab ek dafa kaafi tha.
+     */
+    const [prices, sales] = await Promise.all([
+      this.pricing.findMany(resellerId, ids),
+      this.products.salesCounts(ids, SALES_WINDOW_DAYS),
+    ])
 
     return {
       items: page.items.map((product) => ({
         product,
         myRetailPrice: prices.get(product.id) ?? null,
+        // Map mein na hone ka matlab "is arse mein koi order nahi" — wahan kuch nahi likhte
+        orders: sales.get(product.id) ?? null,
       })),
       nextCursor: page.nextCursor,
     }

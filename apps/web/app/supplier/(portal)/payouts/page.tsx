@@ -124,6 +124,7 @@ export default async function SupplierPayoutsPage() {
                   confirmed: t('tlConfirmed'),
                   disputed: t('tlDisputed'),
                   reference: t('tlReference'),
+                  proof: t('payoutProofView'),
                 }}
               />
               <div className="mt-3">
@@ -148,6 +149,9 @@ export default async function SupplierPayoutsPage() {
                       payoutId={payout.id}
                       labels={{
                         send: t('payoutSend'),
+                        proof: t('payoutProof'),
+                        proofAdded: t('payoutProofAdded'),
+                        proofFailed: t('payoutProofFailed'),
                         reference: t('payoutReference'),
                         saving: t('saving'),
                       }}

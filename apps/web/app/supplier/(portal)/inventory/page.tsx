@@ -135,7 +135,7 @@ export default async function SupplierInventoryPage({
         {low.length === 0 ? (
           <p className="py-6 text-center text-[0.9rem] text-ink-soft">{t('nothingLow')}</p>
         ) : (
-          <ul className="divide-y divide-paper-sunken">
+          <ul className="grid gap-x-6 gap-y-0 sm:grid-cols-2 2xl:grid-cols-3">
             {low.map((line) => (
               <StockRow
                 key={line.variantId}
@@ -212,7 +212,7 @@ export default async function SupplierInventoryPage({
             {search ? t('noStockMatch') : t('noSupplierProducts')}
           </p>
         ) : (
-          <ul className="divide-y divide-paper-sunken">
+          <ul className="grid gap-x-6 gap-y-0 sm:grid-cols-2 2xl:grid-cols-3">
             {rest.map((line) => (
               <StockRow
                 key={line.variantId}
@@ -293,13 +293,21 @@ function StockRow({
 
   return (
     /*
-      🔴 `py-2` aur `space-y-1.5` — pehle `py-3 space-y-2` tha aur qatar 112px ki
-      banti thi. 34 qatarein = 3,793px; 400 SKU wali dukan par 45,000px.
+      🔴 Do alag bimariyan theen, aur pehli dafa maine sirf ek dekhi.
 
-      Naap chhoti karna aadha hal hai; doosra aadha ye ke auzaar ab band rehte hain
-      (dekhen SupplierStockActions).
+      KASAFAT — qatar 112px ki thi (34 qatarein = 3,793px; 400 SKU par ~45,000px).
+      Hal: `py-3 space-y-2` se `py-2 space-y-1.5`, aur auzaar band (SupplierStockActions).
+
+      CHAURAI — portal `max-w-app` yani 1680px chaura hai aur qatar `justify-between`
+      thi: naam bilkul baayen, ginti bilkul daayen, beech mein ~1400px khali. Aankh ko
+      har qatar par wo poora faasla tay karna parta tha. Hal upar list par hai — ek
+      satar mein ek qatar nahi, balke do (aur bari screen par teen) khaane. Us se
+      faasla bhi khatam hota hai aur safha bhi teen guna chhota ho jata hai.
+
+      Isi liye lakeer ab `divide-y` se nahi, har qatar ke apne `border-b` se aati hai:
+      grid mein `divide-y` sirf ek satar ke neeche lagti hai, khaanon ke beech nahi.
     */
-    <li className="space-y-1.5 py-2 first:pt-0 last:pb-0">
+    <li className="space-y-1.5 border-b border-paper-sunken py-2 last:border-0">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate text-[0.92rem] font-semibold">

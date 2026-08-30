@@ -26,6 +26,19 @@ import { pickName, timeAgo, translator, type Locale } from '@/lib/i18n'
  * is hadd se neeche wo waqai "mana karna par sakta hai" wale ilaqe mein hai.
  */
 const LOW_STOCK = 5
+/**
+ * Bikri ki ginti itni ho tab dikhti hai.
+ *
+ * 🔴 Har card par ginti likhna wohi ghalti hai jo "47 bache hain" wali hai
+ * (neeche wo note parhen) — bees card par bees adad, aur un mein wo adad bhi doob
+ * jata hai jo waqai kuch keh raha ho.
+ *
+ * Aur chhoti ginti jhoot ke qareeb hoti hai: "1 bika" se reseller ye samajhti hai ke
+ * maal chalta nahi, halanke ek order aur sifar order mein koi maani wala farq nahi.
+ * Teen se ek chalan banna shuru hota hai — us se pehle sirf ittefaq hai.
+ */
+const SALES_WORTH_SHOWING = 3
+
 export function ProductCard({
   item,
   locale,
@@ -133,6 +146,22 @@ export function ProductCard({
                     {t('onlyLeft')}
                   </span>
                 )}
+
+                {/*
+                  Kitne bikay — reseller ka roz ka sawal isi ka jawab hai.
+
+                  🔴 "Naya maal" us ke liye khabar nahi; khabar ye hai ke doosri
+                  behnon ke haan kya chal raha hai. Ye ginti hamara dawa nahi, waqia hai
+                  — aur isi liye "trending" likhne se behtar hai.
+                */}
+                {item.salesCount !== null && item.salesCount >= SALES_WORTH_SHOWING && (
+                  <span className="ms-2 rounded-pill bg-accent-50 px-2 py-0.5 font-semibold text-accent-700">
+                    <span dir="ltr" className="numeric">
+                      {item.salesCount}
+                    </span>{' '}
+                    {t('soldRecently')}
+                  </span>
+                )}
               </p>
             </div>
 
@@ -202,6 +231,15 @@ export function ProductCard({
                       {item.stockLeft}
                     </span>{' '}
                     {t('onlyLeft')}
+                  </span>
+                )}
+                {item.salesCount !== null && item.salesCount >= SALES_WORTH_SHOWING && (
+                  <span className="font-semibold text-accent-300">
+                    ·{' '}
+                    <span dir="ltr" className="numeric">
+                      {item.salesCount}
+                    </span>{' '}
+                    {t('soldRecently')}
                   </span>
                 )}
               </p>

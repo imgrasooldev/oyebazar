@@ -78,7 +78,16 @@ export function SupplierWarehouses({
   }
 
   return (
-    <div className="space-y-2">
+    /*
+      🔴 `max-w-2xl` — portal 1680px chaura hai, aur ye fehrist us ka poora arz
+      le rahi thi: godown ka naam bilkul baayen, "365 pieces" bilkul daayen, beech
+      mein taqreeban 1400px khali. Aur ye khaali jagah kisi kaam ki nahi thi —
+      aksar dukan ke paas do ya teen godown hote hain, koi fehrist hi nahi hoti.
+
+      Chauri jagah ka faida sirf wahan hai jahan khaane ziyada hon (maal ki
+      qatarein, order ki fehrist). Ye un mein se nahi.
+    */
+    <div className="max-w-2xl space-y-2">
       <ul className="divide-y divide-paper-sunken">
         {warehouses.map((house) => (
           <li key={house.id} className="flex flex-wrap items-center gap-2 py-2 first:pt-0">

@@ -136,6 +136,7 @@ export default async function ResellerMoneyPage() {
                       confirmed: t('tlConfirmed'),
                       disputed: t('tlDisputed'),
                       reference: t('tlReference'),
+                      proof: t('payoutProofView'),
                     }}
                   />
               </li>

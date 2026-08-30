@@ -256,6 +256,38 @@ export class PrismaProductRepository implements ProductRepository {
    * 🔴 Mare hue order shumar nahi hote (dekhen port ka comment). PENDING_CONFIRM bhi
    * nahi: us ka customer ne abhi haan hi nahi ki.
    */
+  async salesCounts(productIds: readonly string[], days: number): Promise<Map<string, number>> {
+    const counts = new Map<string, number>()
+    if (productIds.length === 0) return counts
+
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+
+    /*
+     * Wohi chhanni jo `findTrending` ki hai — aur ye mel ittefaqi nahi hona chahiye.
+     *
+     * 🔴 Do jagah do alag ginti ka matlab ye hota ke "trending" rail par ek
+     * number likha ho aur usi maal ke card par doosra. Reseller ko wo do numbers ek
+     * saath dikhte hain, aur us ke baad wo dono par bharosa chhor deti hai.
+     *
+     * RTO aur CANCELLED bahar hain kyunke wo bikri nahi hai — maal wapas aa gaya.
+     * PENDING_CONFIRM bhi bahar: wo abhi order bana hi nahi.
+     */
+    const rows = await this.db.orderItem.groupBy({
+      by: ['productId'],
+      where: {
+        productId: { in: [...productIds] },
+        order: {
+          createdAt: { gte: since },
+          status: { notIn: ['PENDING_CONFIRM', 'CANCELLED', 'REJECTED', 'RTO'] },
+        },
+      },
+      _count: { _all: true },
+    })
+
+    for (const row of rows) counts.set(row.productId, row._count._all)
+    return counts
+  }
+
   async findTrending(input: {
     limit: number
     days: number

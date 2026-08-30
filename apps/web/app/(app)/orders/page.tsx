@@ -37,21 +37,19 @@ export default async function OrdersPage() {
    * 🔴 Har card ko apni fetch karne dena N+1 hai, aur is safhe par 20 order hote hain.
    * Ek saath laana ek query ka farq hai; alag alag laane par bees.
    */
+  const byOrderId = await container.repositories.orderMessages.listForOrders(
+    page.items.map((order) => order.id),
+  )
   const threads = new Map(
-    await Promise.all(
-      page.items.map(
-        async (order) =>
-          [
-            order.orderNo,
-            (await container.repositories.orderMessages.listForOrder(order.id)).map((m) => ({
-              id: m.id,
-              kind: m.kind,
-              authorType: m.authorType,
-              body: m.body,
-            })),
-          ] as const,
-      ),
-    ),
+    page.items.map((order) => [
+      order.orderNo,
+      (byOrderId.get(order.id) ?? []).map((m) => ({
+        id: m.id,
+        kind: m.kind,
+        authorType: m.authorType,
+        body: m.body,
+      })),
+    ]),
   )
 
   const pending = orders.filter((order) => order.status === 'PENDING_CONFIRM')

@@ -949,6 +949,19 @@ model ResellerPayout {
   sentAt        DateTime?
   /// EasyPaisa/bank ka TID — jhagre mein yehi ek cheez asli hai
   sentReference String?
+  /**
+   * Bhejne ki tasveer — marzi ka, magar jhagre mein sab se bhaari.
+   *
+   * 🔴 TID lazmi hai aur ye nahi, aur ye tarteeb jaan boojh kar hai: TID likhna
+   * ek line ka kaam hai, screenshot lagana teen qadam ka. Screenshot lazmi karne ka
+   * anjaam ye hota ke dukan wala "bhej diye" likhna hi chhor deta, aur hisab khula
+   * reh jata — jo us se buri soorat hai ke sabooot adhoora ho.
+   *
+   * 🔴 URL hamari apni storage ka hona lazmi hai, aur jaanch server par hoti
+   * hai. Bahar ka link lene ka matlab hota ke koi reseller ke safhe par kisi bhi pate
+   * ki tasveer chipka de — ya us se kisi aur ki tasveer ka rasta khul jaye.
+   */
+  sentProofUrl  String?
   /// reseller ki tasdeeq — "mil gaye"
   confirmedAt   DateTime?
   /// reseller ne kaha nahi mile

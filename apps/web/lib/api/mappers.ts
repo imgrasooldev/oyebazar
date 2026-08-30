@@ -92,6 +92,7 @@ export function toResellerProductListItemDTO(item: CatalogueItem): ResellerProdu
     inStock: product.inStock,
     stockLeft: product.stockLeft,
     listedAt: product.listedAt,
+    salesCount: item.orders ?? null,
     // Dukan ki SHANAKHT — rabta nahi. Dekhen RESELLER_PRODUCT_SELECT ka note.
     supplier: product.supplier,
   } satisfies ResellerProductListItem)
@@ -112,6 +113,7 @@ export function toResellerProductDetailDTO(item: CatalogueItem): ResellerProduct
     inStock: product.inStock,
     stockLeft: product.stockLeft,
     listedAt: product.listedAt,
+    salesCount: item.orders ?? null,
     // Dukan ki SHANAKHT — rabta nahi. Dekhen RESELLER_PRODUCT_SELECT ka note.
     supplier: product.supplier,
     // Domain se readonly aati hain; DTO ki apni copy — spread wahi karta hai

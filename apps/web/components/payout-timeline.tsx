@@ -27,9 +27,17 @@ export function PayoutTimeline({
     confirmed: string
     disputed: string
     reference: string
+    /** "Rasid dekhen" — sirf jab dukan ne tasveer lagayi ho */
+    proof: string
   }
 }) {
-  const steps: { at: Date; text: string; note?: string; tone: 'plain' | 'good' | 'bad' }[] = [
+  const steps: {
+    at: Date
+    text: string
+    note?: string
+    proofUrl?: string
+    tone: 'plain' | 'good' | 'bad'
+  }[] = [
     { at: payout.createdAt, text: `${labels.delivered} · ${formatPkr(payout.amount)}`, tone: 'plain' },
   ]
 
@@ -38,6 +46,14 @@ export function PayoutTimeline({
       at: payout.sentAt,
       text: labels.claimedSent,
       ...(payout.sentReference ? { note: `${labels.reference} ${payout.sentReference}` } : {}),
+      /*
+        🔴 Rasid usi qadam ke saath jis ka wo sabooot hai.
+
+        Alag jagah rakhne ka matlab hota ke reseller ko khud jorna parta ke ye tasveer
+        kis dawe ki hai — aur jis din dukan ne do dafa bheja ho, us din wo jor ghalat
+        bhi lag sakta hai.
+      */
+      ...(payout.sentProofUrl ? { proofUrl: payout.sentProofUrl } : {}),
       tone: 'plain',
     })
   }
@@ -81,6 +97,24 @@ export function PayoutTimeline({
               <span dir="ltr" className="numeric ms-1.5 text-ink-faint">
                 {step.note}
               </span>
+            )}
+            {step.proofUrl && (
+              /*
+                Naya tab — safha chhorne par reseller ka apna hisab band ho jata, aur
+                wapas aane par usay dobara dhoondhna parta.
+
+                🔴 `rel` dono lazmi: `noopener` ke baghair khula hua safha
+                `window.opener` se hamare safhe ka pata badal sakta hai, aur tasveer
+                ka pata storage ka hai — hamesha hamara nahi rehne wala.
+              */
+              <a
+                href={step.proofUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ms-1.5 font-semibold text-brand-700 underline decoration-dotted underline-offset-2"
+              >
+                {labels.proof}
+              </a>
             )}
           </span>
           <span className="shrink-0 text-ink-faint">{timeAgo(locale, step.at, now)}</span>

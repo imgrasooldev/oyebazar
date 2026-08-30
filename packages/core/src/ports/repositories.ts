@@ -82,6 +82,19 @@ export interface ProductRepository {
    * yahan ek chhoti si khoj par ki gayi hai.
    */
   findIdBySlug(slug: string): Promise<string | null>
+  /**
+   * Mutayyin maal ki bikri ki ginti — kitne orders, kitne dinon mein.
+   *
+   * 🔴 Ye `findTrending` se ALAG hai aur dono zaroori hain. `findTrending` ye
+   * poochhta hai "sab se ooper kaun hai" (top N); ye poochhta hai "IN cheezon ka kya
+   * chal raha hai" — yani us safhe ka maal jo abhi saamne khula hai, chahe wo kisi
+   * fehrist mein aakhri ho.
+   *
+   * Jis maal par is arse mein koi order nahi aaya, us ki koi entry nahi aati — sifar
+   * likhne aur "kuch nahi kehne" mein farq hai, aur wo farq dikhane wale ko karna hai.
+   */
+  salesCounts(productIds: readonly string[], days: number): Promise<Map<string, number>>
+
   /** Mutayyin maal, usi tarteeb mein jo di gayi — trending list ke liye. */
   findResellerByIds(productIds: readonly string[]): Promise<ResellerProductView[]>
 
@@ -315,6 +328,19 @@ export interface OrderMessageView {
 export interface OrderMessageRepository {
   /** Ek order ki poori guftagu — purani pehle, jaisa parhi jati hai. */
   listForOrder(orderId: string): Promise<OrderMessageView[]>
+  /**
+   * Kai orderon ki guftagu — EK query mein.
+   *
+   * 🔴 Ye is liye hai ke order ki fehristein guftagu ke SAATH dikhti hain, aur
+   * un par ek order nahi hota — reseller ke safhe par 20, dukan ke safhe par 60. Har
+   * order ke liye alag `listForOrder` chalana wohi N+1 hai, chahe wo `Promise.all`
+   * mein lipta ho: 60 wada ek saath chalane se query 60 hi rehti hain, sirf intezar
+   * chhota lagta hai.
+   *
+   * Jin orderon par koi baat nahi hui, un ki koi entry nahi aati — bulane wala khali
+   * fehrist khud rakh le.
+   */
+  listForOrders(orderIds: readonly string[]): Promise<Map<string, OrderMessageView[]>>
   add(input: {
     orderId: string
     kind: 'NOTE' | 'ISSUE'

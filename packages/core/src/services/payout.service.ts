@@ -109,7 +109,12 @@ export class PayoutService {
    * Reference lazmi hai — EasyPaisa/bank ka TID. Jhagre mein yehi ek cheez asli hai;
    * "bhej diya tha" ke lafz dono taraf se aate hain, TID ek hi taraf se aata hai.
    */
-  async markSent(supplierId: string, payoutId: string, reference: string): Promise<PayoutView> {
+  async markSent(
+    supplierId: string,
+    payoutId: string,
+    reference: string,
+    proofUrl?: string | undefined,
+  ): Promise<PayoutView> {
     const payout = await this.payouts.findForSupplier(supplierId, payoutId)
     if (!payout) throw new NotFoundError('Payout', payoutId)
 
@@ -123,7 +128,7 @@ export class PayoutService {
     }
 
     const at = this.clock.now()
-    const changed = await this.payouts.markSent(payoutId, trimmed, at)
+    const changed = await this.payouts.markSent(payoutId, trimmed, at, proofUrl)
 
     // Row nahi badli to yahin ruk jayen — warna hum reseller ko aisi cheez ki khabar
     // bhej dete hain jo hui hi nahi
@@ -147,7 +152,14 @@ export class PayoutService {
       properties: { orderNo: payout.orderNo, amount: payout.amount },
     })
 
-    return { ...payout, status: 'SENT', sentAt: at, sentReference: trimmed }
+    return {
+      ...payout,
+      status: 'SENT',
+      sentAt: at,
+      sentReference: trimmed,
+      // Nayi tasveer aayi to wohi, warna jo pehle se thi
+      sentProofUrl: proofUrl ?? payout.sentProofUrl,
+    }
   }
 
   /**

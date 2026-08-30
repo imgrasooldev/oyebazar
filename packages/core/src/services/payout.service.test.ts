@@ -23,6 +23,7 @@ function makeRow(overrides: Partial<PayoutView> = {}): PayoutView {
     status: 'PENDING',
     sentAt: null,
     sentReference: null,
+    sentProofUrl: null,
     confirmedAt: null,
     disputedAt: null,
     disputeNote: null,

@@ -21,6 +21,8 @@ export interface PayoutView {
   readonly status: PayoutStatus
   readonly sentAt: Date | null
   readonly sentReference: string | null
+  /** Bhejne ki tasveer — marzi ka; hamari apni storage ka URL, ya null */
+  readonly sentProofUrl: string | null
   readonly confirmedAt: Date | null
   readonly disputedAt: Date | null
   readonly disputeNote: string | null
@@ -76,7 +78,7 @@ export interface PayoutRepository {
    */
 
   /** Wholesaler ka dawa: bhej diye. */
-  markSent(payoutId: string, reference: string, at: Date): Promise<boolean>
+  markSent(payoutId: string, reference: string, at: Date, proofUrl?: string | undefined): Promise<boolean>
   /** Reseller ki tasdeeq: mil gaye. */
   markConfirmed(payoutId: string, at: Date): Promise<boolean>
   /** Reseller: nahi mile. */

@@ -1468,6 +1468,15 @@ const DICTIONARY = {
 
   // Inventory ki qatar — band halat mein sirf ye button
   stockChange: { ur: 'بدلیں', en: 'Change', rm: 'Badlein' },
+
+  // Payout ka sabooot — marzi ka
+  payoutProof: { ur: 'رسید لگائیں (اختیاری)', en: 'Add receipt (optional)', rm: 'Rasid lagayen (marzi ka)' },
+  payoutProofAdded: { ur: '✓ رسید لگ گئی', en: '✓ Receipt added', rm: '✓ Rasid lag gayi' },
+  payoutProofFailed: { ur: 'رسید نہیں لگی — دوبارہ کوشش کریں', en: 'Receipt failed — try again', rm: 'Rasid nahi lagi — dobara koshish karen' },
+  payoutProofView: { ur: 'رسید دیکھیں', en: 'View receipt', rm: 'Rasid dekhen' },
+
+  // Bikri ki ginti — 30 din (SALES_WINDOW_DAYS)
+  soldRecently: { ur: 'اس مہینے بکے', en: 'sold this month', rm: 'is mahine bikay' },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
   moneyByReseller: { ur: 'ریسیلر کے حساب سے', en: 'By reseller', rm: 'Reseller ke hisab se' },
   moneyEarnedTotal: { ur: 'کل کمائی', en: 'Total earned', rm: 'Kul kamai' },

@@ -648,6 +648,23 @@ export class OrderService {
   }
 
   /**
+   * Portal se ek order — logged-in dukandar ke liye.
+   *
+   * 🔴 Malkiyat yahan alag se nahi jaanchi ja rahi: `findForSupplier` khud usi
+   * dukan ke order laata hai, aur portal ke baqi tamam qadam (accept, reject, status)
+   * bhi isi ek jagah par khare hain. Yahan doosri jaanch likhne ka matlab hota do
+   * qaide — aur kal ek badalta, doosra reh jata.
+   *
+   * Na milne par 404, na ke 403: kis dukan ka kaunsa order mojood hai, ye batana bhi
+   * ek khabar hai jo poochhne wale ko nahi milni chahiye.
+   */
+  async getForSupplierPortal(supplierId: string, orderNo: string): Promise<SupplierOrderView> {
+    const order = await this.orders.findForSupplier(supplierId, orderNo)
+    if (!order) throw new NotFoundError('Order', orderNo)
+    return order
+  }
+
+  /**
    * 🔴 Wholesaler ne QUBOOL kiya — "maal mojood hai, main bhej raha hoon".
    *
    * Yahi wo lamha hai jo reseller ko sukoon deta hai. Is se pehle wo customer ko

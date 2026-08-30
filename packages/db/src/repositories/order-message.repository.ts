@@ -62,6 +62,26 @@ export class PrismaOrderMessageRepository implements OrderMessageRepository {
     return rows.map(toView)
   }
 
+  async listForOrders(orderIds: readonly string[]): Promise<Map<string, OrderMessageView[]>> {
+    const grouped = new Map<string, OrderMessageView[]>()
+    if (orderIds.length === 0) return grouped
+
+    const rows = await this.db.orderMessage.findMany({
+      where: { orderId: { in: [...orderIds] } },
+      select: { ...SELECT, orderId: true },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    // Tarteeb query se aa chuki hai — yahan sirf baant rahe hain, dobara nahi lagate
+    for (const row of rows) {
+      const { orderId, ...rest } = row
+      const list = grouped.get(orderId)
+      if (list) list.push(toView(rest))
+      else grouped.set(orderId, [toView(rest)])
+    }
+    return grouped
+  }
+
   async add(input: {
     orderId: string
     kind: 'NOTE' | 'ISSUE'

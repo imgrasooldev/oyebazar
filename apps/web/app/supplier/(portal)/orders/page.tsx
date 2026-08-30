@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { ORDER_TRANSIT, courierName, formatPkr } from '@oyebazar/shared'
 import type { ResellerRiskRecord, SupplierOrderView } from '@oyebazar/core'
+import { OrderThread, type ThreadMessage } from '@/components/order-thread'
 import { SupplierOrderActions } from '@/components/supplier-order-actions'
 import { ResellerRtoRecord } from '@/components/reseller-rto-record'
 import { OrderRiskNote } from '@/components/order-risk-note'
@@ -51,6 +52,29 @@ export default async function SupplierOrdersPage() {
   )
   const riskByReseller = new Map(risk.map((row) => [row.resellerId, row]))
 
+  /*
+   * Guftagu — EK query mein, poore safhe ke liye.
+   *
+   * 🔴 Ye safha pehle guftagu dikhata hi nahi tha. Reseller apne `/orders`
+   * safhe par likh sakti thi, aur dukan sirf WhatsApp wale magic link se jawab de sakti
+   * thi — yani jo dukandar login kar ke yahan baitha hai, us ke liye wo baat mojood hi
+   * nahi thi. "Laal wala bhejna" likha jata aur kabhi parha na jata.
+   */
+  const messagesByOrderId = await container.repositories.orderMessages.listForOrders(
+    orders.map((order) => order.id),
+  )
+  const threads = new Map<string, ThreadMessage[]>(
+    orders.map((order) => [
+      order.orderNo,
+      (messagesByOrderId.get(order.id) ?? []).map((m) => ({
+        id: m.id,
+        kind: m.kind,
+        authorType: m.authorType,
+        body: m.body,
+      })),
+    ]),
+  )
+
   const waiting = orders.filter((order) => order.status === 'SENT_TO_SUPPLIER')
 
   /*
@@ -99,7 +123,13 @@ export default async function SupplierOrdersPage() {
           <ul className="grid gap-4 lg:grid-cols-2">
             {waiting.map((order) => (
               <li key={order.id} className="card space-y-4 p-5 ring-1 ring-brand-200">
-                <OrderCard order={order} locale={locale} risk={riskByReseller} now={now} />
+                <OrderCard
+                  order={order}
+                  locale={locale}
+                  risk={riskByReseller}
+                  now={now}
+                  messages={threads.get(order.orderNo) ?? []}
+                />
                 {/* Ishara BUTTON se pehle — faisle ke baad likhi hui baat kaam ki nahi rehti */}
                 <OrderRiskNote risk={riskByOrder.get(order.id)} locale={locale} />
                 <SupplierOrderActions endpoint={`/api/v1/supplier/orders/${order.orderNo}`} />
@@ -116,6 +146,7 @@ export default async function SupplierOrdersPage() {
           locale={locale}
           risk={riskByReseller}
           now={now}
+          threads={threads}
           withActions
         />
       )}
@@ -126,6 +157,7 @@ export default async function SupplierOrdersPage() {
           locale={locale}
           risk={riskByReseller}
           now={now}
+          threads={threads}
         />
       )}
     </div>
@@ -138,6 +170,7 @@ function Section({
   locale,
   risk,
   now,
+  threads,
   withActions = false,
 }: {
   title: string
@@ -146,6 +179,8 @@ function Section({
   /** Reseller ka RTO record — id se */
   risk: Map<string, ResellerRiskRecord>
   now: Date
+  /** Order ke number se us ki guftagu */
+  threads: Map<string, ThreadMessage[]>
   /** Chal rahe orders par agla qadam — mukammal shuda par koi button nahi */
   withActions?: boolean
 }) {
@@ -176,7 +211,14 @@ function Section({
       <ul className="grid gap-4 lg:grid-cols-2">
         {orders.map((order) => (
           <li key={order.id} className="card space-y-4 p-5">
-            <OrderCard order={order} locale={locale} risk={risk} now={now} showRecord={withActions} />
+            <OrderCard
+              order={order}
+              locale={locale}
+              risk={risk}
+              now={now}
+              messages={threads.get(order.orderNo) ?? []}
+              showRecord={withActions}
+            />
 
             {/*
               Agla qadam wohi jo ab bana hai — dukan par jaldi mein chunna nahi parta.
@@ -252,11 +294,14 @@ function OrderCard({
   locale,
   risk,
   now,
+  messages,
   showRecord = true,
 }: {
   order: SupplierOrderView
   locale: Locale
   risk: Map<string, ResellerRiskRecord>
+  /** Isi order ki guftagu — purani pehle */
+  messages: ThreadMessage[]
   /** Ek hi "abhi" poori list ke liye — warna har card apna waqt naapta hai */
   now: Date
   /**
@@ -354,6 +399,43 @@ function OrderCard({
           {formatPkr(myTotal)}
         </span>
       </div>
+
+      {/*
+        Order ke gird ki baat — dukan ki taraf se.
+
+        🔴 `canRaiseIssue` yahan NAHI hai. Masla wo uthata hai jis ka nuqsan hota
+        hai (reseller ka customer, reseller ka paisa) — dukan sirf jawab deti hai. Yehi
+        qaida magic link wale raste par bhi likha hua hai, aur dono jagah ek hi rakhna
+        zaroori hai: warna dukandar wo darwaza istemal karta jo zyada deta hai, aur
+        qaida wo ban jata jo raste ne banaya, na ke jo hum ne socha.
+
+        Aur ye order ke SAATH hai, kisi alag safhe par nahi — bilkul jaise reseller ke
+        safhe par hai. Alag safha banane ka matlab hota ke dukandar usay tab dhoondhta
+        jab maal ghalat ja chuka hota.
+      */}
+      <OrderThread
+        endpoint={`/api/v1/supplier/orders/${order.orderNo}/messages`}
+        initial={messages}
+        canRaiseIssue={false}
+        labels={{
+          title: t('threadTitle'),
+          hint: t('threadHint'),
+          placeholder: t('threadPlaceholder'),
+          send: t('threadSend'),
+          raiseIssue: t('threadRaiseIssue'),
+          issueBadge: t('threadIssueBadge'),
+          empty: t('threadEmpty'),
+          failed: t('threadFailed'),
+          /*
+             🔴 Naam LIKHNE WALE ke hisaab se — "aap/doosra" ke hisaab se nahi.
+             Is safhe par "Aap" dukan hai, is liye `supplier` par t('threadYou') jata hai.
+             Component ke andar bhi yehi tanbeeh likhi hui hai; wahan se seekha hua hai.
+          */
+          reseller: t('threadReseller'),
+          supplier: t('threadYou'),
+          ops: t('threadOps'),
+        }}
+      />
     </div>
   )
 }

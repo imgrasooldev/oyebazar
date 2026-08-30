@@ -98,6 +98,14 @@ export const ResellerProductListItemDTO = z
     stockLeft: z.number().int().nonnegative(),
     listedAt: z.coerce.date(),
     /**
+     * Pichhle mahine kitne order — `null` ka matlab "kehne ko kuch nahi".
+     *
+     * 🔴 `0` aur `null` ka farq yahan tak nibhaya gaya hai, aur ye jaan boojh
+     * kar hai. Naye maal par "0 bikay" likhna us ke bare mein koi sach nahi kehta —
+     * sirf itna ke abhi waqt nahi guzra — magar parhne wali usay maar deti hai.
+     */
+    salesCount: z.number().int().nonnegative().nullable(),
+    /**
      * Kis dukan ka maal — SHANAKHT, rabta nahi.
      *
      * 🔴 `phone`/`whatsappPublic` yahan jaan boojh kar nahi. Reseller portal ke andar

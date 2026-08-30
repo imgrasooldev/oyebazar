@@ -29,18 +29,53 @@ export function SupplierPayoutSend({
   labels,
 }: {
   payoutId: string
-  labels: { send: string; reference: string; saving: string }
+  labels: {
+    send: string
+    reference: string
+    saving: string
+    proof: string
+    proofAdded: string
+    proofFailed: string
+  }
 }) {
   const router = useRouter()
   const [reference, setReference] = useState('')
+  const [proofUrl, setProofUrl] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  /*
+   * Tasveer PEHLE upload hoti hai, "bhej diye" dabane par nahi.
+   *
+   * 🔴 Dono ek saath karne ka matlab hota ke 3G par button daba kar dukan wala
+   * pandrah second khara rahe aur usay pata na chale ke kya ho raha hai — aur agar
+   * upload nakaam ho jaye to us ka TID bhi zaya ho jata. Alag karne se jo chala gaya
+   * wo chala gaya, aur nakaami sirf tasveer ki hoti hai, poore kaam ki nahi.
+   */
+  async function upload(file: File) {
+    setUploading(true)
+    setError(null)
+    const form = new FormData()
+    form.append('file', file)
+    const response = await fetch('/api/v1/supplier/media', { method: 'POST', body: form })
+    setUploading(false)
+
+    if (!response.ok) {
+      setError(labels.proofFailed)
+      return
+    }
+    const data = (await response.json()) as { url?: string }
+    if (data.url) setProofUrl(data.url)
+  }
 
   async function submit() {
     setPending(true)
     const message = await patch(`/api/v1/supplier/payouts/${payoutId}`, {
       action: 'SENT',
       reference,
+      // Khaana bhejna hi nahi jab tasveer na ho — server `.strict()` par khara hai
+      ...(proofUrl ? { proofUrl } : {}),
     })
     setPending(false)
 
@@ -73,6 +108,28 @@ export function SupplierPayoutSend({
       >
         {pending ? labels.saving : labels.send}
       </button>
+
+      {/*
+        Tasveer — marzi ka, aur us ka dikhna bhi marzi jaisa hi hai.
+
+        🔴 Ye TID wale khaane ke BAAD hai aur chhota hai, jaan boojh kar. Lazmi
+        kaam TID hai; agar screenshot pehle aur bara hota to dukan wala samajhta ke ye
+        bhi lazmi hai, aur jis din phone mein screenshot na hota us din wo "bhej diye"
+        likhta hi nahi.
+      */}
+      <label className="inline-flex min-h-tap cursor-pointer items-center rounded-pill px-3 text-[0.74rem] font-semibold text-brand-700 underline decoration-dotted underline-offset-2 transition hover:bg-brand-50">
+        <input
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.target.files?.[0]
+            if (file) void upload(file)
+          }}
+        />
+        {uploading ? labels.saving : proofUrl ? labels.proofAdded : labels.proof}
+      </label>
+
       {error && <span className="w-full text-[0.75rem] text-red-600">{error}</span>}
     </div>
   )

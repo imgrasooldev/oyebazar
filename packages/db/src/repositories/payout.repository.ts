@@ -29,6 +29,7 @@ const PAYOUT_SELECT = {
   status: true,
   sentAt: true,
   sentReference: true,
+  sentProofUrl: true,
   confirmedAt: true,
   disputedAt: true,
   disputeNote: true,
@@ -50,6 +51,7 @@ function toView(row: Row): PayoutView {
     status: row.status,
     sentAt: row.sentAt,
     sentReference: row.sentReference,
+    sentProofUrl: row.sentProofUrl,
     confirmedAt: row.confirmedAt,
     disputedAt: row.disputedAt,
     disputeNote: row.disputeNote,
@@ -107,10 +109,30 @@ export class PrismaPayoutRepository implements PayoutRepository {
   }
 
   /** PENDING ya DISPUTED se SENT — pehle se settled row dobara nahi khulti. */
-  async markSent(payoutId: string, reference: string, at: Date): Promise<boolean> {
+  async markSent(
+    payoutId: string,
+    reference: string,
+    at: Date,
+    proofUrl?: string | undefined,
+  ): Promise<boolean> {
     const { count } = await this.db.resellerPayout.updateMany({
       where: { id: payoutId, status: { in: ['PENDING', 'DISPUTED'] } },
-      data: { status: 'SENT', sentAt: at, sentReference: reference, disputedAt: null },
+      data: {
+        status: 'SENT',
+        sentAt: at,
+        sentReference: reference,
+        disputedAt: null,
+        /*
+         * 🔴 Tasveer na di gayi ho to purani MITTI NAHI jati.
+         *
+         * Ye soorat asli hai: DISPUTED hisab par dukan wala dobara "bhej diye" dabata
+         * hai aur is dafa sirf naya TID likhta hai. `sentProofUrl: undefined` likh dena
+         * pehli tasveer ko mita deta — yani wo sabooot jo jhagre ke liye rakha hi is
+         * liye tha. Prisma `undefined` ko "is khaane ko haath na lagao" samajhta hai;
+         * yahan wohi chahiye.
+         */
+        ...(proofUrl ? { sentProofUrl: proofUrl } : {}),
+      },
     })
     return count > 0
   }
