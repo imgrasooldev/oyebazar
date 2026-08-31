@@ -65,4 +65,40 @@ describe('parseOrderText', () => {
     expect(parsed.phone).toBe('03334445556')
     expect(parsed.address).toBe('گھر نمبر 7، محلہ اقبال، فیصل آباد')
   })
+
+  /*
+   * 🔴 Ye asli jaanch mein pakra gaya, production par.
+   *
+   * "Assalam o alaikum baji" naam ke khaane mein chala jata tha — aur wohi naam courier
+   * ki parchi par chhapta. Naam ka qaida "pehli chhoti qatar jis mein hindsay na hon"
+   * hai, aur Pakistan mein tqreeban HAR paighaam salam se shuru hota hai: yani ye
+   * ghalti aam soorat thi, istisna nahi.
+   */
+  it('salam ko naam nahi banata — khaali khaana ghalat naam se behtar hai', () => {
+    const roman = parseOrderText(
+      ['Assalam o alaikum baji', 'Kiran Zahra', '0301-1122233', 'Makan 42-B, Gali 7'].join('\n'),
+    )
+
+    expect(roman.name).toBe('Kiran Zahra')
+    expect(roman.phone).toBe('03011122233')
+
+    const urdu = parseOrderText(
+      ['السلام علیکم', 'کرن زہرا', '0333 4445556', 'گھر نمبر 7، محلہ اقبال'].join('\n'),
+    )
+
+    expect(urdu.name).toBe('کرن زہرا')
+  })
+
+  it('sirf salam ho to naam khaali rehta hai, salam nahi', () => {
+    expect(parseOrderText('Assalam o alaikum baji').name).toBe('')
+  })
+
+  /*
+   * Hadd: "hi" aur "salam" se SHURU hone wale asli naam na kat jayen. `\b` isi ke
+   * liye hai — is ke baghair "Hina" bhi "hi" par match kar ke gir jata.
+   */
+  it('naam jo salam jaise lafz se shuru hote hain, wo nahi girte', () => {
+    expect(parseOrderText(['Hina Aslam', '0300 1112223'].join('\n')).name).toBe('Hina Aslam')
+    expect(parseOrderText(['Salamat Bibi', '0300 1112223'].join('\n')).name).toBe('Salamat Bibi')
+  })
 })

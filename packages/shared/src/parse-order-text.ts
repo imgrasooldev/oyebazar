@@ -58,6 +58,29 @@ const ADDRESS_WORDS = [
   '#',
 ]
 
+/**
+ * Salam wali qatarein — naam ke umeedwaron se BAHAR.
+ *
+ * 🔴 Ye asal jaanch mein pakra gaya: "Assalam o alaikum baji / Kiran Zahra /
+ * 0301... / Makan 42-B..." par naam **"Assalam o alaikum baji"** nikla. Naam ka qaida
+ * "pehli chhoti qatar jis mein hindsay na hon" hai — aur Pakistan mein tqreeban HAR
+ * WhatsApp paighaam salam se shuru hota hai. Yani ye ghalti aam soorat thi, istisna nahi.
+ *
+ * Aur ye ghalti chup chaap chalti hai: wohi naam courier ki parchi par chhapta hai aur
+ * dukan ko bhi wohi jata hai. Is liye salam wali qatar ko naam banane se behtar ye hai
+ * ke khaana KHALI rahe — reseller khali khaana bhar deti hai, ghalat bhara hua wo dekhti
+ * bhi nahi.
+ *
+ * Sirf naam ke liye — pate ki apni shart (hindsay + pate ke lafz) pehle se mazboot hai.
+ */
+const GREETING_PATTERN =
+  /*
+   * `\b` sirf Roman hisse par — JS mein word-boundary `[A-Za-z0-9_]` par chalti hai,
+   * aur Urdu ke huroof us mein hain hi nahi. "السلام علیکم" ke baad space hai, yani
+   * dono taraf non-word — boundary banti hi nahi aur poora qaida chup chaap mar jata.
+   */
+  /^(?:(?:a\.?\s*o\.?\s*a\.?|as+alam|as+alaam|salam|salaam|slam|hi|hello|hey|good\s+(?:morning|evening|afternoon))\b|السلام|سلام|اسلام|آداب)/i
+
 /** Naam ke sath aane wale lafz — "naam: ..." jaisi qatarein. */
 const NAME_LABELS = ['نام', 'name']
 const ADDRESS_LABELS = ['پتہ', 'پتا', 'ایڈریس', 'address', 'pata']
@@ -154,7 +177,9 @@ export function parseOrderText(input: string): ParsedOrderText {
           line !== address &&
           line.length <= 40 &&
           // Naam mein hindsay nahi hote; jis qatar mein number hai wo pata ya phone hai
-          !/\d/.test(line),
+          !/\d/.test(line) &&
+          // Salam naam nahi hai — dekhen GREETING_PATTERN
+          !GREETING_PATTERN.test(line),
       ) ?? ''
   }
 

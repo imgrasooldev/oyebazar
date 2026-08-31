@@ -458,7 +458,19 @@ export function OrderForm({
           <input
             type="number"
             min={bajiPrice}
-            step={50}
+            /*
+             * step JAAN BOOJH KAR nahi hai.
+             *
+             * 🔴 Pehle yahan `step={50}` tha, aur browser step ko `min` se ginta hai —
+             * yani jaiz qadrein 1995, 2045, 2095... hoti thin. Magar khaana khud
+             * `suggestedRetail` (2700) se bhara hua aata hai, jo us seerhi par hai hi
+             * nahi. Nateeja: form apne hi default par NA-JAIZ tha aur "order lagayen"
+             * dabane par kuch nahi hota tha — sirf browser ka angrezi paighaam, wo bhi
+             * us khaane par jo screen se neeche hota hai.
+             *
+             * 276 LIVE maal mein se 272 par yehi haal tha. Ye poore platform ka sab se
+             * ahem button hai; us par "kuch nahi hota" se bura kuch nahi.
+             */
             dir="ltr"
             value={retailPrice}
             onChange={(e) => setRetailPrice(Number(e.target.value))}
