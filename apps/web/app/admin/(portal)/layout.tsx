@@ -47,6 +47,14 @@ const TABS = [
   { href: '/admin/categories', label: 'Categories', needs: 'REVIEWER', Icon: GridIcon },
   { href: '/admin/drop', label: 'Daily drop', needs: 'REVIEWER', Icon: SparkIcon },
   { href: '/admin/resellers', label: 'Resellers', needs: 'REVIEWER', Icon: UsersIcon },
+  /*
+    Invites — Resellers ke FORAN baad.
+
+    Ye us fehrist ka doosra rukh hai: wahan "kaun hai", yahan "kahan se aaya". Money ke
+    paas rakhne ka matlab hota ke ops usay paisa dene wala safha samajhti, jab ke paisa
+    wahin se jata hai aur ye sirf dikhata hai ke kya hua.
+  */
+  { href: '/admin/invites', label: 'Invites', needs: 'REVIEWER', Icon: UsersIcon },
   { href: '/admin/money', label: 'Money', needs: 'REVIEWER', Icon: MoneyIcon },
   /*
    * Activity — Team ke SAATH, sab se neeche.

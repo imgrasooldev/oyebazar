@@ -20,6 +20,21 @@ export default async function AdminResellersPage() {
   const { user } = await requireOpsUser()
   const resellers = await container.admin.listResellers(user)
 
+  /*
+   * Invite ka khulasa — teen adad.
+   *
+   * 🔴 Ye qataron se GINE jate hain, ek nayi query se nahi. Fehrist pehle se
+   * yahan hai, aur us par teen jama karna sifar kharche ka kaam hai; us ke liye DB
+   * dobara poochhna wo kharch hai jo hamesha rehta hai aur kabhi wapas nahi aata.
+   *
+   * 🔴 "Chalu inviter" ki ginti alag hai aur wohi asal khabar hai. Kul invite ka
+   * number ek do bandon se bhi bara ho sakta hai; ye batata hai ke KITNE log waqai laa
+   * rahe hain — aur growth ka jawab usi mein hai.
+   */
+  const invitedTotal = resellers.reduce((sum, row) => sum + row.invitedCount, 0)
+  const inviters = resellers.filter((row) => row.invitedCount > 0).length
+  const cameViaInvite = resellers.filter((row) => row.referredByName !== null).length
+
   return (
     <div className="space-y-6">
       <div>
@@ -28,6 +43,30 @@ export default async function AdminResellersPage() {
           Suspending also ends every open session on that account.
         </p>
       </div>
+
+      {/*
+        Invite ka khulasa — fehrist se UPAR.
+
+        Bina is ke ops ko ye jawab qatarein gin kar nikalna parta, aur wo koi nahi karta.
+        Sawal rozana ka hai ("scheme kaam kar rahi hai ya nahi") aur us ka jawab ek nazar
+        mein milna chahiye.
+      */}
+      {invitedTotal > 0 && (
+        <dl dir="ltr" className="card flex flex-wrap gap-6 p-4 text-[0.85rem]">
+          <div>
+            <dt className="text-ink-faint">Came via invite</dt>
+            <dd className="numeric text-[1.1rem] font-bold">{cameViaInvite}</dd>
+          </div>
+          <div>
+            <dt className="text-ink-faint">Invites sent through</dt>
+            <dd className="numeric text-[1.1rem] font-bold">{invitedTotal}</dd>
+          </div>
+          <div>
+            <dt className="text-ink-faint">Sellers who invited</dt>
+            <dd className="numeric text-[1.1rem] font-bold text-accent-700">{inviters}</dd>
+          </div>
+        </dl>
+      )}
 
       {resellers.length === 0 ? (
         <p className="card p-6 text-center text-sm text-ink-soft">No resellers yet.</p>
@@ -58,6 +97,21 @@ export default async function AdminResellersPage() {
                   <div dir="auto">
                     <dt className="text-ink-faint">Invited by</dt>
                     <dd className="font-bold">{reseller.referredByName}</dd>
+                  </div>
+                )}
+
+                {/*
+                  Ulta rukh — is ne kitno ko bulaya.
+
+                  🔴 Sirf jab sifar se ziyada ho. "Invited 0" har us qatar par chhap
+                  jata jis ne kabhi link bheja hi nahi (yani aksar par), aur us shor
+                  mein wo ek qatar doob jati jo waqai log laa rahi hai — jab ke poore
+                  khaane ka maqsad wohi ek qatar dhoondhna hai.
+                */}
+                {reseller.invitedCount > 0 && (
+                  <div>
+                    <dt className="text-ink-faint">Invited</dt>
+                    <dd className="font-bold text-accent-700">{reseller.invitedCount}</dd>
                   </div>
                 )}
               </dl>

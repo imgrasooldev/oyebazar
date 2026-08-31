@@ -448,6 +448,7 @@ export default async function ResellerDashboard() {
         referred={referred}
         bonusEarned={bonus.earned}
         bonusPending={bonus.pending}
+        showAll
         labels={{
           title: t('inviteTitle'),
           body: t('inviteBody'),
@@ -457,6 +458,7 @@ export default async function ResellerDashboard() {
           bonus: t('bonusEarned'),
           bonusPending: t('bonusPending'),
           promise: t('bonusPromise'),
+          seeAll: t('inviteSeeAll'),
         }}
       />
 

@@ -9,6 +9,8 @@ import type { PrismaClient } from '@prisma/client'
 import type {
   AdminActivityRepository,
   AdminActivityRow,
+  AdminReferralRepository,
+  AdminReferralRow,
   AdminDashboardStats,
   AdminInvoiceRow,
   AdminProductRow,
@@ -374,6 +376,24 @@ export class PrismaAdminRepository implements AdminRepository {
      * pachaas qatarein hoti hain. `Set` is liye ke ek behen aksar kai ko bulati hai:
      * pachaas qatarein aksar paanch naamon ki hoti hain.
      */
+    /*
+     * Kis ne kitno ko bulaya — EK groupBy, chahe qatarein kitni bhi hon.
+     *
+     * 🔴 Chhanni SIRF is safhe ki qataron par (`in`), poore platform par nahi.
+     * Bina us ke ye ginti poore Reseller table par chalti — aur wo us din bhaari ho
+     * jati jis din ye kaam ki hoti (yani jab log ziyada hon).
+     */
+    const invited = await this.db.reseller.groupBy({
+      by: ['referredById'],
+      where: { referredById: { in: rows.map((row) => row.id) } },
+      _count: { _all: true },
+    })
+    const invitedCounts = new Map(
+      invited
+        .filter((group): group is typeof group & { referredById: string } => !!group.referredById)
+        .map((group) => [group.referredById, group._count._all]),
+    )
+
     const referrerIds = [
       ...new Set(rows.map((row) => row.referredById).filter((id): id is string => !!id)),
     ]
@@ -389,6 +409,7 @@ export class PrismaAdminRepository implements AdminRepository {
     return rows.map(({ _count, referredById, ...row }) => ({
       ...row,
       referredByName: referredById ? (names.get(referredById) ?? null) : null,
+      invitedCount: invitedCounts.get(row.id) ?? 0,
       orderCount: _count.orders,
     }))
   }
@@ -473,5 +494,86 @@ export class PrismaAdminActivityRepository implements AdminActivityRepository {
       properties: (row.properties ?? {}) as Record<string, unknown>,
       createdAt: row.createdAt,
     }))
+  }
+}
+
+/**
+ * Invite ka poora silsila — ops ke liye, sirf PARHNE ke liye.
+ *
+ * 🔴 Ye `PrismaResellerRepository.listReferred` ki NAKAL nahi hai, chahe do
+ * query milti julti dikhen. Wo ek reseller ke apne bulaye huon ki fehrist hai (aur us
+ * mein bulane wali ka naam hai hi nahi, kyunke wo khud wohi hai); ye poore platform ka
+ * silsila hai. Un ka sawal alag hai, un ki hadd alag hai, aur un mein se ek badalne se
+ * doosra nahi badalna chahiye.
+ */
+export class PrismaAdminReferralRepository implements AdminReferralRepository {
+  constructor(private readonly db: PrismaClient) {}
+
+  async list(limit: number): Promise<readonly AdminReferralRow[]> {
+    const rows = await this.db.reseller.findMany({
+      where: { referredById: { not: null } },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: { id: true, name: true, city: true, createdAt: true, referredById: true },
+    })
+    if (rows.length === 0) return []
+
+    const ids = rows.map((row) => row.id)
+    const inviterIds = [
+      ...new Set(rows.map((row) => row.referredById).filter((id): id is string => !!id)),
+    ]
+
+    /*
+     * Teen query, SAATH — aur teenon poori fehrist ke liye ek ek.
+     *
+     * 🔴 Har qatar ke liye alag poochna N+1 hai, aur is safhe par pachas
+     * qatarein hoti hain. Teen chakkar aur ek sau pachas chakkar mein farq wo hai jo
+     * safha khulne aur na khulne ka hota hai.
+     */
+    const [inviters, delivered, bonuses] = await Promise.all([
+      this.db.reseller.findMany({
+        where: { id: { in: inviterIds } },
+        select: { id: true, name: true },
+      }),
+      this.db.order.groupBy({
+        by: ['resellerId'],
+        where: { resellerId: { in: ids }, status: 'DELIVERED' },
+        _count: { _all: true },
+      }),
+      this.db.resellerBonus.findMany({
+        where: { fromResellerId: { in: ids } },
+        select: { fromResellerId: true, amount: true, status: true },
+      }),
+    ])
+
+    const inviterNames = new Map(inviters.map((row) => [row.id, row.name]))
+    const deliveredBy = new Map(delivered.map((row) => [row.resellerId, row._count._all]))
+    const bonusBy = new Map(
+      bonuses
+        .filter((row): row is typeof row & { fromResellerId: string } => !!row.fromResellerId)
+        .map((row) => [row.fromResellerId, row]),
+    )
+
+    return rows.map((row) => {
+      const bonus = bonusBy.get(row.id)
+      const invitedById = row.referredById ?? ''
+      return {
+        resellerId: row.id,
+        name: row.name,
+        city: row.city,
+        joinedAt: row.createdAt,
+        invitedById,
+        /*
+         * Naam na mile to em-dash — kachchi id NAHI.
+         *
+         * Ye tabhi hota hai jab bulane wali ka account mit chuka ho, aur us surat mein
+         * bhi `cmt3jed…` parhne wale ko kuch nahi deta.
+         */
+        invitedByName: inviterNames.get(invitedById) ?? '—',
+        delivered: deliveredBy.get(row.id) ?? 0,
+        bonusAmount: bonus?.amount ?? null,
+        bonusStatus: bonus?.status ?? null,
+      }
+    })
   }
 }

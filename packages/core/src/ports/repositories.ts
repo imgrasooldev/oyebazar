@@ -193,6 +193,26 @@ export interface SupplierRepository {
 
 // ---------------------------------------------------------------- resellers
 
+/**
+ * Ek bulai hui behen — aur us ka anjaam.
+ *
+ * 🔴 `orders` aur `bonus` dono yahan hain kyunke wo EK KAHANI ke do hisse hain:
+ * bonus us waqt khulta hai jab pehla order pohanchta hai. Sirf bonus dikhane se wo
+ * qatarein gayab ho jatin jinhon ne join to kiya magar abhi kuch becha nahi — aur wohi
+ * qatarein hain jin par bulane wali ko kaam karna hai.
+ */
+export interface ReferralRow {
+  readonly resellerId: string
+  readonly name: string
+  readonly city: string
+  readonly joinedAt: Date
+  /** Kitne order POHANCH chuke — bonus isi par khulta hai */
+  readonly delivered: number
+  /** Bonus ki raqam — `null` ka matlab abhi khula hi nahi */
+  readonly bonusAmount: number | null
+  readonly bonusStatus: 'PENDING' | 'PAID' | null
+}
+
 export interface ResellerRepository {
   findById(id: string): Promise<ResellerView | null>
 
@@ -205,6 +225,22 @@ export interface ResellerRepository {
    * jaanna chahiye ("mera bulana kaam kar raha hai") aur us se ek lafz zyada nahi.
    */
   countReferred(resellerId: string): Promise<number>
+
+  /**
+   * Jinhen is ne bulaya — poori qatar, naye pehle.
+   *
+   * 🔴 Ye `countReferred` ki jagah NAHI leta, aur dono ka rehna zaroori hai.
+   * Ginti dashboard par chahiye (ek adad, har safhe par); ye fehrist us safhe par jise
+   * reseller tab kholti hai jab wo poochhna chahti ho ke "kis kis ne kya kiya". Har
+   * dashboard par ye poori query chalana us safhe ko bhaari kar deta jo har roz khulta
+   * hai — us fehrist ke liye jise hafte mein ek dafa dekha jata hai.
+   *
+   * 🔴 NAAM aur SHEHER bahar jate hain, phone NAHI. Ye us aurat ki maloomat hai
+   * jis ne apna account is liye nahi banaya tha ke koi teesra us se rabta kare. Bulane
+   * wali ke paas us ka number pehle se hai agar us ne khud usay bheja tha — us ki
+   * zaroorat is safhe se nahi.
+   */
+  listReferred(resellerId: string, limit: number): Promise<readonly ReferralRow[]>
   findByPhone(phoneE164: string): Promise<ResellerView | null>
   create(input: { name: string; whatsappPhone: string; city: string; area?: string }): Promise<ResellerView>
   touchLastActive(id: string, at: Date): Promise<void>

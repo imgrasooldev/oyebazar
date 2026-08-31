@@ -246,6 +246,9 @@ const RESELLERS = {
   async countReferred() {
     return 0
   },
+  async listReferred() {
+    return []
+  },
   async findByPhone() {
     return null
   },

@@ -1533,6 +1533,16 @@ const DICTIONARY = {
   bonusEarned: { ur: 'آپ کا بونس: Rs {n}', en: 'Your bonus: Rs {n}', rm: 'Aap ka bonus: Rs {n}' },
   bonusPending: { ur: 'Rs {n} ملنا باقی', en: 'Rs {n} still to come', rm: 'Rs {n} milna baqi' },
   bonusPromise: { ur: 'پہلے ۱۰ آرڈر پہنچنے پر Rs ۵۰ فی آرڈر — کُل Rs ۵۰۰۔ اور جو بہن آپ کے لنک سے آئے، اُس کا پہلا آرڈر پہنچنے پر Rs ۱۰۰ تک (شروع کے کچھ لوگوں کے لیے)۔', en: 'Rs 50 for each of your first 10 delivered orders — Rs 500 in all. Plus up to Rs 100 when someone you invited gets their first delivery (early joiners only).', rm: 'Pehle 10 order pohanchne par Rs 50 fi order — kul Rs 500. Aur jo behen aap ke link se aaye, us ka pehla order pohanchne par Rs 100 tak (shuru ke kuch logon ke liye).' },
+
+  // Invite ka apna safha
+  inviteSeeAll: { ur: 'سب دیکھیں', en: 'See all', rm: 'Sab dekhen' },
+  invitesWho: { ur: 'جنہیں آپ نے بلایا', en: 'Who you invited', rm: 'Jinhen aap ne bulaya' },
+  invitesEmpty: { ur: 'ابھی کسی نے آپ کے لنک سے جوائن نہیں کیا۔ اوپر والا لنک ایک بہن کو بھیجیں — اُس کا پہلا آرڈر پہنچنے پر آپ کا بونس کھل جائے گا۔', en: 'Nobody has joined from your link yet. Send it to one seller — your bonus opens when her first order is delivered.', rm: 'Abhi kisi ne aap ke link se join nahi kiya. Upar wala link ek behen ko bhejen — us ka pehla order pohanchne par aap ka bonus khul jayega.' },
+  inviteWaitingFirst: { ur: 'پہلا آرڈر باقی ہے', en: 'First order pending', rm: 'Pehla order baqi hai' },
+  inviteNoBonus: { ur: 'بونس نہیں بنا', en: 'No bonus', rm: 'Bonus nahi bana' },
+  inviteBonusPaid: { ur: 'مل گیا', en: 'paid', rm: 'mil gaya' },
+  inviteBonusSoon: { ur: 'باقی', en: 'due', rm: 'baqi' },
+  inviteRules: { ur: 'قاعدہ: جو بہن آپ کے لنک سے آئے، اُس کا پہلا آرڈر پہنچنے پر Rs {bonus} تک — بونس اُسی بکری پر ہماری اپنی فیس سے نکلتا ہے، اِس لیے کبھی کم بھی ہو سکتا ہے۔ یہ سکیم شروع کے {limit} بونس تک ہے۔ اِس کے علاوہ آپ کے اپنے پہلے ۱۰ آرڈر پہنچنے پر Rs {signup} تک۔', en: 'How it works: up to Rs {bonus} when someone you invited gets their first delivery — the bonus comes out of our own fee on that sale, so it can be less. The scheme runs for the first {limit} bonuses. Separately, up to Rs {signup} across your own first 10 delivered orders.', rm: 'Qaida: jo behen aap ke link se aaye, us ka pehla order pohanchne par Rs {bonus} tak — bonus usi bikri par hamari apni fee se nikalta hai, is liye kabhi kam bhi ho sakta hai. Ye scheme shuru ke {limit} bonus tak hai. Is ke ilawa aap ke apne pehle 10 order pohanchne par Rs {signup} tak.' },
   moneyByWholesaler: { ur: 'ہول سیلر کے حساب سے', en: 'By wholesaler', rm: 'Wholesaler ke hisab se' },
   moneyByReseller: { ur: 'ریسیلر کے حساب سے', en: 'By reseller', rm: 'Reseller ke hisab se' },
   moneyEarnedTotal: { ur: 'کل کمائی', en: 'Total earned', rm: 'Kul kamai' },

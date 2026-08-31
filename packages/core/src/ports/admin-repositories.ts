@@ -105,6 +105,16 @@ export interface AdminResellerRow {
    * kar de sakte hain.
    */
   readonly referredByName: string | null
+  /**
+   * Is ne kitni behnon ko bulaya.
+   *
+   * 🔴 Ye "kis ne bulaya" se ULTA rukh hai, aur ops ko dono chahiyen. Pehla ek
+   * qatar ke bare mein hai (ye kahan se aayi); ye poore nizam ke bare mein hai — kaun
+   * waqai log laa raha hai. Growth ka poora jawab isi doosre number mein hai, aur bina
+   * us ke ye maloom hi nahi hota ke referral scheme kaam kar rahi hai ya sirf chal rahi
+   * hai.
+   */
+  readonly invitedCount: number
   readonly orderCount: number
   readonly lastActiveAt: Date | null
   readonly createdAt: Date
@@ -200,4 +210,30 @@ export interface AdminActivityRepository {
    * safha jawabdehi ka hai, trafik ka nahi.
    */
   recent(filters: { actorType?: string | undefined; limit: number }): Promise<AdminActivityRow[]>
+}
+
+export interface AdminReferralRepository {
+  /** Har wo reseller jo kisi ke link se aayi — nayi pehle. */
+  list(limit: number): Promise<readonly AdminReferralRow[]>
+}
+
+/**
+ * Ek invite ka poora silsila — ops ke liye.
+ *
+ * 🔴 Reseller wale `ReferralRow` se ALAG hai, aur wo alag hona zaroori hai: is
+ * mein BULANE WALI ka naam bhi hai. Reseller ko wo khaana chahiye hi nahi (bulane wali
+ * wo khud hai), aur us ke safhe par wo bhejna us ke liye ek fazool khaana hota. Ops ke
+ * liye wohi khaana asal sawal hai: kaun laa raha hai.
+ */
+export interface AdminReferralRow {
+  readonly resellerId: string
+  readonly name: string
+  readonly city: string
+  readonly joinedAt: Date
+  readonly invitedById: string
+  readonly invitedByName: string
+  /** Kitne order POHANCH chuke — bonus isi par khulta hai */
+  readonly delivered: number
+  readonly bonusAmount: number | null
+  readonly bonusStatus: 'PENDING' | 'PAID' | null
 }

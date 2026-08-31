@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { UsersIcon, WhatsAppIcon } from '@/components/icons'
 
@@ -10,9 +11,16 @@ import { UsersIcon, WhatsAppIcon } from '@/components/icons'
  * likha nahi gaya, kabhi parha nahi gaya. Ye us khaane ka doosra sira hai — pehla sira
  * register ke waqt hai, jahan `?ref=` se wo bharta hai.
  *
- * 🔴 Ye ab ek WAADA karta hai — Rs 100 jab bulai hui behen ka pehla order pohanche,
- * aur us ke apne pehle das orderon par Rs 50 fi order. (Pehle yahan likha tha ke ye koi
- * waada nahi karta; wo baat 30 August ko badal gayi aur ye note us ke saath badla gaya.)
+ * 🔴 Ye ab ek WAADA karta hai — magar wo waada teen shartein rakhta hai, aur
+ * teenon safhe par likhi hui hain kyunke un mein se koi bhi chhupana bharosa torta hai:
+ *
+ *   · Rs 100 TAK — poora sau nahi. Bonus us order par hamari apni fee se nikalta hai,
+ *     aur us se zyada dena bonus nahi, nuqsan hai.
+ *   · Sirf SHURU ke logon ke liye — kul teen sau bonus, phir scheme band.
+ *   · Aur us ke apne pehle das orderon par Rs 50 fi order (ye wala sab ke liye khula hai).
+ *
+ * Qaide `domain/bonus.ts` mein hain aur wahan un ka test bhi hai — raqam aur hadd dono
+ * us test mein likhi hui hain, taake badalne par wo girein aur tabdeeli nazar mein aaye.
  *
  * 🔴 Aur wo waada POHANCHE hue order par hai, lagaye hue par nahi. Ye shart is
  * poore feature ki jaan hai: lagaye hue order par dena ye rasta khol deta hai — account
@@ -27,6 +35,7 @@ export function InviteCard({
   referred,
   bonusEarned,
   bonusPending,
+  showAll = false,
   labels,
 }: {
   resellerId: string
@@ -36,6 +45,14 @@ export function InviteCard({
   bonusEarned: number
   /** Us mein se jo abhi milna baqi hai */
   bonusPending: number
+  /**
+   * Poori fehrist ka rasta — dashboard par HAAN, invite ke apne safhe par NAHI.
+   *
+   * 🔴 Wahi card dono jagah chalta hai, aur us safhe par ye link khud us safhe
+   * ki taraf jata — yani banda dabata aur wahin khara rehta. Aisa link ek dafa dabaya
+   * jata hai aur us ke baad poore safhe par bharosa kam ho jata hai.
+   */
+  showAll?: boolean
   labels: {
     title: string
     body: string
@@ -49,6 +66,8 @@ export function InviteCard({
     bonusPending: string
     /** Waada — kitna aur kaise */
     promise: string
+    /** "Sab dekhen" — poori fehrist ka rasta */
+    seeAll?: string
   }
 }) {
   const [copied, setCopied] = useState(false)
@@ -156,6 +175,22 @@ export function InviteCard({
           </p>
         ) : (
           <p className="text-[0.8rem] leading-relaxed text-ink-faint">{labels.promise}</p>
+        )}
+
+        {/*
+          Poori fehrist ka rasta — sirf tab jab koi aa chuki ho.
+
+          🔴 Sifar par ye link ek khali safhe par le jata hai, aur khali safha wo
+          cheez hai jis ke baad banda dobara nahi aata. Jab tak koi na aaye, upar wala
+          link hi wahid kaam hai — aur usi par nazar rehni chahiye.
+        */}
+        {showAll && referred > 0 && labels.seeAll && (
+          <Link
+            href="/invites"
+            className="mt-1 inline-block text-[0.8rem] font-semibold text-brand-700 underline decoration-dotted underline-offset-2"
+          >
+            {labels.seeAll}
+          </Link>
         )}
       </div>
     </section>
