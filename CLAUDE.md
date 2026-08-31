@@ -48,6 +48,32 @@ Ek aur faida: prod ka `DATABASE_URL` kisi ke laptop par utarne ki zaroorat nahi.
 - **Dev server chalte hue `next build` na chalayen** — wo `.next` ko clobber kar deta hai
   aur React load hona band ho jata hai. Test "kuch nahi hua" wala jhoota jawab dete hain.
 
+### 🔴 `turbo` chalate waqt `CI=true` lagayen
+
+`pnpm run` har script se PEHLE khud `install` chalata hai, aur `turbo` un ko parallel
+chalata hai — wo aapas mein takra kar `node_modules` **purge** karne ki koshish karte
+hain:
+
+```
+ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY
+```
+
+31 August ko wo waqai purge ho gaya: `tsc` aur `eslint-plugin-react-hooks` tak gayab ho
+gaye, aur "test fail" us kharabi ki wajah se dikhne laga jo code mein thi hi nahi.
+
+```bash
+CI=true npx turbo run typecheck test lint
+```
+
+Purge ho jaye to: `CI=true pnpm install --no-frozen-lockfile` **aur** `pnpm db:generate`
+(Prisma client `node_modules` mein rehta hai, wo bhi jata hai).
+
+Shak ho to har package mein seedha `./node_modules/.bin/tsc` aur `./node_modules/.bin/vitest`
+chala lena zyada bharosemand hai — us mein pnpm beech mein aata hi nahi.
+
+**Aur ek flaky test:** `apps/web` ka `dev-otp.test.ts` ~4s leta hai. Turbo ke dabao mein
+wo kabhi kabhi waqt se aage nikal jata hai. Akele chalane par pass ho to wo kharabi nahi.
+
 ## 4 · Live jaanchne ke usool
 
 - **Screenshot par bharosa karen, background tab ki naap par nahi.** Background tab mein
@@ -117,3 +143,17 @@ flyctl logs -a oyebazar-web --no-tail | grep baji_login_otp | tail -1
 ```
 
 Ye chalne ka tareeqa nahi hai — jis din team barhegi, har banda malik ko phone karega.
+
+## 🔴 8 · Home page ek waada kar raha hai jo abhi poora nahi hota
+
+`step2` (i18n) par likha hai:
+
+> روز صبح ۹ بجے آپ کو واٹس ایپ پر ۵ پیک ملتے ہیں
+
+WhatsApp ka provider laga hua nahi, is liye **koi pack kisi ko nahi jata**. Jo reseller ye
+parh kar signup kare, wo agli subah intezar karegi, kuch nahi aayega — aur wo **bataye
+baghair chali jayegi**. Ye us qism ka nuqsan hai jo kabhi kisi report mein nazar nahi
+aata.
+
+Do hi raste hain: provider laga den, ya us waqt tak wo jumla badal den. Ye faisla malik
+ka hai — magar jab tak koi ek na ho, pehla asli reseller isi par kho sakta hai.
