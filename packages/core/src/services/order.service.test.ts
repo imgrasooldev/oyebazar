@@ -119,6 +119,10 @@ class FakeOrders implements Partial<OrderRepository> {
  * Default 100 taake purane test bina badle chalte rahen.
  */
 class FakeInventory implements InventoryRepository {
+  async syncUnsellableProducts() {
+    return 0
+  }
+
   readonly stock = new Map<string, number>()
   /** Kis kis variant se maal nikla — variant-wise ginti ka test isi par chalta hai */
   readonly reservedFrom: (string | undefined)[] = []

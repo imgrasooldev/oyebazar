@@ -82,6 +82,28 @@ export interface InventoryRepository {
   /** Reseller ko dikhane ke liye — kitna bacha hai. */
   levelsFor(productIds: readonly string[]): Promise<StockLevel[]>
 
+  /**
+   * Wo LIVE maal jis par ginti sifar hai (ya koi variant hi nahi) — `OUT_OF_STOCK`.
+   *
+   * 🔴 Ye chhanni ke saath BANI hai, us ki naql nahi. `unsellableProducts` ops ko
+   * batati hai ke aisa maal MOJOOD hai; ye usay theek karti hai. Sirf batana kaafi na
+   * tha aur ye live chala kar dekha gaya: do maal Bazaar par bina stock ke pare the,
+   * chhanni ne unhen pakra hua tha, aur kisi ne unhen uthaya nahi — kyunke fehrist ka
+   * malik koi nahi hota.
+   *
+   * 🔴 Aur nuqsan reseller uthati hai: maal Bazaar par dikhta hai, wo us par apna
+   * status lagati hai, customer order karta hai, aur `reserve()` mana kar deta hai. Us
+   * lamhe wo apne customer ke saamne jhooti banti hai — aur wo customer dobara nahi
+   * aata.
+   *
+   * `syncProductStatus` yehi kaam ek maal par karta hai, magar wo sirf UN raston par
+   * chalta hai jo repository se guzarte hain: jo maal us se pehle ka hai, ya seedha DB
+   * mein daala gaya (seed, import), wo LIVE hi para reh jata hai.
+   *
+   * @returns kitne maal ki halat badli
+   */
+  syncUnsellableProducts(): Promise<number>
+
   // ------------------------------------------------------------- variants
 
   /**

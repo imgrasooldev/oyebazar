@@ -483,6 +483,41 @@ export class PrismaInventoryRepository
     })
   }
 
+  /**
+   * Poore platform par ek dafa — LIVE magar bik nahi sakta → OUT_OF_STOCK.
+   *
+   * 🔴 Do query, aur DONO zaroori hain. Pehli un maal ki ginti nikalti hai jin ke
+   * variant hain; magar wo maal jis ka koi variant HI NAHI hai, `groupBy` mein aata
+   * hi nahi — aur wohi sab se kharab soorat hai (Bazaar par maal, khareedne ko kuch
+   * nahi). Sirf pehli query par bharosa karna theek us soorat ko chhor deta jise ye
+   * pakarne aayi thi.
+   */
+  async syncUnsellableProducts(): Promise<number> {
+    const live = await this.db.product.findMany({
+      where: { status: 'LIVE' },
+      select: { id: true },
+    })
+    if (live.length === 0) return 0
+
+    const ids = live.map((row) => row.id)
+    const stocked = await this.db.productVariant.groupBy({
+      by: ['productId'],
+      where: { productId: { in: ids } },
+      _sum: { stockQty: true },
+    })
+
+    const available = new Map(stocked.map((row) => [row.productId, row._sum.stockQty ?? 0]))
+    const dead = ids.filter((id) => (available.get(id) ?? 0) <= 0)
+    if (dead.length === 0) return 0
+
+    const result = await this.db.product.updateMany({
+      // `status` shart mein dobara: is beech kisi ne maal daal diya ho to usay na maren
+      where: { id: { in: dead }, status: 'LIVE' },
+      data: { status: 'OUT_OF_STOCK' },
+    })
+    return result.count
+  }
+
   async levelsFor(productIds: readonly string[]): Promise<StockLevel[]> {
     if (productIds.length === 0) return []
 

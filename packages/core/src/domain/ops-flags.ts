@@ -42,6 +42,19 @@ export type FlagKind =
   | 'oddPrice'
   /** Naam aisa jis se maal pehchana hi nahi ja sakta */
   | 'oddTitle'
+  /**
+   * Khaane ka naam aisa jis se koi cheez pehchani nahi jati.
+   *
+   * 🔴 Ye alag nishan is liye hai ke us ka NUQSAAN alag hai. Ek maal ka kharab naam
+   * ek qatar par chhapta hai; ek kharab KHAANA reseller ki patti par, public Bazaar
+   * par, aur Google par chhapta hai — aur wo wahan tab tak khara rehta hai jab tak
+   * koi khud dekhe.
+   *
+   * Aur waqai khara raha: production par `sparta` naam ka ek top-level khaana MAHINON
+   * live tha. Meri apni chhanni maal ke naam jaanchti thi, khaanon ke NAHI — aur wo
+   * poori lifecycle chalane par nikla, kisi report se nahi.
+   */
+  | 'oddCategory'
   /** Ginti baar baar haath se badli ja rahi hai */
   | 'stockChurn'
   /** Safhe par LIVE hai magar us par order lag hi nahi sakta */
@@ -60,6 +73,7 @@ export type FlagSubject =
   | 'supplier'
   | 'reseller'
   | 'variant'
+  | 'category'
 
 /**
  * Wo EK cheez jo is nishan par amal karne ke liye chahiye.

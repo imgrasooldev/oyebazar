@@ -12,6 +12,7 @@ export * from './domain/ops-flags'
 export * from './domain/bonus'
 export * from './domain/pitch'
 export * from './domain/payout-account'
+export * from './domain/pk-month'
 
 // Ports (repository + infrastructure interfaces)
 export * from './ports'

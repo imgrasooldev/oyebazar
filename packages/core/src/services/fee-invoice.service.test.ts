@@ -109,13 +109,36 @@ function build(rows: Row[]) {
 }
 
 describe('previousMonthPeriod', () => {
+  /*
+   * 🔴 Haddein PAKISTAN ke calendar se hain, UTC se nahi. 1 August 00:00 PKT =
+   * 31 July 19:00 UTC — aur DB mein har waqt UTC mein hai, is liye chhanni bhi usi
+   * lamhe par lagni chahiye.
+   */
   it('1 September ko chale to August ka period deta hai', () => {
     const { service } = build([])
     const { period, from, to } = service.previousMonthPeriod()
 
     expect(period).toBe('2026-08')
-    expect(from.toISOString()).toBe('2026-08-01T00:00:00.000Z')
-    expect(to.toISOString()).toBe('2026-09-01T00:00:00.000Z')
+    expect(from.toISOString()).toBe('2026-07-31T19:00:00.000Z')
+    expect(to.toISOString()).toBe('2026-08-31T19:00:00.000Z')
+  })
+
+  /*
+   * 🔴 Wo paanch ghanton ki khirki jis mein asal kharabi thi: 1 September ki subah
+   * 4:27 PKT par UTC abhi 31 August hai. Pehle yahan July nikalta tha — do mahine
+   * peechay — aur ops ke safhe par wohi chhapta tha.
+   */
+  it('1 September ki subah (UTC par abhi 31 August) par bhi August deta hai', () => {
+    const { service } = build([])
+    const early = new Date('2026-08-31T23:27:00.000Z')
+
+    expect(service.previousMonthPeriod(early).period).toBe('2026-08')
+  })
+
+  it('31 August ki raat (Pakistan mein abhi August) par July deta hai', () => {
+    const { service } = build([])
+    // 18:00 UTC = 23:00 PKT, 31 August
+    expect(service.previousMonthPeriod(new Date('2026-08-31T18:00:00.000Z')).period).toBe('2026-07')
   })
 })
 

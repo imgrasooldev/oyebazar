@@ -88,9 +88,7 @@ export class PrismaMoneyLedgerRepository implements MoneyLedgerRepository {
           supplierId: true,
           status: true,
           createdAt: true,
-          // businessName jaan boojh kar nahi: jo cheez query mein hi nahi, wo kisi
-          // future edit se galti se bahar bhi nahi ja sakti
-          supplier: { select: { city: true } },
+          supplier: { select: { businessName: true, city: true } },
         },
       }),
       this.db.resellerPayout.findMany({
@@ -103,32 +101,27 @@ export class PrismaMoneyLedgerRepository implements MoneyLedgerRepository {
     const buckets = new Map<string, Bucket>()
 
     /*
-     * 🔴 Reseller ko dukan ka ASLI naam nahi jata — laqab jata hai ("Dukan 1").
+     * 🔴 Yahan pehle laqab ("Dukan 1") jata tha, asli naam nahi — aur wo faisla WAPAS
+     * le liya gaya hai. Wajah ye nahi ke usool badal gaya; wajah ye ke us usool ka
+     * yahan koi faida tha hi nahi.
      *
-     * Qaida (dto/supplier.ts): reseller-facing kisi response mein supplier ka naam nahi.
-     * Wajah sirf usool nahi, karobar hai: Bazaar par har VERIFIED dukan ka WhatsApp number
-     * public hai. Naam mil jaye to reseller wahan se number nikal kar seedha sauda kar
-     * sakti hai — aur hum beech se nikal jate hain.
+     * Purani dalil: naam mil jaye to reseller Bazaar se dukan ka WhatsApp number nikal
+     * kar seedha sauda kar sakti hai. Magar wo naam usay pehle se mil raha hai — maal
+     * ke apne safhe par (`/catalogue/<id>`) aur `/wholesalers` par, dono login ke andar,
+     * aur `/bazaar` par to wo Google par bhi hai. Yani raaz kabhi raaz tha hi nahi.
      *
-     * Magar grouping us ke liye zaroori hai: "kis ke paas mera paisa atka hai" ka jawab
-     * chahiye. Laqab dono kaam kar deta hai — hisab alag alag dikhta hai, pehchan nahi
-     * khulti. Laqab pehle order ki tarteeb se banta hai, is liye har baar wohi rehta hai.
+     * Rehta sirf us ka KHARCHA tha, aur wo poora reseller par tha: "Dukan 1 ke paas
+     * Rs 750 atke hain" us ke liye ek pahaili hai. Wo apna paisa maang nahi sakti agar
+     * usay ye pata na ho ke kis se maangna hai — aur us safhe ka poora maqsad yehi ek
+     * sawal hai.
+     *
+     * (`dto/supplier.ts` ka qaida apni jagah qaim hai: wo API ke jawab ke bare mein hai
+     * jahan naam ka koi kaam nahi. Ye safha us se alag cheez hai — ye reseller ka apna
+     * hisab hai.)
      */
-    const firstOrderAt = new Map<string, Date>()
-    for (const order of orders) {
-      const seen = firstOrderAt.get(order.supplierId)
-      if (!seen || order.createdAt < seen) firstOrderAt.set(order.supplierId, order.createdAt)
-    }
-
-    const aliases = new Map(
-      [...firstOrderAt.entries()]
-        .sort((a, b) => a[1].getTime() - b[1].getTime())
-        .map(([supplierId], index) => [supplierId, index + 1]),
-    )
-
     for (const order of orders) {
       names.set(order.supplierId, {
-        name: `Dukan ${aliases.get(order.supplierId) ?? '?'}`,
+        name: order.supplier.businessName,
         city: order.supplier.city,
       })
       this.countOrder(buckets, order.supplierId, order.status, order.createdAt)

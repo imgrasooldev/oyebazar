@@ -175,6 +175,7 @@ const KIND_LABEL: Record<OpsFlag['kind'], string> = {
   uncategorised: 'No category',
   oddPrice: 'Odd price',
   oddTitle: 'Odd name',
+  oddCategory: 'Odd category',
   stockChurn: 'Stock churn',
   unsellable: 'Cannot be sold',
   appError: 'Broken',
@@ -229,6 +230,14 @@ function sentence(flag: OpsFlag): string {
     case 'oddTitle':
       return TITLE_PROBLEM[String(v.problem)] ?? 'The name does not identify the product'
 
+    /*
+     * 🔴 Ginti jumle mein: khaana mitana mahenga faisla hai agar us mein maal para ho,
+     * aur ops ko wo baat NISHAN par chahiye, us safhe par ja kar nahi. "0 products" wala
+     * khaana ek click ka kaam hai; "31 products" wala pehle sochne ka.
+     */
+    case 'oddCategory':
+      return `${TITLE_PROBLEM[String(v.problem)] ?? 'The name does not identify anything'} — and a category shows on the reseller's filter bar and on the public Bazaar (${v.products} products in it)`
+
     case 'appError':
       return `Something threw an error ${v.count} time(s) in the last 24 hours — someone's screen was broken`
 
@@ -262,6 +271,8 @@ function hrefFor(flag: OpsFlag): Route {
       return '/admin/money'
     case 'order':
       return '/admin/orders'
+    case 'category':
+      return '/admin/categories'
     default:
       return '/admin/products'
   }

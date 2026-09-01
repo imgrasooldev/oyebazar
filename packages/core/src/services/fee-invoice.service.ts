@@ -12,6 +12,7 @@
  *
  * Is file ke PR sirf founder ke hain (docs/CONVENTIONS.md).
  */
+import { pkMonthKey, pkMonthStart } from '../domain/pk-month'
 import { ValidationError, formatPkr, type Pkr } from '@oyebazar/shared'
 import type { FeeLedgerRepository, SupplierFeeSummary } from '../ports/order-repositories'
 import type { Analytics, Clock, Logger } from '../ports/infrastructure'
@@ -33,13 +34,23 @@ export class FeeInvoiceService {
     private readonly logger: Logger,
   ) {}
 
-  /** Pichhla mahina — job mahine ki 1 tareekh ko chalta hai. */
+  /**
+   * Pichhla mahina — job mahine ki 1 tareekh ko chalta hai.
+   *
+   * 🔴 Hadd PAKISTAN ke calendar se, UTC se nahi. Pehle yahan `getUTCMonth()` tha, aur
+   * us ka nateeja live safhe par dekha gaya: 1 September ki subah ops ko "Ready to
+   * invoice · 2026-07" likha aa raha tha — do mahine peechay. Pakistan mein us waqt
+   * September shuru ho chuka tha magar UTC par abhi 31 August tha.
+   *
+   * Sirf unwan ki baat nahi thi: `generateMonthlyInvoices()` isi hadd par chalta hai.
+   * Us paanch ghanton ki khirki mein job chal jati to GHALAT mahine ka bill banta, aur
+   * shak bhi na hota — jawab hamesha "kuch pending nahi" hota.
+   */
   previousMonthPeriod(reference?: Date): { period: string; from: Date; to: Date } {
     const now = reference ?? this.clock.now()
-    const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1))
-    const to = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
-    const period = `${from.getUTCFullYear()}-${String(from.getUTCMonth() + 1).padStart(2, '0')}`
-    return { period, from, to }
+    const from = pkMonthStart(now, -1)
+    const to = pkMonthStart(now, 0)
+    return { period: pkMonthKey(from), from, to }
   }
 
   async generateMonthlyInvoices(reference?: Date): Promise<GeneratedInvoice[]> {
@@ -126,12 +137,10 @@ export class FeeInvoiceService {
     }
   }
 
+  /** "Is mahine" — wohi jo dukan wale ke calendar par hai (Pakistan), UTC ka nahi. */
   private currentMonth(): { from: Date; to: Date } {
     const now = this.clock.now()
-    return {
-      from: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)),
-      to: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)),
-    }
+    return { from: pkMonthStart(now, 0), to: pkMonthStart(now, 1) }
   }
 
   /** BJ-INV-2026-08-almadina — parhne mein aasan, aur supplier ke saath baat karne mein bhi. */

@@ -74,6 +74,16 @@ export interface UnansweredOrderFlag {
   readonly since: Date
 }
 
+export interface CategoryFlagRow {
+  readonly categoryId: string
+  readonly slug: string
+  readonly nameUr: string
+  readonly nameEn: string
+  /** Is khaane mein kitna maal hai — mitane se pehle ops ko yehi chahiye */
+  readonly productCount: number
+  readonly createdAt: Date
+}
+
 export interface ProductFlagRow {
   readonly productId: string
   readonly slug: string
@@ -156,6 +166,16 @@ export interface OpsTriageRepository {
 
   /** LIVE maal ke naam — naam ki jaanch domain mein hoti hai, yahan sirf qataren. */
   liveProductTitles(limit: number): Promise<ProductFlagRow[]>
+
+  /**
+   * Har khaane ka naam — jaanch wohi jo maal ke naam par hai.
+   *
+   * 🔴 Ginti par koi shart nahi (khali khaane bhi aate hain): kharab naam wala khali
+   * khaana bhi patti par chhapta hai, aur usay chhorne ka matlab hota ke wo tabhi
+   * pakra jaye jab koi us mein maal daal de — yani theek tab jab wo aur zyada nazar
+   * aa raha ho.
+   */
+  categoryNames(limit: number): Promise<CategoryFlagRow[]>
 
   /**
    * App ki wo kharabiyan jo `since` ke baad hui.

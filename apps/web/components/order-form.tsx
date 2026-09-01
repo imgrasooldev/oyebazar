@@ -392,14 +392,28 @@ export function OrderForm({
         </button>
       </div>
 
-      {/* Rang/size — sirf jab waqai jorhe hon */}
-      {variants.length > 0 && (
+      {/*
+        Rang/size — sirf jab waqai CHUNNE ko kuch ho.
+
+        🔴 "Jorhe hon" kaafi shart nahi thi. Bohat sa maal ek hi jorhe par hota hai jis
+        par na rang likha hota hai na size — aur us par ye poora khaana chhap jata tha,
+        us ke saath ek chip jis par "رنگ / سائز چنیں" likha hota (yani sawal ka matn hi
+        jawab ki jagah). Reseller ko lagta ke kuch chunna baqi hai, jabke chunne ko kuch
+        tha hi nahi. Ye poora lifecycle live chalane par nikla.
+      */}
+      {variants.length > 0 && !(variants.length === 1 && !plainLabel(variants[0]!)) && (
         <div>
           <span className="text-sm font-semibold">{t('variantPick')}</span>
           <div className="mt-2 flex flex-wrap gap-2">
             {variants.map((variant) => {
-              const label =
-                [variant.colour, variant.size].filter(Boolean).join(' · ') || t('variantPick')
+              /*
+               * 🔴 Khali jorhe ka naam "سادہ" — sawal ka matn NAHI.
+               *
+               * Pehle yahan `|| t('variantPick')` tha, yani chip par wohi lafz jo upar
+               * unwan par hai. Ek button jis par sawal likha ho, jawab jaisa nahi lagta
+               * — aur wo chuna hua hone par bhi "abhi chunna hai" hi parha jata hai.
+               */
+              const label = plainLabel(variant) || t('variantPlain')
 
               return (
                 <button
@@ -538,4 +552,9 @@ export function OrderForm({
       <p className="text-xs text-ink-faint">{t('confirmNote')}</p>
     </form>
   )
+}
+
+/** Jorhe ka apna naam — rang aur size, jo mile. Kuch na ho to khali string. */
+function plainLabel(variant: { colour?: string | null; size?: string | null }): string {
+  return [variant.colour, variant.size].filter(Boolean).join(' · ')
 }

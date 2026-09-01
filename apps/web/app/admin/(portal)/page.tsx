@@ -89,12 +89,19 @@ export default async function AdminDashboard() {
             <p dir="ltr" className="numeric mt-2 text-[1.6rem] font-bold text-accent-700">
               {formatPkr(stats.feeEarnedThisMonth)}
             </p>
+            {/*
+              🔴 "In transit" yahan se HATA diya gaya. Us khaane ka matlab "abhi tak
+              pohancha nahi" hai (qabool shuda aur tayyar order bhi shamil), jabke isi
+              safhe par upar "In transit" ka apna tile hai jo SIRF courier ke haath wale
+              order ginta hai. Do alag matlab, ek hi lafz — aur wo saaf takraate hue
+              nazar aate the: tile par "0" aur yahan "Rs 68 still in transit".
+            */}
             <p className="mt-1 text-[0.78rem] text-ink-faint">
               Delivered orders only ·{' '}
               <span dir="ltr" className="numeric">
                 {formatPkr(stats.feeInFlight)}
               </span>{' '}
-              still in transit
+              still to be earned on open orders
             </p>
           </div>
         </div>

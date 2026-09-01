@@ -52,6 +52,7 @@ export async function runOrderMaintenance(container: WorkerContainer): Promise<{
   transitAsked: number
   payoutsChased: number
   confirmsAsked: number
+  hidden: number
 }> {
   const reminder = await container.reminders.remindStale()
   const cancel = await container.reminders.autoCancelStale()
@@ -74,12 +75,28 @@ export async function runOrderMaintenance(container: WorkerContainer): Promise<{
   const payoutsChased = await container.payouts.remindOverdue()
   const confirmsAsked = await container.payouts.remindUnconfirmed()
 
+  /*
+   * 🔴 Wo maal jo Bazaar par khara hai magar khareeda nahi ja sakta — chup chaap band.
+   *
+   * Ops ki chhanni is par nishan pehle se lagati thi, aur wo nishan KISI NE nahi
+   * uthaya: live chala kar dekha to do maal bina stock ke Bazaar par pare the aur
+   * chhanni unhen mahinon se dikha rahi thi. Fehrist ka malik koi nahi hota.
+   *
+   * Nuqsan reseller ka hai, hamara nahi: wo us maal par apna status lagati hai,
+   * customer order karta hai, aur `reserve()` mana kar deta hai — us lamhe wo apne
+   * customer ke saamne jhooti banti hai. Ye wo qism ki ghalti hai jo insan ke intezar
+   * mein nahi rehni chahiye.
+   */
+  const hidden = await container.repositories.inventory.syncUnsellableProducts()
+  if (hidden > 0) container.logger.info('unsellable_products_hidden', { hidden })
+
   return {
     reminded: reminder.reminded,
     cancelled: cancel.cancelled,
     transitAsked: transit.reminded,
     payoutsChased,
     confirmsAsked,
+    hidden,
   }
 }
 

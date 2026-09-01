@@ -46,6 +46,14 @@ const LIMITS = {
   uncategorised: 30,
   /** Naam har dafa nahi parhe jate — sirf haal hi ka maal (baqi pehle dekha ja chuka) */
   titles: 200,
+  /*
+   * Khaane thore hote hain (darjanon mein, saikron mein nahi) — is liye SAB.
+   *
+   * 🔴 Yahan hadd lagana wo khaana chhupa deta jo sab se purana hai, aur purana khaana
+   * hi wo hai jise kisi ne kabhi dobara nahi dekha — yani theek wohi jis mein `sparta`
+   * jaisa naam mahinon baitha rehta hai.
+   */
+  categories: 200,
   churn: 20,
   unsellable: 30,
   errors: 20,
@@ -112,6 +120,7 @@ export class OpsTriageService {
       duplicates,
       uncategorised,
       titles,
+      categoryNames,
       churn,
       unsellable,
       errors,
@@ -124,6 +133,7 @@ export class OpsTriageService {
         this.repo.duplicateProducts(LIMITS.duplicates),
         this.repo.uncategorisedProducts(FALLBACK_CATEGORY_SLUG, LIMITS.uncategorised),
         this.repo.liveProductTitles(LIMITS.titles),
+        this.repo.categoryNames(LIMITS.categories),
         this.repo.stockChurn(now, CHURN_DAYS, CHURN_FIXES, LIMITS.churn),
         this.repo.unsellableProducts(LIMITS.unsellable),
         this.repo.appErrors(
@@ -304,6 +314,31 @@ export class OpsTriageService {
         label: row.titleUr,
         context: row.supplierName,
         values: { problem },
+        since: row.createdAt,
+      })
+    }
+
+    /*
+     * Khaanon ke naam — wohi jaanch jo maal ke naam par.
+     *
+     * 🔴 `medium`, `oddTitle` ki tarah — magar ye us se ZYADA nazar aata hai: khaana
+     * reseller ki patti par aur public Bazaar par chhapta hai. Phir bhi `high` nahi:
+     * is se koi ruka hua nahi hai aur na kisi ka paisa phansa hai, aur `high` ko us
+     * cheez ke liye bacha kar rakhna hi us ka poora matlab hai.
+     */
+    for (const row of categoryNames) {
+      const problem = titleProblem(row.nameUr) ?? titleProblem(row.nameEn)
+      if (!problem) continue
+
+      flags.push({
+        kind: 'oddCategory',
+        severity: 'medium',
+        subject: 'category',
+        id: row.categoryId,
+        label: row.nameUr,
+        // Khaane ka koi "malik" nahi hota — ye khaana khud hi apna poora pata hai
+        context: row.slug,
+        values: { problem, products: row.productCount },
         since: row.createdAt,
       })
     }

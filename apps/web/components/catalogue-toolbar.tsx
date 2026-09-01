@@ -16,9 +16,18 @@ const SORTS = ['newest', 'priceLow', 'priceHigh', 'profitHigh'] as const
 
 export function CatalogueToolbar({
   count,
+  hasMore,
   labels,
 }: {
   count: number
+  /**
+   * Kya is se aage bhi maal hai.
+   *
+   * 🔴 Pehle yahan sirf `count` tha, aur wo `items.length` se aata tha — yani "48
+   * نتائج" har dafa chhapta chahe catalogue mein 274 cheezein hon. Ye ginti reseller
+   * ke liye ek jhoot thi: wo samajhti thi ke poora catalogue dekh chuki hai.
+   */
+  hasMore: boolean
   labels: {
     results: string
     sortNewest: string
@@ -55,7 +64,8 @@ export function CatalogueToolbar({
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
       <span className="numeric text-[0.82rem] text-ink-faint">
-        {count} {labels.results}
+        {count}
+        {hasMore ? '+' : ''} {labels.results}
       </span>
 
       <div className="ms-auto flex flex-wrap items-center gap-2">

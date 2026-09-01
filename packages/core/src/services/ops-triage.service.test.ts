@@ -12,6 +12,7 @@
 import { describe, expect, it } from 'vitest'
 import { OpsTriageService } from './ops-triage.service'
 import type {
+  CategoryFlagRow,
   AppErrorRow,
   DisputedPayoutFlag,
   DuplicateProductRow,
@@ -39,6 +40,11 @@ const product = (over: Partial<ProductFlagRow> = {}): ProductFlagRow => ({
 
 /** Khali chhanni — har test sirf wo hissa bharta hai jis ki us ko zaroorat hai. */
 class FakeTriage implements OpsTriageRepository {
+  categoryRows: CategoryFlagRow[] = []
+
+  async categoryNames() {
+    return this.categoryRows
+  }
   disputed: DisputedPayoutFlag[] = []
   overdue: OverduePayoutFlag[] = []
   orders: UnansweredOrderFlag[] = []

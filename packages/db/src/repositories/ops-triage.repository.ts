@@ -16,6 +16,7 @@ import type {
   OddPriceRow,
   OpsTriageRepository,
   OverduePayoutFlag,
+  CategoryFlagRow,
   ProductFlagRow,
   StockChurnRow,
   OpenIssueFlag,
@@ -342,6 +343,53 @@ export class PrismaOpsTriageRepository implements OpsTriageRepository {
         select: this.productSelect(),
       })
     ).map((row) => this.toProductRow(row))
+  }
+
+  /**
+   * Har khaane ka naam — jaanch domain mein hoti hai, yahan sirf qatarein.
+   *
+   * 🔴 `since` khaane ki apni tareekh nahi (Category par `createdAt` hai hi nahi) —
+   * us ke SAB SE PURANE maal ki hai. Ye us `now` se kahin behtar hai jo mera pehla
+   * khayal tha: `now` har khaane ko "abhi bana" dikhata, aur tarteeb (purana upar) us
+   * ke saath bekar ho jati — yani `sparta` jaisa mahinon purana khaana har dafa sab se
+   * neeche chala jata. Khali khaane par `now` chalta hai, aur wo theek hai: khali
+   * khaana waqai abhi tak kisi ko nuqsan nahi de raha.
+   */
+  async categoryNames(limit: number): Promise<CategoryFlagRow[]> {
+    const rows = await this.db.category.findMany({
+      take: limit,
+      select: {
+        id: true,
+        slug: true,
+        nameUr: true,
+        nameEn: true,
+        _count: { select: { products: true } },
+      },
+    })
+    if (rows.length === 0) return []
+
+    /*
+     * Sab se purana maal — EK groupBy, chahe khaane kitne bhi hon.
+     *
+     * 🔴 Har khaane ke liye alag `findFirst` N+1 hai. Yahan wo aaj chalis query hoti,
+     * aur ye chhanni har dafa poori chalti hai jab ops safha kholta hai.
+     */
+    const oldest = await this.db.product.groupBy({
+      by: ['categoryId'],
+      where: { categoryId: { in: rows.map((row) => row.id) } },
+      _min: { createdAt: true },
+    })
+    const since = new Map(oldest.map((row) => [row.categoryId, row._min.createdAt]))
+    const now = new Date()
+
+    return rows.map((row) => ({
+      categoryId: row.id,
+      slug: row.slug,
+      nameUr: row.nameUr,
+      nameEn: row.nameEn,
+      productCount: row._count.products,
+      createdAt: since.get(row.id) ?? now,
+    }))
   }
 
   async appErrors(since: Date, limit: number): Promise<AppErrorRow[]> {

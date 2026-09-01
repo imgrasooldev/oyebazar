@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import type { Metadata } from 'next'
+import type { Metadata, Route } from 'next'
 import { DEFAULT_TEMPLATE_KEY, formatPkr, pkr } from '@oyebazar/shared'
 import { DownloadIcon, SparkIcon } from '@/components/icons'
 import { toResellerProductListItemDTO } from '@/lib/api/mappers'
@@ -38,6 +38,8 @@ export default async function CataloguePage({
     view?: string
     /** Ek dukan ka maal — `/wholesalers/<slug>` se aata hai. */
     supplier?: string
+    /** Kitne dikhane hain — "اور دکھائیں" isi ko barhata hai */
+    show?: string
   }>
 }) {
   const { reseller } = await requireReseller()
@@ -78,14 +80,37 @@ export default async function CataloguePage({
   )
   const listView = query.view === 'list'
 
+  /*
+   * Kitna maal dikhana hai.
+   *
+   * 🔴 Pehle yahan `limit: 48` tha aur BAS — na cursor, na "aur dikhayen". 274 maal
+   * bikne ke qabil tha, yani 226 (82%) browse karne walay ke liye mojood hi nahi tha.
+   * Aur patti par `items.length` chhapta tha, yani "48 نتائج" — jaise wohi kul ho.
+   *
+   * 🔴 Hal cursor wale safhon se NAHI kiya gaya, halanke repository wo pehle se deti
+   * hai. Ye browse ka grid hai: "agla safha" us reseller ko har dafa shuru se dekhna
+   * shuru karwata hai jise sirf neeche jana tha. Is ke bajaye ginti barhti hai aur
+   * `scroll={false}` ki wajah se wo wahin khari rehti hai jahan thi.
+   *
+   * Hadd 240 par: us se aage ka jawab chhanni aur talash hai, aur qatar barhana. Bina
+   * hadd ke ek link `?show=100000` poore catalogue ki query bana deta hai.
+   */
+  const PAGE_SIZE = 48
+  const MAX_SHOW = 240
+  const showRaw = Number(query.show)
+  const show = Number.isFinite(showRaw)
+    ? Math.min(MAX_SHOW, Math.max(PAGE_SIZE, Math.ceil(showRaw / PAGE_SIZE) * PAGE_SIZE))
+    : PAGE_SIZE
+
   const [page, dailyPacks, categories, trending] = await Promise.all([
     container.catalogue.list(reseller.id, {
       /*
-       * 48 — pehle 24 the aur reseller ko roz "aur dikhao" ka intezar karna parta tha.
+       * 48 ka page — aur "اور دکھائیں" par 48 aur.
+       *
        * Ye safha tasveeron ka hai magar wo sab `lazy` hain: neeche wali tasveerein
        * tabhi utarti hain jab wahan tak scroll ho.
        */
-      limit: 48,
+      limit: show,
       ...(search ? { search } : {}),
       ...(category ? { categorySlug: category } : {}),
       ...(supplierSlug ? { supplierSlug } : {}),
@@ -292,6 +317,8 @@ export default async function CataloguePage({
         <div className="mb-5 space-y-3">
         <CatalogueToolbar
           count={items.length}
+          // Patti ab jhoot nahi bolti: aur maal baqi ho to ginti par "+" lagta hai
+          hasMore={Boolean(page.nextCursor)}
           labels={{
             results: t('filterResults'),
             sortNewest: t('sortNewest'),
@@ -343,6 +370,41 @@ export default async function CataloguePage({
               />
             ))}
           </ul>
+        )}
+
+        {/*
+          "اور دکھائیں" — ek saada link, koi client state nahi.
+
+          🔴 `scroll={false}` is ka poora dil hai. Us ke baghair har click reseller ko
+          safhe ke SIRE par phenk deta — theek wo cheez jis se bachne ke liye us ne
+          button dabaya tha. Is ke saath wo wahin khari rehti hai aur naya maal us ke
+          neeche khul jata hai.
+
+          Ye grid ke ANDAR nahi, us ke neeche hai: `<ul>` ke andar `<li>` ke ilawa kuch
+          rakhna list ki shakal aur us ke maani dono torta hai.
+        */}
+        {page.nextCursor && show < MAX_SHOW && (
+          <div className="mt-5 flex justify-center">
+            <Link
+              scroll={false}
+              href={
+                `/catalogue?${new URLSearchParams({
+                  ...(search ? { q: search } : {}),
+                  ...(category ? { category } : {}),
+                  ...(supplierSlug ? { supplier: supplierSlug } : {}),
+                  ...(minPrice !== undefined ? { minPrice: String(minPrice) } : {}),
+                  ...(maxPrice !== undefined ? { maxPrice: String(maxPrice) } : {}),
+                  ...(inStockOnly ? { inStockOnly: 'true' } : {}),
+                  ...(sort ? { sort } : {}),
+                  ...(listView ? { view: 'list' } : {}),
+                  show: String(show + PAGE_SIZE),
+                }).toString()}` as Route
+              }
+              className="btn-ghost"
+            >
+              {t('showMore')}
+            </Link>
+          </div>
         )}
       </section>
     </div>

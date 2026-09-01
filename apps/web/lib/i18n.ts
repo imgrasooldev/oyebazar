@@ -1179,6 +1179,8 @@ const DICTIONARY = {
     en: 'No account yet',
     rm: 'Account abhi nahi likha',
   },
+  variantPlain: { ur: 'سادہ', en: 'Standard', rm: 'Sada' },
+  showMore: { ur: 'اور دکھائیں', en: 'Show more', rm: 'Aur dikhayen' },
   copyLabel: { ur: 'کاپی', en: 'Copy', rm: 'Copy' },
   saving: { ur: 'ہو رہا ہے…', en: 'Saving…', rm: 'Ho raha hai…' },
   cancel: { ur: 'رہنے دیں', en: 'Cancel', rm: 'Rehne den' },
