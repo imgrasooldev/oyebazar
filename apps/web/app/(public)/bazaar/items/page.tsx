@@ -8,12 +8,25 @@ import { getResellerOrNull } from '@/lib/api/session'
 import { container } from '@/lib/container'
 import { pickName, timeAgo, translator } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
+import { canonical, itemListLd, jsonLd } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'سارا مال — تھوک ریٹ پر | OyeBazar',
   description: 'تصدیق شدہ ہول سیلرز کا سارا مال — کیٹگری کے حساب سے۔',
+  /*
+   * 🔴 Canonical hamesha bina chhanni ke.
+   *
+   * Is safhe ki chhanni URL mein jati hai (`?city=`, `?category=`, `?cursor=`), aur
+   * har jor ek naya pata banata hai jis par TQREEBAN wohi maal hota hai. Bina is ke
+   * Google un saikron patoon ko alag safhe ginta hai, un ka aapas mein moqabla
+   * karwata hai, aur aakhir mein kisi ek ko bhi theek se nahi dikhata.
+   *
+   * Chhanni wale safhe crawl phir bhi hote hain (un ke andar ke link chahiyen) — bas
+   * ginti EK ki hoti hai.
+   */
+  alternates: canonical('/bazaar/items'),
 }
 
 /**
@@ -54,6 +67,16 @@ export default async function BazaarItemsPage({
 
   return (
     <div className="mx-auto max-w-shell space-y-6 px-4 py-6 lg:px-8">
+      {/* Jo maal is safhe par nazar aa raha hai — sirf pate, tafseel har ek ke apne safhe par */}
+      {products.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={jsonLd(
+            itemListLd(products.map((product) => `/bazaar/item/${product.slug}`)),
+          )}
+        />
+      )}
+
       <nav className="text-sm text-ink-faint">
         <Link href="/bazaar" className="link-tap hover:text-brand-700">
           {t('bazaar')}

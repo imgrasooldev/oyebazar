@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { BRAND } from '@oyebazar/shared'
 import { dirOf, htmlLang, isUrduScript } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
+import { SITE_URL } from '@/lib/seo'
 import { inter } from './fonts'
 import './globals.css'
 
@@ -15,14 +16,64 @@ import './globals.css'
  * bhi sirf Urdu wale safhe par lagta hai, warna Roman/English wale visitor ko 159 KB ki
  * aisi file preload ho jati jo usay kabhi chahiye hi nahi.
  */
+const DESCRIPTION =
+  'OyeBazar: Bolton Market, Azam Cloth aur poore Pakistan ke wholesalers — muft directory, seedha WhatsApp rabta. Resellers ke liye: har roz tayyar status packs.'
+
 export const metadata: Metadata = {
+  /*
+   * 🔴 `metadataBase` — ye gum tha, aur us ki qeemat theek us jagah lag rahi thi jahan
+   * is karobar ko sab se zyada nuqsan hota hai.
+   *
+   * Us ke baghair har Open Graph tasveer ka pata ADHOORA jata hai (`/og.png`, poora
+   * `https://oyebazar.com/og.png` nahi). WhatsApp, Facebook aur Twitter adhoore pate par
+   * tasveer dikhate hi nahi — aur is platform par har link WhatsApp par hi share hota
+   * hai. Yani hamara sab se ahem surface bilkul khali chal raha tha: link bhejne par
+   * sirf nanga pata nazar aata tha, na tasveer na unwan.
+   */
+  metadataBase: new URL(SITE_URL),
   title: {
     default: `${BRAND.name} — Pakistan ke tasdeeq shuda wholesalers ki directory`,
     template: `%s · ${BRAND.name}`,
   },
-  description:
-    'OyeBazar: Bolton Market, Azam Cloth aur poore Pakistan ke wholesalers — muft directory, seedha WhatsApp rabta. Resellers ke liye: har roz tayyar status packs.',
+  description: DESCRIPTION,
   manifest: '/manifest.webmanifest',
+  applicationName: BRAND.name,
+  /*
+   * Open Graph — har safha isay warasat mein leta hai aur sirf wo hissa badalta hai jo
+   * us ka apna hai (maal ka naam aur us ki apni tasveer).
+   */
+  openGraph: {
+    type: 'website',
+    siteName: BRAND.name,
+    locale: 'ur_PK',
+    url: SITE_URL,
+    title: `${BRAND.name} — ${BRAND.directoryTaglineUr}`,
+    description: DESCRIPTION,
+  },
+  twitter: {
+    // `summary_large_image` — maal ki tasveer choti nahi, poori chaurai mein
+    card: 'summary_large_image',
+    title: `${BRAND.name} — ${BRAND.directoryTaglineUr}`,
+    description: DESCRIPTION,
+  },
+  /*
+   * 🔴 Ye khaana `noindex` NAHI hai — ye poori site ka default hai aur site ka
+   * public hissa Google par jana hi chahiye. Login wale hisse apne apne layout par
+   * khud ko `noindex` karte hain (dekhen `(app)/layout.tsx`), aur `robots.ts` un ke
+   * raston par crawler ka waqt bhi bachati hai.
+   */
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      // Google ko poora snippet aur bari tasveer dikhane di jaye — default tang hai
+      'max-snippet': -1,
+      'max-image-preview': 'large',
+      'max-video-preview': -1,
+    },
+  },
 }
 
 export const viewport: Viewport = {

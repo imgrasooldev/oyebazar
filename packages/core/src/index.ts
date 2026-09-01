@@ -13,6 +13,8 @@ export * from './domain/bonus'
 export * from './domain/pitch'
 export * from './domain/payout-account'
 export * from './domain/pk-month'
+export * from './domain/seo-text'
+export * from './domain/seo-input'
 
 // Ports (repository + infrastructure interfaces)
 export * from './ports'

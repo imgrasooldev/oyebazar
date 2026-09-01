@@ -10,6 +10,8 @@ import { toPublicProductDTO, toPublicSupplierDetailDTO } from '@/lib/api/mappers
 import { container } from '@/lib/container'
 import { pickName, timeAgo, translator } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
+import { resolveSeoText } from '@oyebazar/core'
+import { breadcrumbLd, canonical, itemListLd, jsonLd, storeLd } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,12 +21,44 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   try {
     const supplier = await container.bazaar.getSupplier(slug)
+
+    /*
+     * Dukan ka apna matn pehle, hamara bana hua us ke baad.
+     *
+     * 🔴 `resolveSeoText` se — koi `??` nahi. Farq asli hai: `??` sirf `null` par
+     * chalta hai, aur khaana khali string (`''`) bhi ho sakta hai. Us soorat mein safha
+     * BILKUL be-naam chhap jata, aur dukandar ko wajah kabhi pata na chalti.
+     */
+    const title = resolveSeoText(supplier.seoTitle, `${supplier.businessName} — ${supplier.city}`)
+    const description = resolveSeoText(
+      supplier.seoDescription,
+      supplier.bioUr ??
+        `${supplier.businessName}, ${supplier.city}${supplier.marketName ? ` (${supplier.marketName})` : ''} — ${supplier.productCount} آئٹمز۔ تھوک ریٹ کے لیے سیدھا رابطہ۔`,
+    )
+
     return {
-      title: `${supplier.businessName} — ${supplier.city}`,
-      description: supplier.bioUr ?? `${supplier.businessName}, ${supplier.city}.`,
+      title,
+      description,
+      alternates: canonical(`/bazaar/${slug}`),
+      /*
+       * OG par dukan ka apna logo. Na ho to koi tasveer NAHI — poori site ka default
+       * (layout se) apna kaam kar leta hai.
+       *
+       * 🔴 Yahan pehli tasveer wale maal ki tasveer daalna aasan tha aur ghalat hota:
+       * WhatsApp par dukan ka link bhejne par kisi EK cheez ki tasveer aati, aur
+       * dekhne wala samajhta ke link us cheez ka hai.
+       */
+      openGraph: {
+        type: 'profile',
+        title,
+        description,
+        url: `/bazaar/${slug}`,
+        ...(supplier.logoUrl ? { images: [{ url: supplier.logoUrl }] } : {}),
+      },
     }
   } catch {
-    return { title: 'Not found' }
+    /* 🔴 Jo safha hai hi nahi wo Google par bhi na jaye — warna 404 index ho jate hain */
+    return { title: 'Not found', robots: { index: false, follow: false } }
   }
 }
 
@@ -51,6 +85,42 @@ export default async function SupplierPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-shell space-y-6 px-4 py-6">
+      {/*
+        `Store` — `Organization` nahi. Google `Store` ko maqami karobar ki tarah samajhta
+        hai (sheher, pata), aur ye hai bhi wohi: Bolton Market ki asli dukan.
+      */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLd(
+          storeLd({
+            name: detail.businessName,
+            slug,
+            city: detail.city,
+            address: detail.address,
+            logoUrl: detail.logoUrl,
+            description: detail.bioUr,
+          }),
+        )}
+      />
+      {/* Safhe par jo rasta nazar aa raha hai, wohi Google ke natije mein bhi chhape */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLd(
+          breadcrumbLd([
+            { name: t('bazaar'), path: '/bazaar' },
+            { name: detail.businessName, path: `/bazaar/${slug}` },
+          ]),
+        )}
+      />
+      {products.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={jsonLd(
+            itemListLd(products.map((product) => `/bazaar/item/${product.slug}`)),
+          )}
+        />
+      )}
+
       <nav className="text-sm text-ink-faint">
         <Link href="/bazaar" className="link-tap hover:text-brand-700">
           {t('bazaar')}

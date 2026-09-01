@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import { getResellerOrNull } from '@/lib/api/session'
 import { LazyImage } from '@/components/lazy-image'
 import { isFresh } from '@oyebazar/shared'
@@ -21,6 +22,18 @@ import { toPublicProductDTO, toPublicSupplierListDTO } from '@/lib/api/mappers'
 import { container } from '@/lib/container'
 import { pickName, timeAgo, translator } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
+import { canonical, jsonLd, organisationLd, websiteLd } from '@/lib/seo'
+
+/*
+ * Home ka canonical — `/`, hamesha.
+ *
+ * 🔴 Ye khali rasm nahi hai: log home ka link har shakl mein share karte hain
+ * (`?fbclid=…`, `?ref=…`, `/?utm_source=…`). Hamara apna referral link bhi `/?ref=<id>`
+ * hai — yani har bulane wali behen ka link Google ki nazar mein ek NAYA home page
+ * banata hai. Bina canonical ke wo saikron adhoore home page ban jate, aur asli home
+ * un sab ke saath apna hi wazan baant leta.
+ */
+export const metadata: Metadata = { alternates: canonical('/') }
 
 /**
  * Abhi dynamic — build ke waqt DB call na ho (CI mein Neon reachable nahi hota).
@@ -76,6 +89,14 @@ export default async function HomePage() {
 
   return (
     <>
+      {/*
+        Structured data — Google ko batata hai ke ye SITE kya hai, sirf ye nahi ke is
+        safhe par kya likha hai. `WebSite` ke saath talash bhi jati hai, taake natije
+        mein site ka apna search box aa sake.
+      */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(organisationLd())} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(websiteLd())} />
+
       <CategoryStrip categories={categories} locale={locale} />
 
       <div className="mx-auto max-w-shell space-y-12 px-5 pb-4 pt-2">

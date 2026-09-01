@@ -6,7 +6,12 @@ import { getResellerOrNull } from '@/lib/api/session'
 import { translator } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
 
-export const metadata: Metadata = { title: 'Login' }
+/*
+ * Login `noindex` — is safhe ka Google par koi kaam nahi. Wo kisi sawal ka jawab nahi
+ * deta, aur "OyeBazar login" dhoondne wala pehle se hamara banda hai jo seedha aa sakta
+ * hai. Us ka index hona sirf ye karta hai ke wo asli safhon ke saath moqabla kare.
+ */
+export const metadata: Metadata = { title: 'Login', robots: { index: false, follow: true } }
 export const dynamic = 'force-dynamic'
 
 export default async function LoginPage() {

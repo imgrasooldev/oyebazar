@@ -24,6 +24,18 @@ import type {
   CategoryView,
 } from '../domain/views'
 
+/**
+ * Sitemap ki ek qatar — pata aur wo tareekh jab ye aakhri dafa badla.
+ *
+ * 🔴 `updatedAt` andaze se na bharen. Google `lastmod` par bharosa tabhi karta hai jab
+ * wo sach bolta ho; har qatar par "aaj" likh dena us poori nishani ko bekar kar deta
+ * hai (aur us ke baad asli tabdeeli bhi nazar-andaz hoti hai).
+ */
+export interface PublicSlug {
+  readonly slug: string
+  readonly updatedAt: Date
+}
+
 export interface CursorQuery {
   readonly cursor?: string | undefined
   readonly limit: number
@@ -61,6 +73,9 @@ export interface ProductRepository {
    */
   findPublicList(filters: Omit<CatalogueFilters, 'minPrice' | 'maxPrice'>): Promise<Page<PublicProductView>>
   findPublicBySlug(slug: string): Promise<PublicProductView | null>
+
+  /** Har wo maal jo public Bazaar par hai — dekhen `SupplierRepository.publicSlugs`. */
+  publicSlugs(limit: number): Promise<readonly PublicSlug[]>
   findPublicBySupplier(supplierSlug: string, query: CursorQuery): Promise<Page<PublicProductView>>
 
   /** RESELLER (login ke baad) — bajiPrice hai, supplierPrice nahi. */
@@ -187,6 +202,16 @@ export interface SupplierFilters extends CursorQuery {
 export interface SupplierRepository {
   /** Bazaar directory — sirf VERIFIED + listed suppliers. */
   findPublicList(filters: SupplierFilters): Promise<Page<PublicSupplierView>>
+
+  /**
+   * Har wo dukan jo public Bazaar par hai — sirf slug aur tareekh.
+   *
+   * 🔴 Shart WOHI hai jo `findPublicList` par hai (`listedOnBazaar` + `VERIFIED`), aur
+   * ye ittefaq nahi hona chahiye: sitemap ka poora kaam ye batana hai ke safha MOJOOD
+   * hai. Alag shart likhne ka matlab hota ke Google un pate crawl karta rahe jo 404
+   * dete hain — aur wo poori site ka bharosa girata hai.
+   */
+  publicSlugs(limit: number): Promise<readonly PublicSlug[]>
   findPublicBySlug(slug: string): Promise<PublicSupplierView | null>
   /** Bazaar ke liye city facets (filter dropdown). */
   listCities(): Promise<{ city: string; count: number }[]>

@@ -7,6 +7,8 @@
 import type { Prisma, PrismaClient } from '@prisma/client'
 import type {
   PayoutAccount,
+  PublicSlug,
+  SeoTextInput,
   PublicSupplierView,
   SupplierAccountRepository,
   SupplierAccountView,
@@ -34,6 +36,8 @@ type SupplierRow = Prisma.SupplierGetPayload<{ select: typeof PUBLIC_SUPPLIER_SE
 
 const ACCOUNT_SELECT = {
   id: true,
+  // Apna public safha — SEO ka preview aur "apna safha dekhen" wala link isi se banta hai
+  slug: true,
   businessName: true,
   ownerName: true,
   city: true,
@@ -134,6 +138,10 @@ export class PrismaSupplierRepository
     }
   }
 
+  async saveSeoText(supplierId: string, seo: SeoTextInput): Promise<void> {
+    await this.db.supplier.update({ where: { id: supplierId }, data: { ...seo } })
+  }
+
   async savePayoutAccount(
     supplierId: string,
     account: PayoutAccount | null,
@@ -188,6 +196,24 @@ export class PrismaSupplierRepository
       orderBy: { _count: { id: 'desc' } },
     })
     return grouped.map((g) => ({ city: g.city, count: g._count._all }))
+  }
+
+  /**
+   * Sitemap ke liye — har wo dukan jo Bazaar par hai.
+   *
+   * 🔴 Shart yahan DOBARA likhi gayi hai (`publicWhere` istemal nahi kiya) sirf is
+   * liye ke wo `SupplierFilters` maangta hai jo sitemap ke paas hain hi nahi. Do
+   * jagah likhi hui shart alag ho jane ka khatra asli hai — is liye: jo bhi `publicWhere`
+   * mein badle, wo yahan bhi badalna hai. Alag ho jayen to Google un pate crawl karta
+   * rahega jo 404 dete hain.
+   */
+  async publicSlugs(limit: number): Promise<readonly PublicSlug[]> {
+    return this.db.supplier.findMany({
+      where: { listedOnBazaar: true, status: 'VERIFIED' },
+      select: { slug: true, updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
+      take: limit,
+    })
   }
 
   private async publicWhere(filters: SupplierFilters): Promise<Prisma.SupplierWhereInput> {
@@ -289,6 +315,8 @@ export class PrismaSupplierRepository
       city: row.city,
       marketName: row.marketName,
       bioUr: row.bioUr,
+      seoTitle: row.seoTitle,
+      seoDescription: row.seoDescription,
       // listing ki shart hi yehi hai ke public number ho
       whatsappPublic: row.whatsappPublic ?? '',
       address: row.address,

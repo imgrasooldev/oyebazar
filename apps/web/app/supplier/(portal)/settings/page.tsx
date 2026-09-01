@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { PayoutAccountCard } from '@/components/payout-account-card'
+import { SeoFields } from '@/components/seo-fields'
 import { SupplierDeliveryRates } from '@/components/supplier-delivery-rates'
 import { SupplierPaymentTerm } from '@/components/supplier-payment-term'
 import { requireSupplier } from '@/lib/api/supplier-session'
@@ -25,9 +26,18 @@ export default async function SupplierSettingsPage() {
   const [{ supplier }, locale] = await Promise.all([requireSupplier(), getLocale()])
   const t = translator(locale)
 
-  const [term, internal] = await Promise.all([
+  const [term, internal, publicView] = await Promise.all([
     container.payouts.paymentTerm(supplier.id),
     container.repositories.suppliers.findInternal(supplier.id),
+    /*
+     * Dukan ka apna PUBLIC safha — wohi jo Google dekhta hai.
+     *
+     * 🔴 `findInternal` se ye nahi mil sakta aur nahi milna chahiye: preview mein wo
+     * ginti aur wo naam chahiye jo BAHAR nazar aata hai, andar wala record nahi. Dukan
+     * Bazaar par list na ho to `null` aata hai — aur us soorat mein SEO ka card
+     * dikhana bhi bemani hai, us ka koi public safha hai hi nahi.
+     */
+    container.bazaar.getSupplier(supplier.slug).catch(() => null),
   ])
 
   return (
@@ -84,6 +94,39 @@ export default async function SupplierSettingsPage() {
           },
         }}
       />
+
+      {/*
+        Google wala card — sirf tab jab dukan ka public safha waqai mojood ho.
+
+        🔴 Bazaar se hati hui dukan par ye khaane dikhana jhoot hai: wo matn kahin
+        chhapta hi nahi, aur dukandar us mein waqt laga kar samajhta hai ke kaam ho gaya.
+      */}
+      {publicView && (
+        <SeoFields
+          endpoint="/api/v1/supplier/seo"
+          method="PUT"
+          seoTitle={publicView.seoTitle}
+          seoDescription={publicView.seoDescription}
+          fallbackTitle={`${publicView.businessName} — ${publicView.city}`}
+          fallbackDescription={
+            publicView.bioUr ??
+            `${publicView.businessName}, ${publicView.city}${publicView.marketName ? ` (${publicView.marketName})` : ''} — ${publicView.productCount} آئٹمز۔ تھوک ریٹ کے لیے سیدھا رابطہ۔`
+          }
+          previewUrl={`oyebazar.com/bazaar/${supplier.slug}`}
+          labels={{
+            title: t('seoTitle'),
+            note: t('seoNoteShop'),
+            fieldTitle: t('seoFieldTitle'),
+            fieldDescription: t('seoFieldDescription'),
+            hint: t('seoHint'),
+            autoHint: t('seoAutoHint'),
+            preview: t('seoPreview'),
+            save: t('save'),
+            saving: t('saving'),
+            saved: t('payoutAccountSaved'),
+          }}
+        />
+      )}
 
       <SupplierPaymentTerm
         current={term}

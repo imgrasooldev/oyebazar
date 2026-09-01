@@ -6,6 +6,7 @@
  */
 import type { Prisma, PrismaClient } from '@prisma/client'
 import type {
+  PublicSlug,
   CatalogueFilters,
   CatalogueSort,
   CursorQuery,
@@ -74,6 +75,22 @@ export class PrismaProductRepository implements ProductRepository {
       ...publicCursorArgs(filters),
     })
     return toPage(rows.map(toPublicView), filters.limit, (p) => p.slug)
+  }
+
+  /**
+   * Sitemap ke liye — har wo maal jo Bazaar par khulta hai.
+   *
+   * 🔴 Shart mein DUKAN bhi hai, sirf `status: LIVE` nahi. Ek LIVE maal jis ki dukan
+   * Bazaar se hata di gayi ho, us ka safha 404 deta hai — aur usay sitemap mein daalna
+   * Google ko jaan boojh kar toote hue pate dena hai.
+   */
+  async publicSlugs(limit: number): Promise<readonly PublicSlug[]> {
+    return this.db.product.findMany({
+      where: { status: 'LIVE', supplier: { listedOnBazaar: true, status: 'VERIFIED' } },
+      select: { slug: true, updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
+      take: limit,
+    })
   }
 
   async findPublicBySlug(slug: string): Promise<PublicProductView | null> {
@@ -434,6 +451,8 @@ type PublicRow = {
   media: MediaRow[]
   supplier: { businessName: string; slug: string; city: string }
   createdAt: Date
+  seoTitle: string | null
+  seoDescription: string | null
 }
 
 function toPublicView(row: PublicRow): PublicProductView {
@@ -442,6 +461,8 @@ function toPublicView(row: PublicRow): PublicProductView {
     titleUr: row.titleUr,
     titleEn: row.titleEn,
     category: row.category,
+    seoTitle: row.seoTitle,
+    seoDescription: row.seoDescription,
     coverImageUrl: coverUrl(row.media),
     supplierName: row.supplier.businessName,
     supplierSlug: row.supplier.slug,

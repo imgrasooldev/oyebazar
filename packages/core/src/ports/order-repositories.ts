@@ -5,6 +5,7 @@
  * state machine ke PR sirf founder ke hain — file alag ho to review bhi alag rehta hai.
  */
 import type { PayoutAccount } from '../domain/payout-account'
+import type { SeoTextInput } from '../domain/seo-input'
 import type { Page, Pkr } from '@oyebazar/shared'
 import type { OrderStatus } from '../domain/order-status'
 import type {
@@ -393,4 +394,7 @@ export interface SupplierInternalRepository {
 
   /** Dukan ka apna khata mehfooz — `null` usay mita deta hai. */
   savePayoutAccount(supplierId: string, account: PayoutAccount | null, at: Date): Promise<void>
+
+  /** Dukan ke apne safhe ka SEO matn. */
+  saveSeoText(supplierId: string, seo: SeoTextInput): Promise<void>
 }

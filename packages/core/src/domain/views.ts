@@ -23,6 +23,15 @@ export interface PublicProductView {
   readonly supplierCity: string
   /** Kab list hua — "2 din pehle" isi se banta hai */
   readonly listedAt: Date
+  /**
+   * Dukandar ka apna SEO matn — `null` ho to safha khud apna unwan bana leta hai.
+   *
+   * 🔴 Ye public view mein hai aur hona bhi chahiye: yehi wo matn hai jo Google par
+   * chhapta hai, yani us mein koi raaz hai hi nahi. (Rate ka qaida is se alag hai aur
+   * apni jagah qaim — dekhen is file ka sar-e-fehrist.)
+   */
+  readonly seoTitle: string | null
+  readonly seoDescription: string | null
 }
 
 /** RESELLER (login ke baad) — Baji price dikhta hai, supplier ka kuch nahi. */
@@ -219,6 +228,15 @@ export interface PublicSupplierView {
   readonly deliveryFeeCity: number
   readonly deliveryFeeOther: number
   readonly payoutTermDays: number
+  /**
+   * Dukandar ka apna SEO matn — `null` ho to safha khud apna unwan bana leta hai.
+   *
+   * 🔴 Ye public view mein hai aur hona bhi chahiye: yehi wo matn hai jo Google par
+   * chhapta hai, yani us mein koi raaz hai hi nahi. (Rate ka qaida is se alag hai aur
+   * apni jagah qaim — dekhen is file ka sar-e-fehrist.)
+   */
+  readonly seoTitle: string | null
+  readonly seoDescription: string | null
 }
 
 export interface ResellerView {

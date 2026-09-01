@@ -9,10 +9,20 @@
  * 🔴 Reseller ka retail price yahan kabhi nahi aata. Wholesaler ko sirf apni raqam
  * dikhti hai, warna use pata chal jayega ke hum kitna kama rahe hain.
  */
+import type { SeoTextInput } from '../domain/seo-input'
 import type { MediaKind, Pkr } from '@oyebazar/shared'
 
 export interface SupplierAccountView {
   readonly id: string
+  /**
+   * Dukan ka public pata — `/bazaar/<slug>`.
+   *
+   * 🔴 Ye khaana yahan is liye aaya ke dukan wale ko apna PUBLIC safha dikhana parta
+   * hai (SEO ka preview, aur "apna safha dekhen" wala link). Us ke baghair portal ko
+   * apne hi safhe ka pata maloom nahi tha — banda apna Bazaar wala safha dhoondne ke
+   * liye poori directory mein apna naam talash karta tha.
+   */
+  readonly slug: string
   readonly businessName: string
   readonly ownerName: string
   readonly city: string
@@ -73,6 +83,8 @@ export interface SupplierProductMediaView extends ProductMediaInput {
 
 export interface SupplierProductView {
   readonly id: string
+  /** Public pata — `/bazaar/item/<slug>`. SEO ka preview isi se banta hai. */
+  readonly slug: string
   readonly titleUr: string
   readonly titleEn: string
   /** DRAFT ki edit form inhen pehle se bhar deti hai. */
@@ -88,6 +100,16 @@ export interface SupplierProductView {
   readonly openOrders: number
   /** Kitna maal bacha hai — reserve shuda nikaal kar */
   readonly stockQty: number
+  /**
+   * Google wala matn — `null` ho to safha khud apna unwan bana leta hai.
+   *
+   * 🔴 Ye DRAFT ki edit form se BAHAR hai. Wo form LIVE hote hi band ho jati hai
+   * (aur wo theek hai — naam aur rate par ops ki manzoori lagi hoti hai), magar SEO ka
+   * matn LIVE ke BAAD hi badalna parta hai: pata tab chalta hai jab safha teen mahine
+   * se kisi ko nazar nahi aaya.
+   */
+  readonly seoTitle: string | null
+  readonly seoDescription: string | null
 }
 
 export interface NewSupplierProduct {
@@ -173,6 +195,23 @@ export interface SupplierProductRepository {
     productId: string,
     input: DraftProductUpdate,
   ): Promise<boolean>
+
+  /**
+   * Google par kya likha aaye — aur ye DRAFT ki shart se BAHAR hai.
+   *
+   * 🔴 Ye `updateDraft` ka hissa jaan boojh kar nahi hai. Wahan har cheez LIVE hote hi
+   * jam jati hai, aur wo theek hai: naam aur rate par ops ki manzoori lag chuki hoti
+   * hai aur reseller un par apna status bana chuki hoti hai.
+   *
+   * SEO ka matn un mein se kisi cheez ko nahi chhoota. Wo na rate hai, na maal ka naam,
+   * na koi waada — wo sirf wo do line hain jo Google ke natije mein chhapti hain. Aur
+   * unhen LIVE ke baad badalne ki zaroorat sab se ZYADA hoti hai: dukandar ko pata hi
+   * tab chalta hai ke unwan kaam nahi kar raha jab safha teen mahine se kisi ko nazar
+   * nahi aaya. Us waqt "naya maal banao" keh dena us feature ko bekar kar dena hai.
+   *
+   * @returns false agar maal is dukan ka nahi
+   */
+  saveProductSeo(supplierId: string, productId: string, seo: SeoTextInput): Promise<boolean>
 
   /**
    * Maal par nayi tasveer ya video lagana.

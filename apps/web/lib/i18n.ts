@@ -1186,6 +1186,31 @@ const DICTIONARY = {
     en: 'For anything beyond this, use search or the filters above — more than this on one page is heavy on a phone.',
     rm: 'Is se aage ka maal upar talash ya chhanni se dhoondein — ek hi safhe par is se zyada rakhna phone par bhaari par jata hai.',
   },
+  // ---- Google par kya likha aaye (dukan aur maal, dono par wohi lafz)
+  seoTitle: { ur: 'گوگل پر کیا لکھا آئے', en: 'How this looks on Google', rm: 'Google par kya likha aaye' },
+  seoNoteShop: {
+    ur: 'جب کوئی گوگل پر آپ کی دکان ڈھونڈے گا تو یہی نظر آئے گا۔ خالی چھوڑ دیں تو ہم خود بنا دیتے ہیں — دکان کا نام، شہر اور مال کی گنتی۔',
+    en: 'This is what people see when your shop shows up on Google. Leave it empty and we write it for you — shop name, city and item count.',
+    rm: 'Jab koi Google par aap ki dukan dhoondega to yehi nazar aayega. Khali chhor den to hum khud bana dete hain — naam, sheher aur maal ki ginti.',
+  },
+  seoNoteProduct: {
+    ur: 'جب کوئی گوگل پر یہ مال ڈھونڈے گا تو یہی نظر آئے گا۔ خالی چھوڑ دیں تو ہم خود بنا دیتے ہیں۔',
+    en: 'This is what people see when this item shows up on Google. Leave it empty and we write it for you.',
+    rm: 'Jab koi Google par ye maal dhoondega to yehi nazar aayega. Khali chhor den to hum khud bana dete hain.',
+  },
+  seoFieldTitle: { ur: 'اوپر کی موٹی لائن', en: 'The headline', rm: 'Upar ki moti line' },
+  seoFieldDescription: { ur: 'نیچے کی دو لائنیں', en: 'The two lines under it', rm: 'Neeche ki do lainein' },
+  seoHint: {
+    ur: 'گنتی سے آگے گوگل باقی کاٹ دیتا ہے — اوپر کے نمونے میں تین نقطے اسی کا اشارہ ہیں۔ سب سے کام کی بات پہلے لکھیں۔',
+    en: 'Past the count Google cuts the rest off — the ellipsis in the preview shows it. Put the important part first.',
+    rm: 'Ginti se aage Google baqi kaat deta hai — namoone mein teen nuqte usi ka ishara hain. Kaam ki baat pehle likhen.',
+  },
+  seoAutoHint: {
+    ur: 'دونوں خانے مرضی کے ہیں۔ خالی کر کے محفوظ کریں تو واپس ہمارا بنایا ہوا چلنے لگتا ہے۔',
+    en: 'Both fields are optional. Clear them and save to go back to the one we write.',
+    rm: 'Dono khaane marzi ke hain. Khali kar ke mehfooz karen to wapas hamara bana hua chalne lagta hai.',
+  },
+  seoPreview: { ur: 'گوگل پر ایسا دکھے گا', en: 'How it looks on Google', rm: 'Google par aisa dikhega' },
   copyLabel: { ur: 'کاپی', en: 'Copy', rm: 'Copy' },
   saving: { ur: 'ہو رہا ہے…', en: 'Saving…', rm: 'Ho raha hai…' },
   cancel: { ur: 'رہنے دیں', en: 'Cancel', rm: 'Rehne den' },

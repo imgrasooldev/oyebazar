@@ -8,10 +8,23 @@ import { SupplierLogo } from '@/components/supplier-logo'
 import { isFresh } from '@oyebazar/shared'
 import { pickName, timeAgo, translator } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
+import { canonical, itemListLd, jsonLd } from '@/lib/seo'
 
 export const metadata: Metadata = {
   title: 'بازار — ہول سیلرز کی ڈائریکٹری',
   description: 'پاکستان بھر کے تصدیق شدہ ہول سیلرز — شہر اور کیٹگری کے حساب سے۔ مفت ڈائریکٹری۔',
+  /*
+   * 🔴 Canonical hamesha bina chhanni ke.
+   *
+   * Is safhe ki chhanni URL mein jati hai (`?city=`, `?category=`, `?cursor=`), aur
+   * har jor ek naya pata banata hai jis par TQREEBAN wohi maal hota hai. Bina is ke
+   * Google un saikron patoon ko alag safhe ginta hai, un ka aapas mein moqabla
+   * karwata hai, aur aakhir mein kisi ek ko bhi theek se nahi dikhata.
+   *
+   * Chhanni wale safhe crawl phir bhi hote hain (un ke andar ke link chahiyen) — bas
+   * ginti EK ki hoti hai.
+   */
+  alternates: canonical('/bazaar'),
 }
 
 export const dynamic = 'force-dynamic'
@@ -56,6 +69,16 @@ export default async function BazaarPage({
 
   return (
     <>
+      {/* Jo dukanen is safhe par nazar aa rahi hain — sirf un ke pate, tafseel un ke apne safhon par */}
+      {suppliers.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={jsonLd(
+            itemListLd(suppliers.map((supplier) => `/bazaar/${supplier.slug}`)),
+          )}
+        />
+      )}
+
       <CategoryStrip categories={categories} locale={locale} active={query.category} />
 
       <div className="mx-auto max-w-shell gap-6 px-4 py-6 lg:grid lg:grid-cols-[240px_1fr]">

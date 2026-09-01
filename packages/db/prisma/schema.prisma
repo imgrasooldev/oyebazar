@@ -44,6 +44,22 @@ model Supplier {
    * (poore repo mein us ka ek bhi write nahi tha) aur zinda dikhta tha — CLAUDE.md §5
    * wali theek wohi soorat.
    */
+  /**
+   * Google par kya likha aaye — dukan/dukandar ka apna faisla.
+   *
+   * 🔴 Ye khaane MARZI ke hain aur rehne chahiyen. Khali hon to `generateMetadata`
+   * khud ek theek unwan bana leta hai (naam + sheher + ginti), aur wo aksar us se
+   * behtar hota hai jo jaldi mein bhara jata hai. Lazmi karne ka anjaam ye hota ke
+   * maal list hi na ho — ya har safhe par "asdf" chhap jaye.
+   *
+   * 🔴 `keywords` ka koi khaana JAAN BOOJH KAR nahi hai. Google `<meta name="keywords">`
+   * ko 2009 se nazar-andaz karta hai. Us ka khaana banane ka matlab sirf ye hota ke
+   * dukandar us mein waqt lagaye jis ka koi asar hi nahi — aur phir samjhe ke us ne SEO
+   * kar liya. Maal ki talash `searchText` se chalti hai (hamari apni, teen zabanon mein).
+   */
+  seoTitle         String?
+  seoDescription   String?
+
   payoutMethod     PayoutMethod?
   payoutAccount    String?
   payoutTitle      String?
@@ -155,6 +171,22 @@ model Product {
   /// Sirf sawal saaf karne se mehnat zaya ho jati hai: Arabi "ك" ya zer-zabar wale naam
   /// par likhne wale ko maal kabhi nahi milta. Ye qadar likhte waqt banti hai, parhte
   /// waqt nahi — is liye har talash par DB ko kuch calculate nahi karna parta.
+  /**
+   * Google par kya likha aaye — dukan/dukandar ka apna faisla.
+   *
+   * 🔴 Ye khaane MARZI ke hain aur rehne chahiyen. Khali hon to `generateMetadata`
+   * khud ek theek unwan bana leta hai (naam + sheher + ginti), aur wo aksar us se
+   * behtar hota hai jo jaldi mein bhara jata hai. Lazmi karne ka anjaam ye hota ke
+   * maal list hi na ho — ya har safhe par "asdf" chhap jaye.
+   *
+   * 🔴 `keywords` ka koi khaana JAAN BOOJH KAR nahi hai. Google `<meta name="keywords">`
+   * ko 2009 se nazar-andaz karta hai. Us ka khaana banane ka matlab sirf ye hota ke
+   * dukandar us mein waqt lagaye jis ka koi asar hi nahi — aur phir samjhe ke us ne SEO
+   * kar liya. Maal ki talash `searchText` se chalti hai (hamari apni, teen zabanon mein).
+   */
+  seoTitle        String?
+  seoDescription  String?
+
   searchText      String        @default("")
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt

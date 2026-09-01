@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { LazyImage } from '@/components/lazy-image'
 import { formatPkr } from '@oyebazar/shared'
 import { SupplierEditProduct } from '@/components/supplier-edit-product'
+import { SeoFields } from '@/components/seo-fields'
 import { SupplierPriceRequest } from '@/components/supplier-price-request'
 import { SupplierProductMedia } from '@/components/supplier-product-media'
 import { SupplierAddProduct } from '@/components/supplier-add-product'
@@ -274,6 +275,43 @@ export default async function SupplierStockPage() {
                 }}
               />
             )}
+
+            {/*
+              Google wala matn — har maal par, DRAFT ho ya LIVE.
+
+              🔴 Ye upar wale DRAFT wale block se BAHAR hai, aur ye farq jaan boojh
+              kar hai. Naam aur rate LIVE hote hi jam jate hain (reseller un par apna
+              status bana chuki hoti hai); ye do line un mein se kisi cheez ko nahi
+              chhoteen — wo sirf Google ke natije ki shakl hai, aur usay theek karne ki
+              zaroorat LIVE hone ke BAAD hi parti hai.
+
+              ARCHIVED yahan aata hi nahi (repository us ko chhodti hai), aur DRAFT ka
+              koi public safha nahi — magar us par abhi likh lena theek hai: LIVE hote
+              hi wo matn apne aap kaam karne lag jata hai.
+            */}
+            <div className="border-t border-line pt-3">
+              <SeoFields
+                endpoint={`/api/v1/supplier/products/${product.id}/seo`}
+                method="PATCH"
+                seoTitle={product.seoTitle}
+                seoDescription={product.seoDescription}
+                fallbackTitle={`${product.titleUr} — ${supplier.businessName}`}
+                fallbackDescription={`${product.titleUr} (${product.titleEn}) — ${supplier.city} کے تصدیق شدہ ہول سیلر ${supplier.businessName} کے پاس۔ تھوک ریٹ کے لیے سیدھا رابطہ۔`}
+                previewUrl={`oyebazar.com/bazaar/item/${product.slug}`}
+                labels={{
+                  title: t('seoTitle'),
+                  note: t('seoNoteProduct'),
+                  fieldTitle: t('seoFieldTitle'),
+                  fieldDescription: t('seoFieldDescription'),
+                  hint: t('seoHint'),
+                  autoHint: t('seoAutoHint'),
+                  preview: t('seoPreview'),
+                  save: t('save'),
+                  saving: t('saving'),
+                  saved: t('payoutAccountSaved'),
+                }}
+              />
+            </div>
 
             {/* 🔴 Tafseel badalna SIRF DRAFT par. Live maal par naam ya rate badalne ka
                 matlab hai ke reseller ka pehle se laga hua status pack jhoot bol raha ho

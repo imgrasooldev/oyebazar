@@ -8,6 +8,8 @@ import { getResellerOrNull } from '@/lib/api/session'
 import { container } from '@/lib/container'
 import { pickName, timeAgo, translator } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
+import { resolveSeoText } from '@oyebazar/core'
+import { breadcrumbLd, canonical, jsonLd, productLd } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,15 +18,41 @@ type Props = { params: Promise<{ slug: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const product = await container.bazaar.getProduct(slug).catch(() => null)
-  if (!product) return { title: 'OyeBazar' }
+  /* 🔴 Jo maal hai hi nahi, us ka safha Google par na jaye */
+  if (!product) return { title: 'OyeBazar', robots: { index: false, follow: false } }
 
   /*
    * 🔴 Title aur description mein bhi koi rate nahi — ye safha Google par jata hai,
    * aur wahan qeemat chhapna wohi cheez hai jis se hum Bazaar ko bahar rakhte hain.
    */
+  // Dukandar ka apna matn pehle — dekhen dukan wale safhe ka note
+  const title = resolveSeoText(product.seoTitle, `${product.titleUr} — ${product.supplierName}`)
+  const description = resolveSeoText(
+    product.seoDescription,
+    `${product.titleUr} (${product.titleEn}) — ${product.supplierCity} کے تصدیق شدہ ہول سیلر ${product.supplierName} کے پاس۔ تھوک ریٹ کے لیے سیدھا رابطہ۔`,
+  )
+
   return {
-    title: `${product.titleUr} — ${product.supplierName} | OyeBazar`,
-    description: `${product.titleEn} — ${product.supplierCity} ki تصدیق شدہ hول سیلر se. Thok rate ke liye rabta karen.`,
+    title,
+    description,
+    alternates: canonical(`/bazaar/item/${slug}`),
+    /*
+     * 🔴 Maal ki APNI tasveer — aur ye is poori site ka sab se ahem OG khaana hai.
+     *
+     * Is platform par har link WhatsApp par jata hai. Tasveer ke baghair wo link ek
+     * nangi line hoti hai jise koi nahi kholta; tasveer ke saath wo ek card ban jata
+     * hai. Ye maal pehle se tasveer wala hai — bas us ka poora pata bhejna tha, aur
+     * wo `metadataBase` ke baghair adhoora ja raha tha.
+     */
+    openGraph: {
+      type: 'website',
+      title,
+      description,
+      url: `/bazaar/item/${slug}`,
+      ...(product.coverImageUrl
+        ? { images: [{ url: product.coverImageUrl, alt: product.titleUr }] }
+        : {}),
+    },
   }
 }
 
@@ -65,6 +93,37 @@ export default async function BazaarItemPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-shell space-y-6 px-4 py-6 lg:px-8">
+      {/*
+        🔴 `Product` — magar QEEMAT ke baghair (`offers` nahi). Dekhen `lib/seo.ts`:
+        qeemat structured data mein daalna Bazaar ko usi tareef ke andar le aata hai
+        jis se hum jaan boojh kar bahar hain (Sales Tax Act 2(18A)) — chahe wo safhe
+        par nazar bhi na aaye.
+      */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLd(
+          productLd({
+            titleUr: product.titleUr,
+            titleEn: product.titleEn,
+            slug,
+            imageUrl: product.coverImageUrl,
+            categoryUr: product.category.nameUr,
+            supplierName: product.supplierName,
+            supplierSlug: product.supplierSlug,
+          }),
+        )}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLd(
+          breadcrumbLd([
+            { name: t('bazaar'), path: '/bazaar' },
+            { name: product.supplierName, path: `/bazaar/${product.supplierSlug}` },
+            { name: product.titleUr, path: `/bazaar/item/${slug}` },
+          ]),
+        )}
+      />
+
       <nav className="text-sm text-ink-faint">
         <Link href="/bazaar" className="link-tap hover:text-brand-700">
           {t('bazaar')}

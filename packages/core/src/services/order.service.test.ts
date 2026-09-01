@@ -231,6 +231,7 @@ const SUPPLIERS: SupplierInternalRepository = {
     }
   },
   async savePayoutAccount() {},
+  async saveSeoText() {},
 }
 
 /** Reseller lookup — accept/reject par usay WhatsApp jata hai. */

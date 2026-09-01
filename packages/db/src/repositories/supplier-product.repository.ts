@@ -9,6 +9,7 @@
  */
 import type { PrismaClient } from '@prisma/client'
 import type {
+  SeoTextInput,
   DraftProductUpdate,
   NewSupplierProduct,
   ProductMediaInput,
@@ -170,6 +171,27 @@ export class PrismaSupplierProductRepository implements SupplierProductRepositor
    *
    * @returns false agar maal is dukan ka nahi ya DRAFT nahi raha
    */
+  /**
+   * SEO ka matn — har halat mein (DRAFT ho ya LIVE).
+   *
+   * 🔴 Query mein `status` ki koi shart NAHI, aur ye `updateDraft` se saaf farq hai.
+   * Wajah `supplier-portal-repositories.ts` par likhi hai: ye matn na rate hai na naam,
+   * aur us ki zaroorat LIVE hone ke BAAD sab se zyada parti hai.
+   *
+   * `supplierId` shart mein hai — doosri dukan ke maal ka unwan koi nahi badal sakta.
+   */
+  async saveProductSeo(
+    supplierId: string,
+    productId: string,
+    seo: SeoTextInput,
+  ): Promise<boolean> {
+    const result = await this.db.product.updateMany({
+      where: { id: productId, supplierId },
+      data: { ...seo },
+    })
+    return result.count > 0
+  }
+
   async updateDraft(
     supplierId: string,
     productId: string,
@@ -290,6 +312,9 @@ export class PrismaSupplierProductRepository implements SupplierProductRepositor
         category: { select: { slug: true } },
         status: true,
         supplierPrice: true,
+        slug: true,
+        seoTitle: true,
+        seoDescription: true,
         media: {
           select: {
             id: true,
@@ -319,9 +344,12 @@ export class PrismaSupplierProductRepository implements SupplierProductRepositor
 
     return rows.map((row) => ({
       id: row.id,
+      slug: row.slug,
       titleUr: row.titleUr,
       titleEn: row.titleEn,
       descriptionUr: row.descriptionUr,
+      seoTitle: row.seoTitle,
+      seoDescription: row.seoDescription,
       categorySlug: row.category.slug,
       status: row.status,
       supplierPrice: pkr(row.supplierPrice),

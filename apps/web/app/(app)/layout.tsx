@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { BRAND } from '@oyebazar/shared'
 import { getResellerOrNull } from '@/lib/api/session'
@@ -38,6 +39,22 @@ export const dynamic = 'force-dynamic'
  * Templates catalogue ke saath hai kyunke design ka faisla wahin hota hai jahan pack
  * banta hai — halanke ye mahine mein ek dafa ka kaam hai, roz ka nahi.
  */
+/**
+ * Poora reseller portal `noindex` — ek hi jagah, layout par.
+ *
+ * 🔴 Ye har safhe par alag alag lagane se BEHTAR hai aur wajah tajurbe ki hai: naya
+ * safha banane wala usay bhoolta hai, aur bhoolne ka koi nishan nahi banta. Layout par
+ * hone ka matlab hai ke is folder mein jo bhi safha banega wo khud-ba-khud bahar rahega.
+ *
+ * In safhon par bina login ke aane wale ko `redirect('/login')` milta hai, yani Google
+ * ko yahan sirf login ka safha nazar aata — har alag pate par wohi. Wo "soft 404" ki
+ * shakl banti hai, aur us se site ka crawl budget usi jagah lag jata hai jahan dikhane
+ * ko kuch hai hi nahi.
+ */
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+}
+
 const NAV = [
   { href: '/dashboard', key: 'dashboard', tab: 'tabDashboard', Icon: SparkIcon },
   { href: '/catalogue', key: 'catalogue', tab: 'tabCatalogue', Icon: GridIcon },

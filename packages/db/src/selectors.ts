@@ -27,6 +27,9 @@ export const PUBLIC_PRODUCT_SELECT = {
   },
   supplier: { select: { businessName: true, slug: true, city: true } },
   createdAt: true,
+  // Dukandar ka apna SEO matn — yehi Google par chhapta hai, is mein koi raaz nahi
+  seoTitle: true,
+  seoDescription: true,
   // supplierPrice / bajiPrice / suggestedRetail: JAAN BOOJH KAR NAHI
 } satisfies Prisma.ProductSelect
 
@@ -140,7 +143,9 @@ export const PUBLIC_SUPPLIER_SELECT = {
   deliveryFeeCity: true,
   deliveryFeeOther: true,
   payoutTermDays: true,
-  // ntn / strn / phone / bankAccount / feeRateBps: kabhi public nahi
+  seoTitle: true,
+  seoDescription: true,
+  // ntn / strn / phone / payout* / feeRateBps: kabhi public nahi
   _count: { select: { products: { where: { status: 'LIVE' } } } },
   // Aakhri live listing — "2 din pehle naya maal" isi se banta hai
   products: {
