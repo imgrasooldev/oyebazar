@@ -48,6 +48,24 @@ Ek aur faida: prod ka `DATABASE_URL` kisi ke laptop par utarne ki zaroorat nahi.
 - **Dev server chalte hue `next build` na chalayen** — wo `.next` ko clobber kar deta hai
   aur React load hona band ho jata hai. Test "kuch nahi hua" wala jhoota jawab dete hain.
 
+### 🔴 Regex shell ke zariye na likhen — backslash wale escape chup chaap MAR jate hain
+
+Heredoc ya `-e` ke zariye python/node se koi file likhte waqt backslash ka ek darja gum
+ho jata hai. Word-boundary wala escape **backspace (0x08)** ban jata hai aur
+back-reference wala **SOH (0x01)** — aur wo isi shakl mein file mein baith jate hain.
+Code compile hota hai, test chalte hain, aur regex khamoshi se ghalat jawab deta hai.
+
+1 September ko ye **teen dafa** hua: `parse-order-text.ts` mein (salam wali poori jaanch
+mar gayi thi), `ops-flags.ts` mein (`repeatedChars` mar gayi — sirf test ne pakri), aur
+isi CLAUDE.md ko likhte hue — theek us waqt jab yehi note likha ja raha tha.
+
+Regex — ya koi bhi backslash wali line — **Write/Edit tool se likhen**. Aur shak ho to
+file mein control characters gin len:
+
+```bash
+node -e "const s=require('fs').readFileSync(process.argv[1],'utf8');const bad=[...s].filter(c=>c.charCodeAt(0)<32&&c!=='\n'&&c!=='\r'&&c!=='\t');console.log(bad.length?'FOUND '+bad.length:'clean')" CLAUDE.md
+```
+
 ### 🔴 `turbo` chalate waqt `CI=true` lagayen
 
 `pnpm run` har script se PEHLE khud `install` chalata hai, aur `turbo` un ko parallel
@@ -93,6 +111,16 @@ wo kabhi kabhi waqt se aage nikal jata hai. Akele chalane par pass ho to wo khar
 
 🔴 Mara hua code jo zinda dikhta ho, wo aam mare hue code se khatarnak hai: koi us par
 bharosa kar ke feature bana leta hai jo kabhi chala hi nahi.
+
+**1 September ko ye ban gaya** (poora lifecycle live chala kar): **payout ka khata**
+dono taraf (`domain/payout-account.ts` — JazzCash/EasyPaisa/Raast/Bank; reseller `/money`
+par bharti hai, dukan payouts par POORA dekhti hai — chhanni `payouts: { some: { supplierId } }`
+par, ops dono taraf); catalogue par "اور دکھائیں" (hadd 240) aur sachi ginti ("48+");
+khaanon ke naam ki chhanni (`categoryNameProblem` — asal pehchan `notUrdu` hai, lambai
+NAHI); bina stock ke LIVE maal rozana khud `OUT_OF_STOCK`; invoice ka mahina Pakistan ke
+calendar se (`domain/pk-month.ts`); aur reseller ko money page par dukan ka **asli naam**
+("Dukan 1" ka laqab wapas le liya — wo naam usay catalogue aur Bazaar par pehle se mil
+raha tha, rehta sirf us ka kharcha tha).
 
 **30 August ko ye ban gaya** (jadwal se hataya): nayi reseller ka onboarding, `Customer`
 model (+ backfill), dukan ke portal mein order ki guftagu, payout ki rasid, har card par
