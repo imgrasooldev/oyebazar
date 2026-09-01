@@ -8,6 +8,7 @@
  *
  * Yani price leak ko rokne ke liye discipline par bharosa nahi — type system par hai.
  */
+import type { PayoutAccount } from './payout-account'
 import type { PackFormatKey, PackOptions, Pkr } from '@oyebazar/shared'
 
 /** PUBLIC (Bazaar) — 🔴 koi price field nahi. Ye qanooni requirement hai. */
@@ -227,7 +228,21 @@ export interface ResellerView {
   readonly city: string
   readonly area: string | null
   readonly status: 'ACTIVE' | 'LIMITED' | 'SUSPENDED'
-  readonly payoutAccount: string | null
+  /**
+   * Wo khata jis mein munafa aata hai — `null` jab tak reseller ne bhara na ho.
+   *
+   * 🔴 Poora khata ek hi object mein (chaar alag khaane nahi): teen khaane mil kar
+   * hi kaam ke hain, aur unhen alag rakhne ka matlab har jagah "number to hai magar
+   * naam nahi" wali adhoori soorat khud sambhalna hota. `hasPayoutAccount()` ke baad
+   * ye sawal dobara nahi uthta.
+   *
+   * 🔴 Ye POORA number hai, masked nahi. Masking ki jagah bahar hai (mapper),
+   * andar nahi: dukan wale ko paisa bhejna hai, aur masked number se wo nahi bhej
+   * sakta. Kis ko dikhta hai, ye `supplier-repositories` ki query tay karti hai.
+   */
+  readonly payoutAccount: PayoutAccount | null
+  /** Khata kab badla — ops ke liye; payout banne ke baad badla hua khata dekhne layak hai */
+  readonly payoutUpdatedAt: Date | null
   /**
    * Status pack ke default faislay — zaban, aur kya kya tasveer par chhape.
    *

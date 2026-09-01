@@ -4,6 +4,7 @@
  * Ye alag file isliye hai ke `docs/CONVENTIONS.md` ke mutabiq FeeLedger aur order
  * state machine ke PR sirf founder ke hain — file alag ho to review bhi alag rehta hai.
  */
+import type { PayoutAccount } from '../domain/payout-account'
 import type { Page, Pkr } from '@oyebazar/shared'
 import type { OrderStatus } from '../domain/order-status'
 import type {
@@ -379,5 +380,17 @@ export interface SupplierInternalRepository {
     deliveryFeeCity: number
     /** Doosre sheher ka rate */
     deliveryFeeOther: number
+    /**
+     * Dukan ka apna khata — paisa WAHAN se nahi aata, magar zaroorat parti hai.
+     *
+     * COD mein dukan khud wusool karti hai, is liye hum usay kuch nahi bhejte. Ye do
+     * kaamon ka hai: wapsi/adjustment mein paisa kahan jaye, aur fee ka bill kis khate
+     * se aaya — dono baar aaj tak ye WhatsApp par poocha jata tha.
+     */
+    payoutAccount: PayoutAccount | null
+    payoutUpdatedAt: Date | null
   } | null>
+
+  /** Dukan ka apna khata mehfooz — `null` usay mita deta hai. */
+  savePayoutAccount(supplierId: string, account: PayoutAccount | null, at: Date): Promise<void>
 }

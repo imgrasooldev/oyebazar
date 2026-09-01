@@ -1,6 +1,17 @@
 import type { PrismaClient } from '@prisma/client'
-import type { ReferralRow, ResellerRepository, ResellerView } from '@oyebazar/core'
+import type {
+  PayoutAccount,
+  PayoutMethod,
+  ReferralRow,
+  ResellerRepository,
+  ResellerView,
+} from '@oyebazar/core'
 import { packOptionsFrom, type PackOptions } from '@oyebazar/shared'
+import {
+  PAYOUT_ACCOUNT_SELECT,
+  payoutAccountColumns,
+  payoutAccountFrom,
+} from '../payout-account'
 
 const RESELLER_SELECT = {
   id: true,
@@ -10,7 +21,7 @@ const RESELLER_SELECT = {
   area: true,
   status: true,
   referredById: true,
-  payoutAccount: true,
+  ...PAYOUT_ACCOUNT_SELECT,
   packLang: true,
   packShowName: true,
   packShowPhone: true,
@@ -29,7 +40,11 @@ type Row = {
   area: string | null
   status: 'ACTIVE' | 'LIMITED' | 'SUSPENDED'
   referredById: string | null
+  payoutMethod: PayoutMethod | null
   payoutAccount: string | null
+  payoutTitle: string | null
+  payoutBankName: string | null
+  payoutUpdatedAt: Date | null
   packLang: string
   packShowName: boolean
   packShowPhone: boolean
@@ -49,6 +64,10 @@ function toView(row: Row): ResellerView {
     packName,
     packPhone,
     packTemplateKey,
+    payoutMethod,
+    payoutAccount,
+    payoutTitle,
+    payoutBankName,
     ...reseller
   } = row
 
@@ -58,6 +77,20 @@ function toView(row: Row): ResellerView {
    */
   return {
     ...reseller,
+    /*
+     * Chaar khaane ek khate mein — ya `null`.
+     *
+     * 🔴 Ye tabdeeli yahin hoti hai aur SIRF yahin. Is ke aage wale poore code ke
+     * liye sawal do hi rehte hain: khata hai, ya nahi. "Number to hai magar naam
+     * nahi" wali soorat is line se aage kabhi nahi pohanchti — aur wohi soorat hai
+     * jis mein dukan wala bina naam milaye paisa bhej deta hai.
+     */
+    payoutAccount: payoutAccountFrom({
+      payoutMethod,
+      payoutAccount,
+      payoutTitle,
+      payoutBankName,
+    }),
     packTemplateKey,
     packDefaults: packOptionsFrom({
       lang: packLang === 'en' ? 'en' : 'ur',
@@ -101,6 +134,26 @@ export class PrismaResellerRepository implements ResellerRepository {
         ...(input.area ? { area: input.area } : {}),
         ...(input.referredById ? { referredById: input.referredById } : {}),
       },
+      select: RESELLER_SELECT,
+    })
+    return toView(row)
+  }
+
+  /**
+   * Khata mehfooz — `null` usay mita deta hai.
+   *
+   * 🔴 `payoutUpdatedAt` mitane par bhi likha jata hai. "Kab badla" ka jawab
+   * "kab bhara" se alag hai: khata hatana bhi ek tabdeeli hai, aur ops ke liye wohi
+   * sab se ahem tabdeeli ho sakti hai.
+   */
+  async savePayoutAccount(
+    id: string,
+    account: PayoutAccount | null,
+    at: Date,
+  ): Promise<ResellerView> {
+    const row = await this.db.reseller.update({
+      where: { id },
+      data: payoutAccountColumns(account, at),
       select: RESELLER_SELECT,
     })
     return toView(row)

@@ -15,9 +15,11 @@ import type {
   PayoutRepository,
   PayoutStatus,
   PayoutView,
+  ResellerPayoutTarget,
   SupplierPayoutSummary,
 } from '@oyebazar/core'
 import { pkr, type Pkr } from '@oyebazar/shared'
+import { PAYOUT_ACCOUNT_SELECT, payoutAccountFrom } from '../payout-account'
 
 const PAYOUT_SELECT = {
   id: true,
@@ -98,6 +100,31 @@ export class PrismaPayoutRepository implements PayoutRepository {
       select: PAYOUT_SELECT,
     })
     return row ? toView(row) : null
+  }
+
+  /**
+   * Un resellers ke khate jin par IS dukan ka payout hai.
+   *
+   * 🔴 Chhanni `payouts: { some: { supplierId } }` par hai — yani rishta khud shart
+   * hai. Ye "pehle sab nikalo phir chhanti karo" se alag cheez hai: wahan ek din koi
+   * `where` bhool jata hai aur poore platform ke khate nikal aate hain, aur test bhi
+   * pass hota rehta hai kyunke jawab mein wo khata to hai hi jo chahiye tha.
+   *
+   * Halat ki koi shart NAHI (SETTLED bhi shamil): dukan wale ko purane bhejay hue
+   * paise ka khata bhi dikhna chahiye — jhagra aksar UNHIN par hota hai.
+   */
+  async payoutTargets(supplierId: string): Promise<readonly ResellerPayoutTarget[]> {
+    const rows = await this.db.reseller.findMany({
+      where: { payouts: { some: { supplierId } } },
+      select: { id: true, name: true, ...PAYOUT_ACCOUNT_SELECT },
+    })
+
+    return rows.map((row) => ({
+      resellerId: row.id,
+      name: row.name,
+      account: payoutAccountFrom(row),
+      accountUpdatedAt: row.payoutUpdatedAt,
+    }))
   }
 
   async findForReseller(resellerId: string, payoutId: string): Promise<PayoutView | null> {

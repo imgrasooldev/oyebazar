@@ -79,6 +79,31 @@ export default async function AdminResellersPage() {
                 <p dir="ltr" className="numeric mt-0.5 text-[0.82rem] text-ink-soft">
                   {reseller.whatsappPhone} · {reseller.city}
                 </p>
+
+                {/*
+                  Payout ka khata — POORA, aur ops ke liye lazmi.
+
+                  🔴 Jhagra hamesha yahin phansta hai: reseller kehti hai paise nahi
+                  mile, dukan kehta hai bhej diye. Dono ke saamne ek hi khata rakhe
+                  baghair ye baat kabhi tay nahi hoti — aur aaj tak wo khata kisi
+                  record mein tha hi nahi, sirf kisi purani WhatsApp chat mein.
+
+                  🔴 "No payout account" ka dikhna utna hi zaroori hai jitna khate ka.
+                  Wo qatarein wo behnein hain jin ka paisa atka rehne wala hai, aur
+                  ops unhen aaj bhi sirf tab dekhta hai jab wo khud shikayat kare.
+                */}
+                {reseller.payoutAccount ? (
+                  <p dir="ltr" className="numeric mt-1 text-[0.78rem] text-ink-faint">
+                    {reseller.payoutAccount.method}
+                    {reseller.payoutAccount.bankName && ` (${reseller.payoutAccount.bankName})`}{' '}
+                    <span className="font-bold text-ink">{reseller.payoutAccount.number}</span> ·{' '}
+                    {reseller.payoutAccount.title}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-[0.78rem] font-semibold text-amber-700">
+                    No payout account — her money has nowhere to go
+                  </p>
+                )}
               </div>
 
               <dl dir="ltr" className="numeric flex shrink-0 gap-5 text-[0.8rem]">

@@ -7,7 +7,12 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { pkr } from '@oyebazar/shared'
 import { PayoutService, DEFAULT_PAYOUT_TERM_DAYS, isOverdue } from './payout.service'
-import type { PayoutRepository, PayoutStatus, PayoutView } from '../ports/payout-repositories'
+import type {
+  PayoutRepository,
+  PayoutStatus,
+  PayoutView,
+  ResellerPayoutTarget,
+} from '../ports/payout-repositories'
 
 const NOW = new Date('2026-08-20T10:00:00Z')
 
@@ -35,6 +40,11 @@ function makeRow(overrides: Partial<PayoutView> = {}): PayoutView {
 class FakePayouts implements PayoutRepository {
   rows: PayoutView[] = [makeRow()]
   created: unknown[] = []
+  targets: ResellerPayoutTarget[] = []
+
+  async payoutTargets(supplierId: string) {
+    return this.targets.filter(() => Boolean(supplierId))
+  }
 
   term = DEFAULT_PAYOUT_TERM_DAYS
 

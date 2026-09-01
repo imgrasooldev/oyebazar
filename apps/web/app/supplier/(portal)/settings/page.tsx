@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { PayoutAccountCard } from '@/components/payout-account-card'
 import { SupplierDeliveryRates } from '@/components/supplier-delivery-rates'
 import { SupplierPaymentTerm } from '@/components/supplier-payment-term'
 import { requireSupplier } from '@/lib/api/supplier-session'
@@ -46,6 +47,41 @@ export default async function SupplierSettingsPage() {
           save: t('save'),
           saved: t('deliverySaved'),
           note: t('deliveryNote'),
+        }}
+      />
+
+      {/*
+        Dukan ka apna khata — wohi card jo reseller ke `/money` par hai.
+
+        🔴 Ek hi component dono taraf: form ke qawaid (wallet par bank ka naam mana,
+        method badalne par us ka khali hona) dono jagah bilkul wohi rehte hain. Sirf
+        lafz aur darwaza alag hain.
+      */}
+      <PayoutAccountCard
+        account={internal?.payoutAccount ?? null}
+        endpoint="/api/v1/supplier/payout-account"
+        labels={{
+          title: t('payoutAccountTitleSupplier'),
+          note: t('payoutAccountNoteSupplier'),
+          missing: t('payoutAccountMissingOwn'),
+          method: t('payoutAccountMethod'),
+          number: t('payoutAccountNumber'),
+          name: t('payoutAccountName'),
+          nameHint: t('payoutAccountNameHint'),
+          bank: t('payoutAccountBank'),
+          numberHintWallet: t('payoutAccountNumberHintWallet'),
+          numberHintBank: t('payoutAccountNumberHintBank'),
+          save: t('save'),
+          saving: t('saving'),
+          saved: t('payoutAccountSaved'),
+          change: t('payoutAccountChange'),
+          cancel: t('cancel'),
+          methodNames: {
+            JAZZCASH: t('payoutMethodJAZZCASH'),
+            EASYPAISA: t('payoutMethodEASYPAISA'),
+            RAAST: t('payoutMethodRAAST'),
+            BANK: t('payoutMethodBANK'),
+          },
         }}
       />
 

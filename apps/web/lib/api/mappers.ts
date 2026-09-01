@@ -177,7 +177,14 @@ export function toResellerProfileDTO(reseller: ResellerView): ResellerProfile {
     whatsappPhoneMasked: maskPhone(reseller.whatsappPhone),
     city: reseller.city,
     area: reseller.area,
-    payoutAccountMasked: maskAccount(reseller.payoutAccount),
+    /*
+     * 🔴 Yahan HAMESHA masked — chahe khata poora mojood ho.
+     *
+     * Poora number sirf teen jagah jata hai: khud reseller ka apna safha, wo dukan jis
+     * par is ka payout khara hai (`payoutTargets`), aur ops. Ye API un teenon mein se
+     * koi nahi — ye aam profile hai, aur yahan se number nikalne ka koi jaiz kaam nahi.
+     */
+    payoutAccountMasked: maskAccount(reseller.payoutAccount?.number ?? null),
     joinedAt: reseller.createdAt.toISOString(),
   })
 }

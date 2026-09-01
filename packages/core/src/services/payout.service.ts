@@ -19,7 +19,10 @@ import type {
   MoneyLedgerRepository,
   SupplierPaymentRecord,
 } from '../ports/money-ledger-repositories'
-import type { SupplierPayoutSummary } from '../ports/payout-repositories'
+import type {
+  ResellerPayoutTarget,
+  SupplierPayoutSummary,
+} from '../ports/payout-repositories'
 import type { Analytics, Clock, Logger, MessagingProvider } from '../ports/infrastructure'
 
 /**
@@ -183,6 +186,18 @@ export class PayoutService {
 
   listForSupplier(supplierId: string, status?: PayoutStatus): Promise<PayoutView[]> {
     return this.payouts.listForSupplier(supplierId, status)
+  }
+
+  /**
+   * "Paisa kahan bhejna hai" — un resellers ke khate jin par is dukan ka payout hai.
+   *
+   * 🔴 Ye method is poore feature ki wajah hai. Is se pehle dukan ke safhe par
+   * "صادیہ · Rs 750" likha aata tha aur khata KAHIN nahi — na app mein, na kisi
+   * paighaam mein. Har payout WhatsApp par "apna easypaisa number bhejo" se chalta
+   * tha, yani hamara sab se ahem waada app ke BAHAR poora hota tha.
+   */
+  payoutTargets(supplierId: string): Promise<readonly ResellerPayoutTarget[]> {
+    return this.payouts.payoutTargets(supplierId)
   }
 
   // --------------------------------------------------------------- reseller

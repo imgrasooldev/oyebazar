@@ -22,6 +22,7 @@ import type {
   OpsUserView,
 } from '@oyebazar/core'
 import { buildSearchText, pkr } from '@oyebazar/shared'
+import { PAYOUT_ACCOUNT_SELECT, payoutAccountFrom } from '../payout-account'
 
 const OPS_SELECT = {
   id: true,
@@ -200,6 +201,7 @@ export class PrismaAdminRepository implements AdminRepository {
         listedOnBazaar: true,
         feeRateBps: true,
         createdAt: true,
+        ...PAYOUT_ACCOUNT_SELECT,
         _count: { select: { products: true } },
       },
       // Pending pehle: yehi wo hain jin par kaam baqi hai
@@ -207,7 +209,26 @@ export class PrismaAdminRepository implements AdminRepository {
       take: filter.limit,
     })
 
-    return rows.map(({ _count, ...row }) => ({ ...row, productCount: _count.products }))
+    return rows.map(
+      ({
+        _count,
+        payoutMethod,
+        payoutAccount,
+        payoutTitle,
+        payoutBankName,
+        payoutUpdatedAt: _payoutUpdatedAt,
+        ...row
+      }) => ({
+        ...row,
+        payoutAccount: payoutAccountFrom({
+          payoutMethod,
+          payoutAccount,
+          payoutTitle,
+          payoutBankName,
+        }),
+        productCount: _count.products,
+      }),
+    )
   }
 
   async setSupplierStatus(
@@ -363,6 +384,7 @@ export class PrismaAdminRepository implements AdminRepository {
         referredById: true,
         lastActiveAt: true,
         createdAt: true,
+        ...PAYOUT_ACCOUNT_SELECT,
         _count: { select: { orders: true } },
       },
       orderBy: [{ createdAt: 'desc' }],
@@ -406,12 +428,28 @@ export class PrismaAdminRepository implements AdminRepository {
       for (const referrer of referrers) names.set(referrer.id, referrer.name)
     }
 
-    return rows.map(({ _count, referredById, ...row }) => ({
-      ...row,
-      referredByName: referredById ? (names.get(referredById) ?? null) : null,
-      invitedCount: invitedCounts.get(row.id) ?? 0,
-      orderCount: _count.orders,
-    }))
+    return rows.map(
+      ({
+        _count,
+        referredById,
+        payoutMethod,
+        payoutAccount,
+        payoutTitle,
+        payoutBankName,
+        ...row
+      }) => ({
+        ...row,
+        payoutAccount: payoutAccountFrom({
+          payoutMethod,
+          payoutAccount,
+          payoutTitle,
+          payoutBankName,
+        }),
+        referredByName: referredById ? (names.get(referredById) ?? null) : null,
+        invitedCount: invitedCounts.get(row.id) ?? 0,
+        orderCount: _count.orders,
+      }),
+    )
   }
 
   async setResellerStatus(

@@ -6,6 +6,7 @@ import { MoneyIcon, ShieldIcon } from '@/components/icons'
 import { isOverdue } from '@oyebazar/core'
 import { CounterpartyLedger } from '@/components/counterparty-ledger'
 import { SupplierPayoutSend } from '@/components/payout-actions'
+import { PayoutTarget } from '@/components/payout-target'
 import { PayoutTimeline } from '@/components/payout-timeline'
 import { requireSupplier } from '@/lib/api/supplier-session'
 import { container } from '@/lib/container'
@@ -30,11 +31,34 @@ export default async function SupplierPayoutsPage() {
   const [{ supplier }, locale] = await Promise.all([requireSupplier(), getLocale()])
   const t = translator(locale)
 
-  const [payouts, ledger, platformFee] = await Promise.all([
+  const [payouts, ledger, platformFee, targets] = await Promise.all([
     container.payouts.listForSupplier(supplier.id),
     container.payouts.ledgerByReseller(supplier.id),
     container.payouts.platformFeeForSupplier(supplier.id),
+    /*
+     * "Paisa kahan bhejna hai" — un resellers ke khate jin par IS dukan ka payout hai.
+     *
+     * 🔴 Ek query, poori fehrist ke liye. Har qatar par alag poochna N+1 hai aur is
+     * safhe par bees qatarein aam hain — yani theek us din bhaari hota jab dukan ke
+     * paas sab se ziyada paisa baqaya ho.
+     */
+    container.payouts.payoutTargets(supplier.id),
   ])
+  const targetById = new Map(targets.map((row) => [row.resellerId, row]))
+
+  const payoutAccountLabels = {
+    missing: t('payoutAccountMissingSupplier'),
+    name: t('payoutAccountName'),
+    copy: t('copyLabel'),
+    copied: t('copied'),
+    changed: t('payoutAccountUpdated'),
+    methodNames: {
+      JAZZCASH: t('payoutMethodJAZZCASH'),
+      EASYPAISA: t('payoutMethodEASYPAISA'),
+      RAAST: t('payoutMethodRAAST'),
+      BANK: t('payoutMethodBANK'),
+    },
+  }
   const now = new Date()
 
   const open = payouts.filter((payout) => payout.status !== 'SETTLED')
@@ -127,6 +151,25 @@ export default async function SupplierPayoutsPage() {
                   proof: t('payoutProofView'),
                 }}
               />
+              {/*
+                Khata — TID wale khaane se UPAR.
+
+                🔴 Sirf khuli qataron par: jo hisab band ho chuka us par khata dikhana
+                sirf shor hai, aur wo shor us ek qatar ko dabata hai jis par abhi kaam
+                karna hai.
+              */}
+              {(() => {
+                const target = targetById.get(payout.resellerId)
+                return target ? (
+                  <PayoutTarget
+                    name={target.name}
+                    account={target.account}
+                    updatedAt={target.accountUpdatedAt?.toISOString() ?? null}
+                    labels={payoutAccountLabels}
+                  />
+                ) : null
+              })()}
+
               <div className="mt-3">
                 {payout.status === 'SENT' ? (
                   <p className="text-[0.82rem] text-ink-soft">

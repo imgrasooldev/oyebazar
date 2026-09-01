@@ -6,6 +6,7 @@
  * ghalti se inhen inject na kar le. Container mein bhi ye sirf admin services ko
  * milte hain.
  */
+import type { PayoutAccount } from '../domain/payout-account'
 import type { Pkr } from '@oyebazar/shared'
 import type { OpsRole } from '../domain/ops-permissions'
 
@@ -70,6 +71,8 @@ export interface AdminSupplierRow {
   readonly status: 'PENDING' | 'VERIFIED' | 'SUSPENDED'
   readonly listedOnBazaar: boolean
   readonly feeRateBps: number
+  /** Dukan ka apna khata — wapsi/adjustment aur fee ke bill ke liye */
+  readonly payoutAccount: PayoutAccount | null
   readonly productCount: number
   readonly createdAt: Date
 }
@@ -104,6 +107,16 @@ export interface AdminResellerRow {
    * Yahan naam jata hai, `referredById` nahi: ops ko wo jorna nahi chahiye jo hum jor
    * kar de sakte hain.
    */
+  /**
+   * Wo khata jis mein is ka munafa jata hai — ops ke liye POORA.
+   *
+   * 🔴 Ops ko ye is liye chahiye ke jhagra hamesha yahin phansta hai: reseller kehti
+   * hai paise nahi mile, dukan kehta hai bhej diye. Dono ke saamne ek hi khata rakhe
+   * baghair ye baat kabhi tay nahi hoti — aur aaj tak wo khata kisi record mein tha
+   * hi nahi, sirf kisi purani WhatsApp chat mein.
+   */
+  readonly payoutAccount: PayoutAccount | null
+  readonly payoutUpdatedAt: Date | null
   readonly referredByName: string | null
   /**
    * Is ne kitni behnon ko bulaya.

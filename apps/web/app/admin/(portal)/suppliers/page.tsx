@@ -78,6 +78,16 @@ function SupplierTable({
                 {supplier.phone} · {supplier.productCount} products ·{' '}
                 {(supplier.feeRateBps / 100).toFixed(1)}% fee
               </p>
+
+              {/* Dukan ka apna khata — wapsi/adjustment aur fee ke bill ke liye */}
+              {supplier.payoutAccount && (
+                <p dir="ltr" className="numeric mt-1 text-[0.78rem] text-ink-faint">
+                  {supplier.payoutAccount.method}
+                  {supplier.payoutAccount.bankName && ` (${supplier.payoutAccount.bankName})`}{' '}
+                  <span className="font-bold text-ink">{supplier.payoutAccount.number}</span> ·{' '}
+                  {supplier.payoutAccount.title}
+                </p>
+              )}
             </div>
 
             <div className="flex flex-wrap items-center gap-2">

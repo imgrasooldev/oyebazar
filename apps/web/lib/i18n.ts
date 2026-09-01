@@ -1128,6 +1128,58 @@ const DICTIONARY = {
     en: 'This money is with the wholesaler, not with us. Confirm when it arrives so the account closes.',
     rm: 'Ye raqam wholesaler ke paas hai, hamare paas nahi. Milne par tasdeeq karen taake hisab band ho.',
   },
+  // ---- payout ka khata: "paisa kahan bhejein"
+  //
+  // 🔴 Ye lafz dono taraf chalte hain — reseller apna khata bharti hai, dukan wala
+  // wohi khata parhta hai. Alag alag likhne ka anjaam ye hota ke ek taraf "اکاؤنٹ" aur
+  // doosri taraf "کھاتہ" chhapta, aur jhagre mein dono ye samajhte ke baat kisi aur
+  // cheez ki ho rahi hai.
+  payoutAccountTitle: { ur: 'پیسہ کہاں بھیجیں', en: 'Where to send my money', rm: 'Paisa kahan bhejein' },
+  payoutAccountNote: {
+    ur: 'ہول سیلر آپ کا منافع اسی اکاؤنٹ میں بھیجے گا۔ نہ لکھا ہو تو اُسے پتہ ہی نہیں چلتا کہ کہاں بھیجنا ہے۔',
+    en: 'The wholesaler sends your profit to this account. Without it, they have no idea where to send it.',
+    rm: 'Wholesaler aap ka munafa isi account mein bhejega. Na likha ho to usay pata hi nahi chalta ke kahan bhejna hai.',
+  },
+  payoutAccountMissing: {
+    ur: 'اکاؤنٹ ابھی نہیں لکھا — لکھ دیں، ورنہ پیسہ اٹکا رہے گا',
+    en: 'No account yet — add one, or your money stays stuck',
+    rm: 'Account abhi nahi likha — likh den, warna paisa atka rahega',
+  },
+  payoutAccountMissingSupplier: {
+    ur: 'اس ری سیلر نے ابھی اکاؤنٹ نہیں لکھا۔ اِس سے پوچھ لیں — اندازے سے نہ بھیجیں۔',
+    en: 'This reseller has not added an account yet. Ask her — do not guess.',
+    rm: 'Is reseller ne abhi account nahi likha. Us se pooch len — andaze se na bhejen.',
+  },
+  payoutAccountMethod: { ur: 'کس میں', en: 'Method', rm: 'Kis mein' },
+  payoutAccountNumber: { ur: 'نمبر', en: 'Number', rm: 'Number' },
+  payoutAccountName: { ur: 'اکاؤنٹ کا نام', en: 'Account title', rm: 'Account ka naam' },
+  payoutAccountNameHint: {
+    ur: 'وہی نام جو بھیجنے سے پہلے ایپ میں آتا ہے — ہول سیلر یہی ملاتا ہے۔',
+    en: 'The name the app shows before sending — the wholesaler matches this.',
+    rm: 'Wohi naam jo bhejne se pehle app mein aata hai — wholesaler yehi milata hai.',
+  },
+  payoutAccountBank: { ur: 'بینک کا نام', en: 'Bank name', rm: 'Bank ka naam' },
+  payoutAccountNumberHintWallet: { ur: 'موبائل نمبر — مثلاً 03001234567', en: 'Mobile number — e.g. 03001234567', rm: 'Mobile number — misal 03001234567' },
+  payoutAccountNumberHintBank: { ur: 'IBAN یا اکاؤنٹ نمبر', en: 'IBAN or account number', rm: 'IBAN ya account number' },
+  payoutAccountSaved: { ur: 'محفوظ ہو گیا', en: 'Saved', rm: 'Mehfooz ho gaya' },
+  payoutAccountChange: { ur: 'بدلیں', en: 'Change', rm: 'Badlein' },
+  payoutAccountUpdated: { ur: 'اکاؤنٹ بدلا', en: 'Account changed', rm: 'Account badla' },
+  payoutMethodJAZZCASH: { ur: 'جاز کیش', en: 'JazzCash', rm: 'JazzCash' },
+  payoutMethodEASYPAISA: { ur: 'ایزی پیسہ', en: 'EasyPaisa', rm: 'EasyPaisa' },
+  payoutMethodRAAST: { ur: 'راست', en: 'Raast', rm: 'Raast' },
+  payoutMethodBANK: { ur: 'بینک', en: 'Bank', rm: 'Bank' },
+  payoutAccountTitleSupplier: { ur: 'دکان کا اپنا اکاؤنٹ', en: 'Your shop’s own account', rm: 'Dukan ka apna account' },
+  payoutAccountNoteSupplier: {
+    ur: 'کیش آن ڈیلیوری آپ خود وصول کرتے ہیں، اِس لیے ہم آپ کو کچھ نہیں بھیجتے۔ یہ اکاؤنٹ دو کاموں کا ہے: واپسی یا ایڈجسٹمنٹ میں پیسہ کہاں جائے، اور فیس کا بل کس اکاؤنٹ سے آیا۔',
+    en: 'You collect the COD yourself, so we send you nothing. This account is for two things: where refunds and adjustments go, and which account the fee invoice was paid from.',
+    rm: 'COD aap khud wusool karte hain, is liye hum aap ko kuch nahi bhejte. Ye account do kaamon ka hai: wapsi/adjustment mein paisa kahan jaye, aur fee ka bill kis account se aaya.',
+  },
+  payoutAccountMissingOwn: {
+    ur: 'اکاؤنٹ ابھی نہیں لکھا',
+    en: 'No account yet',
+    rm: 'Account abhi nahi likha',
+  },
+  copyLabel: { ur: 'کاپی', en: 'Copy', rm: 'Copy' },
   saving: { ur: 'ہو رہا ہے…', en: 'Saving…', rm: 'Ho raha hai…' },
   cancel: { ur: 'رہنے دیں', en: 'Cancel', rm: 'Rehne den' },
   // ---- money ka safha (dono taraf)
@@ -1274,6 +1326,13 @@ const DICTIONARY = {
     en: 'Which courier?',
     rm: 'Kis courier ke haath?',
   },
+  /*
+   * 🔴 Courier ke naam BRAND hain — un ka tarjuma nahi hota. Magar aakhri do naam
+   * brand nahi, WAZAHAT hain ("koi aur", "apna banda"), aur wo Urdu ki patti par bhi
+   * Roman mein chhap rahe the — theek us safhe par jahan baqi har lafz Urdu mein hai.
+   */
+  courierOther: { ur: 'کوئی اور کورئیر', en: 'Another courier', rm: 'Koi aur courier' },
+  courierOwn: { ur: 'اپنا رائیڈر', en: 'Own rider', rm: 'Apna rider' },
   cnAsk: { ur: 'CN نمبر', en: 'CN number', rm: 'CN number' },
   cnHint: {
     ur: 'وہی نمبر جو کورئیر کی رسید پر ہے۔ ریسیلر یہی نمبر اپنی گاہک کو بھیجے گی۔',

@@ -222,8 +222,11 @@ const SUPPLIERS: SupplierInternalRepository = {
       // Delivery ke rate dukan ke apne — order in dono ke bahar koi qadar nahi leta
       deliveryFeeCity: 200,
       deliveryFeeOther: 350,
+      payoutAccount: null,
+      payoutUpdatedAt: null,
     }
   },
+  async savePayoutAccount() {},
 }
 
 /** Reseller lookup — accept/reject par usay WhatsApp jata hai. */
@@ -238,6 +241,7 @@ const RESELLERS = {
       status: 'ACTIVE' as const,
       referredById: null,
       payoutAccount: null,
+      payoutUpdatedAt: null,
       packDefaults: DEFAULT_PACK_OPTIONS,
       packTemplateKey: null,
       createdAt: NOW,
@@ -257,6 +261,9 @@ const RESELLERS = {
   },
   async touchLastActive() {},
   async savePackDefaults() {
+    throw new Error('not used')
+  },
+  async savePayoutAccount() {
     throw new Error('not used')
   },
 }

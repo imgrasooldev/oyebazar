@@ -9,6 +9,7 @@
  *  · kal Prisma badla ya read-replica/caching layer aayi to core ko haath nahi lagta
  *  · junior ko methods ke naam se pata chalta hai ke kaunsa data kis surface ke liye hai
  */
+import type { PayoutAccount } from '../domain/payout-account'
 import type { SupplierRating } from '../services/supplier-rating'
 import type { Page, PackFormatKey, PackOptions, Pkr, TemplateSpec } from '@oyebazar/shared'
 import type {
@@ -251,6 +252,19 @@ export interface ResellerRepository {
    * hai; tasveer par chhapne wala naam alag khaana hai. Dono ko mila dena us reseller ka
    * login tor deta jo apna zaati number chhupa kar karobar ka number chhapwana chahti hai.
    */
+  /**
+   * Khata mehfooz karta hai — reseller ka apna "paisa yahan bhejein".
+   *
+   * 🔴 `null` dena khata MITA deta hai, aur ye jaan boojh kar mumkin hai: number
+   * badalne se pehle purana hata dena us reseller ka haq hai jis ka wallet band ho
+   * gaya. Us soorat mein dukan ko "khata abhi nahi diya" dikhta hai — jo khamoshi se
+   * purane, mare hue number par paisa bhej dene se behtar hai.
+   *
+   * Waqt sath aata hai (`at`), ghari repository ke andar nahi: kab badla, ye ops ka
+   * sawal hai aur us ka jawab usi ghari se aana chahiye jo baqi poore nizam ki hai.
+   */
+  savePayoutAccount(id: string, account: PayoutAccount | null, at: Date): Promise<ResellerView>
+
   savePackDefaults(
     id: string,
     options: PackOptions,

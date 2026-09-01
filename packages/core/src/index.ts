@@ -11,6 +11,7 @@ export * from './domain/batch'
 export * from './domain/ops-flags'
 export * from './domain/bonus'
 export * from './domain/pitch'
+export * from './domain/payout-account'
 
 // Ports (repository + infrastructure interfaces)
 export * from './ports'

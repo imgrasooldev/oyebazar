@@ -30,8 +30,8 @@ function reseller(overrides: Partial<ResellerView> = {}): ResellerView {
     city: 'راولپنڈی',
     area: null,
     status: 'ACTIVE',
-    payoutMethod: null,
     payoutAccount: null,
+    payoutUpdatedAt: null,
     createdAt: NOW,
     ...overrides,
   } as ResellerView

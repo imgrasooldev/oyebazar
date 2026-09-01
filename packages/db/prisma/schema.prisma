@@ -33,7 +33,22 @@ model Supplier {
   marketName       String? // "Bolton Market"
   bioUr            String?
   logoUrl          String?
-  bankAccount      String?
+  /**
+   * Dukan ka apna khata — paisa WAHAN se nahi aata, magar ops ko chahiye.
+   *
+   * COD mein dukan wusool karta hai, is liye hum us ko kuch nahi bhejte. Ye khaana do
+   * kaamon ka hai: wapsi/adjustment ke waqt paisa kahan jaye, aur fee ka bill kis khate
+   * se aaya — dono baar aaj tak ye WhatsApp par poocha jata tha.
+   *
+   * 🔴 Purana `bankAccount` khaana yahan se HATA diya gaya. Wo kabhi likha nahi gaya
+   * (poore repo mein us ka ek bhi write nahi tha) aur zinda dikhta tha — CLAUDE.md §5
+   * wali theek wohi soorat.
+   */
+  payoutMethod     PayoutMethod?
+  payoutAccount    String?
+  payoutTitle      String?
+  payoutBankName   String?
+  payoutUpdatedAt  DateTime?
   // 🔴 Bazaar par sirf listed + VERIFIED suppliers dikhte hain
   listedOnBazaar   Boolean        @default(false)
   /**
@@ -497,7 +512,25 @@ model Reseller {
   city          String
   area          String?
   payoutMethod  PayoutMethod?
-  payoutAccount String? // UI par hamesha masked
+  /**
+   * Khata number — wallet par `03001234567`, bank par IBAN/khata number.
+   *
+   * 🔴 Ye khaana MAHINON mara hua para tha: parha jata tha (`maskAccount`) magar
+   * likhne ka koi rasta kahin nahi tha. Us ka anjaam wholesaler ke safhe par tha —
+   * "Rs 750 صادیہ ko" likha aata tha aur "kahan bhejna hai" kabhi nahi.
+   *
+   * 🔴 Masking ka qaida ab JAGAH se chalta hai, khaane se nahi: khud reseller, wo
+   * dukan jis ka is par khula payout hai, aur ops — teenon POORA number dekhte hain,
+   * warna paisa bhejna mumkin hi nahi. Baqi har jagah (`/api/v1/me`, koi bhi public
+   * safha) masked.
+   */
+  payoutAccount String?
+  /// Khate ka naam — wallet bhejne se pehle yehi dikhata hai, dukan wala isi se milata hai
+  payoutTitle   String?
+  /// Sirf `BANK` par
+  payoutBankName String?
+  /// Kab badla — ops ke liye. Payout banne ke BAAD badla hua khata dekhne layak hai.
+  payoutUpdatedAt DateTime?
   status        ResellerStatus @default(ACTIVE)
   codEnabled    Boolean        @default(true)
   /**
@@ -557,6 +590,10 @@ enum ResellerStatus {
 enum PayoutMethod {
   JAZZCASH
   EASYPAISA
+  /// SBP ka apna nizam — number wallet hi jaisa (mobile) hota hai
+  RAAST
+  /// IBAN ya sada khata number — is ke saath `payoutBankName` LAZMI hai
+  BANK
 }
 
 /**

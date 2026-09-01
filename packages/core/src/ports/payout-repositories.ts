@@ -5,6 +5,7 @@
  * Ye port isi haqiqat par bana hai: har row ke do alag khaane hain — ek wholesaler ka
  * dawa, ek reseller ki tasdeeq — aur hisab tabhi band hota hai jab dono milen.
  */
+import type { PayoutAccount } from '../domain/payout-account'
 import type { Pkr } from '@oyebazar/shared'
 
 export type PayoutStatus = 'PENDING' | 'SENT' | 'SETTLED' | 'DISPUTED'
@@ -27,6 +28,30 @@ export interface PayoutView {
   readonly disputedAt: Date | null
   readonly disputeNote: string | null
   readonly createdAt: Date
+}
+
+/**
+ * Jis reseller ko paisa bhejna hai — naam aur khata, ek jagah.
+ *
+ * 🔴 Ye poora khata hai, masked nahi. Masked number se paisa bhejna mumkin nahi, aur
+ * yehi is safhe ka wahid maqsad hai. Hifazat masking se nahi, QUERY se aati hai
+ * (`payoutTargets`): dukan wo khata dekhti hai jis par us ka apna payout khara hai,
+ * aur koi doosra nahi.
+ */
+export interface ResellerPayoutTarget {
+  readonly resellerId: string
+  readonly name: string
+  /** `null` = reseller ne abhi khata diya hi nahi — aur ye dukan ko SAAF dikhna chahiye */
+  readonly account: PayoutAccount | null
+  /**
+   * Khata kab badla.
+   *
+   * 🔴 Ye dukan ko bhi dikhta hai aur jaan boojh kar: jis khate mein pichhle mahine
+   * paisa gaya tha wo agar KAL badla hai, to dukan wale ko ye jaanna chahiye — chahe
+   * wajah jaiz hi kyun na ho. Jhagra "maine to bhej diya tha" par hota hai, aur us ka
+   * jawab yehi tareekh hoti hai.
+   */
+  readonly accountUpdatedAt: Date | null
 }
 
 /** Admin ki screen — kis dukan ne kitna rok rakha hai aur kitne din se. */
@@ -65,6 +90,16 @@ export interface PayoutRepository {
    * 🔴 supplierId/resellerId shart mein hai, sirf id kaafi nahi — warna kisi doosre
    * ka payout us ki id jaan kar band kiya ja sakta hai.
    */
+  /**
+   * Un resellers ke khate jin par IS dukan ka koi payout hai.
+   *
+   * 🔴 `supplierId` shart mein hai aur wohi is method ki poori hifazat hai. Reseller
+   * ka khata us ka apna maal hai; dukan usay is liye dekhti hai ke us par paisa bhejna
+   * hai — aur bas usi hadd tak. Koi "sab resellers ke khate" wali query nahi hai, aur
+   * na honi chahiye.
+   */
+  payoutTargets(supplierId: string): Promise<readonly ResellerPayoutTarget[]>
+
   findForSupplier(supplierId: string, payoutId: string): Promise<PayoutView | null>
   findForReseller(resellerId: string, payoutId: string): Promise<PayoutView | null>
 

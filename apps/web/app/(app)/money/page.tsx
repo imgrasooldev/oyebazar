@@ -5,6 +5,7 @@ import { CounterpartyLedger } from '@/components/counterparty-ledger'
 import { StatTile, Widget } from '@/components/dash-kit'
 import { MoneyIcon, CheckBadgeIcon } from '@/components/icons'
 import { ResellerPayoutReply } from '@/components/payout-actions'
+import { PayoutAccountCard } from '@/components/payout-account-card'
 import { PayoutTimeline } from '@/components/payout-timeline'
 import { requireReseller } from '@/lib/api/session'
 import { container } from '@/lib/container'
@@ -85,6 +86,42 @@ export default async function ResellerMoneyPage() {
             : {})}
         />
       </section>
+
+      {/*
+        Khata — do khanon ke THEEK NEECHE, aur ye tarteeb jaan boojh kar hai.
+
+        🔴 "آنا باقی Rs 750" parhne ke foran baad agla sawal yehi hota hai: aayega
+        kahan? Aur jab tak khata khali hai, us number ka koi matlab hi nahi — dukan wale
+        ke paas bhejne ki jagah hi nahi. Is liye ye fehrist se UPAR hai: fehrist batati
+        hai ke kya atka hai, ye batata hai ke kyun.
+      */}
+      <PayoutAccountCard
+        account={reseller.payoutAccount}
+        endpoint="/api/v1/me/payout-account"
+        labels={{
+          title: t('payoutAccountTitle'),
+          note: t('payoutAccountNote'),
+          missing: t('payoutAccountMissing'),
+          method: t('payoutAccountMethod'),
+          number: t('payoutAccountNumber'),
+          name: t('payoutAccountName'),
+          nameHint: t('payoutAccountNameHint'),
+          bank: t('payoutAccountBank'),
+          numberHintWallet: t('payoutAccountNumberHintWallet'),
+          numberHintBank: t('payoutAccountNumberHintBank'),
+          save: t('save'),
+          saving: t('saving'),
+          saved: t('payoutAccountSaved'),
+          change: t('payoutAccountChange'),
+          cancel: t('cancel'),
+          methodNames: {
+            JAZZCASH: t('payoutMethodJAZZCASH'),
+            EASYPAISA: t('payoutMethodEASYPAISA'),
+            RAAST: t('payoutMethodRAAST'),
+            BANK: t('payoutMethodBANK'),
+          },
+        }}
+      />
 
       {/* Pehle wo jis par ISI waqt kuch karna hai, phir poora naqsha */}
       {open.length > 0 && (

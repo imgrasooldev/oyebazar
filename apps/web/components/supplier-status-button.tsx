@@ -63,6 +63,8 @@ export function SupplierStatusButton({
     confirm: string
     back: string
     courierAsk: string
+    courierOther: string
+    courierOwn: string
     cnAsk: string
     cnHint: string
     /** "Kuch wapas aaya?" — sirf DELIVERED par */
@@ -189,7 +191,12 @@ export function SupplierStatusButton({
                   : 'tap rounded-pill bg-paper-raised px-3 py-1.5 text-[0.8rem] font-semibold text-ink-soft ring-1 ring-line'
               }
             >
-              {option.name}
+              {/* Brand ka naam jyun ka tyun; wazahat wale do naam zaban ke hisab se */}
+              {option.slug === 'other'
+                ? labels.courierOther
+                : option.slug === SELF_COURIER
+                  ? labels.courierOwn
+                  : option.name}
             </button>
           ))}
         </span>

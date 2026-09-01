@@ -6,6 +6,7 @@
  */
 import type { Prisma, PrismaClient } from '@prisma/client'
 import type {
+  PayoutAccount,
   PublicSupplierView,
   SupplierAccountRepository,
   SupplierAccountView,
@@ -16,6 +17,11 @@ import type {
 } from '@oyebazar/core'
 import { toPage, type Page } from '@oyebazar/shared'
 import { PUBLIC_SUPPLIER_SELECT } from '../selectors'
+import {
+  PAYOUT_ACCOUNT_SELECT,
+  payoutAccountColumns,
+  payoutAccountFrom,
+} from '../payout-account'
 import { categoryFilter } from './product.repository'
 
 /**
@@ -101,7 +107,7 @@ export class PrismaSupplierRepository
    * Kisi reseller-facing endpoint se ye kabhi na chale.
    */
   async findInternal(supplierId: string) {
-    return this.db.supplier.findUnique({
+    const row = await this.db.supplier.findUnique({
       where: { id: supplierId },
       select: {
         id: true,
@@ -111,7 +117,31 @@ export class PrismaSupplierRepository
         status: true,
         deliveryFeeCity: true,
         deliveryFeeOther: true,
+        ...PAYOUT_ACCOUNT_SELECT,
       },
+    })
+    if (!row) return null
+
+    const { payoutMethod, payoutAccount, payoutTitle, payoutBankName, ...rest } = row
+    return {
+      ...rest,
+      payoutAccount: payoutAccountFrom({
+        payoutMethod,
+        payoutAccount,
+        payoutTitle,
+        payoutBankName,
+      }),
+    }
+  }
+
+  async savePayoutAccount(
+    supplierId: string,
+    account: PayoutAccount | null,
+    at: Date,
+  ): Promise<void> {
+    await this.db.supplier.update({
+      where: { id: supplierId },
+      data: payoutAccountColumns(account, at),
     })
   }
 

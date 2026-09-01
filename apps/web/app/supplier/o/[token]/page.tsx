@@ -72,6 +72,8 @@ export default async function SupplierOrderPage({
     confirm: t('confirmAction'),
     back: t('backOut'),
     courierAsk: t('courierAsk'),
+    courierOther: t('courierOther'),
+    courierOwn: t('courierOwn'),
     cnAsk: t('cnAsk'),
     cnHint: t('cnHint'),
     /*
