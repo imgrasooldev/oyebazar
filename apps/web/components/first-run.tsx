@@ -19,8 +19,18 @@ import { SparkIcon } from '@/components/icons'
  * Isi liye wo qadam yahan likha hua hai, farz nahi kiya gaya.
  */
 export function FirstRun({
+  readyPacks,
   labels,
 }: {
+  /**
+   * Kitne pack us ke liye PEHLE SE ban chuke hain (raat ka job).
+   *
+   * 🔴 Ye ginti card ki sab se mazboot line banati hai, aur wo baat pehle kahin nahi
+   * kahi ja rahi thi: safha usay teen qadam batata tha jabke un mein se do qadam nizam
+   * pehle hi us ke liye kar chuka tha. "Karna paregaa" aur "ho chuka hai" mein pehle
+   * din ka poora farq hai.
+   */
+  readyPacks: number
   labels: {
     title: string
     body: string
@@ -29,6 +39,8 @@ export function FirstRun({
     step3: string
     step3Why: string
     cta: string
+    /** `{n}` us ginti se badla jata hai */
+    ready: string
   }
 }) {
   const steps = [labels.step1, labels.step2, labels.step3]
@@ -45,6 +57,12 @@ export function FirstRun({
         <div className="min-w-0">
           <h2 className="text-[1.05rem] font-bold leading-tight">{labels.title}</h2>
           <p className="mt-1 text-[0.85rem] text-white/70">{labels.body}</p>
+          {/* Sirf tab jab waqai koi pack tayyar ho — warna ye jumla jhoot hai */}
+          {readyPacks > 0 && (
+            <p className="mt-2 text-[0.85rem] font-semibold text-brand-300">
+              {labels.ready.replace('{n}', String(readyPacks))}
+            </p>
+          )}
         </div>
       </div>
 

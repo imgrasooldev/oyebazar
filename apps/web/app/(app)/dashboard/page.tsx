@@ -10,7 +10,7 @@ import { toResellerOrderDTO } from '@/lib/api/mappers'
 import { requireReseller } from '@/lib/api/session'
 import { InviteCard } from '@/components/invite-card'
 import { container } from '@/lib/container'
-import { reviewPeriod } from '@oyebazar/core'
+import { isBrandNewReseller, reviewPeriod } from '@oyebazar/core'
 import { SupplierReviewForm } from '@/components/supplier-review-form'
 import { orderStatusLabel, pickTitle, translator, type Locale } from '@/lib/i18n'
 import { getLocale } from '@/lib/i18n-server'
@@ -116,14 +116,24 @@ export default async function ResellerDashboard() {
   const orders = ordersPage.items.map(toResellerOrderDTO)
 
   /*
-   * Bilkul nayi reseller — abhi tak ek bhi pack nahi banaya aur ek bhi order nahi.
+   * Bilkul nayi reseller — abhi tak ek bhi qadam nahi uthaya.
    *
    * 🔴 Aise mein ginti wale chaar card (`Rs 0`, `0`, `0`, `0`) dikhana nuqsan deta
    * hai: wo kuch batate nahi, aur pehle din ka pehla tassur ye chhorte hain ke "yahan
    * kuch hai hi nahi". Un ki jagah wo EK cheez honi chahiye jo usay karni hai.
+   *
+   * 🔴 Shart `domain/first-run.ts` mein hai, yahan nahi — aur us ki wajah asli hai.
+   * Pehle wo yahin likhi thi aur `packsMade === 0` par khari thi, yani us ginti par jo
+   * RAAT KA JOB bharta hai. Pehli raat ke baad har reseller ke paas 40 pack ho jate
+   * the, is liye ye shart hamesha `false` rehti thi aur neeche wala card KISI KO kabhi
+   * nazar nahi aaya. Ab wo faisla test ke neeche hai.
    */
-  const bilkulNayi = stats.packsMade === 0 && stats.ordersRunning === 0 &&
-    stats.ordersDelivered === 0 && orders.length === 0
+  const bilkulNayi = isBrandNewReseller({
+    packsDownloaded: stats.packsDownloaded,
+    ordersRunning: stats.ordersRunning,
+    ordersDelivered: stats.ordersDelivered,
+    ordersAny: orders.length,
+  })
 
   /*
    * Kamai ki chaal — do hafte.
@@ -279,6 +289,13 @@ export default async function ResellerDashboard() {
       */}
       {bilkulNayi && (
         <FirstRun
+          /*
+           * Us ke pack PEHLE SE tayyar hain (raat ka job bana chuka hai) — aur ye
+           * batana card ki sab se mazboot line hai. "Teen qadam karne hain" us bande
+           * se kaam maangta hai jis ne abhi tak kuch dekha bhi nahi; "aap ke 40 pack
+           * tayyar hain" us ke saamne kaam pehle se HUA rakh deta hai.
+           */
+          readyPacks={stats.packsMade}
           labels={{
             title: t('firstRunTitle'),
             body: t('firstRunBody'),
@@ -287,6 +304,7 @@ export default async function ResellerDashboard() {
             step3: t('firstRunStep3'),
             step3Why: t('firstRunStep3Why'),
             cta: t('firstRunCta'),
+            ready: t('firstRunReady'),
           }}
         />
       )}

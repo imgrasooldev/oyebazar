@@ -15,6 +15,7 @@ export * from './domain/payout-account'
 export * from './domain/pk-month'
 export * from './domain/seo-text'
 export * from './domain/seo-input'
+export * from './domain/first-run'
 
 // Ports (repository + infrastructure interfaces)
 export * from './ports'

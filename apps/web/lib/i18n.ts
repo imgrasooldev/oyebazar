@@ -1571,6 +1571,11 @@ const DICTIONARY = {
     en: 'This is the step that brings orders — making the pack is not enough',
     rm: 'Yehi wo qadam hai jis se order aata hai — pack bana lena kaafi nahi',
   },
+  firstRunReady: {
+    ur: 'اور اچھی خبر: آپ کے {n} پیک پہلے سے تیار ہیں — کوئی ایک لیں اور لگا دیں۔',
+    en: 'Good news: {n} packs are already made for you — take one and post it.',
+    rm: 'Achhi khabar: aap ke {n} pack pehle se tayyar hain — koi ek len aur laga den.',
+  },
   firstRunCta: {
     ur: 'کیٹلاگ کھولیں',
     en: 'Open the catalogue',
