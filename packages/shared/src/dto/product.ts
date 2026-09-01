@@ -70,6 +70,21 @@ export const PublicProductDTO = z
     supplierCity: z.string(),
     /** kab list hua — "2 din pehle" */
     listedAt: z.coerce.date(),
+    /*
+     * Dukandar ka apna SEO matn — `null` ho to safha khud apna unwan bana leta hai.
+     *
+     * 🔴 Ye khaane yahan is liye hain ke `toPublicProductDTO` POORA view parse karta
+     * hai, aur `.strict()` ne inhen theek se pakar liya — production par is safhe ka
+     * poora body 500 de raha tha ("Unrecognized key(s) in object"). Wo ghalti meri
+     * thi, magar chhanni ne wohi kaam kiya jis ke liye wo lagi hai: view mein naya
+     * khaana daalne par yahan SOCHNA parta hai ke wo public hai ya nahi.
+     *
+     * Aur is ka jawab yahan "haan" hai, bila jhijhak: ye wohi matn hai jo Google ke
+     * natije mein chhapta hai. Us mein raaz hai hi nahi. (Rate ka qaida is se alag hai
+     * aur apni jagah qaim — is file ke sar par likha hai.)
+     */
+    seoTitle: z.string().nullable(),
+    seoDescription: z.string().nullable(),
   })
   .strict()
 
