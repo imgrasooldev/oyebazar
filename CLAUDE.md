@@ -189,8 +189,16 @@ lage aur us par ek asli maal na chala liya jaye. Model ka jawab kaisa aata hai, 
 
 ## 🔴 7 · Ek khula hua khatra
 
-`STATIC_OTP=112233` production par laga hua hai — yani har OTP wohi hai. API ab wo code
+`STATIC_OTP` production par laga hua hai — yani har OTP wohi ek code hai. API ab wo code
 **wapas nahi** deti (29 Aug), magar andaza lagaya ja sakta hai.
+
+🔴 **Us ki qadar yahan JAAN BOOJH KAR nahi likhi, aur na kahin aur likhni hai.** Ye repo
+**PUBLIC** hai (`github.com/imgrasooldev/oyebazar` bina login khulta hai). Pehle wo qadar
+yahin likhi hui thi — yani duniya mein koi bhi shakhs ye file parh kar, `docs/ACCESS.md`
+ki number wali fehrist ke saath mila kar, production par kisi bhi dukan ya reseller ke
+tor par andar aa sakta tha: asli customer ke naam, number, ghar ke pate aur poore order
+tak. Chahiye to `flyctl secrets list -a oyebazar-web` se naam dekhen; qadar team ke paas
+hai.
 
 Hal do qadam hai, **isi tarteeb mein**:
 
@@ -199,6 +207,19 @@ Hal do qadam hai, **isi tarteeb mein**:
 
 Ulta karna khud ko bahar kar dena hai — provider ke baghair kisi ko koi code nahi milega,
 team ko bhi nahi.
+
+Jab tak wo nahi ho sakta, do qadam jo ABHI uthaye ja sakte hain — dono malik ke haath
+mein hain, code ka is mein koi kaam nahi:
+
+1. Repo ko **private** karna (GitHub → Settings → Danger Zone). Sab se tez rok.
+2. `STATIC_OTP` ki qadar **badalna** — purani qadar git ki history mein reh gayi hai aur
+   wahan se kabhi nahi nikalti, is liye sirf file se hatana kaafi nahi:
+
+   ```bash
+   flyctl secrets set STATIC_OTP=<nayi chhe hindse> -a oyebazar-web
+   ```
+
+Poori tafseel `docs/ACCESS.md` §1.7 mein.
 
 Aur ek nateeja jo isi se nikalta hai: **ops ka login production mein khulta hi nahi.**
 Ops jaan boojh kar `STATIC_OTP` se BAHAR hai (`container.ts` — "Ops is se bahar hai"),

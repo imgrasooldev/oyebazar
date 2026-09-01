@@ -42,7 +42,7 @@ nahi badalta.
 
 ### Beech ka rasta: muqarrar (static) OTP
 
-`STATIC_OTP="112233"` lagane par **reseller aur dukan** us ek code se andar aa sakte hain
+`STATIC_OTP="<chhe hindse>"` lagane par **reseller aur dukan** us ek code se andar aa sakte hain
 — WhatsApp ke baghair bhi. Soft launch mein maal daalne aur chala kar dekhne ke liye ye
 kaafi hai.
 

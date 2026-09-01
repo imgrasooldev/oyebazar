@@ -113,12 +113,18 @@ describe('🔴 muqarrar (static) OTP ki hadden', () => {
   })
 
   it('laga ho to wohi code milta hai jo env mein hai', async () => {
-    vi.stubEnv('STATIC_OTP', '112233')
+    /*
+     * 🔴 Ye qadar FARZI hai aur farzi rehni chahiye. Pehle yahan production ka asli
+     * `STATIC_OTP` likha hua tha — aur ye repo public hai, yani test khud us secret ko
+     * chhaap raha tha. Test ko sirf ye dekhna hai ke qadar production mein LEAK nahi
+     * hoti; wo kaam kisi bhi chhe hindson se ho jata hai.
+     */
+    vi.stubEnv('STATIC_OTP', '424242')
     vi.resetModules()
 
     try {
       const { staticOtpHint } = await import('../../lib/api/static-otp-hint')
-      expect(staticOtpHint()).toBe('112233')
+      expect(staticOtpHint()).toBe('424242')
     } finally {
       vi.unstubAllEnvs()
       vi.resetModules()

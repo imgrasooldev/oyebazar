@@ -9,7 +9,7 @@
  * hai aur Google par jata hai. Live jaanch kar dekha:
  *
  *     POST /api/v1/auth/otp/request  {"phone": "<koi bhi number>"}
- *     → {"ok":true, ..., "staticOtp":"112233"}
+ *     → {"ok":true, ..., "staticOtp":"<wohi code jo secret mein hai>"}
  *
  * Yani koi bhi shakhs, kisi bhi reseller ya dukan ke number par, code MAANG kar sakta
  * tha — aur hum khud usay de rahe the.

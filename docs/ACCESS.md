@@ -15,13 +15,64 @@ lagayen — baqi sab wohi rehta hai.
 
 ---
 
-## 1. Saare logins — ek hi jadwal
+## 1. Saare logins — chaar alag darwaze
+
+Chaar surface hain aur **har ek ka apna login safha, apna khaata aur apni cookie** hai.
+Ek surface ka khaata doosre par nahi chalta — chahe number wohi ho.
+
+| Surface | Kahan se andar | Khaata kis table mein | Section |
+|---|---|---|---|
+| Reseller | `/login` | `Reseller` | [§1.1](#11-reseller--login) |
+| Wholesaler (dukan) | `/supplier/login` | `Supplier` | [§1.2](#12-wholesaler--supplierlogin) |
+| Admin (malik) | `/admin/login` | `OpsUser` · `SUPER_ADMIN` | [§1.3](#13-admin--malik-ka-khaata) |
+| Admin ops (team) | `/admin/login` | `OpsUser` · baqi darjay | [§1.4](#14-admin-ops--team-ke-khaate) |
 
 Ye khaate `prisma/seed-accounts.ts` banata hai, aur wo **dev aur production DONO** par
-chalta hai (neeche §1.4 dekhen). Number DB mein E.164 mein rakha jata hai
-(`923004445566`), magar login par `03004445566` likhna kaafi hai — dono ek hi cheez hain.
+chalta hai (§1.5). Number DB mein E.164 mein rakha jata hai (`923004445566`), magar login
+par `03004445566` likhna kaafi hai — dono ek hi cheez hain.
 
-### 1.1 Dukanein — 15, `/supplier/login`
+> ### Koi password hai hi nahi
+>
+> Har login WhatsApp OTP se hota hai — number daalen, 6 hindson ka code aata hai, andar.
+> "Credential" ka matlab is nizam mein sirf ek cheez hai: **WhatsApp number**. Code kahan
+> se milta hai, wo §1.6 mein hai.
+>
+> Wajah: phone kisi aur ke haath lag jaye to session ek click mein khatam ki ja sakti
+> hai. Password ke saath ye mumkin nahi — wo badalna parta hai, aur us ke saath wo har
+> jagah badalna parta hai jahan banday ne wohi password rakha hua ho.
+
+---
+
+### 1.1 Reseller — `/login`
+
+`03002000001` se `03002000012`.
+
+| # | Naam | Login number | Sheher |
+|---|---|---|---|
+| 1 | صادیہ | `03002000001` | Rawalpindi |
+| 2 | حرا | `03002000002` | Lahore |
+| 3 | عائشہ | `03002000003` | Karachi |
+| 4 | مریم | `03002000004` | Lahore |
+| 5 | فاطمہ | `03002000005` | Karachi |
+| 6 | زینب | `03002000006` | Faisalabad |
+| 7 | ایمان | `03002000007` | Islamabad |
+| 8 | رابعہ | `03002000008` | Multan |
+| 9 | خدیجہ | `03002000009` | Peshawar |
+| 10 | ثنا | `03002000010` | Gujranwala |
+| 11 | امینہ | `03002000011` | Sialkot |
+| 12 | نورین | `03002000012` | Quetta |
+
+> **Reseller ke liye ye fehrist hadd nahi hai.** `/login` par KOI bhi naya number daalen —
+> naam aur sheher poochh kar khaata khud ban jata hai. Jitne chahiyen, utne.
+
+**Jaanchte waqt kaam ki baat:** in mein se `صادیہ` (`03002000001`) ke paas asli order,
+payout aur khata bhara hua hai; `حرا` (`03002000002`) bilkul khali hai. Nayi reseller
+wala pehla safha (`FirstRun`) sirf khali khaate par khulta hai — dekhen
+`packages/core/src/domain/first-run.ts`.
+
+---
+
+### 1.2 Wholesaler — `/supplier/login`
 
 Number ek qaide se banta hai: `03001000001` se `03001000015` — tarteeb wohi jo
 `seed-accounts.ts` ke `SUPPLIERS` mein hai.
@@ -44,49 +95,59 @@ Number ek qaide se banta hai: `03001000001` se `03001000015` — tarteeb wohi jo
 | 14 | راوی کچن اسٹور | `03001000014` | Lahore |
 | 15 | سوات ہینڈی کرافٹس | `03001000015` | Mingora |
 
-### 1.2 Resellers — 12, `/login`
+🔴 **Reseller ki tarah khud khaata nahi banta.** Nayi dukan `/supplier/join` par form
+bharti hai aur `PENDING` par baithti hai; usay ops `/admin/suppliers` se `VERIFIED`
+karti hai. Ye jaan boojh kar hai — bina jaanchi dukan ka maal Bazaar par nahi jana
+chahiye.
 
-`03002000001` se `03002000012`.
+---
 
-| # | Naam | Login number | Sheher |
-|---|---|---|---|
-| 1 | صادیہ | `03002000001` | Rawalpindi |
-| 2 | حرا | `03002000002` | Lahore |
-| 3 | عائشہ | `03002000003` | Karachi |
-| 4 | مریم | `03002000004` | Lahore |
-| 5 | فاطمہ | `03002000005` | Karachi |
-| 6 | زینب | `03002000006` | Faisalabad |
-| 7 | ایمان | `03002000007` | Islamabad |
-| 8 | رابعہ | `03002000008` | Multan |
-| 9 | خدیجہ | `03002000009` | Peshawar |
-| 10 | ثنا | `03002000010` | Gujranwala |
-| 11 | امینہ | `03002000011` | Sialkot |
-| 12 | نورین | `03002000012` | Quetta |
+### 1.3 Admin — malik ka khaata
 
-> **Reseller ke liye ye fehrist hadd nahi hai.** `/login` par KOI bhi naya number daalen —
-> naam aur sheher poochh kar khaata khud ban jata hai. Jitne chahiyen, utne.
-
-### 1.3 Ops team — 5, `/admin/login`
-
-Har darje ka apna khaata, kyunke ikhtiyar ki rok ek hi khaate se **test hi nahi ho
-sakti**: REVIEWER dekh sakta hai magar badal nahi sakta, COORDINATOR order aage barha
-sakta hai magar fee ko haath nahi laga sakta.
+Ek hi khaata, `SUPER_ADMIN` darje par. Login `/admin/login` se.
 
 | Naam | Login number | Darja | Kya kar sakta hai |
 |---|---|---|---|
-| Ghulam Rasool | `03004445566` | SUPER_ADMIN | Sab kuch — fee rate, invoice, team |
-| Ops Manager | `03004445567` | MANAGER | Dukanein aur maal manzoor karna, payouts |
-| Ops Coordinator | `03004445568` | COORDINATOR | Order aage barhana |
-| Ops Coordinator 2 | `03004445569` | COORDINATOR | Wohi — do bandon ka moqabla dekhne ko |
-| Auditor Sahib | `03004445570` | REVIEWER | Sirf dekhna, badalna kuch nahi |
+| Ghulam Rasool | `03004445566` | `SUPER_ADMIN` | **Sab kuch** — fee rate, invoice banana, team mein banda daalna/nikalna |
 
-Is se ziyada chahiyen to script se:
+🔴 **Is khaate ka login production par `STATIC_OTP` se BAHAR hai** (`container.ts` —
+"Ops is se bahar hai"). Yani us ka code har dafa naya banta hai, aur provider na hone ki
+wajah se wo sirf Fly ke log mein likha jata hai:
+
+```bash
+flyctl logs -a oyebazar-web --no-tail | grep baji_login_otp | tail -1
+```
+
+Ye chalne ka tareeqa nahi hai aur ye maloom hai — hal WhatsApp provider hai (§1.7). Jab
+tak wo nahi, admin ka login sirf us bande ke liye khulta hai jis ke paas Fly ka access ho.
+
+---
+
+### 1.4 Admin ops — team ke khaate
+
+Wohi safha (`/admin/login`), magar neeche ke darjay. Har darje ka apna khaata is liye hai
+ke **ikhtiyar ki rok ek hi khaate se test hi nahi ho sakti**: REVIEWER dekh sakta hai
+magar badal nahi sakta, COORDINATOR order aage barha sakta hai magar fee ko haath nahi
+laga sakta.
+
+| Naam | Login number | Darja | Kya kar sakta hai |
+|---|---|---|---|
+| Ops Manager | `03004445567` | `MANAGER` | Dukanein aur maal manzoor karna, payouts |
+| Ops Coordinator | `03004445568` | `COORDINATOR` | Order aage barhana |
+| Ops Coordinator 2 | `03004445569` | `COORDINATOR` | Wohi — do bandon ka moqabla dekhne ko |
+| Auditor Sahib | `03004445570` | `REVIEWER` | Sirf dekhna, badalna kuch nahi |
+
+Naya banda:
 
 ```bash
 pnpm db:ops-user -- --name "Naya Banda" --email a@oyebazar.com --phone 03004445571 --role COORDINATOR
 ```
 
-### 1.4 Ye khaate banaye kaise jate hain
+Darjon ki poori tafseel §5 mein hai (kaun sa button kis darje par chhupta hai).
+
+---
+
+### 1.5 Ye khaate banaye kaise jate hain
 
 ```bash
 pnpm --filter @oyebazar/db exec tsx prisma/seed-accounts.ts
@@ -98,7 +159,14 @@ hai: nayi entries jurh jati hain, purane khaate aur un ka data waisa ka waisa re
 
 Production par chalane ke liye `DATABASE_URL` chahiye — dekhen `docs/DEPLOY.md`.
 
-### 1.5 OTP kahan milta hai
+---
+
+### 1.6 OTP kahan milta hai
+
+| Kahan | Reseller / Wholesaler | Admin aur Admin ops |
+|---|---|---|
+| **Dev** | Login safhe ke kaale dabbe mein, khana pehle se bhara | Wohi |
+| **Production** | `STATIC_OTP` — har number par wohi ek code | ❌ is se BAHAR — code Fly ke log mein |
 
 **Dev par** do jagah, dono se kaam chal jata hai:
 
@@ -109,28 +177,41 @@ Production par chalane ke liye `DATABASE_URL` chahiye — dekhen `docs/DEPLOY.md
 🔴 Ye asli code production mein kabhi nahi aata. Do taale lage hain: `NODE_ENV`,
 aur messaging provider — dekhen `apps/web/__tests__/security/dev-otp.test.ts`.
 
-**Production par** abhi `STATIC_OTP` naam ka ek Fly secret laga hua hai — yani har OTP
-wohi ek code hai. Wo qadar yahan JAAN BOOJH KAR nahi likhi. Team ke paas hai; `flyctl
-secrets list -a oyebazar-web` us ka hona to batata hai, qadar nahi.
+**Production par** `STATIC_OTP` naam ka ek Fly secret laga hua hai.
+
+> 🔴 **Us ki qadar is repo mein KAHIN nahi likhi jani, aur ye ehtiyat nazaryati nahi
+> hai.** Ye repo **PUBLIC** hai — `github.com/imgrasooldev/oyebazar` bina kisi login ke
+> khulta hai, aur `raw.githubusercontent.com` se har file seedha parhi ja sakti hai. Is
+> safhe par upar wali teen tableein (150+ jaiz login number) bhi wahin se parhi ja sakti
+> hain. Un ke saath agar wo code bhi likha ho, to koi bhi shakhs production par kisi bhi
+> dukan ya reseller ke tor par andar aa sakta hai — bina kisi andaruni maloomat ke.
+>
+> 1 September ko wo qadar waqai `CLAUDE.md` mein likhi hui mili aur hata di gayi. **Magar
+> hatana kaafi nahi: git ki history mein wo ab bhi mojood hai.** Us ka wahid asli hal
+> qadar BADALNA hai (§1.7).
+
+`flyctl secrets list -a oyebazar-web` us ka hona to batata hai, qadar nahi.
 
 ---
 
-## 🔴 1.6 Ek khula hua khatra — parh kar aage barhen
+## 🔴 1.7 Ek khula hua khatra — parh kar aage barhen
 
-Ye teen baatein ALAG ALAG bilkul theek hain, magar **saath mein** ek poora darwaza banati
-hain:
+Ye chaar baatein ALAG ALAG bilkul theek hain, magar **saath mein** ek poora darwaza
+banati hain:
 
 1. Har dukan ka WhatsApp number `/bazaar` par **bina login** chhapta hai — directory ki
    poori qeemat wohi hai, ye design hai.
 2. Seed mein dukan ka `phone` (jis se LOGIN hota hai) aur `whatsappPublic` (jo chhapta
    hai) **ek hi qadar** hain.
 3. `STATIC_OTP` laga hone ka matlab hai ke har number par wohi ek code chalta hai.
+4. **Aur ye repo public hai** — yani upar wali fehristein bhi khuli hain, aur agar code
+   kisi committed file mein likha ho to `/bazaar` kholne ki bhi zaroorat nahi rehti.
 
 Yani koi bhi shakhs `/bazaar` khole, kisi dukan ka number parhe, `/supplier/login` par
-daale, wo code likhe — aur us dukan ke portal mein hai: order, customer ke pate, payout.
-**Koi andaruni maloomat darkar nahi.**
+daale, wo code likhe — aur us dukan ke portal mein hai: order, customer ke **naam, number
+aur ghar ke pate**, payout. **Koi andaruni maloomat darkar nahi.**
 
-Hal do qadam hai, aur **isi tarteeb mein**:
+Hal ki tarteeb, aur **isi tarteeb mein**:
 
 1. `WHATSAPP_PROVIDER` set ho (WATI ka URL + key), taake asli OTP waqai pohanche
 2. **Us ke baad** `STATIC_OTP` hataya jaye
@@ -138,7 +219,18 @@ Hal do qadam hai, aur **isi tarteeb mein**:
 🔴 Tarteeb ulti karna khud ko bahar kar dena hai: provider ke baghair `STATIC_OTP`
 hatate hi kisi ko koi code nahi milega — team ko bhi nahi.
 
-Us ke baad ye teen baatein bhi mil kar bhi bay-zarar ho jati hain, kyunke code phir sirf
+Jab tak wo nahi ho sakta, **do qadam jo abhi uthaye ja sakte hain**:
+
+* Repo ko **private** kar dena (GitHub → Settings → Danger Zone → Change visibility).
+  Ye sab se tez rok hai aur ek setting ka kaam hai.
+* `STATIC_OTP` ki qadar **badal dena** — kyunke purani qadar git ki history mein reh gayi
+  hai aur wahan se kabhi nahi nikalti:
+
+  ```bash
+  flyctl secrets set STATIC_OTP=<nayi chhe hindse> -a oyebazar-web
+  ```
+
+Us ke baad ye chaaron baatein mil kar bhi bay-zarar ho jati hain, kyunke code phir sirf
 us number par pohanchta hai jo waqai us dukan ka hai.
 
 ---
