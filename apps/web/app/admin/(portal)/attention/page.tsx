@@ -236,7 +236,7 @@ function sentence(flag: OpsFlag): string {
      * khaana ek click ka kaam hai; "31 products" wala pehle sochne ka.
      */
     case 'oddCategory':
-      return `${TITLE_PROBLEM[String(v.problem)] ?? 'The name does not identify anything'} — and a category shows on the reseller's filter bar and on the public Bazaar (${v.products} products in it)`
+      return `${CATEGORY_PROBLEM[String(v.problem)] ?? 'The Urdu name does not identify anything'} — and a category shows on the reseller's filter bar and on the public Bazaar (${v.products} products in it)`
 
     case 'appError':
       return `Something threw an error ${v.count} time(s) in the last 24 hours — someone's screen was broken`
@@ -254,6 +254,21 @@ const TITLE_PROBLEM: Record<string, string> = {
   // Ye rozana hota hai, aur nuqsan dohra hai — dekhen `domain/ops-flags.ts`
   hasPhone: 'There is a phone number in the name — it prints on Bazaar and takes the order off-platform',
   mostlyDigits: 'The name is mostly digits',
+  placeholder: 'Looks like a test entry that went live',
+  repeatedChars: 'A key was held down while typing',
+}
+
+/*
+ * 🔴 Khaane ki apni wajahen — maal wali fehrist se ALAG.
+ *
+ * `tooShort` yahan kabhi aata hi nahi jaisa maal par aata hai (khaane ki hadd do harf
+ * hai, chhe nahi), aur `notUrdu` maal par hai hi nahi. Ek hi fehrist rakhne se jumle
+ * ghalat ban jate the: "Name is too short to identify the PRODUCT" — us qatar par jo
+ * product hai hi nahi.
+ */
+const CATEGORY_PROBLEM: Record<string, string> = {
+  tooShort: 'The Urdu name is empty or a single letter',
+  notUrdu: 'The Urdu name has no Urdu in it — someone left it half-made',
   placeholder: 'Looks like a test entry that went live',
   repeatedChars: 'A key was held down while typing',
 }

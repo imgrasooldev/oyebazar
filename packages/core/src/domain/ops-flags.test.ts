@@ -17,6 +17,7 @@ import {
   sortFlags,
   stockChurnSeverity,
   titleProblem,
+  categoryNameProblem,
   type OpsFlag,
 } from './ops-flags'
 
@@ -167,5 +168,46 @@ describe('tarteeb', () => {
       flag('low', '2026-08-03', 'c'),
     ])
     expect(counts).toEqual({ high: 2, medium: 0, low: 1 })
+  })
+})
+
+describe('categoryNameProblem', () => {
+  /*
+   * 🔴 Ye poora block us ghalti se aaya jo LIVE safhe par nazar aayi.
+   *
+   * Pehli koshish mein khaanon par wohi `titleProblem()` chal rahi thi jo maal ke naam
+   * par chalti hai. Nateeja: "لان", "کھدر", "لینن", "عبایا" — chaar bilkul theek khaane
+   * — "naam bohat chhota" par pakre gaye, aur `sparta` (jis ke liye ye jaanch likhi ja
+   * rahi thi) chhoot gaya, kyunke wo poore CHHE huroof ka hai.
+   */
+  it('Urdu ke aam, chhote khaane theek hain', () => {
+    for (const name of ['لان', 'کھدر', 'لینن', 'عبایا', 'بیڈ شیٹ', 'پردے']) {
+      expect(categoryNameProblem(name)).toBeNull()
+    }
+  })
+
+  it('nameUr mein Urdu hi na ho to nishan lagta hai', () => {
+    expect(categoryNameProblem('sparta')).toBe('notUrdu')
+    expect(categoryNameProblem('Lawn')).toBe('notUrdu')
+    expect(categoryNameProblem('  new-category  ')).toBe('notUrdu')
+  })
+
+  /*
+   * Tarteeb maani rakhti hai: "test" bhi Urdu mein nahi, magar ops ko wo wajah dikhni
+   * chahiye jo us ka agla qadam badalti hai — mitana, na ke tarjuma.
+   */
+  it('tajurbe ka naam "placeholder" hai, "notUrdu" nahi', () => {
+    expect(categoryNameProblem('test')).toBe('placeholder')
+    expect(categoryNameProblem('Demo category')).toBe('placeholder')
+  })
+
+  it('khali aur ek harf ka naam', () => {
+    expect(categoryNameProblem('')).toBe('tooShort')
+    expect(categoryNameProblem('  ')).toBe('tooShort')
+    expect(categoryNameProblem('ل')).toBe('tooShort')
+  })
+
+  it('ungli reh gayi keyboard par', () => {
+    expect(categoryNameProblem('ااااااا')).toBe('repeatedChars')
   })
 })

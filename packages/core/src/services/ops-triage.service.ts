@@ -20,6 +20,7 @@ import {
   priceTimes,
   sortFlags,
   stockChurnSeverity,
+  categoryNameProblem,
   titleProblem,
   type FlagSeverity,
   type OpsFlag,
@@ -327,7 +328,17 @@ export class OpsTriageService {
      * cheez ke liye bacha kar rakhna hi us ka poora matlab hai.
      */
     for (const row of categoryNames) {
-      const problem = titleProblem(row.nameUr) ?? titleProblem(row.nameEn)
+      /*
+       * 🔴 `categoryNameProblem`, `titleProblem` NAHI — aur ye farq live safhe par
+       * seekha gaya. Pehli koshish mein yahan maal wali jaanch chal rahi thi aur us ne
+       * "لان", "کھدر", "لینن", "عبایا" — chaar bilkul theek khaane — "naam bohat chhota"
+       * par pakar liye, jabke `sparta` (jis ke liye ye poori jaanch likhi ja rahi thi)
+       * chhoot gaya: wo poore CHHE huroof ka hai.
+       *
+       * Aur sirf `nameUr` — `nameEn` par ye jaanch chalana ghalat hai: us khaane mein
+       * angrezi hona hi us ka kaam hai.
+       */
+      const problem = categoryNameProblem(row.nameUr)
       if (!problem) continue
 
       flags.push({

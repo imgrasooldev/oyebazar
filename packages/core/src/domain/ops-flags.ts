@@ -239,6 +239,24 @@ export type TitleProblem =
   | 'placeholder'
   | 'repeatedChars'
 
+/**
+ * Khaane ka naam kyun mashkook hai.
+ *
+ * 🔴 Ye `TitleProblem` se ALAG hai, aur wo farq mehnga seekha gaya. Pehli koshish
+ * mein maine khaanon par wohi `titleProblem()` chala di jo maal ke naamon par chalti
+ * hai — aur live safhe par nateeja ye nikla: "لان", "کھدر", "لینن", "عبایا" — chaar
+ * bilkul theek khaane — "naam bohat chhota hai" par pakre gaye, jabke `sparta` (jis ke
+ * liye ye poori jaanch likhi ja rahi thi) chhoot gaya, kyunke wo poore CHHE huroof ka
+ * hai.
+ *
+ * Wajah saaf hai: `MIN_TITLE_LENGTH = 6` maal ke naam ke liye napi gayi thi ("کھدر —
+ * چکن کاری"). Khaane ka naam apni fitrat mein EK lafz hota hai, aur Urdu mein aksar
+ * teen char huroof. Wohi hadd yahan lagana us chhanni ko bekar kar deta hai jo is safhe
+ * ki jaan hai — aur us se bura ye ke ops jhoote nishan nazar-andaz karna seekh leta
+ * hai, aur us ke baad asli nishan bhi nahi dekhta.
+ */
+export type CategoryNameProblem = 'tooShort' | 'notUrdu' | 'placeholder' | 'repeatedChars'
+
 /** Aise lafz jo tajurbe ki nishani hain, maal ke naam ki nahi. */
 const PLACEHOLDERS = ['test', 'testing', 'demo', 'sample', 'asdf', 'qwerty', 'abc', 'xxx', 'new item', 'untitled']
 
@@ -282,6 +300,51 @@ export function titleProblem(title: string): TitleProblem | null {
 
   // "aaaaaa" / "!!!!!!" — keyboard par ungli reh gayi
   if (/(.)\1{4,}/.test(trimmed)) return 'repeatedChars'
+
+  return null
+}
+
+/**
+ * Urdu/Arabic rasm-ul-khat ka koi ek harf.
+ *
+ * Arabic (0600–06FF), Arabic Supplement (0750–077F), aur do Presentation Forms ke
+ * block — Urdu inhi mein likha jata hai.
+ */
+const URDU_SCRIPT =
+  /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/
+
+/** Khaana kitna chhota ho sakta hai — Urdu mein "لان" jaise naam bilkul aam hain. */
+export const MIN_CATEGORY_NAME_LENGTH = 2
+
+/**
+ * Khaane ke naam par jaanch — maal ke naam se ALAG qawaid.
+ *
+ * 🔴 Asal pehchan `notUrdu` hai, lambai nahi. `nameUr` ka poora maqsad Urdu ka naam
+ * rakhna hai; us mein sirf angrezi hona is baat ka saaf saboot hai ke wo khaana kisi ne
+ * jaldi mein bana kar chhor diya — aur `sparta` theek yehi soorat thi: mahinon reseller
+ * ki patti par aur public Bazaar par khara raha.
+ *
+ * Aur ye jaanch us jhagre se bahar hai jo lambai wali jaanch mein tha: "کیا یہ naam
+ * achha hai" par do log ikhtilaf kar sakte hain, "kya `nameUr` mein Urdu hai" par nahi.
+ */
+export function categoryNameProblem(nameUr: string): CategoryNameProblem | null {
+  const trimmed = nameUr.trim()
+
+  if (trimmed.length < MIN_CATEGORY_NAME_LENGTH) return 'tooShort'
+
+  const lower = trimmed.toLowerCase()
+  if (PLACEHOLDERS.some((word) => lower === word || lower.startsWith(`${word} `))) {
+    return 'placeholder'
+  }
+
+  if (/(.)\1{4,}/.test(trimmed)) return 'repeatedChars'
+
+  /*
+   * Ye jaanch AAKHIR mein — aur ye tarteeb maani rakhti hai. "test" bhi Urdu mein
+   * nahi hai, magar us ki asal kharabi ye hai ke wo tajurbe ka naam hai; ops ko wohi
+   * wajah dikhni chahiye jo us ke agle qadam ko badalti hai (mitana, na ke tarjuma).
+   */
+  if (!URDU_SCRIPT.test(trimmed)) return 'notUrdu'
 
   return null
 }
