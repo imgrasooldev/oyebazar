@@ -90,6 +90,31 @@ export default async function SupplierInventoryPage({
   const openHouses = warehouses.filter((house) => house.isActive)
 
   /*
+   * Lagat ka khaana sirf tab jab kisi qatar par lagat WAQAI ho.
+   *
+   * 🔴 Warna wo har qatar par ek khali khaana rehta hai — aur khali khaana table ki
+   * chaurai mein apna hissa phir bhi leta hai. Live par wohi dikha: beech mein ek dead
+   * jagah, aur us ke upar ek sartaaj jo kabhi kuch nahi kehta. Jab tak dukan lagat
+   * daalna shuru nahi karti, us khaane ka koi kaam nahi.
+   */
+  const showCost = moves.some((move) => move.unitCost !== null && move.unitCost > 0)
+
+  /*
+   * Godown ka naam sirf tab jab ek se ZYADA ho.
+   *
+   * 🔴 Aksar dukan ka ek hi godown hota hai (isi file mein neeche wo baat likhi hai),
+   * aur us soorat mein "· دکان" har qatar par ek jaisa chhapta hai — poore register par
+   * wohi ek lafz, chalees dafa. Ye theek wohi soorat hai jo `OPENING` ke note par pehle
+   * pakri gayi thi.
+   *
+   * Aur is se ek doosra masla bhi khud khatam hota hai: wo naam code mein HARD-CODE hai
+   * (`inventory.repository.ts` — `name: 'دکان'`), yani angrezi safhe par bhi Urdu
+   * chhapta tha. Jis din dukan doosra godown banati hai, wo khud apna naam likhti hai —
+   * aur tab naam dikhna zaroori bhi ho jata hai.
+   */
+  const manyHouses = warehouses.length > 1
+
+  /*
    * Qeemat sirf tab jab lagat waqai maloom ho. "Rs 0" parhne wala samajhta hai ke us ka
    * maal bekar hai — jo sach nahi, aur us se ye safha pehli hi nazar mein bharosa kho
    * deta hai. Dekhen `domain/stock.ts`.
@@ -231,10 +256,41 @@ export default async function SupplierInventoryPage({
           <p className="py-6 text-center text-[0.9rem] text-ink-soft">{t('noMoves')}</p>
         ) : (
           <div className="-mx-4 overflow-x-auto px-4">
-            <table className="w-full min-w-[34rem] text-[0.82rem]">
+            {/*
+              🔴 `max-w-4xl` — `w-full` akela chaure screen par register ko tor deta tha.
+              1440 par table 1149px ho jati thi aur maal ke naam wale khaane ko 512px
+              mil jate the (matn ke liye 200 kaafi the), yani ginti safhe ke doosre sire
+              par ja girti thi. Register parhne ka poora tareeqa ye hai ke aankh ek hi
+              qatar mein "kya hua → kitna → kitna bacha" par chale; wo silsila us khali
+              jagah mein toot jata tha.
+            */}
+            <table className="w-full min-w-[34rem] max-w-4xl text-[0.82rem]">
+              {/*
+                🔴 Sartaaj pehle the HI NAHI, aur us ki qeemat aakhri do khaanon par
+                lagti thi: `+12` aur `12` saath saath, aur koi lafz ye batane wala nahi
+                ke pehla tabdeeli hai aur doosra us ke baad ka bacha hua maal. Screenshot
+                mein wo do ek jaisi ginti lagti thi — jaise ek hi cheez do dafa likhi ho.
+              */}
+              <thead>
+                <tr className="border-b border-line text-[0.72rem] uppercase tracking-wider text-ink-faint">
+                  <th className="py-2 pe-3 text-start font-semibold">{t('regItem')}</th>
+                  <th className="py-2 pe-3 text-start font-semibold">{t('regWhat')}</th>
+                  {showCost && (
+                    <th className="py-2 pe-3 text-end font-semibold">{t('regCost')}</th>
+                  )}
+                  <th className="py-2 pe-3 text-end font-semibold">{t('regChange')}</th>
+                  <th className="py-2 text-end font-semibold">{t('regBalance')}</th>
+                </tr>
+              </thead>
               <tbody className="divide-y divide-paper-sunken">
                 {moves.map((move) => (
-                  <MoveRow key={move.id} move={move} locale={locale} />
+                  <MoveRow
+                    key={move.id}
+                    move={move}
+                    locale={locale}
+                    showCost={showCost}
+                    showWarehouse={manyHouses}
+                  />
                 ))}
               </tbody>
             </table>
@@ -386,7 +442,19 @@ function StockRow({
   )
 }
 
-function MoveRow({ move, locale }: { move: StockMoveView; locale: Locale }) {
+function MoveRow({
+  move,
+  locale,
+  showCost,
+  showWarehouse,
+}: {
+  move: StockMoveView
+  locale: Locale
+  /** Lagat ka khaana — sirf jab kisi qatar par lagat ho (dekhen safhe ka note) */
+  showCost: boolean
+  /** Godown ka naam — sirf jab ek se zyada godown hon */
+  showWarehouse: boolean
+}) {
   const t = translator(locale)
   const added = move.delta > 0
 
@@ -415,7 +483,7 @@ function MoveRow({ move, locale }: { move: StockMoveView; locale: Locale }) {
           </span>
         )}
         {/* Purani qataron par godown khali hai — register us se pehle bana tha */}
-        {move.warehouseName && (
+        {showWarehouse && move.warehouseName && (
           <span className="ms-1.5 text-[0.76rem] text-ink-faint">· {move.warehouseName}</span>
         )}
         {/*
@@ -435,15 +503,22 @@ function MoveRow({ move, locale }: { move: StockMoveView; locale: Locale }) {
         )}
       </td>
 
-      <td dir="ltr" className="numeric py-2 pe-3 text-end">
-        {move.unitCost !== null && move.unitCost > 0 && (
-          <span className="text-[0.76rem] text-ink-faint">{formatPkr(move.unitCost)}</span>
-        )}
-      </td>
+      {showCost && (
+        <td dir="ltr" className="numeric whitespace-nowrap py-2 pe-3 text-end">
+          {move.unitCost !== null && move.unitCost > 0 && (
+            <span className="text-[0.76rem] text-ink-faint">{formatPkr(move.unitCost)}</span>
+          )}
+        </td>
+      )}
 
+      {/*
+        `w-px whitespace-nowrap` — ginti wala khaana apne matn jitna hi chaura rehta hai.
+        Bina is ke `w-full` table ki fazool jagah in par bhi bant jati thi aur ginti
+        us naam se door ja parti thi jis ki wo ginti hai.
+      */}
       <td
         dir="ltr"
-        className={`numeric py-2 pe-3 text-end font-bold ${
+        className={`numeric w-px whitespace-nowrap py-2 pe-3 text-end font-bold ${
           added ? 'text-accent-700' : 'text-ink'
         }`}
       >
@@ -451,7 +526,7 @@ function MoveRow({ move, locale }: { move: StockMoveView; locale: Locale }) {
         {move.delta}
       </td>
 
-      <td dir="ltr" className="numeric py-2 text-end text-ink-faint">
+      <td dir="ltr" className="numeric w-px whitespace-nowrap py-2 text-end text-ink-faint">
         {move.balanceAfter}
       </td>
     </tr>

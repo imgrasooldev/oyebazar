@@ -947,6 +947,12 @@ const DICTIONARY = {
   },
   nothingLow: { ur: 'ابھی کچھ ختم نہیں ہو رہا', en: 'Nothing running low', rm: 'Abhi kuch khatam nahi ho raha' },
   soldLast30: { ur: '۳۰ دن میں نکلا', en: 'Sold in 30 days', rm: '30 din mein nikla' },
+  // ---- register ki table ke sartaaj (pehle koi the hi nahi)
+  regItem: { ur: 'مال', en: 'Item', rm: 'Maal' },
+  regWhat: { ur: 'کیا ہوا', en: 'What happened', rm: 'Kya hua' },
+  regCost: { ur: 'فی پیس لاگت', en: 'Cost each', rm: 'Fi piece lagat' },
+  regChange: { ur: 'کمی / زیادتی', en: 'Change', rm: 'Kami / zyadti' },
+  regBalance: { ur: 'اس کے بعد', en: 'Balance', rm: 'Us ke baad' },
   stockRegister: { ur: 'مال کا رجسٹر', en: 'Stock register', rm: 'Maal ka register' },
   stockRegisterBody: {
     ur: 'گنتی کب اور کیوں بدلی — ہر قطار، ہمیشہ کے لیے۔',
