@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest'
 import { OpsTriageService } from './ops-triage.service'
 import type {
   CategoryFlagRow,
+  NoPayoutAccountFlag,
   AppErrorRow,
   DisputedPayoutFlag,
   DuplicateProductRow,
@@ -40,6 +41,12 @@ const product = (over: Partial<ProductFlagRow> = {}): ProductFlagRow => ({
 
 /** Khali chhanni — har test sirf wo hissa bharta hai jis ki us ko zaroorat hai. */
 class FakeTriage implements OpsTriageRepository {
+  noAccountRows: NoPayoutAccountFlag[] = []
+
+  async resellersWithoutPayoutAccount() {
+    return this.noAccountRows
+  }
+
   categoryRows: CategoryFlagRow[] = []
 
   async categoryNames() {
@@ -207,6 +214,64 @@ describe('phone — sirf wahan jahan agla qadam call hai', () => {
 
     expect(flags[0]?.action?.phone).toBe('923001000001')
     expect(flags[0]?.action?.who).toBe('supplier')
+  })
+
+  /*
+   * 🔴 Ye nishan poora lifecycle live chalane se nikla: `payoutAccount` MAHINON se
+   * mara hua para tha, aur dukan ke safhe par "Rs 750 صادیہ ko" likha aata tha —
+   * "kahan bhejna hai" kabhi nahi. Khata ban jane ke BAAD bhi masla poora hal nahi
+   * hota: ops ko wo behnein dikhni chahiyen jin ka paisa is wajah se ruka hua hai,
+   * warna wohi purani soorat rehti hai — fehrist mojood hai, malik koi nahi.
+   */
+  it('🔴 khata na hone par RESELLER ka number jata hai — paisa usi ke jawab par ruka hai', async () => {
+    const { flags } = await serviceWith((repo) => {
+      repo.noAccountRows = [
+        {
+          resellerId: 'r1',
+          name: 'صادیہ',
+          phone: '923002000001',
+          amount: 1450,
+          payouts: 2,
+          since: new Date('2026-08-26T00:00:00Z'),
+        },
+      ]
+    }).flags()
+
+    const flag = flags.find((row) => row.kind === 'payoutNoAccount')
+
+    expect(flag?.action?.phone).toBe('923002000001')
+    expect(flag?.action?.who).toBe('reseller')
+    /*
+     * Paighaam pehle se NAHI likha. Ye wo baat hai jo insan ko apne lafzon mein karni
+     * chahiye — "aap ka paisa ruka hua hai" tayyar shuda jumle ki shakl mein mashkook
+     * lagta hai, aur yehi wo paighaam hai jis par bharosa sab se zaroori hai.
+     */
+    expect(flag?.action?.text).toBeUndefined()
+    expect(flag?.values.amount).toBe(1450)
+  })
+
+  /*
+   * 🔴 Darja `high` — aur ye baqi paison wale nishanon se alag wajah par hai. Wahan
+   * koi na koi taakhir kar raha hota hai; yahan dono taraf ke log tayyar hain aur
+   * RASTA nahi hai. Aur ye khud kabhi hal nahi hota.
+   */
+  it('khata na hona `high` hai, aur us ki tarteeb sab se upar aati hai', async () => {
+    const { flags } = await serviceWith((repo) => {
+      repo.noAccountRows = [
+        {
+          resellerId: 'r1',
+          name: 'صادیہ',
+          phone: '923002000001',
+          amount: 700,
+          payouts: 1,
+          since: new Date('2026-08-20T00:00:00Z'),
+        },
+      ]
+      repo.uncategorised = [product()]
+    }).flags()
+
+    expect(flags[0]?.kind).toBe('payoutNoAccount')
+    expect(flags[0]?.severity).toBe('high')
   })
 
   it('🔴 maal ke nishanon par koi phone nahi — wahan agla qadam safha kholna hai', async () => {

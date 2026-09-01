@@ -17,6 +17,7 @@ import type {
   OpsTriageRepository,
   OverduePayoutFlag,
   CategoryFlagRow,
+  NoPayoutAccountFlag,
   ProductFlagRow,
   StockChurnRow,
   OpenIssueFlag,
@@ -355,6 +356,52 @@ export class PrismaOpsTriageRepository implements OpsTriageRepository {
    * neeche chala jata. Khali khaane par `now` chalta hai, aur wo theek hai: khali
    * khaana waqai abhi tak kisi ko nuqsan nahi de raha.
    */
+  /**
+   * Paisa baqaya hai magar khata diya hi nahi.
+   *
+   * 🔴 Shart DONO taraf hai: khula payout HO, aur khata na ho. Sirf "khata nahi" par
+   * chalane se har naya signup nishan ban jata — aur wo qatarein jhooti bhi hotin, jis
+   * ne abhi kuch becha hi nahi us ka paisa atka hua nahi hai.
+   *
+   * `payoutTitle` bhi shart mein: number ho aur naam na ho to bhi dukan wala bhej nahi
+   * sakta (`payoutAccountFrom` usi wajah se aisi qatar ko `null` deta hai). Sirf
+   * `payoutAccount: null` dekhna us adhoori soorat ko chup chaap chhor deta.
+   */
+  async resellersWithoutPayoutAccount(limit: number): Promise<NoPayoutAccountFlag[]> {
+    const rows = await this.db.reseller.findMany({
+      where: {
+        OR: [{ payoutAccount: null }, { payoutTitle: null }, { payoutMethod: null }],
+        payouts: { some: { status: { in: ['PENDING', 'SENT', 'DISPUTED'] } } },
+      },
+      take: limit,
+      select: {
+        id: true,
+        name: true,
+        whatsappPhone: true,
+        payouts: {
+          where: { status: { in: ['PENDING', 'SENT', 'DISPUTED'] } },
+          select: { amount: true, createdAt: true },
+        },
+      },
+    })
+
+    return rows.map((row) => ({
+      resellerId: row.id,
+      name: row.name,
+      phone: row.whatsappPhone,
+      amount: row.payouts.reduce((sum, payout) => sum + payout.amount, 0),
+      payouts: row.payouts.length,
+      /*
+       * Sab se PURANA khula payout — nishanon ki tarteeb umar par chalti hai (purana
+       * upar), aur "kab se ruka hua hai" ka sach jawab wohi hai.
+       */
+      since: row.payouts.reduce(
+        (oldest, payout) => (payout.createdAt < oldest ? payout.createdAt : oldest),
+        row.payouts[0]?.createdAt ?? new Date(),
+      ),
+    }))
+  }
+
   async categoryNames(limit: number): Promise<CategoryFlagRow[]> {
     const rows = await this.db.category.findMany({
       take: limit,

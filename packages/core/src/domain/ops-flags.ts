@@ -32,6 +32,19 @@ export type FlagKind =
   | 'payoutDisputed'
   /** Dukan ki apni shart guzar gayi aur paisa abhi tak nahi gaya */
   | 'payoutOverdue'
+  /**
+   * Reseller ka paisa baqaya hai magar us ne khata diya hi nahi — paisa hil hi nahi sakta.
+   *
+   * 🔴 Ye baqi paison wale nishanon se ALAG hai aur us ka farq ahem hai: wahan koi na
+   * koi taakhir kar raha hota hai, yahan dono taraf ke log tayyar hain aur RASTA nahi
+   * hai. Dukan wala bhejna chahta hai magar us ke saamne "khata abhi nahi diya" likha
+   * aata hai; reseller intezar kar rahi hai aur usay wajah maloom hi nahi.
+   *
+   * Aur ye khud khatam nahi hota. Baqi har nishan waqt ke saath hal ho sakta hai (dukan
+   * jawab de deti hai, paisa chala jata hai); ye hamesha ke liye khara rehta hai jab tak
+   * koi reseller se POOCHHE — aur wo ek WhatsApp paighaam hai.
+   */
+  | 'payoutNoAccount'
   /** Dukan ne order ka jawab hi nahi diya — customer intezar mein hai */
   | 'orderUnanswered'
   /** Ek hi dukan par wohi maal do dafa */

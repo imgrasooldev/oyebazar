@@ -40,6 +40,12 @@ import type { Clock } from '../ports/infrastructure'
  */
 const LIMITS = {
   disputed: 40,
+  /*
+   * Chhoti hadd — aur ye nishan waise bhi thore hi hone chahiyen. Bara adad yahan is
+   * baat ki khabar hai ke feature khud kaam nahi kar raha (reseller tak "khata bharo"
+   * ki baat pohanch hi nahi rahi), aur us ka jawab fehrist lambi karna nahi hai.
+   */
+  noAccount: 25,
   overdue: 40,
   orders: 40,
   oddPrice: 30,
@@ -115,6 +121,7 @@ export class OpsTriageService {
      */
     const [
       disputed,
+      noAccount,
       overdue,
       orders,
       oddPrices,
@@ -128,6 +135,7 @@ export class OpsTriageService {
       openIssues,
     ] = await Promise.all([
         this.repo.disputedPayouts(LIMITS.disputed),
+        this.repo.resellersWithoutPayoutAccount(LIMITS.noAccount),
         this.repo.overduePayouts(now, LIMITS.overdue),
         this.repo.unansweredOrders(now, ORDER_ANSWER_HOURS, LIMITS.orders),
         this.repo.oddPricedProducts(PRICE_ODD_MEDIUM, LIMITS.oddPrice),
@@ -192,6 +200,33 @@ export class OpsTriageService {
          * kya hai. Faisla usi ek jawab par rukka hua hota hai.
          */
         action: { kind: 'whatsapp', phone: row.supplierPhone, who: 'supplier' },
+      })
+    }
+
+    /*
+     * Paisa baqaya, khata nadarad.
+     *
+     * 🔴 `high` — aur ye darja soch kar diya gaya hai. Baqi `medium` wale nishanon par
+     * koi na koi aage barh raha hota hai; yahan dono taraf ke log tayyar hain aur paisa
+     * hil hi nahi sakta. Aur ye khud kabhi hal nahi hota: jab tak koi reseller se
+     * POOCHHE, wo hamesha khara rehta hai.
+     *
+     * Paighaam pehle se NAHI likha (`text` khali): ye wo baat hai jo insan ko apne
+     * lafzon mein karni chahiye — "aap ka paisa ruka hua hai" ek tayyar shuda jumla ban
+     * kar bheja jaye to wo mashkook lagta hai, aur yehi wo paighaam hai jis par bharosa
+     * sab se zyada zaroori hai.
+     */
+    for (const row of noAccount) {
+      flags.push({
+        kind: 'payoutNoAccount',
+        severity: 'high',
+        subject: 'reseller',
+        id: row.resellerId,
+        label: row.name,
+        context: null,
+        values: { amount: row.amount, payouts: row.payouts },
+        since: row.since,
+        action: { kind: 'whatsapp', phone: row.phone, who: 'reseller' },
       })
     }
 

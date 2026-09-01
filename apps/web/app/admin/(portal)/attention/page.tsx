@@ -169,6 +169,7 @@ const TONES = {
 const KIND_LABEL: Record<OpsFlag['kind'], string> = {
   payoutDisputed: 'Disputed',
   payoutOverdue: 'Overdue',
+  payoutNoAccount: 'No account',
   orderUnanswered: 'No answer',
   openIssue: 'Issue raised',
   duplicateProduct: 'Duplicate',
@@ -198,6 +199,17 @@ function sentence(flag: OpsFlag): string {
 
     case 'payoutOverdue':
       return `${v.days} day(s) past the agreed term — ${formatPkr(Number(v.amount))} still with the wholesaler`
+
+    /*
+     * 🔴 Jumle mein "nobody is late" saaf likha hai — aur ye jaan boojh kar.
+     *
+     * Baqi paison wale nishan ops ko kisi par DABAO daalne bhejte hain (dukan ne der
+     * ki, jawab nahi diya). Ye us se ulta hai: dukan wala bhejna chahta hai aur bhej
+     * nahi sakta. Agar ye qatar unhi jaisi parhi jaye to ops dukan ko phone kar dega —
+     * aur wahan karne ko kuch hai hi nahi.
+     */
+    case 'payoutNoAccount':
+      return `${formatPkr(Number(v.amount))} across ${v.payouts} payout(s) cannot move — she has not given a payout account, so the wholesaler has nowhere to send it. Nobody is late; ask her for the account.`
 
     case 'orderUnanswered':
       return `Sent to the wholesaler ${v.hours} hours ago and still unanswered — a customer is waiting`
@@ -288,6 +300,9 @@ function hrefFor(flag: OpsFlag): Route {
       return '/admin/orders'
     case 'category':
       return '/admin/categories'
+    /* Khata wahin dikhta hai — poora, aur baqi resellers ke saath */
+    case 'reseller':
+      return '/admin/resellers'
     default:
       return '/admin/products'
   }

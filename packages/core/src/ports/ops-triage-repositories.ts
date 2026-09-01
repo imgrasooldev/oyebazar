@@ -130,9 +130,37 @@ export interface AppErrorRow {
   readonly lastAt: Date
 }
 
+/**
+ * Jis ka paisa baqaya hai aur khata nahi diya.
+ *
+ * 🔴 Shart mein KHULA payout hona lazmi hai. Har us reseller par nishan lagana jis ne
+ * abhi khata nahi bhara, is safhe ko naye signup se bhar dega — aur wo qatarein sach
+ * bhi nahi hotin: jis ne abhi tak kuch becha hi nahi, us ka paisa atka hua nahi hai.
+ * Nishan usi lamhe maani rakhta hai jab paisa waqai ruk chuka ho.
+ */
+export interface NoPayoutAccountFlag {
+  readonly resellerId: string
+  readonly name: string
+  /** Isi par paighaam bhejna hai — nishan par button yehi banata hai */
+  readonly phone: string
+  /** Kitna ruka hua hai — ops ko tarteeb isi se milti hai */
+  readonly amount: number
+  readonly payouts: number
+  /** Sab se purana khula payout kab bana — der isi se napi jati hai */
+  readonly since: Date
+}
+
 export interface OpsTriageRepository {
   /** Reseller keh rahi hai paise nahi mile. */
   disputedPayouts(limit: number): Promise<DisputedPayoutFlag[]>
+
+  /**
+   * Paisa baqaya hai magar khata diya hi nahi — dukan wala bhej hi nahi sakta.
+   *
+   * Ginti bhi saath aati hai aur raqam bhi: ops ko tay karna hota hai ke pehle kis ko
+   * phone kare, aur wo faisla raqam aur der dono se banta hai.
+   */
+  resellersWithoutPayoutAccount(limit: number): Promise<NoPayoutAccountFlag[]>
 
   /**
    * Shart guzar chuki aur paisa abhi tak nahi gaya.
