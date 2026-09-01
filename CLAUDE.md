@@ -130,6 +130,26 @@ wo kabhi kabhi waqt se aage nikal jata hai. Akele chalane par pass ho to wo khar
 🔴 Mara hua code jo zinda dikhta ho, wo aam mare hue code se khatarnak hai: koi us par
 bharosa kar ke feature bana leta hai jo kabhi chala hi nahi.
 
+**Aur ye is repo ka sab se aam masla hai, ittefaq nahi.** 1 September ko poora lifecycle
+chalane par TEEN aise mile, teenon alag shakl mein:
+
+| Kya | Kaise mara hua tha |
+|---|---|
+| `Reseller.payoutAccount` | Parha jata tha (`maskAccount`), likhne ka rasta kahin nahi |
+| `Supplier.bankAccount` | Kabhi likha hi nahi gaya — poore repo mein ek bhi write nahi |
+| `FirstRun` card | Poora likha hua, magar shart (`packsMade === 0`) ko raat ka job hamesha jhoota kar deta tha — kisi ko kabhi nazar nahi aaya |
+
+Teenon `tsc`, test aur build se guzar rahe the. Do usool jo in se nikalte hain:
+
+1. **Har khaane ka WRITE rasta dhoonden, sirf read nahi.** `grep` par jo khaana mile,
+   us par ye poochhna zaroori hai ke usay bharta KAUN hai.
+2. **Shart us cheez par lagayen jo BANDE ne ki hai, us par nahi jo NIZAM ne us ke liye
+   ki hai.** `packsMade` raat ka job bharta hai; `packsDownloaded` reseller khud.
+   Background job jis ginti ko bhar sakta ho, wo "us ne shuru kiya" ka pemana nahi.
+
+Aisi shart ko safhe par na chhoren — `domain/` mein test ke neeche rakhen
+(`first-run.ts` isi liye bana). Safhe par likhi hui shart chup chaap sarh jati hai.
+
 **1 September ko ye ban gaya** (poora lifecycle live chala kar): **payout ka khata**
 dono taraf (`domain/payout-account.ts` — JazzCash/EasyPaisa/Raast/Bank; reseller `/money`
 par bharti hai, dukan payouts par POORA dekhti hai — chhanni `payouts: { some: { supplierId } }`
