@@ -1181,6 +1181,11 @@ const DICTIONARY = {
   },
   variantPlain: { ur: 'سادہ', en: 'Standard', rm: 'Sada' },
   showMore: { ur: 'اور دکھائیں', en: 'Show more', rm: 'Aur dikhayen' },
+  showMoreCapped: {
+    ur: 'اِس سے آگے کا مال اوپر تلاش یا چھَنّی سے ڈھونڈیں — ایک ہی صفحے پر اِس سے زیادہ رکھنا فون پر بھاری پڑ جاتا ہے۔',
+    en: 'For anything beyond this, use search or the filters above — more than this on one page is heavy on a phone.',
+    rm: 'Is se aage ka maal upar talash ya chhanni se dhoondein — ek hi safhe par is se zyada rakhna phone par bhaari par jata hai.',
+  },
   copyLabel: { ur: 'کاپی', en: 'Copy', rm: 'Copy' },
   saving: { ur: 'ہو رہا ہے…', en: 'Saving…', rm: 'Ho raha hai…' },
   cancel: { ur: 'رہنے دیں', en: 'Cancel', rm: 'Rehne den' },

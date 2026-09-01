@@ -383,6 +383,17 @@ export default async function CataloguePage({
           Ye grid ke ANDAR nahi, us ke neeche hai: `<ul>` ke andar `<li>` ke ilawa kuch
           rakhna list ki shakal aur us ke maani dono torta hai.
         */}
+        {/*
+          Hadd par pohanch kar khali jagah chhorna sab se bura jawab hai.
+
+          🔴 Patti "240+ نتائج" kehti hai — yani reseller ko SAAF maloom hai ke aur
+          maal hai — aur us ke neeche kuch bhi na ho to wo dead end banta hai: khabar
+          hai ke aur hai, rasta koi nahi. Agla qadam yahin likha hona chahiye.
+        */}
+        {page.nextCursor && show >= MAX_SHOW && (
+          <p className="mt-5 text-center text-[0.82rem] text-ink-soft">{t('showMoreCapped')}</p>
+        )}
+
         {page.nextCursor && show < MAX_SHOW && (
           <div className="mt-5 flex justify-center">
             <Link
