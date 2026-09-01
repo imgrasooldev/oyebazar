@@ -248,6 +248,7 @@ export default async function SupplierStockPage() {
             */}
             {product.status !== 'DRAFT' && (
               <SupplierVariants
+                locale={locale}
                 productId={product.id}
                 variants={variantsByProduct.get(product.id) ?? []}
                 /*

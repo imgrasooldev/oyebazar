@@ -1,3 +1,4 @@
+export * from './colour'
 export * from './parse-order-text'
 export * from './money'
 export * from './fee'

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { formatPkr } from '@oyebazar/shared'
+import { variantLabel, formatPkr } from '@oyebazar/shared'
 import type {
   InventoryLineView,
   StockMoveView,
@@ -314,7 +314,7 @@ function StockRow({
             {locale === 'ur' ? line.titleUr : line.titleEn}
             {(line.colour || line.size) && (
               <span className="ms-2 text-[0.8rem] font-normal text-ink-faint">
-                {[line.colour, line.size].filter(Boolean).join(' · ')}
+                {variantLabel(line, locale)}
               </span>
             )}
           </p>
@@ -398,7 +398,7 @@ function MoveRow({ move, locale }: { move: StockMoveView; locale: Locale }) {
         </p>
         {(move.colour || move.size) && (
           <p className="text-[0.74rem] text-ink-faint">
-            {[move.colour, move.size].filter(Boolean).join(' · ')}
+            {variantLabel(move, locale)}
           </p>
         )}
       </td>

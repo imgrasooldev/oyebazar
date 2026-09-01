@@ -21,6 +21,8 @@
  * Wohi hadd jo catalogue ke card par hai — do jagah do alag hadd rakhne ka matlab hota
  * ke reseller ko card par "3 bache" dikhta aur pack par kuch na aata, ya ulta.
  */
+import { colourName } from './colour'
+
 export const PACK_LOW_STOCK = 5
 
 /** Line par kitne size/rang tak likhe jayen — is se aage naam nahi, ginti chalti hai */
@@ -67,7 +69,17 @@ export function stockLine(
     parts.push(sizes.length <= MAX_NAMED ? sizes.join(' · ') : `${sizes.length} size`)
   }
 
-  const colours = unique(inStock.map((variant) => variant.colour))
+  /*
+   * 🔴 Rang PACK ki zaban mein — dukan ne jis zaban mein likha, us mein nahi.
+   *
+   * Ye line asli TASVEER par chhapti hai jo reseller apne WhatsApp status par lagati
+   * hai. Us ne apna pack angrezi par rakha ho aur us par "سبز · نیلا" chhap jaye, to
+   * wo us ki apni tasveer par ek adhoora, mila jula jumla hai — aur us ka jawab us se
+   * poochha jayega, hum se nahi.
+   */
+  const colours = unique(
+    inStock.map((variant) => (variant.colour ? colourName(variant.colour, lang) : null)),
+  )
   if (colours.length > 0) {
     // Rang ke naam lambe hote hain ("gehra neela") — chaar se aage sirf ginti
     parts.push(

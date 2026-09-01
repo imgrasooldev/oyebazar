@@ -1,5 +1,6 @@
 'use client'
 
+import { variantLabel } from '@oyebazar/shared'
 import { useRouter } from 'next/navigation'
 import { useRef, useState } from 'react'
 import type { VariantView } from '@oyebazar/core'
@@ -18,10 +19,13 @@ export function SupplierVariants({
   productId,
   variants,
   images,
+  locale,
   labels,
 }: {
   productId: string
   variants: readonly VariantView[]
+  /** Rang ka naam isi zaban mein chhapta hai — dekhen `shared/colour.ts` */
+  locale: 'ur' | 'en' | 'rm'
   /** Kis variant par kaunsi tasveer — variantId se URL */
   images: Readonly<Record<string, string>>
   labels: {
@@ -103,7 +107,7 @@ export function SupplierVariants({
               />
 
               <span className="min-w-[7rem] text-[0.82rem]">
-                {[variant.colour, variant.size].filter(Boolean).join(' · ') || '—'}
+                {variantLabel(variant, locale) || '—'}
               </span>
 
               <input

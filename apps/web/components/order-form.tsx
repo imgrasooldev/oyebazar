@@ -5,7 +5,7 @@ import { AskAddressButton } from '@/components/ask-address-button'
 import { KnownCustomer } from '@/components/known-customer'
 import { PhoneRecordNote } from '@/components/phone-record-note'
 import { useState } from 'react'
-import { formatPkr, parseOrderText } from '@oyebazar/shared'
+import { variantLabel, formatPkr, parseOrderText } from '@oyebazar/shared'
 import { translator, type Locale } from '@/lib/i18n'
 
 interface Props {
@@ -401,7 +401,7 @@ export function OrderForm({
         jawab ki jagah). Reseller ko lagta ke kuch chunna baqi hai, jabke chunne ko kuch
         tha hi nahi. Ye poora lifecycle live chalane par nikla.
       */}
-      {variants.length > 0 && !(variants.length === 1 && !plainLabel(variants[0]!)) && (
+      {variants.length > 0 && !(variants.length === 1 && !plainLabel(variants[0]!, locale)) && (
         <div>
           <span className="text-sm font-semibold">{t('variantPick')}</span>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -413,7 +413,7 @@ export function OrderForm({
                * unwan par hai. Ek button jis par sawal likha ho, jawab jaisa nahi lagta
                * — aur wo chuna hua hone par bhi "abhi chunna hai" hi parha jata hai.
                */
-              const label = plainLabel(variant) || t('variantPlain')
+              const label = plainLabel(variant, locale) || t('variantPlain')
 
               return (
                 <button
@@ -554,7 +554,16 @@ export function OrderForm({
   )
 }
 
-/** Jorhe ka apna naam — rang aur size, jo mile. Kuch na ho to khali string. */
-function plainLabel(variant: { colour?: string | null; size?: string | null }): string {
-  return [variant.colour, variant.size].filter(Boolean).join(' · ')
+/**
+ * Jorhe ka apna naam — rang us zaban mein jo abhi chal rahi hai.
+ *
+ * 🔴 `variantLabel` se, haath se `join` kar ke nahi: rang ka khaana EK hai (dukan jo
+ * likhti hai wohi har zaban par chhapta tha), aur us ki lughat `@oyebazar/shared` mein
+ * ek jagah rehni chahiye — warna paanch safhon par paanch alag jawab bante hain.
+ */
+function plainLabel(
+  variant: { colour?: string | null; size?: string | null },
+  locale: Locale,
+): string {
+  return variantLabel(variant, locale === 'rm' ? 'rm' : locale === 'en' ? 'en' : 'ur')
 }
