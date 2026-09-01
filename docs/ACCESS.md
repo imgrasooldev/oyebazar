@@ -192,6 +192,14 @@ aur messaging provider — dekhen `apps/web/__tests__/security/dev-otp.test.ts`.
 
 `flyctl secrets list -a oyebazar-web` us ka hona to batata hai, qadar nahi.
 
+**Team ke liye wo qadar likhi hui hai — `.local/CREDENTIALS.md` mein.** Wo file
+`.gitignore` mein hai (`.local/`), yani wo kabhi commit nahi hoti aur GitHub par nahi
+jati. Us mein chaaron surface ke number aur OTP ek hi safhe par hain, saath admin/ops ka
+code Fly ke log se nikalne ka tareeqa.
+
+Repo private ho jaye to wo poori file yahin le aayi ja sakti hai — us waqt tak wo alag
+rehni chahiye.
+
 ---
 
 ## 🔴 1.7 Ek khula hua khatra — parh kar aage barhen
